@@ -1,49 +1,19 @@
-# Ignore all executables (files with no extension in Linux are usually binaries)
-# This is tricky in C, so we often ignore specific names or use a build folder.
+# --- Project Specifics ---
+# All compiled binaries are redirected here by the Makefile
+bin/
 
-# 1. Ignore specific binary names in your project
-alsa_version
-alsa_list
-
-# Prerequisites
+# --- Build Artifacts ---
+# Object files and dependency files if you ever use -MMD
+*.o
 *.d
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# --- Debugging ---
+# GDB history and debug symbols (common on Linux/Fedora)
+.gdb_history
+*.dSYM/
 
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
-# debug information files
-*.dwo
-bin/
+# --- Environment ---
+# VS Code workspace state (but keeps your tasks.json/launch.json)
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json

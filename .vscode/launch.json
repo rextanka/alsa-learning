@@ -2,10 +2,24 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch Active File",
+            "name": "ALSA: Launch with Arguments",
             "type": "cppdbg",
             "request": "launch",
-            // This path now matches your new Makefile output structure
+            "program": "${workspaceFolder}/bin/${fileBasenameNoExtension}",
+            // Use our custom input defined below
+            "args": ["${input:getArgs}"], 
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "Make Build",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "ALSA: Standard Launch (No Args)",
+            "type": "cppdbg",
+            "request": "launch",
             "program": "${workspaceFolder}/bin/${fileBasenameNoExtension}",
             "args": [],
             "stopAtEntry": false,
@@ -13,16 +27,16 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
-            // This ensures 'make' runs automatically before the debugger starts
             "preLaunchTask": "Make Build",
             "miDebuggerPath": "/usr/bin/gdb"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "getArgs",
+            "type": "promptString",
+            "description": "Enter CLI arguments (e.g., -f 440 -d 2.5)",
+            "default": ""
         }
     ]
 }
