@@ -46,3 +46,4 @@ alsa_list
 
 # debug information files
 *.dwo
+bin/
