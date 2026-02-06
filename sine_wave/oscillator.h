@@ -16,12 +16,21 @@ typedef struct {
     double cos_step;    
     double sin_step;    
     int sample_rate;
-    int frequency;
-    int sample_count; // Counter for normalization intervals
+    
+    // Interpolation state
+    double current_freq;
+    double target_freq;
+    double freq_step;    // Frequency change per sample
+    bool transitioning;
+
+    int sample_count; 
 } Oscillator;
 
-// Initialize the oscillator
-void osc_init(Oscillator *osc, OscillatorType type, int freq, int sample_rate);
+// Updated Init
+void osc_init(Oscillator *osc, OscillatorType type, double freq, int sample_rate);
+
+// Set a new target to move toward
+void osc_set_target(Oscillator *osc, double target_freq, double duration_seconds);
 
 // Fills a stereo buffer of S16_LE samples
 void osc_fill_buffer(Oscillator *osc, int16_t *buffer, int frames);
