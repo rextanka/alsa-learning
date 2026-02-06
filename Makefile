@@ -1,12 +1,14 @@
 CC = gcc
-# Added -g for debug symbols and -O0 to prevent optimization
 CFLAGS = -Wall -g -O0
 LIBS = -lasound
 SRC_DIR = hello-alsa
 BIN_DIR = bin
 
+# Force re-evaluation of wildcards
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 BINS = $(patsubst $(SRC_DIR)/%.c, $(BIN_DIR)/%, $(SRCS))
+
+.PHONY: all clean
 
 all: $(BINS)
 
