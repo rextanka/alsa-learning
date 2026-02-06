@@ -1,3 +1,10 @@
+# Ignore all executables (files with no extension in Linux are usually binaries)
+# This is tricky in C, so we often ignore specific names or use a build folder.
+
+# 1. Ignore specific binary names in your project
+alsa_version
+alsa_list
+
 # Prerequisites
 *.d
 
