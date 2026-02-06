@@ -2,28 +2,19 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "type": "cppbuild",
-            "label": "C/C++: gcc build active file",
-            "command": "/usr/bin/gcc",
-            "args": [
-                "-fdiagnostics-color=always",
-                "-g",
-                "${file}",
-                "-o",
-                "${fileDirname}/${fileBasenameNoExtension}",
-                "-lasound"
-            ],
-            "options": {
-                "cwd": "${fileDirname}"
-            },
-            "problemMatcher": [
-                "$gcc"
-            ],
+            "label": "Make Build",
+            "type": "shell",
+            "command": "make",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "detail": "Task generated for ALSA development."
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "Make Clean",
+            "type": "shell",
+            "command": "make clean"
         }
     ]
 }
