@@ -995,6 +995,9 @@ CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o
  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdarg.h
  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stddef.h
  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdint.h
+ /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp
+ /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/AdsrEnvelopeProcessor.hpp
+ /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/EnvelopeProcessor.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/InputSource.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/PerformanceProfiler.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp

@@ -8,6 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp" "CMakeFiles/audio_test.dir/audio/Voice.cpp.o" "gcc" "CMakeFiles/audio_test.dir/audio/Voice.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/AudioBridge.cpp" "CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o" "gcc" "CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/main.cpp" "CMakeFiles/audio_test.dir/main.cpp.o" "gcc" "CMakeFiles/audio_test.dir/main.cpp.o.d"
   )

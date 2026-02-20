@@ -129,6 +129,30 @@ audio_test/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/build
 .PHONY : audio_test/fast
 
+audio/Voice.o: audio/Voice.cpp.o
+.PHONY : audio/Voice.o
+
+# target to build an object file
+audio/Voice.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/Voice.cpp.o
+.PHONY : audio/Voice.cpp.o
+
+audio/Voice.i: audio/Voice.cpp.i
+.PHONY : audio/Voice.i
+
+# target to preprocess a source file
+audio/Voice.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/Voice.cpp.i
+.PHONY : audio/Voice.cpp.i
+
+audio/Voice.s: audio/Voice.cpp.s
+.PHONY : audio/Voice.s
+
+# target to generate assembly for a file
+audio/Voice.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/Voice.cpp.s
+.PHONY : audio/Voice.cpp.s
+
 bridge/AudioBridge.o: bridge/AudioBridge.cpp.o
 .PHONY : bridge/AudioBridge.o
 
@@ -186,6 +210,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... audio_test"
+	@echo "... audio/Voice.o"
+	@echo "... audio/Voice.i"
+	@echo "... audio/Voice.s"
 	@echo "... bridge/AudioBridge.o"
 	@echo "... bridge/AudioBridge.i"
 	@echo "... bridge/AudioBridge.s"

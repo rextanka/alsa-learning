@@ -994,6 +994,9 @@ CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o: /Users/nickthompson/src/cpp/
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdarg.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stddef.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdint.h \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/AdsrEnvelopeProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/EnvelopeProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/InputSource.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/PerformanceProfiler.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
@@ -2024,9 +2027,11 @@ CMakeFiles/audio_test.dir/main.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-lea
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceContext.hpp:
 
-/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp:
-
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/InputSource.hpp:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/EnvelopeProcessor.hpp:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp:
 
 /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdint.h:
 
@@ -3879,6 +3884,8 @@ CMakeFiles/audio_test.dir/main.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-lea
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/comp.h:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__type_traits/is_enum.h:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/AdsrEnvelopeProcessor.hpp:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/in_in_result.h:
 

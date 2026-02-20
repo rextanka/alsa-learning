@@ -58,7 +58,11 @@ else()
 endif()
 
 # Main executable (processor + oscillator tests)
-add_executable(audio_test main.cpp bridge/AudioBridge.cpp)
+add_executable(audio_test 
+    main.cpp 
+    bridge/AudioBridge.cpp
+    audio/Voice.cpp
+)
 
 # Link platform-specific libraries
 if(PLATFORM_LIBS)

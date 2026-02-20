@@ -6,5 +6,7 @@ CXX_DEFINES = -DAUDIO_ENABLE_PROFILING=1
 
 CXX_INCLUDES = -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks
 
-CXX_FLAGS = -std=c++20 -Wall -Wextra -Wpedantic
+CXX_FLAGSarm64 = -std=c++20 -arch arm64 -Wall -Wextra -Wpedantic
+
+CXX_FLAGS = -std=c++20 -arch arm64 -Wall -Wextra -Wpedantic
 
