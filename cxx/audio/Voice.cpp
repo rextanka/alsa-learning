@@ -4,6 +4,7 @@
  */
 
 #include "Voice.hpp"
+#include "filter/MoogLadderProcessor.hpp"
 #include <vector>
 
 namespace audio {
@@ -13,6 +14,13 @@ Voice::Voice(int sample_rate)
 {
     oscillator_ = std::make_unique<WavetableOscillatorProcessor>(static_cast<double>(sample_rate));
     envelope_ = std::make_unique<AdsrEnvelopeProcessor>(sample_rate);
+    // Default to Moog filter
+    filter_ = std::make_unique<MoogLadderProcessor>(sample_rate);
+    filter_->set_cutoff(20000.0f); // Default open
+}
+
+void Voice::set_filter_type(std::unique_ptr<FilterProcessor> filter) {
+    filter_ = std::move(filter);
 }
 
 void Voice::note_on(double frequency) {
@@ -31,20 +39,19 @@ bool Voice::is_active() const {
 void Voice::reset() {
     oscillator_->reset();
     envelope_->reset();
+    if (filter_) filter_->reset();
 }
 
 void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
-    // 1. Pull audio from the oscillator into the output span
+    // 1. OSCILLATOR -> output
     oscillator_->pull(output, context);
 
-    // 2. Multiply each sample by the envelope value
-    // We need to process the envelope sample-by-sample to apply it correctly to the buffer.
-    // However, AdsrEnvelopeProcessor also implements Processor, so we can pull from it.
-    
-    // Create a temporary buffer for envelope values
-    // Using a stack-based buffer if possible or a small vector.
-    // Given we are in do_pull, we should avoid large allocations.
-    
+    // 2. FILTER -> output
+    if (filter_) {
+        filter_->pull(output, context);
+    }
+
+    // 3. VCA (ADSR) -> output
     static thread_local std::vector<float> envelope_buffer;
     if (envelope_buffer.size() < output.size()) {
         envelope_buffer.resize(output.size());

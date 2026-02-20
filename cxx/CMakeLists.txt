@@ -72,10 +72,18 @@ add_executable(engine_tests
     audio/VoiceManager.cpp
 )
 
+# Filter Tests
+add_executable(filter_tests 
+    tests/FilterTests.cpp
+    audio/Voice.cpp
+    audio/VoiceManager.cpp
+)
+
 # HAL sources
 if(APPLE)
     target_sources(audio_test PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
     target_sources(engine_tests PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
+    target_sources(filter_tests PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
 elseif(UNIX AND NOT APPLE)
     # target_sources(audio_test PRIVATE hal/alsa/AlsaDriver.cpp)
 endif()
@@ -84,6 +92,7 @@ endif()
 if(PLATFORM_LIBS)
     target_link_libraries(audio_test ${PLATFORM_LIBS})
     target_link_libraries(engine_tests ${PLATFORM_LIBS})
+    target_link_libraries(filter_tests ${PLATFORM_LIBS})
 endif()
 
 # Compiler options

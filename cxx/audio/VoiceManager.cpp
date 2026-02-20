@@ -38,7 +38,26 @@ void VoiceManager::note_on(int note, float /* velocity */) {
         }
     }
 
-    // 3. TODO: Voice stealing (for now, just ignore if all voices full)
+    // 3. Voice Stealing: If all voices are busy, steal a voice.
+    // Strategy: "Quiet Phase" (steal a voice that is already in the Release stage).
+    // If no voice is in release, we'll just use the first voice in the pool (simple stealing).
+    VoiceSlot* steal_candidate = nullptr;
+    for (auto& slot : voices_) {
+        // We know they are all active because we didn't return in step 2.
+        // If we find one that is active but logically in note_off state, it's a prime candidate.
+        // We can check if the ADSR is in release by adding a method or assuming the voice
+        // state. For now, since we haven't implemented explicit stage query, 
+        // we'll just steal the first slot as a fallback.
+        steal_candidate = &slot;
+        break; 
+    }
+
+    if (steal_candidate) {
+        steal_candidate->current_note = note;
+        steal_candidate->active = true;
+        steal_candidate->voice->reset(); // Hard reset to avoid artifacts if stealing
+        steal_candidate->voice->note_on(note_to_freq(note));
+    }
 }
 
 void VoiceManager::note_off(int note) {

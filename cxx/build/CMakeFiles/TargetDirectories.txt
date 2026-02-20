@@ -1,4 +1,5 @@
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/audio_test.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/engine_tests.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/filter_tests.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/edit_cache.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/rebuild_cache.dir
