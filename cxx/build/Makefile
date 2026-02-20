@@ -169,6 +169,33 @@ audio/Voice.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/Voice.cpp.s
 .PHONY : audio/Voice.cpp.s
 
+audio/VoiceManager.o: audio/VoiceManager.cpp.o
+.PHONY : audio/VoiceManager.o
+
+# target to build an object file
+audio/VoiceManager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o
+.PHONY : audio/VoiceManager.cpp.o
+
+audio/VoiceManager.i: audio/VoiceManager.cpp.i
+.PHONY : audio/VoiceManager.i
+
+# target to preprocess a source file
+audio/VoiceManager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.i
+.PHONY : audio/VoiceManager.cpp.i
+
+audio/VoiceManager.s: audio/VoiceManager.cpp.s
+.PHONY : audio/VoiceManager.s
+
+# target to generate assembly for a file
+audio/VoiceManager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.s
+.PHONY : audio/VoiceManager.cpp.s
+
 bridge/AudioBridge.o: bridge/AudioBridge.cpp.o
 .PHONY : bridge/AudioBridge.o
 
@@ -281,6 +308,9 @@ help:
 	@echo "... audio/Voice.o"
 	@echo "... audio/Voice.i"
 	@echo "... audio/Voice.s"
+	@echo "... audio/VoiceManager.o"
+	@echo "... audio/VoiceManager.i"
+	@echo "... audio/VoiceManager.s"
 	@echo "... bridge/AudioBridge.o"
 	@echo "... bridge/AudioBridge.i"
 	@echo "... bridge/AudioBridge.s"
