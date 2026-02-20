@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/audio_test.dir/main.cpp.o CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o -o bin/audio_test  -framework CoreAudio -framework AudioToolbox

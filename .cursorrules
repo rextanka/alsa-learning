@@ -1,0 +1,29 @@
+# Project Rules & Architecture
+
+## Branching
+- Use `yyyymmdd-hhmm` for all new branches (e.g. `20260219-1430`).
+
+## Cross-Platform Scope
+- Support **Fedora Linux**, **macOS**, and future **Windows 11**.
+- Keep platform-specific code isolated so targets can be built independently.
+
+## Separation of Concerns
+- **Hardware / OS audio** (ALSA, CoreAudio, WASAPI) must be strictly separated from **core DSP** (oscillators, envelopes, filters, etc.).
+- Do not mix platform APIs with signal-processing logic. Use a thin abstraction layer so DSP stays portable.
+
+## Modern C++
+- Target **C++20/23** for all new code.
+- Prefer: `std::span`, `std::atomic`, smart pointers (`std::unique_ptr`, `std::shared_ptr`), and standard containers.
+- Avoid raw pointers and manual memory management in new code where possible.
+
+## Interoperability (C API Layer)
+- Expose core C++ logic through a **C-compatible API** so that:
+  - **macOS:** Swift can use it via Bridge / C interop.
+  - **Linux:** C++ GUI stacks (Qt, GTK, etc.) can link against it.
+  - **Windows:** .NET (C#) can use it via P/Invoke or C++/CLI.
+- Keep the C API minimal, stable, and free of C++ types in the public interface.
+
+## Build System
+- **Output directory:** All compiled binaries go under `bin/`.
+- Use **CMake** for cross-platform configuration and dependency management.
+- Do not rely on platform-specific paths or tools in the core build logic.
