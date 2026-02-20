@@ -177,6 +177,30 @@ bridge/AudioBridge.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.s
 .PHONY : bridge/AudioBridge.cpp.s
 
+hal/coreaudio/CoreAudioDriver.o: hal/coreaudio/CoreAudioDriver.cpp.o
+.PHONY : hal/coreaudio/CoreAudioDriver.o
+
+# target to build an object file
+hal/coreaudio/CoreAudioDriver.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o
+.PHONY : hal/coreaudio/CoreAudioDriver.cpp.o
+
+hal/coreaudio/CoreAudioDriver.i: hal/coreaudio/CoreAudioDriver.cpp.i
+.PHONY : hal/coreaudio/CoreAudioDriver.i
+
+# target to preprocess a source file
+hal/coreaudio/CoreAudioDriver.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.i
+.PHONY : hal/coreaudio/CoreAudioDriver.cpp.i
+
+hal/coreaudio/CoreAudioDriver.s: hal/coreaudio/CoreAudioDriver.cpp.s
+.PHONY : hal/coreaudio/CoreAudioDriver.s
+
+# target to generate assembly for a file
+hal/coreaudio/CoreAudioDriver.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.s
+.PHONY : hal/coreaudio/CoreAudioDriver.cpp.s
+
 main.o: main.cpp.o
 .PHONY : main.o
 
@@ -216,6 +240,9 @@ help:
 	@echo "... bridge/AudioBridge.o"
 	@echo "... bridge/AudioBridge.i"
 	@echo "... bridge/AudioBridge.s"
+	@echo "... hal/coreaudio/CoreAudioDriver.o"
+	@echo "... hal/coreaudio/CoreAudioDriver.i"
+	@echo "... hal/coreaudio/CoreAudioDriver.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

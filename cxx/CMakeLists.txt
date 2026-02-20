@@ -64,6 +64,13 @@ add_executable(audio_test
     audio/Voice.cpp
 )
 
+# HAL sources
+if(APPLE)
+    target_sources(audio_test PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
+elseif(UNIX AND NOT APPLE)
+    # target_sources(audio_test PRIVATE hal/alsa/AlsaDriver.cpp)
+endif()
+
 # Link platform-specific libraries
 if(PLATFORM_LIBS)
     target_link_libraries(audio_test ${PLATFORM_LIBS})

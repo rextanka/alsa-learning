@@ -18,7 +18,14 @@
 #include "audio/VoiceContext.hpp"
 #include "audio/oscillator/SineOscillatorProcessor.hpp"
 #include "audio/oscillator/WavetableOscillatorProcessor.hpp"
+#include "audio/Voice.hpp"
 #include "bridge/CInterface.h"
+
+#ifdef __APPLE__
+#include "hal/coreaudio/CoreAudioDriver.hpp"
+#endif
+
+#include <thread>
 
 using namespace audio;
 
@@ -311,7 +318,47 @@ int main() {
     ok = run_new_wavetable_oscillator_test() && ok;
     ok = run_wavetable_glide_test() && ok;
     
-    std::cout << "\n=== Result ===" << std::endl;
+    std::cout << "\n=== Real-time Audio Test ===" << std::endl;
+#ifdef __APPLE__
+    std::cout << "Starting CoreAudio..." << std::endl;
+    
+    const int sample_rate = 44100;
+    auto driver = std::make_unique<hal::CoreAudioDriver>(sample_rate, 512);
+    auto voice = std::make_unique<audio::Voice>(sample_rate);
+    
+    // Set ADSR: slow attack (1s), short decay (0.2s), mid sustain (0.5), long release (1s)
+    voice->envelope().set_attack_time(1.0f);
+    voice->envelope().set_decay_time(0.2f);
+    voice->envelope().set_sustain_level(0.5f);
+    voice->envelope().set_release_time(1.0f);
+    
+    driver->set_callback([&voice](std::span<float> output) {
+        voice->pull(output);
+    });
+    
+    if (driver->start()) {
+        std::cout << "Playing A4 (440Hz)..." << std::endl;
+        voice->note_on(440.0);
+        
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        
+        std::cout << "Releasing note..." << std::endl;
+        voice->note_off();
+        
+        // Wait for release to finish
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        
+        driver->stop();
+        std::cout << "CoreAudio stopped." << std::endl;
+    } else {
+        std::cerr << "Failed to start CoreAudio driver" << std::endl;
+        ok = false;
+    }
+#else
+    std::cout << "Real-time audio test not implemented for this platform yet." << std::endl;
+#endif
+
+    std::cout << "\n=== Final Result ===" << std::endl;
     std::cout << (ok ? "✓ All tests passed!" : "✗ Some tests failed.") << std::endl;
     return ok ? 0 : 1;
 }

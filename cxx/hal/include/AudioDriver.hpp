@@ -11,6 +11,9 @@
 #ifndef AUDIO_DRIVER_HPP
 #define AUDIO_DRIVER_HPP
 
+#include <functional>
+#include <span>
+
 namespace hal {
 
 /**
@@ -21,10 +24,48 @@ namespace hal {
  */
 class AudioDriver {
 public:
+    /**
+     * @brief Callback function type for audio processing.
+     * 
+     * The callback is responsible for filling the output buffer with audio data.
+     * @param output The buffer to fill with audio samples (interleaved or mono).
+     */
+    using AudioCallback = std::function<void(std::span<float> output)>;
+
     virtual ~AudioDriver() = default;
 
-    // TODO: Define pure virtual methods for audio device operations
-    // (open, close, write, read, etc.)
+    /**
+     * @brief Start the audio driver.
+     * 
+     * @return true if successfully started, false otherwise.
+     */
+    virtual bool start() = 0;
+
+    /**
+     * @brief Stop the audio driver.
+     */
+    virtual void stop() = 0;
+
+    /**
+     * @brief Set the processing callback.
+     * 
+     * @param callback The function to call when the hardware needs more data.
+     */
+    virtual void set_callback(AudioCallback callback) = 0;
+
+    /**
+     * @brief Get the current sample rate.
+     * 
+     * @return int Sample rate in Hz.
+     */
+    virtual int sample_rate() const = 0;
+
+    /**
+     * @brief Get the current block size (buffer size).
+     * 
+     * @return int Number of frames per block.
+     */
+    virtual int block_size() const = 0;
 };
 
 } // namespace hal
