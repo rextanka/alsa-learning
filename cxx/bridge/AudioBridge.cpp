@@ -16,6 +16,7 @@
 #include "../audio/oscillator/TriangleOscillatorProcessor.hpp"
 #include "../audio/oscillator/WavetableOscillatorProcessor.hpp"
 #include "../audio/envelope/AdsrEnvelopeProcessor.hpp"
+#include "../audio/VoiceManager.hpp"
 #include <memory>
 #include <span>
 
@@ -37,6 +38,18 @@ struct EnvelopeHandleImpl {
 
     EnvelopeHandleImpl(std::unique_ptr<audio::EnvelopeProcessor> proc, int sr)
         : processor(std::move(proc))
+        , sample_rate(sr)
+    {
+    }
+};
+
+// Internal bridge handle for the entire engine state
+struct EngineHandleImpl {
+    std::unique_ptr<audio::VoiceManager> voice_manager;
+    int sample_rate;
+
+    EngineHandleImpl(int sr)
+        : voice_manager(std::make_unique<audio::VoiceManager>(sr))
         , sample_rate(sr)
     {
     }
@@ -338,6 +351,44 @@ int envelope_is_active(EnvelopeHandle handle) {
         return impl->processor->is_active() ? 1 : 0;
     } catch (...) {
         return 0;
+    }
+}
+
+EngineHandle engine_create(unsigned int sample_rate) {
+    try {
+        return static_cast<EngineHandle>(new EngineHandleImpl(sample_rate));
+    } catch (...) {
+        return nullptr;
+    }
+}
+
+void engine_destroy(EngineHandle handle) {
+    if (handle) {
+        delete static_cast<EngineHandleImpl*>(handle);
+    }
+}
+
+void engine_note_on(EngineHandle handle, int note, float velocity) {
+    if (!handle) return;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->voice_manager->note_on(note, velocity);
+}
+
+void engine_note_off(EngineHandle handle, int note) {
+    if (!handle) return;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->voice_manager->note_off(note);
+}
+
+int engine_process(EngineHandle handle, float* output, size_t frames) {
+    if (!handle || !output || frames == 0) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    try {
+        std::span<float> output_span(output, frames);
+        impl->voice_manager->pull(output_span);
+        return 0;
+    } catch (...) {
+        return -1;
     }
 }
 

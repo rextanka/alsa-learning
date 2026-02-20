@@ -61,6 +61,14 @@ enum WaveType {
 // Set wave type for wavetable oscillator (only works if handle is a WavetableOscillator)
 int set_osc_wavetype(void* instance, int type);
 
+// VoiceManager API
+typedef void* EngineHandle;
+EngineHandle engine_create(unsigned int sample_rate);
+void engine_destroy(EngineHandle handle);
+void engine_note_on(EngineHandle handle, int note, float velocity);
+void engine_note_off(EngineHandle handle, int note);
+int engine_process(EngineHandle handle, float* output, size_t frames);
+
 // Envelope type enum
 enum EnvelopeType {
     ENV_ADSR = 0

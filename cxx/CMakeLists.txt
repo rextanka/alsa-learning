@@ -62,12 +62,14 @@ add_executable(audio_test
     main.cpp 
     bridge/AudioBridge.cpp
     audio/Voice.cpp
+    audio/VoiceManager.cpp
 )
 
 # Audible Engine Tests
 add_executable(engine_tests 
     tests/EngineTests.cpp
     audio/Voice.cpp
+    audio/VoiceManager.cpp
 )
 
 # HAL sources
