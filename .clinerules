@@ -1,9 +1,12 @@
 # Git Workflow Rules
+- Return to Base: Before starting any new task or branch, you MUST `git checkout main` and `git pull origin main`. All new branches must originate from a clean and updated `main`.
 - ALWAYS check the current branch with `git branch --show-current` before committing.
 - NEVER push directly to `main`.
 - ALWAYS create a new branch for each exercise using the format `yyyymmddhhmm` (e.g., 202602201415).
 - ALWAYS use the remote alias `origin` (e.g., `git push -u origin <branch_name>`).
 - If a command fails because a branch or remote doesn't exist, use `git remote -v` to verify the setup before retrying.
+- Post-Push Reminder: After successfully pushing a new branch to GitHub, you MUST explicitly remind me to: 'Please go to GitHub to create the PR and perform a squash merge. Once merged, let me know so I can sync main for the next task.'
+- Branch Deletion: Remind me to delete the remote branch after the squash merge is complete to keep the repo clean.
 
 # Commit Standards
 - Use Conventional Commits (e.g., `feat:`, `refactor:`, `fix:`, `chore:`).
