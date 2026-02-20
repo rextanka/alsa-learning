@@ -14,6 +14,7 @@
 #include "Processor.hpp"
 #include "oscillator/WavetableOscillatorProcessor.hpp"
 #include "envelope/AdsrEnvelopeProcessor.hpp"
+#include "filter/FilterProcessor.hpp"
 #include <memory>
 
 namespace audio {
@@ -66,6 +67,16 @@ public:
      */
     AdsrEnvelopeProcessor& envelope() { return *envelope_; }
 
+    /**
+     * @brief Access the filter processor.
+     */
+    FilterProcessor* filter() { return filter_.get(); }
+
+    /**
+     * @brief Set the filter type.
+     */
+    void set_filter_type(std::unique_ptr<FilterProcessor> filter);
+
 protected:
     /**
      * @brief Implementation of the pull-based processing logic.
@@ -78,6 +89,7 @@ protected:
 private:
     std::unique_ptr<WavetableOscillatorProcessor> oscillator_;
     std::unique_ptr<AdsrEnvelopeProcessor> envelope_;
+    std::unique_ptr<FilterProcessor> filter_;
     int sample_rate_;
 };
 

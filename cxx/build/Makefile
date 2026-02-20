@@ -142,6 +142,19 @@ engine_tests/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/build
 .PHONY : engine_tests/fast
 
+#=============================================================================
+# Target rules for targets named filter_tests
+
+# Build rule for target.
+filter_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 filter_tests
+.PHONY : filter_tests
+
+# fast build rule for target.
+filter_tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/build
+.PHONY : filter_tests/fast
+
 audio/Voice.o: audio/Voice.cpp.o
 .PHONY : audio/Voice.o
 
@@ -149,6 +162,7 @@ audio/Voice.o: audio/Voice.cpp.o
 audio/Voice.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/Voice.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/Voice.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/Voice.cpp.o
 .PHONY : audio/Voice.cpp.o
 
 audio/Voice.i: audio/Voice.cpp.i
@@ -158,6 +172,7 @@ audio/Voice.i: audio/Voice.cpp.i
 audio/Voice.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/Voice.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/Voice.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/Voice.cpp.i
 .PHONY : audio/Voice.cpp.i
 
 audio/Voice.s: audio/Voice.cpp.s
@@ -167,6 +182,7 @@ audio/Voice.s: audio/Voice.cpp.s
 audio/Voice.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/Voice.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/Voice.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/Voice.cpp.s
 .PHONY : audio/Voice.cpp.s
 
 audio/VoiceManager.o: audio/VoiceManager.cpp.o
@@ -176,6 +192,7 @@ audio/VoiceManager.o: audio/VoiceManager.cpp.o
 audio/VoiceManager.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.o
 .PHONY : audio/VoiceManager.cpp.o
 
 audio/VoiceManager.i: audio/VoiceManager.cpp.i
@@ -185,6 +202,7 @@ audio/VoiceManager.i: audio/VoiceManager.cpp.i
 audio/VoiceManager.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.i
 .PHONY : audio/VoiceManager.cpp.i
 
 audio/VoiceManager.s: audio/VoiceManager.cpp.s
@@ -194,6 +212,7 @@ audio/VoiceManager.s: audio/VoiceManager.cpp.s
 audio/VoiceManager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.s
 .PHONY : audio/VoiceManager.cpp.s
 
 bridge/AudioBridge.o: bridge/AudioBridge.cpp.o
@@ -227,6 +246,7 @@ hal/coreaudio/CoreAudioDriver.o: hal/coreaudio/CoreAudioDriver.cpp.o
 hal/coreaudio/CoreAudioDriver.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o
 .PHONY : hal/coreaudio/CoreAudioDriver.cpp.o
 
 hal/coreaudio/CoreAudioDriver.i: hal/coreaudio/CoreAudioDriver.cpp.i
@@ -236,6 +256,7 @@ hal/coreaudio/CoreAudioDriver.i: hal/coreaudio/CoreAudioDriver.cpp.i
 hal/coreaudio/CoreAudioDriver.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.i
 .PHONY : hal/coreaudio/CoreAudioDriver.cpp.i
 
 hal/coreaudio/CoreAudioDriver.s: hal/coreaudio/CoreAudioDriver.cpp.s
@@ -245,6 +266,7 @@ hal/coreaudio/CoreAudioDriver.s: hal/coreaudio/CoreAudioDriver.cpp.s
 hal/coreaudio/CoreAudioDriver.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.s
 .PHONY : hal/coreaudio/CoreAudioDriver.cpp.s
 
 main.o: main.cpp.o
@@ -295,6 +317,30 @@ tests/EngineTests.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.s
 .PHONY : tests/EngineTests.cpp.s
 
+tests/FilterTests.o: tests/FilterTests.cpp.o
+.PHONY : tests/FilterTests.o
+
+# target to build an object file
+tests/FilterTests.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o
+.PHONY : tests/FilterTests.cpp.o
+
+tests/FilterTests.i: tests/FilterTests.cpp.i
+.PHONY : tests/FilterTests.i
+
+# target to preprocess a source file
+tests/FilterTests.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.i
+.PHONY : tests/FilterTests.cpp.i
+
+tests/FilterTests.s: tests/FilterTests.cpp.s
+.PHONY : tests/FilterTests.s
+
+# target to generate assembly for a file
+tests/FilterTests.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.s
+.PHONY : tests/FilterTests.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -305,6 +351,7 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... audio_test"
 	@echo "... engine_tests"
+	@echo "... filter_tests"
 	@echo "... audio/Voice.o"
 	@echo "... audio/Voice.i"
 	@echo "... audio/Voice.s"
@@ -323,6 +370,9 @@ help:
 	@echo "... tests/EngineTests.o"
 	@echo "... tests/EngineTests.i"
 	@echo "... tests/EngineTests.s"
+	@echo "... tests/FilterTests.o"
+	@echo "... tests/FilterTests.i"
+	@echo "... tests/FilterTests.s"
 .PHONY : help
 
 
