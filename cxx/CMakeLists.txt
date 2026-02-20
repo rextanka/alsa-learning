@@ -64,9 +64,16 @@ add_executable(audio_test
     audio/Voice.cpp
 )
 
+# Audible Engine Tests
+add_executable(engine_tests 
+    tests/EngineTests.cpp
+    audio/Voice.cpp
+)
+
 # HAL sources
 if(APPLE)
     target_sources(audio_test PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
+    target_sources(engine_tests PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
 elseif(UNIX AND NOT APPLE)
     # target_sources(audio_test PRIVATE hal/alsa/AlsaDriver.cpp)
 endif()
@@ -74,6 +81,7 @@ endif()
 # Link platform-specific libraries
 if(PLATFORM_LIBS)
     target_link_libraries(audio_test ${PLATFORM_LIBS})
+    target_link_libraries(engine_tests ${PLATFORM_LIBS})
 endif()
 
 # Compiler options

@@ -129,12 +129,26 @@ audio_test/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/build
 .PHONY : audio_test/fast
 
+#=============================================================================
+# Target rules for targets named engine_tests
+
+# Build rule for target.
+engine_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 engine_tests
+.PHONY : engine_tests
+
+# fast build rule for target.
+engine_tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/build
+.PHONY : engine_tests/fast
+
 audio/Voice.o: audio/Voice.cpp.o
 .PHONY : audio/Voice.o
 
 # target to build an object file
 audio/Voice.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/Voice.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/Voice.cpp.o
 .PHONY : audio/Voice.cpp.o
 
 audio/Voice.i: audio/Voice.cpp.i
@@ -143,6 +157,7 @@ audio/Voice.i: audio/Voice.cpp.i
 # target to preprocess a source file
 audio/Voice.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/Voice.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/Voice.cpp.i
 .PHONY : audio/Voice.cpp.i
 
 audio/Voice.s: audio/Voice.cpp.s
@@ -151,6 +166,7 @@ audio/Voice.s: audio/Voice.cpp.s
 # target to generate assembly for a file
 audio/Voice.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/Voice.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/Voice.cpp.s
 .PHONY : audio/Voice.cpp.s
 
 bridge/AudioBridge.o: bridge/AudioBridge.cpp.o
@@ -183,6 +199,7 @@ hal/coreaudio/CoreAudioDriver.o: hal/coreaudio/CoreAudioDriver.cpp.o
 # target to build an object file
 hal/coreaudio/CoreAudioDriver.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o
 .PHONY : hal/coreaudio/CoreAudioDriver.cpp.o
 
 hal/coreaudio/CoreAudioDriver.i: hal/coreaudio/CoreAudioDriver.cpp.i
@@ -191,6 +208,7 @@ hal/coreaudio/CoreAudioDriver.i: hal/coreaudio/CoreAudioDriver.cpp.i
 # target to preprocess a source file
 hal/coreaudio/CoreAudioDriver.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.i
 .PHONY : hal/coreaudio/CoreAudioDriver.cpp.i
 
 hal/coreaudio/CoreAudioDriver.s: hal/coreaudio/CoreAudioDriver.cpp.s
@@ -199,6 +217,7 @@ hal/coreaudio/CoreAudioDriver.s: hal/coreaudio/CoreAudioDriver.cpp.s
 # target to generate assembly for a file
 hal/coreaudio/CoreAudioDriver.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.s
 .PHONY : hal/coreaudio/CoreAudioDriver.cpp.s
 
 main.o: main.cpp.o
@@ -225,6 +244,30 @@ main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/main.cpp.s
 .PHONY : main.cpp.s
 
+tests/EngineTests.o: tests/EngineTests.cpp.o
+.PHONY : tests/EngineTests.o
+
+# target to build an object file
+tests/EngineTests.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o
+.PHONY : tests/EngineTests.cpp.o
+
+tests/EngineTests.i: tests/EngineTests.cpp.i
+.PHONY : tests/EngineTests.i
+
+# target to preprocess a source file
+tests/EngineTests.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.i
+.PHONY : tests/EngineTests.cpp.i
+
+tests/EngineTests.s: tests/EngineTests.cpp.s
+.PHONY : tests/EngineTests.s
+
+# target to generate assembly for a file
+tests/EngineTests.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.s
+.PHONY : tests/EngineTests.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -234,6 +277,7 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... audio_test"
+	@echo "... engine_tests"
 	@echo "... audio/Voice.o"
 	@echo "... audio/Voice.i"
 	@echo "... audio/Voice.s"
@@ -246,6 +290,9 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... tests/EngineTests.o"
+	@echo "... tests/EngineTests.i"
+	@echo "... tests/EngineTests.s"
 .PHONY : help
 
 
