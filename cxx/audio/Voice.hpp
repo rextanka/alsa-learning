@@ -15,6 +15,7 @@
 #include "oscillator/WavetableOscillatorProcessor.hpp"
 #include "envelope/AdsrEnvelopeProcessor.hpp"
 #include "filter/FilterProcessor.hpp"
+#include "AudioGraph.hpp"
 #include <memory>
 
 namespace audio {
@@ -87,9 +88,12 @@ protected:
     void do_pull(std::span<float> output, const VoiceContext* context = nullptr) override;
 
 private:
+    void rebuild_graph();
+
     std::unique_ptr<WavetableOscillatorProcessor> oscillator_;
     std::unique_ptr<AdsrEnvelopeProcessor> envelope_;
     std::unique_ptr<FilterProcessor> filter_;
+    std::unique_ptr<AudioGraph> graph_;
     int sample_rate_;
 };
 

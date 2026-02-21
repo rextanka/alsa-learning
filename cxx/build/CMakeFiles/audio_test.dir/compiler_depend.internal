@@ -1004,6 +1004,9 @@ CMakeFiles/audio_test.dir/audio/Voice.cpp.o
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/AdsrEnvelopeProcessor.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/EnvelopeProcessor.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp
+ /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/FilterProcessor.hpp
+ /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/MoogLadderProcessor.hpp
+ /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceContext.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/oscillator/WavetableOscillatorProcessor.hpp
 
@@ -2011,6 +2014,8 @@ CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.o
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/AdsrEnvelopeProcessor.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/EnvelopeProcessor.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp
+ /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/FilterProcessor.hpp
+ /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceContext.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/oscillator/WavetableOscillatorProcessor.hpp
 
@@ -3014,6 +3019,8 @@ CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/AdsrEnvelopeProcessor.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/EnvelopeProcessor.hpp
+ /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp
+ /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/FilterProcessor.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/InputSource.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/PerformanceProfiler.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp
@@ -5314,6 +5321,8 @@ CMakeFiles/audio_test.dir/main.cpp.o
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/AdsrEnvelopeProcessor.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/EnvelopeProcessor.hpp
+ /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp
+ /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/FilterProcessor.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceContext.hpp
  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/oscillator/OscillatorProcessor.hpp

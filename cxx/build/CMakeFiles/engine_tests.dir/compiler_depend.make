@@ -1003,6 +1003,9 @@ CMakeFiles/engine_tests.dir/audio/Voice.cpp.o: /Users/nickthompson/src/cpp/audio
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/AdsrEnvelopeProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/EnvelopeProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/FilterProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/MoogLadderProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceContext.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/oscillator/WavetableOscillatorProcessor.hpp
 
@@ -2008,6 +2011,8 @@ CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o: /Users/nickthompson/src/cp
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/AdsrEnvelopeProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/EnvelopeProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/FilterProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceContext.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/oscillator/WavetableOscillatorProcessor.hpp
@@ -4299,6 +4304,8 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /Users/nickthompson/src/cpp
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/AdsrEnvelopeProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/EnvelopeProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/FilterProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceContext.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/oscillator/WavetableOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/include/AudioDriver.hpp \
@@ -4477,6 +4484,8 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /Users/nickthompson/src/cpp
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/oscillator/WavetableOscillatorProcessor.hpp:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/MoogLadderProcessor.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/EnvelopeProcessor.hpp:
 
@@ -6275,6 +6284,8 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /Users/nickthompson/src/cpp
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__concepts/semiregular.h:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/push_heap.h:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/FilterProcessor.hpp:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__math/abs.h:
 
