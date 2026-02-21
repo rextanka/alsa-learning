@@ -173,6 +173,31 @@ protected:
         }
     }
 
+    void do_pull(AudioBuffer& output, const VoiceContext* voice_context = nullptr) override {
+        for (size_t i = 0; i < output.frames(); ++i) {
+            update_frequency_ramp();
+            
+            const double index = phase_;
+            const int i0 = static_cast<int>(index) % table_size_;
+            const int i1 = (i0 + 1) % table_size_;
+            const double fraction = index - std::floor(index);
+            
+            const double a = table_[static_cast<size_t>(i0)];
+            const double b = table_[static_cast<size_t>(i1)];
+            float sample = static_cast<float>(a + fraction * (b - a));
+            
+            output.left[i] = sample;
+            output.right[i] = sample;
+
+            phase_ += phase_increment_;
+            if (phase_ >= static_cast<double>(table_size_)) {
+                phase_ -= static_cast<double>(table_size_);
+            } else if (phase_ < 0.0) {
+                phase_ += static_cast<double>(table_size_);
+            }
+        }
+    }
+
 private:
     void update_frequency_ramp() {
         if (transitioning_) {

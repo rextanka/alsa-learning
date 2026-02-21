@@ -132,7 +132,7 @@ protected:
     virtual void update_rotation_steps() {}
 
     /**
-     * @brief Pull Model: Generate block of samples.
+     * @brief Pull Model: Generate block of samples (Mono).
      * 
      * Oscillators are source nodes - they generate directly without inputs.
      */
@@ -140,6 +140,18 @@ protected:
         for (auto& sample : output) {
             update_frequency_ramp();
             sample = static_cast<float>(generate_sample());
+        }
+    }
+
+    /**
+     * @brief Pull Model: Generate block of samples (Stereo).
+     */
+    void do_pull(AudioBuffer& output, const VoiceContext* voice_context = nullptr) override {
+        for (size_t i = 0; i < output.frames(); ++i) {
+            update_frequency_ramp();
+            float sample = static_cast<float>(generate_sample());
+            output.left[i] = sample;
+            output.right[i] = sample;
         }
     }
 };

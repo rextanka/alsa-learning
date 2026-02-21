@@ -19,8 +19,7 @@ AlsaDriver::AlsaDriver(int sample_rate, int block_size, int num_channels, const 
     , num_channels_(num_channels)
     , running_(false)
 {
-    float_buffer_.resize(block_size_);
-    // s16_buffer will be resized after PCM setup reveals actual channel count
+    // Buffers will be resized after PCM setup
 }
 
 AlsaDriver::~AlsaDriver() {
@@ -29,6 +28,10 @@ AlsaDriver::~AlsaDriver() {
 
 void AlsaDriver::set_callback(AudioCallback callback) {
     callback_ = callback;
+}
+
+void AlsaDriver::set_stereo_callback(StereoAudioCallback callback) {
+    stereo_callback_ = callback;
 }
 
 bool AlsaDriver::start() {
@@ -80,9 +83,13 @@ bool AlsaDriver::setup_pcm() {
         return false;
     }
 
-    if ((err = snd_pcm_hw_params_set_format(pcm_handle_, hw_params, SND_PCM_FORMAT_S16_LE)) < 0) {
-        std::cerr << "ALSA: Cannot set sample format (" << snd_strerror(err) << ")" << std::endl;
-        return false;
+    // Use S32_LE for high resolution on modern hardware (e.g., Razer laptop)
+    if ((err = snd_pcm_hw_params_set_format(pcm_handle_, hw_params, SND_PCM_FORMAT_S32_LE)) < 0) {
+        std::cerr << "ALSA: Cannot set S32_LE, falling back to S16_LE" << std::endl;
+        if ((err = snd_pcm_hw_params_set_format(pcm_handle_, hw_params, SND_PCM_FORMAT_S16_LE)) < 0) {
+            std::cerr << "ALSA: Cannot set sample format (" << snd_strerror(err) << ")" << std::endl;
+            return false;
+        }
     }
 
     unsigned int rate = sample_rate_;
@@ -106,7 +113,6 @@ bool AlsaDriver::setup_pcm() {
     }
     block_size_ = static_cast<int>(frames);
 
-    // Aim for 4 periods for stability
     unsigned int periods = 4;
     snd_pcm_hw_params_set_periods_near(pcm_handle_, hw_params, &periods, 0);
 
@@ -117,9 +123,16 @@ bool AlsaDriver::setup_pcm() {
 
     snd_pcm_hw_params_free(hw_params);
 
-    // Finalize internal buffers
-    float_buffer_.assign(block_size_, 0.0f);
-    s16_buffer_.assign(block_size_ * num_channels_, 0);
+    // Resize internal buffers
+    left_buffer_.assign(block_size_, 0.0f);
+    right_buffer_.assign(block_size_, 0.0f);
+    
+    // Determine byte size per frame for interleaved buffer
+    snd_pcm_format_t format;
+    snd_pcm_hw_params_get_format(hw_params, &format); // This might not work after free, but we know the formats.
+    // Re-query format if needed, but we'll assume the one we set.
+
+    interleaved_buffer_.assign(block_size_ * num_channels_ * 4, 0); // Use 4 bytes per sample (S32)
 
     if ((err = snd_pcm_prepare(pcm_handle_)) < 0) {
         std::cerr << "ALSA: Cannot prepare audio interface for use (" << snd_strerror(err) << ")" << std::endl;
@@ -131,21 +144,31 @@ bool AlsaDriver::setup_pcm() {
 
 void AlsaDriver::thread_loop() {
     while (running_) {
-        if (callback_) {
-            callback_(std::span<float>(float_buffer_));
+        if (stereo_callback_ || callback_) {
+            audio::AudioBuffer buffer;
+            buffer.left = std::span<float>(left_buffer_);
+            buffer.right = std::span<float>(right_buffer_);
 
-            // Interleave and Convert float to S16_LE
-            // Since the graph is mono, we duplicate to all hardware channels
-            for (size_t i = 0; i < float_buffer_.size(); ++i) {
-                float sample = std::clamp(float_buffer_[i], -1.0f, 1.0f);
-                int16_t s16_sample = static_cast<int16_t>(sample * 32767.0f);
+            if (stereo_callback_) {
+                stereo_callback_(buffer);
+            } else {
+                callback_(buffer.left);
+                std::copy(buffer.left.begin(), buffer.left.end(), buffer.right.begin());
+            }
+
+            // Interleave and Convert to S32_LE (High Res)
+            int32_t* s32_ptr = reinterpret_cast<int32_t*>(interleaved_buffer_.data());
+            for (size_t i = 0; i < left_buffer_.size(); ++i) {
+                float left = std::clamp(left_buffer_[i], -1.0f, 1.0f);
+                float right = std::clamp(right_buffer_[i], -1.0f, 1.0f);
                 
-                for (int ch = 0; ch < num_channels_; ++ch) {
-                    s16_buffer_[i * num_channels_ + ch] = s16_sample;
+                s32_ptr[i * num_channels_ + 0] = static_cast<int32_t>(left * 2147483647.0f);
+                if (num_channels_ > 1) {
+                    s32_ptr[i * num_channels_ + 1] = static_cast<int32_t>(right * 2147483647.0f);
                 }
             }
 
-            int err = snd_pcm_writei(pcm_handle_, s16_buffer_.data(), block_size_);
+            int err = snd_pcm_writei(pcm_handle_, interleaved_buffer_.data(), block_size_);
             if (err < 0) {
                 recover_pcm(err);
             }
@@ -157,7 +180,6 @@ void AlsaDriver::thread_loop() {
 
 void AlsaDriver::recover_pcm(int err) {
     if (err == -EPIPE) {
-        // Underrun
         snd_pcm_prepare(pcm_handle_);
     } else if (err == -ESTRPIPE) {
         while ((err = snd_pcm_resume(pcm_handle_)) == -EAGAIN)

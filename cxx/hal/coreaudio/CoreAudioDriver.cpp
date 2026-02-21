@@ -14,7 +14,8 @@ CoreAudioDriver::CoreAudioDriver(int sample_rate, int block_size)
     , block_size_(block_size)
     , running_(false)
 {
-    mono_buffer_.resize(static_cast<size_t>(block_size_));
+    left_buffer_.resize(static_cast<size_t>(block_size_));
+    right_buffer_.resize(static_cast<size_t>(block_size_));
 
     // 1. Describe the audio unit
     AudioComponentDescription desc;
@@ -120,6 +121,10 @@ void CoreAudioDriver::set_callback(AudioCallback callback) {
     callback_ = callback;
 }
 
+void CoreAudioDriver::set_stereo_callback(StereoAudioCallback callback) {
+    stereo_callback_ = callback;
+}
+
 OSStatus CoreAudioDriver::render_callback(
     void* inRefCon,
     AudioUnitRenderActionFlags* /* ioActionFlags */,
@@ -130,30 +135,30 @@ OSStatus CoreAudioDriver::render_callback(
 {
     auto* driver = static_cast<CoreAudioDriver*>(inRefCon);
 
-    if (driver->callback_) {
-        // CoreAudio usually requests the number of frames we initialized with,
-        // but it can vary. Ensure our mono buffer is large enough.
-        if (driver->mono_buffer_.size() < inNumberFrames) {
-            driver->mono_buffer_.resize(inNumberFrames);
+    if (driver->stereo_callback_ || driver->callback_) {
+        if (driver->left_buffer_.size() < inNumberFrames) {
+            driver->left_buffer_.resize(inNumberFrames);
+            driver->right_buffer_.resize(inNumberFrames);
         }
 
-        std::span<float> output_span(driver->mono_buffer_.data(), inNumberFrames);
+        audio::AudioBuffer buffer;
+        buffer.left = std::span<float>(driver->left_buffer_.data(), inNumberFrames);
+        buffer.right = std::span<float>(driver->right_buffer_.data(), inNumberFrames);
         
-        // Call the engine to fill the mono buffer
-        driver->callback_(output_span);
+        if (driver->stereo_callback_) {
+            driver->stereo_callback_(buffer);
+        } else {
+            driver->callback_(buffer.left);
+            std::copy(buffer.left.begin(), buffer.left.end(), buffer.right.begin());
+        }
 
-        // Copy mono buffer to CoreAudio's stereo buffers (Non-Interleaved)
-        // Bus 0: Left, Bus 1: Right (if configured as non-interleaved)
-        // Actually, for kAudioFormatFlagIsNonInterleaved, ioData->mNumberBuffers will be 2.
-        
-        float* left = static_cast<float*>(ioData->mBuffers[0].mData);
-        float* right = ioData->mNumberBuffers > 1 ? static_cast<float*>(ioData->mBuffers[1].mData) : nullptr;
+        float* out_l = static_cast<float*>(ioData->mBuffers[0].mData);
+        float* out_r = ioData->mNumberBuffers > 1 ? static_cast<float*>(ioData->mBuffers[1].mData) : nullptr;
 
         for (UInt32 i = 0; i < inNumberFrames; ++i) {
-            float sample = output_span[i];
-            left[i] = sample;
-            if (right) {
-                right[i] = sample;
+            out_l[i] = buffer.left[i];
+            if (out_r) {
+                out_r[i] = buffer.right[i];
             }
         }
     } else {

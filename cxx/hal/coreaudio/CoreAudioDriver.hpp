@@ -24,6 +24,7 @@ public:
     bool start() override;
     void stop() override;
     void set_callback(AudioCallback callback) override;
+    void set_stereo_callback(StereoAudioCallback callback) override;
     int sample_rate() const override { return sample_rate_; }
     int block_size() const override { return block_size_; }
 
@@ -40,10 +41,12 @@ private:
     int sample_rate_;
     int block_size_;
     AudioCallback callback_;
+    StereoAudioCallback stereo_callback_;
     std::atomic<bool> running_;
     
     // Internal buffer for mono processing if needed
-    std::vector<float> mono_buffer_;
+    std::vector<float> left_buffer_;
+    std::vector<float> right_buffer_;
 };
 
 } // namespace hal

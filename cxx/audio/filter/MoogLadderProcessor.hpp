@@ -49,26 +49,36 @@ public:
 protected:
     void do_pull(std::span<float> output, const VoiceContext* /* voice_context */ = nullptr) override {
         for (auto& sample : output) {
-            // MOOG LADDER ALGORITHM (Simplified model)
-            // Feedback loop: k * tanh(input - 4 * res * last_output)
-            
-            float input = sample;
-            float feedback = stage_[3] * res_ * 4.0f;
-            
-            // Saturation in feedback
-            input -= std::tanh(feedback);
-            
-            // 4 Stages of 1-pole filters
-            stage_[0] += g_ * (input - stage_[0]);
-            stage_[1] += g_ * (stage_[0] - stage_[1]);
-            stage_[2] += g_ * (stage_[1] - stage_[2]);
-            stage_[3] += g_ * (stage_[2] - stage_[3]);
-            
-            sample = stage_[3];
+            process_sample(sample);
+        }
+    }
+
+    void do_pull(AudioBuffer& output, const VoiceContext* /* voice_context */ = nullptr) override {
+        for (size_t i = 0; i < output.frames(); ++i) {
+            // Process L and R through the same filter state (dual-mono for now)
+            // Note: For true stereo, we would need two sets of filter stages.
+            // But let's follow the dual-mono instruction first.
+            float combined = (output.left[i] + output.right[i]) * 0.5f;
+            process_sample(combined);
+            output.left[i] = combined;
+            output.right[i] = combined;
         }
     }
 
 private:
+    inline void process_sample(float& sample) {
+        float input = sample;
+        float feedback = stage_[3] * res_ * 4.0f;
+        input -= std::tanh(feedback);
+        
+        stage_[0] += g_ * (input - stage_[0]);
+        stage_[1] += g_ * (stage_[0] - stage_[1]);
+        stage_[2] += g_ * (stage_[1] - stage_[2]);
+        stage_[3] += g_ * (stage_[2] - stage_[3]);
+        
+        sample = stage_[3];
+    }
+
     void update_coefficients() {
         // Simple linear mapping for g (approximation)
         // w = 2 * PI * fc / fs

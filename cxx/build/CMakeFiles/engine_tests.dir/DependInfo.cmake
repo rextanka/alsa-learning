@@ -8,11 +8,10 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/nickt/src/alsa/alsa-learning/cxx/audio/Voice.cpp" "CMakeFiles/engine_tests.dir/audio/Voice.cpp.o" "gcc" "CMakeFiles/engine_tests.dir/audio/Voice.cpp.o.d"
-  "/home/nickt/src/alsa/alsa-learning/cxx/audio/VoiceManager.cpp" "CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o" "gcc" "CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o.d"
-  "/home/nickt/src/alsa/alsa-learning/cxx/hal/alsa/AlsaDriver.cpp" "CMakeFiles/engine_tests.dir/hal/alsa/AlsaDriver.cpp.o" "gcc" "CMakeFiles/engine_tests.dir/hal/alsa/AlsaDriver.cpp.o.d"
-  "/home/nickt/src/alsa/alsa-learning/cxx/tests/EngineTests.cpp" "CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o" "gcc" "CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o.d"
-  "" "bin/engine_tests" "gcc" "CMakeFiles/engine_tests.dir/link.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp" "CMakeFiles/engine_tests.dir/audio/Voice.cpp.o" "gcc" "CMakeFiles/engine_tests.dir/audio/Voice.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp" "CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o" "gcc" "CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.cpp" "CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o" "gcc" "CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/EngineTests.cpp" "CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o" "gcc" "CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

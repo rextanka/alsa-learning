@@ -48,12 +48,16 @@ public:
         }
     }
 
+    /**
+     * @brief Borrow a stereo block from the graph's pool.
+     */
+    BufferPool::BufferPtr borrow_buffer() {
+        return buffer_pool_->borrow();
+    }
+
 protected:
     /**
-     * @brief Pull through the graph.
-     * 
-     * Since this is a linear graph for now, we just execute nodes in order.
-     * Sources fill the buffer, modifiers process it in-place.
+     * @brief Pull through the graph (Mono).
      */
     void do_pull(std::span<float> output, const VoiceContext* context = nullptr) override {
         if (nodes_.empty()) {
@@ -65,6 +69,24 @@ protected:
         nodes_[0]->pull(output, context);
 
         // Subsequent nodes process the output span in-place
+        for (size_t i = 1; i < nodes_.size(); ++i) {
+            nodes_[i]->pull(output, context);
+        }
+    }
+
+    /**
+     * @brief Pull through the graph (Stereo).
+     */
+    void do_pull(AudioBuffer& output, const VoiceContext* context = nullptr) override {
+        if (nodes_.empty()) {
+            output.clear();
+            return;
+        }
+
+        // The first node (source) fills the output buffer
+        nodes_[0]->pull(output, context);
+
+        // Subsequent nodes process the output buffer in-place
         for (size_t i = 1; i < nodes_.size(); ++i) {
             nodes_[i]->pull(output, context);
         }
