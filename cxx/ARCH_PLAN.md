@@ -122,7 +122,8 @@ cxx/hal/
 | 5 | Graph (pull model, buffer pool, optional feedback) | Planned |
 | 6 | Voice + VoiceManager (polyphony, stealing, query pattern) | Planned |
 | 7 | AudioDriver HAL (null/file, then ALSA/CoreAudio/WASAPI) | Planned |
-| 8 | Integration tests, performance validation | Planned |
+| 8 | Integration tests, performance validation | Done |
+| 9 | API Maturity & Documentation | In Progress |
 
 ---
 

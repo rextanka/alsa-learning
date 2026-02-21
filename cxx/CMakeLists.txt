@@ -68,6 +68,7 @@ add_executable(audio_test
 # Audible Engine Tests
 add_executable(engine_tests 
     tests/EngineTests.cpp
+    bridge/AudioBridge.cpp
     audio/Voice.cpp
     audio/VoiceManager.cpp
 )
@@ -75,6 +76,7 @@ add_executable(engine_tests
 # Filter Tests
 add_executable(filter_tests 
     tests/FilterTests.cpp
+    bridge/AudioBridge.cpp
     audio/Voice.cpp
     audio/VoiceManager.cpp
 )
@@ -82,6 +84,7 @@ add_executable(filter_tests
 # Stereo Poly Test
 add_executable(stereo_poly_test 
     tests/StereoPolyTest.cpp
+    bridge/AudioBridge.cpp
     audio/Voice.cpp
     audio/VoiceManager.cpp
 )

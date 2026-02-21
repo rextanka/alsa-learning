@@ -3018,6 +3018,7 @@ CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o: /Users/nickthompson/src/cpp/
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdint.h \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioGraph.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/BufferPool.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/DelayLine.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.hpp \
@@ -3026,7 +3027,9 @@ CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o: /Users/nickthompson/src/cpp/
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/AdsrEnvelopeProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/EnvelopeProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/DiodeLadderProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/FilterProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/MoogLadderProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioBuffer.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/InputSource.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/PerformanceProfiler.hpp \
@@ -5519,11 +5522,15 @@ CMakeFiles/audio_test.dir/main.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-lea
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/oscillator/SawtoothOscillatorProcessor.hpp:
 
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/DiodeLadderProcessor.hpp:
+
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/ADEnvelopeProcessor.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/oscillator/WavetableOscillatorProcessor.hpp:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/DelayLine.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/MoogLadderProcessor.hpp:
 
