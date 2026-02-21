@@ -8,12 +8,11 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/nickt/src/alsa/alsa-learning/cxx/audio/Voice.cpp" "CMakeFiles/audio_test.dir/audio/Voice.cpp.o" "gcc" "CMakeFiles/audio_test.dir/audio/Voice.cpp.o.d"
-  "/home/nickt/src/alsa/alsa-learning/cxx/audio/VoiceManager.cpp" "CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.o" "gcc" "CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.o.d"
-  "/home/nickt/src/alsa/alsa-learning/cxx/bridge/AudioBridge.cpp" "CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o" "gcc" "CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o.d"
-  "/home/nickt/src/alsa/alsa-learning/cxx/hal/alsa/AlsaDriver.cpp" "CMakeFiles/audio_test.dir/hal/alsa/AlsaDriver.cpp.o" "gcc" "CMakeFiles/audio_test.dir/hal/alsa/AlsaDriver.cpp.o.d"
-  "/home/nickt/src/alsa/alsa-learning/cxx/main.cpp" "CMakeFiles/audio_test.dir/main.cpp.o" "gcc" "CMakeFiles/audio_test.dir/main.cpp.o.d"
-  "" "bin/audio_test" "gcc" "CMakeFiles/audio_test.dir/link.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp" "CMakeFiles/audio_test.dir/audio/Voice.cpp.o" "gcc" "CMakeFiles/audio_test.dir/audio/Voice.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp" "CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.o" "gcc" "CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/AudioBridge.cpp" "CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o" "gcc" "CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.cpp" "CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o" "gcc" "CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/main.cpp" "CMakeFiles/audio_test.dir/main.cpp.o" "gcc" "CMakeFiles/audio_test.dir/main.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

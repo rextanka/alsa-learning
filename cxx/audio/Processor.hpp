@@ -20,6 +20,7 @@
 #include "InputSource.hpp"
 #include "VoiceContext.hpp"
 #include "PerformanceProfiler.hpp"
+#include "AudioBuffer.hpp"
 
 namespace audio {
 
@@ -60,6 +61,24 @@ public:
      * @param voice_context Optional voice context for parameter querying
      */
     void pull(std::span<float> output, const VoiceContext* voice_context = nullptr) override {
+#if AUDIO_ENABLE_PROFILING
+        profiler_.start();
+#endif
+        
+        do_pull(output, voice_context);
+        
+#if AUDIO_ENABLE_PROFILING
+        profiler_.stop();
+#endif
+    }
+
+    /**
+     * @brief Pull data into stereo AudioBuffer (Pull Model).
+     * 
+     * Default implementation calls the mono pull() if only mono is supported.
+     * Subclasses can override for native stereo processing.
+     */
+    virtual void pull(AudioBuffer& output, const VoiceContext* voice_context = nullptr) {
 #if AUDIO_ENABLE_PROFILING
         profiler_.start();
 #endif
@@ -123,14 +142,25 @@ protected:
     std::vector<InputSource*> inputs_;
 
     /**
-     * @brief Pure virtual method for subclasses to implement actual processing.
-     * 
-     * This is called by pull() after starting the profiler (if enabled).
+     * @brief Pure virtual method for subclasses to implement actual processing (Mono).
      * 
      * @param output Output buffer to fill
      * @param voice_context Optional voice context
      */
     virtual void do_pull(std::span<float> output, const VoiceContext* voice_context = nullptr) = 0;
+
+    /**
+     * @brief Virtual method for subclasses to implement actual processing (Stereo).
+     * 
+     * Default implementation calls mono do_pull and copies L to R.
+     * 
+     * @param output Stereo buffer to fill
+     * @param voice_context Optional voice context
+     */
+    virtual void do_pull(AudioBuffer& output, const VoiceContext* voice_context = nullptr) {
+        do_pull(output.left, voice_context);
+        std::copy(output.left.begin(), output.left.end(), output.right.begin());
+    }
 
 #if AUDIO_ENABLE_PROFILING
     /**

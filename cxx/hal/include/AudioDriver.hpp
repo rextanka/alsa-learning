@@ -13,6 +13,7 @@
 
 #include <functional>
 #include <span>
+#include "../../audio/AudioBuffer.hpp"
 
 namespace hal {
 
@@ -25,12 +26,14 @@ namespace hal {
 class AudioDriver {
 public:
     /**
-     * @brief Callback function type for audio processing.
-     * 
-     * The callback is responsible for filling the output buffer with audio data.
-     * @param output The buffer to fill with audio samples (interleaved or mono).
+     * @brief Callback function type for mono audio processing.
      */
     using AudioCallback = std::function<void(std::span<float> output)>;
+
+    /**
+     * @brief Callback function type for stereo audio processing.
+     */
+    using StereoAudioCallback = std::function<void(audio::AudioBuffer& output)>;
 
     virtual ~AudioDriver() = default;
 
@@ -47,11 +50,14 @@ public:
     virtual void stop() = 0;
 
     /**
-     * @brief Set the processing callback.
-     * 
-     * @param callback The function to call when the hardware needs more data.
+     * @brief Set the mono processing callback.
      */
     virtual void set_callback(AudioCallback callback) = 0;
+
+    /**
+     * @brief Set the stereo processing callback.
+     */
+    virtual void set_stereo_callback(StereoAudioCallback callback) = 0;
 
     /**
      * @brief Get the current sample rate.

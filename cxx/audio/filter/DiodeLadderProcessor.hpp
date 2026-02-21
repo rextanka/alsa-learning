@@ -45,31 +45,35 @@ public:
 protected:
     void do_pull(std::span<float> output, const VoiceContext* /* voice_context */ = nullptr) override {
         for (auto& sample : output) {
-            // DIODE LADDER ALGORITHM (Approximation)
-            // Diode ladders have coupled stages and a specific feedback gain.
-            
-            float input = sample;
-            
-            // Resonance feedback with TB-303 style bass-loss
-            // The feedback is taken from the 4th stage and fed back to the 1st.
-            float feedback = stage_[3] * res_ * 17.0f; // High gain for resonance
-            input -= std::tanh(feedback);
+            process_sample(sample);
+        }
+    }
 
-            // Coupled 1-pole stages
-            // In a diode ladder, each stage's state depends on the others.
-            // This is a simplified ZDF-like approximation for the coupled stages.
-            float s0 = stage_[0], s1 = stage_[1], s2 = stage_[2], s3 = stage_[3];
-            
-            stage_[0] += g_ * (input - s0 - 0.5f * (s1));
-            stage_[1] += g_ * (stage_[0] - s1 - 0.5f * (s2));
-            stage_[2] += g_ * (stage_[1] - s2 - 0.5f * (s3));
-            stage_[3] += g_ * (stage_[2] - s3);
-
-            sample = stage_[3];
+    void do_pull(AudioBuffer& output, const VoiceContext* /* voice_context */ = nullptr) override {
+        for (size_t i = 0; i < output.frames(); ++i) {
+            float combined = (output.left[i] + output.right[i]) * 0.5f;
+            process_sample(combined);
+            output.left[i] = combined;
+            output.right[i] = combined;
         }
     }
 
 private:
+    inline void process_sample(float& sample) {
+        float input = sample;
+        float feedback = stage_[3] * res_ * 17.0f;
+        input -= std::tanh(feedback);
+
+        float s0 = stage_[0], s1 = stage_[1], s2 = stage_[2], s3 = stage_[3];
+        
+        stage_[0] += g_ * (input - s0 - 0.5f * (s1));
+        stage_[1] += g_ * (stage_[0] - s1 - 0.5f * (s2));
+        stage_[2] += g_ * (stage_[1] - s2 - 0.5f * (s3));
+        stage_[3] += g_ * (stage_[2] - s3);
+
+        sample = stage_[3];
+    }
+
     void update_coefficients() {
         g_ = static_cast<float>(2.0 * M_PI * cutoff_ / sample_rate_);
         g_ = std::clamp(g_, 0.0f, 1.0f);

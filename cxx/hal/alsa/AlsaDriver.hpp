@@ -7,7 +7,12 @@
 #define HAL_ALSA_DRIVER_HPP
 
 #include "../include/AudioDriver.hpp"
+#ifdef __linux__
 #include <alsa/asoundlib.h>
+#else
+// Forward declare ALSA types for macOS compilation
+typedef struct _snd_pcm snd_pcm_t;
+#endif
 #include <atomic>
 #include <vector>
 #include <thread>
@@ -38,6 +43,7 @@ public:
     bool start() override;
     void stop() override;
     void set_callback(AudioCallback callback) override;
+    void set_stereo_callback(StereoAudioCallback callback) override;
     int sample_rate() const override { return sample_rate_; }
     int block_size() const override { return block_size_; }
     int channels() const { return num_channels_; }
@@ -53,12 +59,14 @@ private:
     int block_size_;
     int num_channels_;
     AudioCallback callback_;
+    StereoAudioCallback stereo_callback_;
     std::atomic<bool> running_;
     std::thread processing_thread_;
     
     // Internal buffers
-    std::vector<float> float_buffer_;    // Mono input from graph
-    std::vector<int16_t> s16_buffer_;    // Interleaved output to hardware
+    std::vector<float> left_buffer_;
+    std::vector<float> right_buffer_;
+    std::vector<uint8_t> interleaved_buffer_;
 };
 
 } // namespace hal

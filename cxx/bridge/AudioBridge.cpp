@@ -16,6 +16,7 @@
 #include "../audio/oscillator/TriangleOscillatorProcessor.hpp"
 #include "../audio/oscillator/WavetableOscillatorProcessor.hpp"
 #include "../audio/envelope/AdsrEnvelopeProcessor.hpp"
+#include "../audio/envelope/ADEnvelopeProcessor.hpp"
 #include "../audio/VoiceManager.hpp"
 #include <memory>
 #include <span>
@@ -276,6 +277,9 @@ EnvelopeHandle envelope_create(int type, unsigned int sample_rate) {
             case ENV_ADSR:
                 processor = std::make_unique<audio::AdsrEnvelopeProcessor>(sample_rate);
                 break;
+            case ENV_AD:
+                processor = std::make_unique<audio::ADEnvelopeProcessor>(sample_rate);
+                break;
             default:
                 return nullptr;
         }
@@ -324,6 +328,22 @@ int envelope_set_adsr(EnvelopeHandle handle, float attack, float decay, float su
             adsr->set_decay_time(decay);
             adsr->set_sustain_level(sustain);
             adsr->set_release_time(release);
+            return 0;
+        }
+        return -1;
+    } catch (...) {
+        return -1;
+    }
+}
+
+int envelope_set_ad(EnvelopeHandle handle, float attack, float decay) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EnvelopeHandleImpl*>(handle);
+    try {
+        auto* ad = dynamic_cast<audio::ADEnvelopeProcessor*>(impl->processor.get());
+        if (ad) {
+            ad->set_attack_time(attack);
+            ad->set_decay_time(decay);
             return 0;
         }
         return -1;

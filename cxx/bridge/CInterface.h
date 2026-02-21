@@ -71,7 +71,8 @@ int engine_process(EngineHandle handle, float* output, size_t frames);
 
 // Envelope type enum
 enum EnvelopeType {
-    ENV_ADSR = 0
+    ENV_ADSR = 0,
+    ENV_AD   = 1
 };
 
 // Envelope handle type
@@ -83,6 +84,7 @@ void envelope_destroy(EnvelopeHandle handle);
 int envelope_gate_on(EnvelopeHandle handle);
 int envelope_gate_off(EnvelopeHandle handle);
 int envelope_set_adsr(EnvelopeHandle handle, float attack, float decay, float sustain, float release);
+int envelope_set_ad(EnvelopeHandle handle, float attack, float decay);
 int envelope_process(EnvelopeHandle handle, float* output, size_t frames);
 int envelope_is_active(EnvelopeHandle handle);
 

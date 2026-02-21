@@ -10,8 +10,22 @@
 #include <memory>
 #include <mutex>
 #include <span>
+#include <functional>
 
 namespace audio {
+
+/**
+ * @brief Represents a stereo memory block (L/R vectors).
+ */
+struct StereoBlock {
+    std::vector<float> left;
+    std::vector<float> right;
+    
+    explicit StereoBlock(size_t frames) 
+        : left(frames, 0.0f)
+        , right(frames, 0.0f)
+    {}
+};
 
 /**
  * @brief Pool of audio buffers for efficient processing.
@@ -26,33 +40,30 @@ public:
         : buffer_size_(buffer_size)
     {
         for (size_t i = 0; i < initial_capacity; ++i) {
-            pool_.push_back(std::make_unique<std::vector<float>>(buffer_size_));
+            pool_.push_back(std::make_unique<StereoBlock>(buffer_size_));
         }
     }
 
     /**
-     * @brief Borrow a buffer from the pool.
-     * 
-     * @return std::unique_ptr<std::vector<float>, std::function<void(std::vector<float>*)>> 
-     *         A smart pointer that returns the buffer to the pool when it goes out of scope.
+     * @brief Borrow a stereo block from the pool.
      */
-    using BufferPtr = std::unique_ptr<std::vector<float>, std::function<void(std::vector<float>*)>>;
+    using BufferPtr = std::unique_ptr<StereoBlock, std::function<void(StereoBlock*)>>;
 
     BufferPtr borrow() {
         std::lock_guard<std::mutex> lock(mutex_);
         
-        std::unique_ptr<std::vector<float>> buffer;
+        std::unique_ptr<StereoBlock> buffer;
         if (pool_.empty()) {
-            buffer = std::make_unique<std::vector<float>>(buffer_size_);
+            buffer = std::make_unique<StereoBlock>(buffer_size_);
         } else {
             buffer = std::move(pool_.back());
             pool_.pop_back();
         }
 
         // Custom deleter returns the buffer to the pool
-        auto deleter = [this](std::vector<float>* b) {
+        auto deleter = [this](StereoBlock* b) {
             std::lock_guard<std::mutex> lock(mutex_);
-            pool_.push_back(std::unique_ptr<std::vector<float>>(b));
+            pool_.push_back(std::unique_ptr<StereoBlock>(b));
         };
 
         return BufferPtr(buffer.release(), deleter);
@@ -62,7 +73,7 @@ public:
 
 private:
     size_t buffer_size_;
-    std::vector<std::unique_ptr<std::vector<float>>> pool_;
+    std::vector<std::unique_ptr<StereoBlock>> pool_;
     std::mutex mutex_;
 };
 

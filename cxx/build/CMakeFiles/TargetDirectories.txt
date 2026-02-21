@@ -1,6 +1,5 @@
-/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles/audio_test.dir
-/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles/engine_tests.dir
-/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles/filter_tests.dir
-/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles/alsa_check.dir
-/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles/edit_cache.dir
-/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles/rebuild_cache.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/audio_test.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/engine_tests.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/filter_tests.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/edit_cache.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/rebuild_cache.dir
