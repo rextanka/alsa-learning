@@ -10,9 +10,9 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp" "CMakeFiles/audio_test.dir/audio/Voice.cpp.o" "gcc" "CMakeFiles/audio_test.dir/audio/Voice.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp" "CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.o" "gcc" "CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.o.d"
-  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/AudioBridge.cpp" "CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o" "gcc" "CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.cpp" "CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o" "gcc" "CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o.d"
-  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/main.cpp" "CMakeFiles/audio_test.dir/main.cpp.o" "gcc" "CMakeFiles/audio_test.dir/main.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp" "CMakeFiles/audio_test.dir/src/AudioBridge.cpp.o" "gcc" "CMakeFiles/audio_test.dir/src/AudioBridge.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/main.cpp" "CMakeFiles/audio_test.dir/src/main.cpp.o" "gcc" "CMakeFiles/audio_test.dir/src/main.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

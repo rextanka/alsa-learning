@@ -19,7 +19,7 @@
 #include "audio/oscillator/SineOscillatorProcessor.hpp"
 #include "audio/oscillator/WavetableOscillatorProcessor.hpp"
 #include "audio/Voice.hpp"
-#include "bridge/CInterface.h"
+#include "CInterface.h"
 
 #ifdef __APPLE__
 #include "hal/coreaudio/CoreAudioDriver.hpp"

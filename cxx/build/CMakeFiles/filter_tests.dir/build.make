@@ -86,19 +86,19 @@ CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/FilterTests.cpp -o CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.s
 
-CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o: CMakeFiles/filter_tests.dir/flags.make
-CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/AudioBridge.cpp
-CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o: CMakeFiles/filter_tests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o -MF CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o.d -o CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/AudioBridge.cpp
+CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.o: CMakeFiles/filter_tests.dir/flags.make
+CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp
+CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.o: CMakeFiles/filter_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.o -MF CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.o.d -o CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp
 
-CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/AudioBridge.cpp > CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.i
+CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp > CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.i
 
-CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/AudioBridge.cpp -o CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.s
+CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp -o CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.s
 
 CMakeFiles/filter_tests.dir/audio/Voice.cpp.o: CMakeFiles/filter_tests.dir/flags.make
 CMakeFiles/filter_tests.dir/audio/Voice.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp
@@ -145,7 +145,7 @@ CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.s: cmake_force
 # Object files for target filter_tests
 filter_tests_OBJECTS = \
 "CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o" \
-"CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o" \
+"CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.o" \
 "CMakeFiles/filter_tests.dir/audio/Voice.cpp.o" \
 "CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.o" \
 "CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o"
@@ -154,7 +154,7 @@ filter_tests_OBJECTS = \
 filter_tests_EXTERNAL_OBJECTS =
 
 bin/filter_tests: CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o
-bin/filter_tests: CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o
+bin/filter_tests: CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.o
 bin/filter_tests: CMakeFiles/filter_tests.dir/audio/Voice.cpp.o
 bin/filter_tests: CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.o
 bin/filter_tests: CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o
