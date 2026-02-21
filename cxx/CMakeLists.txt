@@ -98,6 +98,14 @@ add_executable(phase10_tests
     audio/VoiceManager.cpp
 )
 
+# Timing Validation
+add_executable(timing_validation 
+    tests/TimingValidation.cpp
+    src/AudioBridge.cpp
+    audio/Voice.cpp
+    audio/VoiceManager.cpp
+)
+
 # HAL sources
 if(APPLE)
     target_sources(audio_test PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
