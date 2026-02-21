@@ -54,4 +54,5 @@ set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/stereo_poly_test.dir/DependInfo.cmake"
   "CMakeFiles/phase10_tests.dir/DependInfo.cmake"
   "CMakeFiles/timing_validation.dir/DependInfo.cmake"
+  "CMakeFiles/metronome_test.dir/DependInfo.cmake"
   )

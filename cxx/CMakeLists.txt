@@ -106,6 +106,14 @@ add_executable(timing_validation
     audio/VoiceManager.cpp
 )
 
+# Metronome Test
+add_executable(metronome_test 
+    src/metronome_test.cpp
+    src/AudioBridge.cpp
+    audio/Voice.cpp
+    audio/VoiceManager.cpp
+)
+
 # HAL sources
 if(APPLE)
     target_sources(audio_test PRIVATE hal/coreaudio/CoreAudioDriver.cpp)

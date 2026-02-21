@@ -194,6 +194,19 @@ timing_validation/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/build
 .PHONY : timing_validation/fast
 
+#=============================================================================
+# Target rules for targets named metronome_test
+
+# Build rule for target.
+metronome_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 metronome_test
+.PHONY : metronome_test
+
+# fast build rule for target.
+metronome_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/build
+.PHONY : metronome_test/fast
+
 audio/Voice.o: audio/Voice.cpp.o
 .PHONY : audio/Voice.o
 
@@ -205,6 +218,7 @@ audio/Voice.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/Voice.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/Voice.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/audio/Voice.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/audio/Voice.cpp.o
 .PHONY : audio/Voice.cpp.o
 
 audio/Voice.i: audio/Voice.cpp.i
@@ -218,6 +232,7 @@ audio/Voice.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/Voice.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/Voice.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/audio/Voice.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/audio/Voice.cpp.i
 .PHONY : audio/Voice.cpp.i
 
 audio/Voice.s: audio/Voice.cpp.s
@@ -231,6 +246,7 @@ audio/Voice.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/Voice.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/Voice.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/audio/Voice.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/audio/Voice.cpp.s
 .PHONY : audio/Voice.cpp.s
 
 audio/VoiceManager.o: audio/VoiceManager.cpp.o
@@ -244,6 +260,7 @@ audio/VoiceManager.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/VoiceManager.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/VoiceManager.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/audio/VoiceManager.cpp.o
 .PHONY : audio/VoiceManager.cpp.o
 
 audio/VoiceManager.i: audio/VoiceManager.cpp.i
@@ -257,6 +274,7 @@ audio/VoiceManager.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/VoiceManager.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/VoiceManager.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/audio/VoiceManager.cpp.i
 .PHONY : audio/VoiceManager.cpp.i
 
 audio/VoiceManager.s: audio/VoiceManager.cpp.s
@@ -270,6 +288,7 @@ audio/VoiceManager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/VoiceManager.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/VoiceManager.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/audio/VoiceManager.cpp.s
 .PHONY : audio/VoiceManager.cpp.s
 
 hal/coreaudio/CoreAudioDriver.o: hal/coreaudio/CoreAudioDriver.cpp.o
@@ -316,6 +335,7 @@ src/AudioBridge.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/src/AudioBridge.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/src/AudioBridge.cpp.o
 .PHONY : src/AudioBridge.cpp.o
 
 src/AudioBridge.i: src/AudioBridge.cpp.i
@@ -329,6 +349,7 @@ src/AudioBridge.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/src/AudioBridge.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/src/AudioBridge.cpp.i
 .PHONY : src/AudioBridge.cpp.i
 
 src/AudioBridge.s: src/AudioBridge.cpp.s
@@ -342,6 +363,7 @@ src/AudioBridge.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/src/AudioBridge.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/src/AudioBridge.cpp.s
 .PHONY : src/AudioBridge.cpp.s
 
 src/main.o: src/main.cpp.o
@@ -367,6 +389,30 @@ src/main.s: src/main.cpp.s
 src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
+
+src/metronome_test.o: src/metronome_test.cpp.o
+.PHONY : src/metronome_test.o
+
+# target to build an object file
+src/metronome_test.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/src/metronome_test.cpp.o
+.PHONY : src/metronome_test.cpp.o
+
+src/metronome_test.i: src/metronome_test.cpp.i
+.PHONY : src/metronome_test.i
+
+# target to preprocess a source file
+src/metronome_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/src/metronome_test.cpp.i
+.PHONY : src/metronome_test.cpp.i
+
+src/metronome_test.s: src/metronome_test.cpp.s
+.PHONY : src/metronome_test.s
+
+# target to generate assembly for a file
+src/metronome_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/src/metronome_test.cpp.s
+.PHONY : src/metronome_test.cpp.s
 
 tests/EngineTests.o: tests/EngineTests.cpp.o
 .PHONY : tests/EngineTests.o
@@ -499,6 +545,7 @@ help:
 	@echo "... audio_test"
 	@echo "... engine_tests"
 	@echo "... filter_tests"
+	@echo "... metronome_test"
 	@echo "... phase10_tests"
 	@echo "... stereo_poly_test"
 	@echo "... timing_validation"
@@ -517,6 +564,9 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/metronome_test.o"
+	@echo "... src/metronome_test.i"
+	@echo "... src/metronome_test.s"
 	@echo "... tests/EngineTests.o"
 	@echo "... tests/EngineTests.i"
 	@echo "... tests/EngineTests.s"
