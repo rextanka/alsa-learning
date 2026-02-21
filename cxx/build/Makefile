@@ -240,6 +240,9 @@ bridge/AudioBridge.o: bridge/AudioBridge.cpp.o
 # target to build an object file
 bridge/AudioBridge.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/bridge/AudioBridge.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.o
 .PHONY : bridge/AudioBridge.cpp.o
 
 bridge/AudioBridge.i: bridge/AudioBridge.cpp.i
@@ -248,6 +251,9 @@ bridge/AudioBridge.i: bridge/AudioBridge.cpp.i
 # target to preprocess a source file
 bridge/AudioBridge.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/bridge/AudioBridge.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.i
 .PHONY : bridge/AudioBridge.cpp.i
 
 bridge/AudioBridge.s: bridge/AudioBridge.cpp.s
@@ -256,6 +262,9 @@ bridge/AudioBridge.s: bridge/AudioBridge.cpp.s
 # target to generate assembly for a file
 bridge/AudioBridge.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/bridge/AudioBridge.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.s
 .PHONY : bridge/AudioBridge.cpp.s
 
 hal/coreaudio/CoreAudioDriver.o: hal/coreaudio/CoreAudioDriver.cpp.o

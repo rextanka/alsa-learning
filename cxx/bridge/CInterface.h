@@ -70,6 +70,12 @@ void engine_note_off(EngineHandle handle, int note);
 void engine_set_note_pan(EngineHandle handle, int note, float pan);
 int engine_process(EngineHandle handle, float* output, size_t frames);
 
+// Filter type enum
+enum FilterType {
+    FILTER_MOOG  = 0,
+    FILTER_DIODE = 1
+};
+
 // Envelope type enum
 enum EnvelopeType {
     ENV_ADSR = 0,
@@ -87,6 +93,12 @@ int envelope_gate_off(EnvelopeHandle handle);
 int envelope_set_adsr(EnvelopeHandle handle, float attack, float decay, float sustain, float release);
 int envelope_set_ad(EnvelopeHandle handle, float attack, float decay);
 int envelope_process(EnvelopeHandle handle, float* output, size_t frames);
+
+// Filter API
+int engine_set_filter_type(EngineHandle handle, int type);
+
+// Master Effects API
+int engine_set_delay_enabled(EngineHandle handle, int enabled);
 
 // Parameter API for automated control
 int set_param(void* handle, const char* name, float value);

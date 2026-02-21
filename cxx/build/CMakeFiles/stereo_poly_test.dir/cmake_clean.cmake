@@ -3,6 +3,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/stereo_poly_test.dir/audio/Voice.cpp.o.d"
   "CMakeFiles/stereo_poly_test.dir/audio/VoiceManager.cpp.o"
   "CMakeFiles/stereo_poly_test.dir/audio/VoiceManager.cpp.o.d"
+  "CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.o"
+  "CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.o.d"
   "CMakeFiles/stereo_poly_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o"
   "CMakeFiles/stereo_poly_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o.d"
   "CMakeFiles/stereo_poly_test.dir/tests/StereoPolyTest.cpp.o"

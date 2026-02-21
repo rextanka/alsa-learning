@@ -3,6 +3,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/filter_tests.dir/audio/Voice.cpp.o.d"
   "CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.o"
   "CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.o.d"
+  "CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o"
+  "CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o.d"
   "CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o"
   "CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o.d"
   "CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o"

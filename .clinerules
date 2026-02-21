@@ -7,6 +7,7 @@
 - If a command fails because a branch or remote doesn't exist, use `git remote -v` to verify the setup before retrying.
 - Post-Push Reminder: After successfully pushing a new branch to GitHub, you MUST explicitly remind me to: 'Please go to GitHub to create the PR and perform a squash merge. Once merged, let me know so I can sync main for the next task.'
 - Branch Deletion: Remind me to delete the remote branch after the squash merge is complete to keep the repo clean.
+- Documentation Sync: Whenever a new function is exported in CInterface.h, the docs/BRIDGE_GUIDE.md must be updated to reflect the change, ensuring documentation stays in sync with the binary interface.
 
 # Commit Standards
 - Use Conventional Commits (e.g., `feat:`, `refactor:`, `fix:`, `chore:`).

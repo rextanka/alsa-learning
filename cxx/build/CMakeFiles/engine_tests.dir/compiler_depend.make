@@ -4302,27 +4302,13 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /Users/nickthompson/src/cpp
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdbool.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stddef.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdint.h \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/CInterface.h \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioBuffer.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioGraph.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/BufferPool.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/InputSource.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/PerformanceProfiler.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceContext.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/AdsrEnvelopeProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/EnvelopeProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/FilterProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceContext.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/oscillator/WavetableOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/include/AudioDriver.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioBuffer.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/include/AudioDriver.hpp
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.hpp
 
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/CInterface.h:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__thread/thread.h:
 

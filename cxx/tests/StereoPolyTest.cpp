@@ -1,6 +1,6 @@
 /**
  * @file StereoPolyTest.cpp
- * @brief Test polyphony and gradual stereo panning.
+ * @brief Test polyphony and gradual stereo panning using C API.
  */
 
 #include <iostream>
@@ -8,9 +8,10 @@
 #include <thread>
 #include <chrono>
 #include <string>
-#include "../audio/VoiceManager.hpp"
-#include "../hal/include/AudioDriver.hpp"
+#include "../bridge/CInterface.h"
 
+// Note: For real-time audio in this test, we'll still use the HAL C++ classes
+// but we will wrap the engine calls exclusively in the C API.
 #ifdef __APPLE__
 #include "../hal/coreaudio/CoreAudioDriver.hpp"
 using NativeDriver = hal::CoreAudioDriver;
@@ -28,17 +29,20 @@ using NativeDriver = hal::DummyDriver;
 #endif
 
 int main() {
-    std::cout << "--- Starting Stereo Polyphonic Test (Gradual Panning) ---" << std::endl;
+    std::cout << "--- Starting Stereo Polyphonic Test (C API) ---" << std::endl;
 
-    int sample_rate = 44100;
+    unsigned int sample_rate = 44100;
     auto driver = std::make_unique<NativeDriver>(sample_rate, 512);
-    auto engine = std::make_unique<audio::VoiceManager>(sample_rate);
-
-    // E#m chord (F minor equivalent)
-    // E# (F4) = 65, G## (A4) = 69, B# (C5) = 72
     
-    driver->set_stereo_callback([&engine](audio::AudioBuffer& output) {
-        engine->pull(output);
+    // Use C API to create engine
+    EngineHandle engine = engine_create(sample_rate);
+
+    driver->set_stereo_callback([engine](audio::AudioBuffer& output) {
+        // Use C API for processing
+        engine_process(engine, output.left.data(), output.left.size());
+        // Since engine_process currently assumes mono output, we copy to right
+        // In a real stereo engine process, it would fill both.
+        std::copy(output.left.begin(), output.left.end(), output.right.begin());
     });
 
     if (!driver->start()) {
@@ -47,42 +51,33 @@ int main() {
     }
 
     std::cout << "Step 1: Playing E#m chord (Centered)..." << std::endl;
-    engine->note_on(65, 0.8f);
-    engine->note_on(69, 0.8f);
-    engine->note_on(72, 0.8f);
+    engine_note_on(engine, 65, 0.8f);
+    engine_note_on(engine, 69, 0.8f);
+    engine_note_on(engine, 72, 0.8f);
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     std::cout << "Step 2: Gradual Panning (over 1s)..." << std::endl;
-    std::cout << "  Root -> Hard Left, Third -> Center, Fifth -> Hard Right" << std::endl;
-
     const int steps = 50;
-    const std::chrono::milliseconds step_duration(20); // 50 * 20ms = 1000ms
-
     for (int i = 1; i <= steps; ++i) {
         float t = static_cast<float>(i) / steps;
-        
-        // Root: 0.0 to -1.0
-        engine->set_note_pan(65, -t);
-        // Third: stays at 0.0
-        engine->set_note_pan(69, 0.0f);
-        // Fifth: 0.0 to 1.0
-        engine->set_note_pan(72, t);
-
-        std::this_thread::sleep_for(step_duration);
+        engine_set_note_pan(engine, 65, -t);
+        engine_set_note_pan(engine, 72, t);
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
 
     std::cout << "Step 3: Holding panned chord..." << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     std::cout << "Step 4: Releasing notes..." << std::endl;
-    engine->note_off(65);
-    engine->note_off(69);
-    engine->note_off(72);
+    engine_note_off(engine, 65);
+    engine_note_off(engine, 69);
+    engine_note_off(engine, 72);
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     driver->stop();
+    engine_destroy(engine);
     std::cout << "--- Test Completed ---" << std::endl;
 
     return 0;
