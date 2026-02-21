@@ -4,14 +4,21 @@
 
 ---
 
-## Overview
+## Design Manifesto
 
-Migrate from sample-by-sample C to a **block-based, pull-model** DSP engine in C++20:
+### Philosophy
+Create a portable, lightweight **'Musical Toolbox'** for creative exploration and **'Sound Toy'** development. The library is designed to be approachable and educational, allowing developers to easily build small musical programs and understand core DSP concepts.
 
-- **Pull architecture**: Output pulls from the graph; processors pull from their inputs. Industry standard for low-latency audio; supports feedback (delay/chorus/reverb) naturally.
-- **NVI (Non-Virtual Interface)**: Public `pull()` wraps profiling and calls protected `do_pull()`. Ensures performance tracking always runs and keeps the node contract consistent.
-- **Vector-based**: `std::span<float>` for block I/O; block size is not hardcoded.
-- **C interop**: Minimal, stable C API in `bridge/CInterface.h` for Swift, .NET, Linux GUIs.
+### Target Platforms
+- **macOS**: Tahoe 26.3+
+- **Windows**: 11
+- **Linux**: Fedora 42+, Ubuntu 22.04+
+
+### Technical Pillars
+- **Pull-Based Heartbeat**: Sample-accurate timing driven by the `AudioDriver`. Output pulls from the graph; processors pull from their inputs.
+- **Mono-until-Stereo**: Keep signal paths mono for CPU efficiency until spatial effects or stereo-specific processing (panners/reverb) are required.
+- **MPE & Microtonality**: Per-voice independence with a modular `TuningSystem` for cross-platform musical flexibility.
+- **Centralized Zipper-Free Control**: A dedicated `ParameterManager` handles all ramping and smoothing "magic," hiding complexity from the toy developer and ensuring artifact-free parameter updates.
 
 ---
 
@@ -124,6 +131,10 @@ cxx/hal/
 | 7 | AudioDriver HAL (null/file, then ALSA/CoreAudio/WASAPI) | Planned |
 | 8 | Integration tests, performance validation | Done |
 | 9 | API Maturity & Documentation | In Progress |
+| 10 | **Musical Logic**: 960 PPQ `MusicalClock`, `TuningSystem` (Microtonality), and human-readable `Note('C4')` abstractions. | Planned |
+| 11 | **MPE & Scheduler**: MPE support, **ParameterManager**, and 'Safe Update' thread-safe command buffer for UI-to-Audio batch changes. | Planned |
+| 12 | **MIDI Integration**: MIDI HAL for Linux/Mac/Win with CC mapping and SysEx hooks. | Planned |
+| 13 | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation to maximize polyphony. | Planned |
 
 ---
 
@@ -135,7 +146,9 @@ cxx/hal/
 - **Polyphony**: Compile-time `AUDIO_MAX_VOICES` (e.g. 16); runtime cap optional.
 - **Voice stealing**: Prefer releasing voice (longest first), else active (e.g. lowest note).
 - **Per-voice params**: Velocity and aftertouch via **query pattern** (VoiceContext in `pull()`).
-- **Wavetable**: Single `WavetableOscillatorProcessor` class; shape (Sine/Saw/Square/Triangle) selected at create; same C API as other oscillators.
+- **Wavetable**: Single `WavetableOscillatorProcessor` class; shape selected at create.
+- **10ms MMA Latency Target**: Optimize buffer sizes and processing for consistent real-time response.
+- **Nord-style Modular Routing**: Supporting "Audio-as-Control" where audio signals can be used as modulation sources across the graph.
 
 ---
 
