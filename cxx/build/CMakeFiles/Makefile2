@@ -68,6 +68,7 @@ all: CMakeFiles/engine_tests.dir/all
 all: CMakeFiles/filter_tests.dir/all
 all: CMakeFiles/stereo_poly_test.dir/all
 all: CMakeFiles/phase10_tests.dir/all
+all: CMakeFiles/timing_validation.dir/all
 .PHONY : all
 
 # The main recursive "codegen" target.
@@ -76,6 +77,7 @@ codegen: CMakeFiles/engine_tests.dir/codegen
 codegen: CMakeFiles/filter_tests.dir/codegen
 codegen: CMakeFiles/stereo_poly_test.dir/codegen
 codegen: CMakeFiles/phase10_tests.dir/codegen
+codegen: CMakeFiles/timing_validation.dir/codegen
 .PHONY : codegen
 
 # The main recursive "preinstall" target.
@@ -88,6 +90,7 @@ clean: CMakeFiles/engine_tests.dir/clean
 clean: CMakeFiles/filter_tests.dir/clean
 clean: CMakeFiles/stereo_poly_test.dir/clean
 clean: CMakeFiles/phase10_tests.dir/clean
+clean: CMakeFiles/timing_validation.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -249,6 +252,38 @@ CMakeFiles/phase10_tests.dir/codegen:
 CMakeFiles/phase10_tests.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/clean
 .PHONY : CMakeFiles/phase10_tests.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/timing_validation.dir
+
+# All Build rule for target.
+CMakeFiles/timing_validation.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=30,31,32,33,34 "Built target timing_validation"
+.PHONY : CMakeFiles/timing_validation.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/timing_validation.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles 5
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/timing_validation.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles 0
+.PHONY : CMakeFiles/timing_validation.dir/rule
+
+# Convenience name for target.
+timing_validation: CMakeFiles/timing_validation.dir/rule
+.PHONY : timing_validation
+
+# codegen rule for target.
+CMakeFiles/timing_validation.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=30,31,32,33,34 "Finished codegen for target timing_validation"
+.PHONY : CMakeFiles/timing_validation.dir/codegen
+
+# clean rule for target.
+CMakeFiles/timing_validation.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/clean
+.PHONY : CMakeFiles/timing_validation.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.
