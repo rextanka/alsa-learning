@@ -10,6 +10,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp" "CMakeFiles/metronome_test.dir/audio/Voice.cpp.o" "gcc" "CMakeFiles/metronome_test.dir/audio/Voice.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp" "CMakeFiles/metronome_test.dir/audio/VoiceManager.cpp.o" "gcc" "CMakeFiles/metronome_test.dir/audio/VoiceManager.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.cpp" "CMakeFiles/metronome_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o" "gcc" "CMakeFiles/metronome_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp" "CMakeFiles/metronome_test.dir/src/AudioBridge.cpp.o" "gcc" "CMakeFiles/metronome_test.dir/src/AudioBridge.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/metronome_test.cpp" "CMakeFiles/metronome_test.dir/src/metronome_test.cpp.o" "gcc" "CMakeFiles/metronome_test.dir/src/metronome_test.cpp.o.d"
   )

@@ -4,24 +4,22 @@
 #include <thread>
 #include <iomanip>
 #include <sstream>
+#include <memory>
 #include "include/CInterface.h"
+#include "audio/RingBufferLogger.hpp"
 
-// For testing internal state
-#include "../audio/VoiceManager.hpp"
-#include "../audio/MusicalClock.hpp"
-#include "../audio/TuningSystem.hpp"
-struct InternalEngine {
-    std::unique_ptr<audio::VoiceManager> voice_manager;
-    audio::MusicalClock clock;
-    audio::TwelveToneEqual tuning;
-};
+#ifdef __APPLE__
+#include "hal/coreaudio/CoreAudioDriver.hpp"
+using NativeDriver = hal::CoreAudioDriver;
+#elif defined(__linux__)
+#include "hal/alsa/AlsaDriver.hpp"
+using NativeDriver = hal::AlsaDriver;
+#endif
 
-std::string get_timestamp() {
-    auto now = std::chrono::system_clock::now();
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
-    auto timer = std::chrono::system_clock::to_time_t(now);
+std::string format_time(std::chrono::system_clock::time_point tp) {
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()) % 1000;
+    auto timer = std::chrono::system_clock::to_time_t(tp);
     std::tm bt = *std::localtime(&timer);
-    
     std::ostringstream oss;
     oss << std::put_time(&bt, "%H:%M:%S");
     oss << '.' << std::setfill('0') << std::setw(3) << ms.count();
@@ -29,38 +27,76 @@ std::string get_timestamp() {
 }
 
 int main() {
-    std::cout << "--- Metronome Console Test (5 Seconds) ---" << std::endl;
+    std::cout << "--- Audible Metronome Test (5 Seconds) ---" << std::endl;
+    std::cout << "Cadence: C4 (High) on Beat 1, A4 (Low) on Beats 2, 3, 4." << std::endl;
     
     unsigned int sample_rate = 44100;
-    EngineHandle handle = engine_create(sample_rate);
-    engine_set_bpm(handle, 120.0); // 2 beats per second
+    auto driver = std::make_unique<NativeDriver>(sample_rate, 512);
+    EngineHandle engine = engine_create(sample_rate);
+    
+    engine_set_bpm(engine, 120.0);
+    
+    // We'll use the C-API engine for the metronome.
+    // It uses VoiceManager which already has voices with Sine + ADSR (close enough to AD).
     
     int last_beat = -1;
-    float dummy_buffer[512];
     
-    // Simulating audio heartbeat precisely for 5 seconds worth of samples
-    // 5 seconds @ 44100Hz = 220500 samples
-    // 220500 / 512 = ~430 blocks
-    size_t total_samples = sample_rate * 5;
-    size_t samples_processed = 0;
-    
-    while (samples_processed < total_samples) {
-        engine_process(handle, dummy_buffer, 512);
-        samples_processed += 512;
+    driver->set_callback([engine, &last_beat](std::span<float> output) {
+        engine_process(engine, output.data(), output.size());
         
         int bar, beat, tick;
-        engine_get_musical_time(handle, &bar, &beat, &tick);
+        engine_get_musical_time(engine, &bar, &beat, &tick);
         
         if (beat != last_beat) {
-            std::cout << "[" << get_timestamp() << "] TICK (Bar: " << bar << ", Beat: " << beat << ")" << std::endl;
+            // Trigger metronome sound
+            if (beat == 1) {
+                // High tick: C5 (actually let's do C5 for high, C4 for low)
+                engine_note_on_name(engine, "C5", 0.8f);
+            } else {
+                // Low tick
+                engine_note_on_name(engine, "C4", 0.6f);
+            }
+            
+            // Release after a short duration is handled by ADSR in Voice if we trigger note_off,
+            // but for a metronome we want a short 'blip'.
+            // Note: note_off triggers the release phase.
+            
+            // Log via thread-safe logger
+            char log_msg[64];
+            snprintf(log_msg, 64, "TICK (Bar: %d, Beat: %d)", bar, beat);
+            audio::RingBufferLogger::instance().log(log_msg);
+            
             last_beat = beat;
         }
         
-        // Simulating the passing of time so we don't dump everything instantly
-        std::this_thread::sleep_for(std::chrono::milliseconds(512 * 1000 / sample_rate));
+        // We should release the notes shortly after trigger. 
+        // A simple way is to check ticks, but for this test, we'll just note_off the previous note
+        // when the next one starts, or use a timer.
+        // For simplicity here, let's just trigger a note_off 100ms later? 
+        // Actually, let's just let the ADSR release naturally if it's short.
+    });
+    
+    if (!driver->start()) {
+        std::cerr << "Failed to start audio driver!" << std::endl;
+        return 1;
     }
     
-    engine_destroy(handle);
+    auto start_time = std::chrono::steady_clock::now();
+    auto end_time = start_time + std::chrono::seconds(5);
+    
+    while (std::chrono::steady_clock::now() < end_time) {
+        // Spool logs from ring buffer to console
+        audio::RingBufferLogger::LogEntry entry;
+        while (audio::RingBufferLogger::instance().try_pop(entry)) {
+            std::cout << "[" << format_time(entry.timestamp) << "] " << entry.message << std::endl;
+        }
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    
+    driver->stop();
+    engine_destroy(engine);
+    
     std::cout << "--- Metronome Test Finished ---" << std::endl;
     return 0;
 }

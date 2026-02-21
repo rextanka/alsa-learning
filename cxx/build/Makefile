@@ -319,6 +319,7 @@ hal/coreaudio/CoreAudioDriver.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_check.dir/build.make CMakeFiles/audio_check.dir/hal/coreaudio/CoreAudioDriver.cpp.o
 .PHONY : hal/coreaudio/CoreAudioDriver.cpp.o
 
@@ -331,6 +332,7 @@ hal/coreaudio/CoreAudioDriver.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/hal/coreaudio/CoreAudioDriver.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/hal/coreaudio/CoreAudioDriver.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_check.dir/build.make CMakeFiles/audio_check.dir/hal/coreaudio/CoreAudioDriver.cpp.i
 .PHONY : hal/coreaudio/CoreAudioDriver.cpp.i
 
@@ -343,6 +345,7 @@ hal/coreaudio/CoreAudioDriver.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/hal/coreaudio/CoreAudioDriver.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/hal/coreaudio/CoreAudioDriver.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_check.dir/build.make CMakeFiles/audio_check.dir/hal/coreaudio/CoreAudioDriver.cpp.s
 .PHONY : hal/coreaudio/CoreAudioDriver.cpp.s
 

@@ -3490,6 +3490,7 @@ CMakeFiles/metronome_test.dir/src/metronome_test.cpp.o: /Users/nickthompson/src/
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__fwd/ostream.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__fwd/pair.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__fwd/queue.h \
+  /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__fwd/span.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__fwd/sstream.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__fwd/stack.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__fwd/streambuf.h \
@@ -3859,6 +3860,7 @@ CMakeFiles/metronome_test.dir/src/metronome_test.cpp.o: /Users/nickthompson/src/
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/forward_list \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/functional \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/initializer_list \
+  /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/iomanip \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/ios \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/iosfwd \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/iostream \
@@ -3875,6 +3877,7 @@ CMakeFiles/metronome_test.dir/src/metronome_test.cpp.o: /Users/nickthompson/src/
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/print \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/queue \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/ratio \
+  /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/span \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/sstream \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/stack \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/stddef.h \
@@ -4047,7 +4050,26 @@ CMakeFiles/metronome_test.dir/src/metronome_test.cpp.o: /Users/nickthompson/src/
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdarg.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stddef.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdint.h \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/include/CInterface.h
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/include/CInterface.h \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioBuffer.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioGraph.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/BufferPool.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/InputSource.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/MusicalClock.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/PerformanceProfiler.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/TuningSystem.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceContext.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/AdsrEnvelopeProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/envelope/EnvelopeProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/filter/FilterProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceContext.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/oscillator/WavetableOscillatorProcessor.hpp
 
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__thread/thread.h:
@@ -5573,6 +5595,8 @@ CMakeFiles/metronome_test.dir/src/metronome_test.cpp.o: /Users/nickthompson/src/
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__chrono/system_clock.h:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/ranges_partial_sort.h:
+
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/iomanip:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_wchar_t.h:
 

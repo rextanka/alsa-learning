@@ -202,7 +202,7 @@ CMakeFiles/filter_tests.dir/clean:
 CMakeFiles/stereo_poly_test.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=35,36,37,38,39,40 "Built target stereo_poly_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=36,37,38,39,40,41 "Built target stereo_poly_test"
 .PHONY : CMakeFiles/stereo_poly_test.dir/all
 
 # Build rule for subdir invocation for target.
@@ -219,7 +219,7 @@ stereo_poly_test: CMakeFiles/stereo_poly_test.dir/rule
 # codegen rule for target.
 CMakeFiles/stereo_poly_test.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=35,36,37,38,39,40 "Finished codegen for target stereo_poly_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=36,37,38,39,40,41 "Finished codegen for target stereo_poly_test"
 .PHONY : CMakeFiles/stereo_poly_test.dir/codegen
 
 # clean rule for target.
@@ -234,7 +234,7 @@ CMakeFiles/stereo_poly_test.dir/clean:
 CMakeFiles/phase10_tests.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=30,31,32,33,34 "Built target phase10_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=31,32,33,34,35 "Built target phase10_tests"
 .PHONY : CMakeFiles/phase10_tests.dir/all
 
 # Build rule for subdir invocation for target.
@@ -251,7 +251,7 @@ phase10_tests: CMakeFiles/phase10_tests.dir/rule
 # codegen rule for target.
 CMakeFiles/phase10_tests.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=30,31,32,33,34 "Finished codegen for target phase10_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=31,32,33,34,35 "Finished codegen for target phase10_tests"
 .PHONY : CMakeFiles/phase10_tests.dir/codegen
 
 # clean rule for target.
@@ -266,7 +266,7 @@ CMakeFiles/phase10_tests.dir/clean:
 CMakeFiles/timing_validation.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=41,42,43,44,45 "Built target timing_validation"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=42,43,44,45,46 "Built target timing_validation"
 .PHONY : CMakeFiles/timing_validation.dir/all
 
 # Build rule for subdir invocation for target.
@@ -283,7 +283,7 @@ timing_validation: CMakeFiles/timing_validation.dir/rule
 # codegen rule for target.
 CMakeFiles/timing_validation.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=41,42,43,44,45 "Finished codegen for target timing_validation"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=42,43,44,45,46 "Finished codegen for target timing_validation"
 .PHONY : CMakeFiles/timing_validation.dir/codegen
 
 # clean rule for target.
@@ -298,12 +298,12 @@ CMakeFiles/timing_validation.dir/clean:
 CMakeFiles/metronome_test.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=25,26,27,28,29 "Built target metronome_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=25,26,27,28,29,30 "Built target metronome_test"
 .PHONY : CMakeFiles/metronome_test.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/metronome_test.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles 5
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles 6
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/metronome_test.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles 0
 .PHONY : CMakeFiles/metronome_test.dir/rule
@@ -315,7 +315,7 @@ metronome_test: CMakeFiles/metronome_test.dir/rule
 # codegen rule for target.
 CMakeFiles/metronome_test.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=25,26,27,28,29 "Finished codegen for target metronome_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=25,26,27,28,29,30 "Finished codegen for target metronome_test"
 .PHONY : CMakeFiles/metronome_test.dir/codegen
 
 # clean rule for target.

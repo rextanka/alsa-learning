@@ -3,6 +3,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/metronome_test.dir/audio/Voice.cpp.o.d"
   "CMakeFiles/metronome_test.dir/audio/VoiceManager.cpp.o"
   "CMakeFiles/metronome_test.dir/audio/VoiceManager.cpp.o.d"
+  "CMakeFiles/metronome_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o"
+  "CMakeFiles/metronome_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o.d"
   "CMakeFiles/metronome_test.dir/src/AudioBridge.cpp.o"
   "CMakeFiles/metronome_test.dir/src/AudioBridge.cpp.o.d"
   "CMakeFiles/metronome_test.dir/src/metronome_test.cpp.o"
