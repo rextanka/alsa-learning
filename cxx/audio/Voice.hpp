@@ -79,6 +79,11 @@ public:
     void set_filter_type(std::unique_ptr<FilterProcessor> filter);
 
     /**
+     * @brief Borrow a buffer from the internal graph.
+     */
+    BufferPool::BufferPtr borrow_buffer() { return graph_->borrow_buffer(); }
+
+    /**
      * @brief Set the stereo pan position.
      * 
      * @param pan Pan value from -1.0 (left) to 1.0 (right).

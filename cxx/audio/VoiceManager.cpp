@@ -160,11 +160,10 @@ void VoiceManager::reset() {
 void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context) {
     std::fill(output.begin(), output.end(), 0.0f);
 
-    static thread_local std::vector<float> voice_buffer;
-    if (voice_buffer.size() < output.size()) {
-        voice_buffer.resize(output.size());
-    }
-    std::span<float> voice_span(voice_buffer.data(), output.size());
+    // Borrow a stereo block for summation
+    // We only need the left channel for mono output summation
+    auto block = voices_[0].voice->borrow_buffer();
+    std::span<float> voice_span(block->left.data(), output.size());
 
     for (auto& slot : voices_) {
         if (slot.active) {
@@ -189,16 +188,12 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
 void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
     output.clear();
 
-    // Use a temporary stereo buffer for each voice
-    static thread_local StereoBlock voice_buffer(0);
-    if (voice_buffer.left.size() < output.frames()) {
-        voice_buffer.left.resize(output.frames());
-        voice_buffer.right.resize(output.frames());
-    }
+    // Borrow a stereo block from the pool
+    auto block = voices_[0].voice->borrow_buffer();
     
     AudioBuffer voice_buf;
-    voice_buf.left = std::span<float>(voice_buffer.left.data(), output.frames());
-    voice_buf.right = std::span<float>(voice_buffer.right.data(), output.frames());
+    voice_buf.left = std::span<float>(block->left.data(), output.frames());
+    voice_buf.right = std::span<float>(block->right.data(), output.frames());
 
     for (auto& slot : voices_) {
         if (slot.active) {

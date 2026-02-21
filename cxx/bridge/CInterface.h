@@ -67,6 +67,7 @@ EngineHandle engine_create(unsigned int sample_rate);
 void engine_destroy(EngineHandle handle);
 void engine_note_on(EngineHandle handle, int note, float velocity);
 void engine_note_off(EngineHandle handle, int note);
+void engine_set_note_pan(EngineHandle handle, int note, float pan);
 int engine_process(EngineHandle handle, float* output, size_t frames);
 
 // Envelope type enum
@@ -86,6 +87,9 @@ int envelope_gate_off(EnvelopeHandle handle);
 int envelope_set_adsr(EnvelopeHandle handle, float attack, float decay, float sustain, float release);
 int envelope_set_ad(EnvelopeHandle handle, float attack, float decay);
 int envelope_process(EnvelopeHandle handle, float* output, size_t frames);
+
+// Parameter API for automated control
+int set_param(void* handle, const char* name, float value);
 int envelope_is_active(EnvelopeHandle handle);
 
 #ifdef __cplusplus

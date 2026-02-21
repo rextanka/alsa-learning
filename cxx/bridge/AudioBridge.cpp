@@ -20,6 +20,7 @@
 #include "../audio/VoiceManager.hpp"
 #include <memory>
 #include <span>
+#include <cstring>
 
 // Internal handle structure (hidden from C API)
 struct OscillatorHandleImpl {
@@ -400,6 +401,12 @@ void engine_note_off(EngineHandle handle, int note) {
     impl->voice_manager->note_off(note);
 }
 
+void engine_set_note_pan(EngineHandle handle, int note, float pan) {
+    if (!handle) return;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->voice_manager->set_note_pan(note, pan);
+}
+
 int engine_process(EngineHandle handle, float* output, size_t frames) {
     if (!handle || !output || frames == 0) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
@@ -407,6 +414,33 @@ int engine_process(EngineHandle handle, float* output, size_t frames) {
         std::span<float> output_span(output, frames);
         impl->voice_manager->pull(output_span);
         return 0;
+    } catch (...) {
+        return -1;
+    }
+}
+
+int set_param(void* handle, const char* name, float value) {
+    if (!handle || !name) return -1;
+    
+    try {
+        // Check for envelope handles
+        auto* env_impl = static_cast<EnvelopeHandleImpl*>(handle);
+        
+        auto* adsr = dynamic_cast<audio::AdsrEnvelopeProcessor*>(env_impl->processor.get());
+        if (adsr) {
+            if (std::strcmp(name, "attack") == 0) { adsr->set_attack_time(value); return 0; }
+            if (std::strcmp(name, "decay") == 0) { adsr->set_decay_time(value); return 0; }
+            if (std::strcmp(name, "sustain") == 0) { adsr->set_sustain_level(value); return 0; }
+            if (std::strcmp(name, "release") == 0) { adsr->set_release_time(value); return 0; }
+        }
+
+        auto* ad = dynamic_cast<audio::ADEnvelopeProcessor*>(env_impl->processor.get());
+        if (ad) {
+            if (std::strcmp(name, "attack") == 0) { ad->set_attack_time(value); return 0; }
+            if (std::strcmp(name, "decay") == 0) { ad->set_decay_time(value); return 0; }
+        }
+        
+        return -1;
     } catch (...) {
         return -1;
     }
