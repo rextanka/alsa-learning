@@ -114,6 +114,20 @@ add_executable(metronome_test
     audio/VoiceManager.cpp
 )
 
+# Audio Check (Audible Verification)
+add_executable(audio_check 
+    src/audio_check.cpp
+    src/AudioBridge.cpp
+    audio/Voice.cpp
+    audio/VoiceManager.cpp
+)
+
+if(APPLE)
+    target_sources(audio_check PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
+elseif(UNIX AND NOT APPLE)
+    target_sources(audio_check PRIVATE hal/alsa/AlsaDriver.cpp)
+endif()
+
 # HAL sources
 if(APPLE)
     target_sources(audio_test PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
@@ -139,6 +153,7 @@ if(PLATFORM_LIBS)
     target_link_libraries(engine_tests ${PLATFORM_LIBS})
     target_link_libraries(filter_tests ${PLATFORM_LIBS})
     target_link_libraries(stereo_poly_test ${PLATFORM_LIBS})
+    target_link_libraries(audio_check ${PLATFORM_LIBS})
 endif()
 
 # Compiler options
