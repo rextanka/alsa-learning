@@ -4157,6 +4157,7 @@ CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o: /Users/nickthomps
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdbool.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stddef.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdint.h \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioBuffer.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/include/AudioDriver.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.hpp
 
@@ -5337,6 +5338,7 @@ CMakeFiles/audio_test.dir/main.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-lea
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/oscillator/SineOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/oscillator/WavetableOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/CInterface.h \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioBuffer.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/include/AudioDriver.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.hpp
 

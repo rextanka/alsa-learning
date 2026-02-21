@@ -78,6 +78,18 @@ public:
      */
     void set_filter_type(std::unique_ptr<FilterProcessor> filter);
 
+    /**
+     * @brief Set the stereo pan position.
+     * 
+     * @param pan Pan value from -1.0 (left) to 1.0 (right).
+     */
+    void set_pan(float pan);
+
+    /**
+     * @brief Get the pan position.
+     */
+    float pan() const { return pan_; }
+
 protected:
     /**
      * @brief Implementation of the pull-based processing logic.
@@ -87,6 +99,11 @@ protected:
      */
     void do_pull(std::span<float> output, const VoiceContext* context = nullptr) override;
 
+    /**
+     * @brief Implementation of the pull-based processing logic (Stereo).
+     */
+    void do_pull(AudioBuffer& output, const VoiceContext* context = nullptr) override;
+
 private:
     void rebuild_graph();
 
@@ -95,6 +112,7 @@ private:
     std::unique_ptr<FilterProcessor> filter_;
     std::unique_ptr<AudioGraph> graph_;
     int sample_rate_;
+    float pan_; // -1.0 to 1.0
 };
 
 } // namespace audio

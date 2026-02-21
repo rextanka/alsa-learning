@@ -11,6 +11,7 @@ namespace audio {
 
 Voice::Voice(int sample_rate)
     : sample_rate_(sample_rate)
+    , pan_(0.0f) // Center
 {
     oscillator_ = std::make_unique<WavetableOscillatorProcessor>(static_cast<double>(sample_rate));
     envelope_ = std::make_unique<AdsrEnvelopeProcessor>(sample_rate);
@@ -25,6 +26,10 @@ Voice::Voice(int sample_rate)
 void Voice::set_filter_type(std::unique_ptr<FilterProcessor> filter) {
     filter_ = std::move(filter);
     rebuild_graph();
+}
+
+void Voice::set_pan(float pan) {
+    pan_ = std::clamp(pan, -1.0f, 1.0f);
 }
 
 void Voice::rebuild_graph() {
@@ -71,6 +76,31 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
     
     for (size_t i = 0; i < output.size(); ++i) {
         output[i] *= env_span[i];
+    }
+}
+
+void Voice::do_pull(AudioBuffer& output, const VoiceContext* context) {
+    // 1. Process the graph (Oscillator -> Filter)
+    graph_->pull(output, context);
+
+    // 2. Apply VCA (ADSR)
+    static thread_local std::vector<float> envelope_buffer;
+    if (envelope_buffer.size() < output.frames()) {
+        envelope_buffer.resize(output.frames());
+    }
+    
+    std::span<float> env_span(envelope_buffer.data(), output.frames());
+    envelope_->pull(env_span, context);
+    
+    // Constant power panning approximation
+    float pan_rad = (pan_ + 1.0f) * (M_PI / 4.0f);
+    float gain_l = std::cos(pan_rad);
+    float gain_r = std::sin(pan_rad);
+
+    for (size_t i = 0; i < output.frames(); ++i) {
+        float gain = env_span[i];
+        output.left[i] *= (gain * gain_l);
+        output.right[i] *= (gain * gain_r);
     }
 }
 
