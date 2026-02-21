@@ -11,15 +11,16 @@
 
 namespace hal {
 
-AlsaDriver::AlsaDriver(int sample_rate, int block_size, const std::string& device)
+AlsaDriver::AlsaDriver(int sample_rate, int block_size, int num_channels, const std::string& device)
     : pcm_handle_(nullptr)
     , device_name_(device)
     , sample_rate_(sample_rate)
     , block_size_(block_size)
+    , num_channels_(num_channels)
     , running_(false)
 {
     float_buffer_.resize(block_size_);
-    s16_buffer_.resize(block_size_);
+    // s16_buffer will be resized after PCM setup reveals actual channel count
 }
 
 AlsaDriver::~AlsaDriver() {
@@ -91,10 +92,12 @@ bool AlsaDriver::setup_pcm() {
     }
     sample_rate_ = rate;
 
-    if ((err = snd_pcm_hw_params_set_channels(pcm_handle_, hw_params, 1)) < 0) {
+    unsigned int channels = num_channels_;
+    if ((err = snd_pcm_hw_params_set_channels_near(pcm_handle_, hw_params, &channels)) < 0) {
         std::cerr << "ALSA: Cannot set channel count (" << snd_strerror(err) << ")" << std::endl;
         return false;
     }
+    num_channels_ = static_cast<int>(channels);
 
     snd_pcm_uframes_t frames = block_size_;
     if ((err = snd_pcm_hw_params_set_period_size_near(pcm_handle_, hw_params, &frames, 0)) < 0) {
@@ -103,12 +106,20 @@ bool AlsaDriver::setup_pcm() {
     }
     block_size_ = static_cast<int>(frames);
 
+    // Aim for 4 periods for stability
+    unsigned int periods = 4;
+    snd_pcm_hw_params_set_periods_near(pcm_handle_, hw_params, &periods, 0);
+
     if ((err = snd_pcm_hw_params(pcm_handle_, hw_params)) < 0) {
         std::cerr << "ALSA: Cannot set parameters (" << snd_strerror(err) << ")" << std::endl;
         return false;
     }
 
     snd_pcm_hw_params_free(hw_params);
+
+    // Finalize internal buffers
+    float_buffer_.assign(block_size_, 0.0f);
+    s16_buffer_.assign(block_size_ * num_channels_, 0);
 
     if ((err = snd_pcm_prepare(pcm_handle_)) < 0) {
         std::cerr << "ALSA: Cannot prepare audio interface for use (" << snd_strerror(err) << ")" << std::endl;
@@ -123,13 +134,18 @@ void AlsaDriver::thread_loop() {
         if (callback_) {
             callback_(std::span<float>(float_buffer_));
 
-            // Convert float to S16_LE
+            // Interleave and Convert float to S16_LE
+            // Since the graph is mono, we duplicate to all hardware channels
             for (size_t i = 0; i < float_buffer_.size(); ++i) {
                 float sample = std::clamp(float_buffer_[i], -1.0f, 1.0f);
-                s16_buffer_[i] = static_cast<int16_t>(sample * 32767.0f);
+                int16_t s16_sample = static_cast<int16_t>(sample * 32767.0f);
+                
+                for (int ch = 0; ch < num_channels_; ++ch) {
+                    s16_buffer_[i * num_channels_ + ch] = s16_sample;
+                }
             }
 
-            int err = snd_pcm_writei(pcm_handle_, s16_buffer_.data(), s16_buffer_.size());
+            int err = snd_pcm_writei(pcm_handle_, s16_buffer_.data(), block_size_);
             if (err < 0) {
                 recover_pcm(err);
             }

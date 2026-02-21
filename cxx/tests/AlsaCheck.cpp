@@ -16,8 +16,9 @@ int main() {
 
     const int sample_rate = 48000;
     const int block_size = 512;
+    const int num_channels = 2; // Stereo hardware target
 
-    auto driver = std::make_unique<hal::AlsaDriver>(sample_rate, block_size, "default");
+    auto driver = std::make_unique<hal::AlsaDriver>(sample_rate, block_size, num_channels, "default");
     
     // Create a sine oscillator for testing
     auto sine = std::make_shared<audio::SineOscillatorProcessor>(sample_rate);
@@ -36,6 +37,7 @@ int main() {
     std::cout << "Driver running for 3 seconds..." << std::endl;
     std::cout << "Sample Rate: " << driver->sample_rate() << " Hz" << std::endl;
     std::cout << "Block Size: " << driver->block_size() << " frames" << std::endl;
+    std::cout << "Channels: " << driver->channels() << std::endl;
 
     std::this_thread::sleep_for(std::chrono::seconds(3));
 
