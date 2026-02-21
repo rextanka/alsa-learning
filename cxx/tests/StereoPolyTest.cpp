@@ -1,6 +1,6 @@
 /**
  * @file StereoPolyTest.cpp
- * @brief Test polyphony and stereo panning.
+ * @brief Test polyphony and gradual stereo panning.
  */
 
 #include <iostream>
@@ -28,7 +28,7 @@ using NativeDriver = hal::DummyDriver;
 #endif
 
 int main() {
-    std::cout << "--- Starting Stereo Polyphonic Test ---" << std::endl;
+    std::cout << "--- Starting Stereo Polyphonic Test (Gradual Panning) ---" << std::endl;
 
     int sample_rate = 44100;
     auto driver = std::make_unique<NativeDriver>(sample_rate, 512);
@@ -46,27 +46,36 @@ int main() {
         return 1;
     }
 
-    std::cout << "Playing E#m chord with panning..." << std::endl;
-    
-    // We need to access voices to set pan. For this test, we'll use a hack or assume
-    // the manager can set it. Since we didn't add engine_set_voice_pan to the bridge,
-    // let's do a quick internal access for this test.
-    // In a real app, the manager would handle this via MIDI/CC.
-    
-    // Since we are in C++ test, we can use a friend or just expose voices for testing.
-    // For now, let's just trigger the notes. To verify panning, I'll add a quick
-    // note_on_panned to the VoiceManager for this implementation.
+    std::cout << "Step 1: Playing E#m chord (Centered)..." << std::endl;
+    engine->note_on(65, 0.8f);
+    engine->note_on(69, 0.8f);
+    engine->note_on(72, 0.8f);
 
-    // Root: E#4 (65) -> Hard Left (-1.0)
-    engine->note_on_panned(65, 0.8f, -1.0f);
-    // Third: A4 (69) -> Center (0.0)
-    engine->note_on_panned(69, 0.8f, 0.0f);
-    // Fifth: C5 (72) -> Hard Right (1.0)
-    engine->note_on_panned(72, 0.8f, 1.0f);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::cout << "Step 2: Gradual Panning (over 1s)..." << std::endl;
+    std::cout << "  Root -> Hard Left, Third -> Center, Fifth -> Hard Right" << std::endl;
 
-    std::cout << "Releasing notes..." << std::endl;
+    const int steps = 50;
+    const std::chrono::milliseconds step_duration(20); // 50 * 20ms = 1000ms
+
+    for (int i = 1; i <= steps; ++i) {
+        float t = static_cast<float>(i) / steps;
+        
+        // Root: 0.0 to -1.0
+        engine->set_note_pan(65, -t);
+        // Third: stays at 0.0
+        engine->set_note_pan(69, 0.0f);
+        // Fifth: 0.0 to 1.0
+        engine->set_note_pan(72, t);
+
+        std::this_thread::sleep_for(step_duration);
+    }
+
+    std::cout << "Step 3: Holding panned chord..." << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    std::cout << "Step 4: Releasing notes..." << std::endl;
     engine->note_off(65);
     engine->note_off(69);
     engine->note_off(72);

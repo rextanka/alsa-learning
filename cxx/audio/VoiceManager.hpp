@@ -46,6 +46,11 @@ public:
     void note_on_panned(int note, float velocity, float pan);
 
     /**
+     * @brief Set pan for a currently playing note.
+     */
+    void set_note_pan(int note, float pan);
+
+    /**
      * @brief Trigger a note off.
      * 
      * @param note MIDI note number.

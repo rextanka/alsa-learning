@@ -130,6 +130,14 @@ void VoiceManager::note_on_panned(int note, float velocity, float pan) {
     }
 }
 
+void VoiceManager::set_note_pan(int note, float pan) {
+    for (auto& slot : voices_) {
+        if (slot.active && slot.current_note == note) {
+            slot.voice->set_pan(pan);
+        }
+    }
+}
+
 void VoiceManager::note_off(int note) {
     for (auto& slot : voices_) {
         if (slot.active && slot.current_note == note) {
