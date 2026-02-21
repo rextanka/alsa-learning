@@ -234,39 +234,6 @@ audio/VoiceManager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/VoiceManager.cpp.s
 .PHONY : audio/VoiceManager.cpp.s
 
-bridge/AudioBridge.o: bridge/AudioBridge.cpp.o
-.PHONY : bridge/AudioBridge.o
-
-# target to build an object file
-bridge/AudioBridge.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/bridge/AudioBridge.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.o
-.PHONY : bridge/AudioBridge.cpp.o
-
-bridge/AudioBridge.i: bridge/AudioBridge.cpp.i
-.PHONY : bridge/AudioBridge.i
-
-# target to preprocess a source file
-bridge/AudioBridge.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/bridge/AudioBridge.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.i
-.PHONY : bridge/AudioBridge.cpp.i
-
-bridge/AudioBridge.s: bridge/AudioBridge.cpp.s
-.PHONY : bridge/AudioBridge.s
-
-# target to generate assembly for a file
-bridge/AudioBridge.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/bridge/AudioBridge.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/bridge/AudioBridge.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.s
-.PHONY : bridge/AudioBridge.cpp.s
-
 hal/coreaudio/CoreAudioDriver.o: hal/coreaudio/CoreAudioDriver.cpp.o
 .PHONY : hal/coreaudio/CoreAudioDriver.o
 
@@ -300,29 +267,62 @@ hal/coreaudio/CoreAudioDriver.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/hal/coreaudio/CoreAudioDriver.cpp.s
 .PHONY : hal/coreaudio/CoreAudioDriver.cpp.s
 
-main.o: main.cpp.o
-.PHONY : main.o
+src/AudioBridge.o: src/AudioBridge.cpp.o
+.PHONY : src/AudioBridge.o
 
 # target to build an object file
-main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/main.cpp.o
-.PHONY : main.cpp.o
+src/AudioBridge.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/src/AudioBridge.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.o
+.PHONY : src/AudioBridge.cpp.o
 
-main.i: main.cpp.i
-.PHONY : main.i
+src/AudioBridge.i: src/AudioBridge.cpp.i
+.PHONY : src/AudioBridge.i
 
 # target to preprocess a source file
-main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/main.cpp.i
-.PHONY : main.cpp.i
+src/AudioBridge.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/src/AudioBridge.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.i
+.PHONY : src/AudioBridge.cpp.i
 
-main.s: main.cpp.s
-.PHONY : main.s
+src/AudioBridge.s: src/AudioBridge.cpp.s
+.PHONY : src/AudioBridge.s
 
 # target to generate assembly for a file
-main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/main.cpp.s
-.PHONY : main.cpp.s
+src/AudioBridge.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/src/AudioBridge.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.s
+.PHONY : src/AudioBridge.cpp.s
+
+src/main.o: src/main.cpp.o
+.PHONY : src/main.o
+
+# target to build an object file
+src/main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/src/main.cpp.o
+.PHONY : src/main.cpp.o
+
+src/main.i: src/main.cpp.i
+.PHONY : src/main.i
+
+# target to preprocess a source file
+src/main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/src/main.cpp.i
+.PHONY : src/main.cpp.i
+
+src/main.s: src/main.cpp.s
+.PHONY : src/main.s
+
+# target to generate assembly for a file
+src/main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/src/main.cpp.s
+.PHONY : src/main.cpp.s
 
 tests/EngineTests.o: tests/EngineTests.cpp.o
 .PHONY : tests/EngineTests.o
@@ -414,15 +414,15 @@ help:
 	@echo "... audio/VoiceManager.o"
 	@echo "... audio/VoiceManager.i"
 	@echo "... audio/VoiceManager.s"
-	@echo "... bridge/AudioBridge.o"
-	@echo "... bridge/AudioBridge.i"
-	@echo "... bridge/AudioBridge.s"
 	@echo "... hal/coreaudio/CoreAudioDriver.o"
 	@echo "... hal/coreaudio/CoreAudioDriver.i"
 	@echo "... hal/coreaudio/CoreAudioDriver.s"
-	@echo "... main.o"
-	@echo "... main.i"
-	@echo "... main.s"
+	@echo "... src/AudioBridge.o"
+	@echo "... src/AudioBridge.i"
+	@echo "... src/AudioBridge.s"
+	@echo "... src/main.o"
+	@echo "... src/main.i"
+	@echo "... src/main.s"
 	@echo "... tests/EngineTests.o"
 	@echo "... tests/EngineTests.i"
 	@echo "... tests/EngineTests.s"

@@ -8,7 +8,7 @@
 #include <thread>
 #include <chrono>
 #include <string>
-#include "../bridge/CInterface.h"
+#include "CInterface.h"
 
 // Note: For real-time audio in this test, we'll still use the HAL C++ classes
 // but we will wrap the engine calls exclusively in the C API.

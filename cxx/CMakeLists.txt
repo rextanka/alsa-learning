@@ -39,6 +39,7 @@ endif()
 
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Source files
 set(AUDIO_SOURCES
@@ -59,8 +60,8 @@ endif()
 
 # Main executable (processor + oscillator tests)
 add_executable(audio_test 
-    main.cpp 
-    bridge/AudioBridge.cpp
+    src/main.cpp 
+    src/AudioBridge.cpp
     audio/Voice.cpp
     audio/VoiceManager.cpp
 )
@@ -68,7 +69,7 @@ add_executable(audio_test
 # Audible Engine Tests
 add_executable(engine_tests 
     tests/EngineTests.cpp
-    bridge/AudioBridge.cpp
+    src/AudioBridge.cpp
     audio/Voice.cpp
     audio/VoiceManager.cpp
 )
@@ -76,7 +77,7 @@ add_executable(engine_tests
 # Filter Tests
 add_executable(filter_tests 
     tests/FilterTests.cpp
-    bridge/AudioBridge.cpp
+    src/AudioBridge.cpp
     audio/Voice.cpp
     audio/VoiceManager.cpp
 )
@@ -84,7 +85,7 @@ add_executable(filter_tests
 # Stereo Poly Test
 add_executable(stereo_poly_test 
     tests/StereoPolyTest.cpp
-    bridge/AudioBridge.cpp
+    src/AudioBridge.cpp
     audio/Voice.cpp
     audio/VoiceManager.cpp
 )

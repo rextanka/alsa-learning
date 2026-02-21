@@ -9,7 +9,7 @@
 #include <chrono>
 #include <string>
 #include <vector>
-#include "../bridge/CInterface.h"
+#include "CInterface.h"
 
 #ifdef __APPLE__
 #include "../hal/coreaudio/CoreAudioDriver.hpp"

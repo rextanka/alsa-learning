@@ -86,19 +86,19 @@ CMakeFiles/stereo_poly_test.dir/tests/StereoPolyTest.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/stereo_poly_test.dir/tests/StereoPolyTest.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/StereoPolyTest.cpp -o CMakeFiles/stereo_poly_test.dir/tests/StereoPolyTest.cpp.s
 
-CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.o: CMakeFiles/stereo_poly_test.dir/flags.make
-CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/AudioBridge.cpp
-CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.o: CMakeFiles/stereo_poly_test.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.o -MF CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.o.d -o CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/AudioBridge.cpp
+CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.o: CMakeFiles/stereo_poly_test.dir/flags.make
+CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp
+CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.o: CMakeFiles/stereo_poly_test.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.o -MF CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.o.d -o CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp
 
-CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/AudioBridge.cpp > CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.i
+CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp > CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.i
 
-CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/AudioBridge.cpp -o CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.s
+CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp -o CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.s
 
 CMakeFiles/stereo_poly_test.dir/audio/Voice.cpp.o: CMakeFiles/stereo_poly_test.dir/flags.make
 CMakeFiles/stereo_poly_test.dir/audio/Voice.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp
@@ -145,7 +145,7 @@ CMakeFiles/stereo_poly_test.dir/hal/coreaudio/CoreAudioDriver.cpp.s: cmake_force
 # Object files for target stereo_poly_test
 stereo_poly_test_OBJECTS = \
 "CMakeFiles/stereo_poly_test.dir/tests/StereoPolyTest.cpp.o" \
-"CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.o" \
+"CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.o" \
 "CMakeFiles/stereo_poly_test.dir/audio/Voice.cpp.o" \
 "CMakeFiles/stereo_poly_test.dir/audio/VoiceManager.cpp.o" \
 "CMakeFiles/stereo_poly_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o"
@@ -154,7 +154,7 @@ stereo_poly_test_OBJECTS = \
 stereo_poly_test_EXTERNAL_OBJECTS =
 
 bin/stereo_poly_test: CMakeFiles/stereo_poly_test.dir/tests/StereoPolyTest.cpp.o
-bin/stereo_poly_test: CMakeFiles/stereo_poly_test.dir/bridge/AudioBridge.cpp.o
+bin/stereo_poly_test: CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.o
 bin/stereo_poly_test: CMakeFiles/stereo_poly_test.dir/audio/Voice.cpp.o
 bin/stereo_poly_test: CMakeFiles/stereo_poly_test.dir/audio/VoiceManager.cpp.o
 bin/stereo_poly_test: CMakeFiles/stereo_poly_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o

@@ -10,8 +10,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp" "CMakeFiles/filter_tests.dir/audio/Voice.cpp.o" "gcc" "CMakeFiles/filter_tests.dir/audio/Voice.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp" "CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.o" "gcc" "CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.o.d"
-  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/bridge/AudioBridge.cpp" "CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o" "gcc" "CMakeFiles/filter_tests.dir/bridge/AudioBridge.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.cpp" "CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o" "gcc" "CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp" "CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.o" "gcc" "CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/FilterTests.cpp" "CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o" "gcc" "CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o.d"
   )
 
