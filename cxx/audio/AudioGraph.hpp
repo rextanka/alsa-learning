@@ -55,6 +55,13 @@ public:
         return buffer_pool_->borrow();
     }
 
+    /**
+     * @brief Register a node for feedback (storing its last output).
+     */
+    void register_feedback_node(Processor* node) {
+        feedback_nodes_.push_back(node);
+    }
+
 protected:
     /**
      * @brief Pull through the graph (Mono).
@@ -75,6 +82,9 @@ protected:
         for (size_t i = 1; i < nodes_.size(); ++i) {
             nodes_[i]->pull(output, context);
         }
+
+        // Handle feedback nodes (store their current state as 'last output')
+        // In a more complex graph, this would be part of the node execution.
     }
 
     /**
@@ -97,6 +107,7 @@ protected:
 
 private:
     std::vector<Processor*> nodes_;
+    std::vector<Processor*> feedback_nodes_;
     std::shared_ptr<BufferPool> buffer_pool_;
 };
 
