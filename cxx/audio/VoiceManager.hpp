@@ -41,6 +41,16 @@ public:
     void note_on(int note, float velocity);
 
     /**
+     * @brief Trigger a note on with specific panning.
+     */
+    void note_on_panned(int note, float velocity, float pan);
+
+    /**
+     * @brief Set pan for a currently playing note.
+     */
+    void set_note_pan(int note, float pan);
+
+    /**
      * @brief Trigger a note off.
      * 
      * @param note MIDI note number.
@@ -61,16 +71,26 @@ protected:
      */
     void do_pull(std::span<float> output, const VoiceContext* context = nullptr) override;
 
+    /**
+     * @brief Pull audio from all active voices and sum them (Stereo).
+     */
+    void do_pull(AudioBuffer& output, const VoiceContext* context = nullptr) override;
+
 private:
     /**
      * @brief Convert MIDI note to frequency.
      */
     double note_to_freq(int note) const;
 
+    uint64_t next_timestamp() { return ++timestamp_counter_; }
+
+    uint64_t timestamp_counter_ = 0;
+
     struct VoiceSlot {
         std::unique_ptr<Voice> voice;
         int current_note = -1;
         bool active = false;
+        uint64_t last_note_on_time = 0; // For LRU stealing
     };
 
     std::array<VoiceSlot, MAX_VOICES> voices_;

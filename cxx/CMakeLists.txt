@@ -79,11 +79,19 @@ add_executable(filter_tests
     audio/VoiceManager.cpp
 )
 
+# Stereo Poly Test
+add_executable(stereo_poly_test 
+    tests/StereoPolyTest.cpp
+    audio/Voice.cpp
+    audio/VoiceManager.cpp
+)
+
 # HAL sources
 if(APPLE)
     target_sources(audio_test PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
     target_sources(engine_tests PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
     target_sources(filter_tests PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
+    target_sources(stereo_poly_test PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
 elseif(UNIX AND NOT APPLE)
     target_sources(audio_test PRIVATE hal/alsa/AlsaDriver.cpp)
     target_sources(engine_tests PRIVATE hal/alsa/AlsaDriver.cpp)
@@ -102,6 +110,7 @@ if(PLATFORM_LIBS)
     target_link_libraries(audio_test ${PLATFORM_LIBS})
     target_link_libraries(engine_tests ${PLATFORM_LIBS})
     target_link_libraries(filter_tests ${PLATFORM_LIBS})
+    target_link_libraries(stereo_poly_test ${PLATFORM_LIBS})
 endif()
 
 # Compiler options

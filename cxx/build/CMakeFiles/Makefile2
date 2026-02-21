@@ -66,12 +66,14 @@ CMAKE_BINARY_DIR = /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build
 all: CMakeFiles/audio_test.dir/all
 all: CMakeFiles/engine_tests.dir/all
 all: CMakeFiles/filter_tests.dir/all
+all: CMakeFiles/stereo_poly_test.dir/all
 .PHONY : all
 
 # The main recursive "codegen" target.
 codegen: CMakeFiles/audio_test.dir/codegen
 codegen: CMakeFiles/engine_tests.dir/codegen
 codegen: CMakeFiles/filter_tests.dir/codegen
+codegen: CMakeFiles/stereo_poly_test.dir/codegen
 .PHONY : codegen
 
 # The main recursive "preinstall" target.
@@ -82,6 +84,7 @@ preinstall:
 clean: CMakeFiles/audio_test.dir/clean
 clean: CMakeFiles/engine_tests.dir/clean
 clean: CMakeFiles/filter_tests.dir/clean
+clean: CMakeFiles/stereo_poly_test.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -179,6 +182,38 @@ CMakeFiles/filter_tests.dir/codegen:
 CMakeFiles/filter_tests.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/clean
 .PHONY : CMakeFiles/filter_tests.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/stereo_poly_test.dir
+
+# All Build rule for target.
+CMakeFiles/stereo_poly_test.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=17,18,19,20,21 "Built target stereo_poly_test"
+.PHONY : CMakeFiles/stereo_poly_test.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/stereo_poly_test.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles 5
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/stereo_poly_test.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles 0
+.PHONY : CMakeFiles/stereo_poly_test.dir/rule
+
+# Convenience name for target.
+stereo_poly_test: CMakeFiles/stereo_poly_test.dir/rule
+.PHONY : stereo_poly_test
+
+# codegen rule for target.
+CMakeFiles/stereo_poly_test.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=17,18,19,20,21 "Finished codegen for target stereo_poly_test"
+.PHONY : CMakeFiles/stereo_poly_test.dir/codegen
+
+# clean rule for target.
+CMakeFiles/stereo_poly_test.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/clean
+.PHONY : CMakeFiles/stereo_poly_test.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

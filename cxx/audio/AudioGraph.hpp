@@ -59,6 +59,9 @@ protected:
     /**
      * @brief Pull through the graph (Mono).
      */
+    /**
+     * @brief Pull through the graph (Mono).
+     */
     void do_pull(std::span<float> output, const VoiceContext* context = nullptr) override {
         if (nodes_.empty()) {
             std::fill(output.begin(), output.end(), 0.0f);

@@ -64,6 +64,10 @@ public:
         return state_ != State::Idle;
     }
 
+    bool is_releasing() const override {
+        return state_ == State::Release;
+    }
+
     void reset() override {
         state_ = State::Idle;
         current_level_ = 0.0f;

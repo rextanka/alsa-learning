@@ -51,4 +51,5 @@ set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/audio_test.dir/DependInfo.cmake"
   "CMakeFiles/engine_tests.dir/DependInfo.cmake"
   "CMakeFiles/filter_tests.dir/DependInfo.cmake"
+  "CMakeFiles/stereo_poly_test.dir/DependInfo.cmake"
   )

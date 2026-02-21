@@ -994,6 +994,7 @@ CMakeFiles/engine_tests.dir/audio/Voice.cpp.o: /Users/nickthompson/src/cpp/audio
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdarg.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stddef.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdint.h \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioBuffer.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioGraph.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/BufferPool.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/InputSource.hpp \
@@ -2004,6 +2005,7 @@ CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o: /Users/nickthompson/src/cp
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdarg.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stddef.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdint.h \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioBuffer.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioGraph.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/BufferPool.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/InputSource.hpp \
@@ -3138,6 +3140,7 @@ CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o: /Users/nickthom
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdbool.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stddef.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdint.h \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioBuffer.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/include/AudioDriver.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.hpp
 
@@ -4299,6 +4302,7 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /Users/nickthompson/src/cpp
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdbool.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stddef.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdint.h \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioBuffer.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioGraph.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/BufferPool.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/InputSource.hpp \
@@ -4316,6 +4320,7 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /Users/nickthompson/src/cpp
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/oscillator/WavetableOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/include/AudioDriver.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioBuffer.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/include/AudioDriver.hpp
 
 
@@ -4614,6 +4619,8 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /Users/nickthompson/src/cpp
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_id_t.h:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_gid_t.h:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/AudioBuffer.hpp:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_fsfilcnt_t.h:
 

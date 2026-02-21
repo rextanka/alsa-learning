@@ -37,8 +37,10 @@ void run_test(const std::string& name, audio::WaveType wave, double freq, double
     voice->oscillator().setWaveType(wave);
     
     // Quick envelope for audible tests
-    voice->envelope().set_attack_time(0.05f);
-    voice->envelope().set_release_time(0.05f);
+    if (auto* adsr = dynamic_cast<audio::AdsrEnvelopeProcessor*>(&voice->envelope())) {
+        adsr->set_attack_time(0.05f);
+        adsr->set_release_time(0.05f);
+    }
     
     driver->set_callback([&voice](std::span<float> output) {
         voice->pull(output);
