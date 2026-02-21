@@ -16,6 +16,8 @@
 #include "../audio/filter/DiodeLadderProcessor.hpp"
 #include "../audio/DelayLine.hpp"
 #include "../audio/VoiceManager.hpp"
+#include "../audio/MusicalClock.hpp"
+#include "../audio/TuningSystem.hpp"
 #include <memory>
 #include <span>
 #include <cstring>
@@ -45,10 +47,13 @@ struct EnvelopeHandleImpl {
 
 struct EngineHandleImpl {
     std::unique_ptr<audio::VoiceManager> voice_manager;
+    audio::MusicalClock clock;
+    audio::TwelveToneEqual tuning;
     int sample_rate;
 
     EngineHandleImpl(int sr)
         : voice_manager(std::make_unique<audio::VoiceManager>(sr))
+        , clock(static_cast<double>(sr))
         , sample_rate(sr)
     {
     }
@@ -300,9 +305,46 @@ int engine_process(EngineHandle handle, float* output, size_t frames) {
     auto* impl = static_cast<EngineHandleImpl*>(handle);
     try {
         std::span<float> output_span(output, frames);
+        impl->clock.advance(static_cast<int32_t>(frames));
         impl->voice_manager->pull(output_span);
         return 0;
     } catch (...) { return -1; }
+}
+
+int engine_set_bpm(EngineHandle handle, double bpm) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->clock.set_bpm(bpm);
+    return 0;
+}
+
+double engine_get_bpm(EngineHandle handle) {
+    if (!handle) return 0.0;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    return impl->clock.bpm();
+}
+
+int engine_get_musical_time(EngineHandle handle, int* bar, int* beat, int* tick) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    auto time = impl->clock.current_time();
+    if (bar) *bar = time.bar;
+    if (beat) *beat = time.beat;
+    if (tick) *tick = time.tick;
+    return 0;
+}
+
+int engine_note_on_name(EngineHandle handle, const char* note_name, float velocity) {
+    if (!handle || !note_name) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    try {
+        audio::Note note(note_name);
+        double freq = impl->tuning.get_frequency(note);
+        impl->voice_manager->note_on(note.midi_note(), velocity, freq);
+        return 0;
+    } catch (...) {
+        return -1;
+    }
 }
 
 int engine_set_filter_type(EngineHandle handle, int /* type */) {
