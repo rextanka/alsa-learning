@@ -13,6 +13,10 @@ bin/
 *.dSYM/
 
 # --- Environment ---
+# macOS system files
+.DS_Store
+**/.DS_Store
+
 # VS Code workspace state (but keeps your tasks.json/launch.json)
 .vscode/*
 !.vscode/tasks.json
