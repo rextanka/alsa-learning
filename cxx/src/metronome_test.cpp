@@ -57,9 +57,11 @@ int main() {
                 engine_note_on_name(engine, "C4", 0.6f);
             }
             
-            // Release after a short duration is handled by ADSR in Voice if we trigger note_off,
-            // but for a metronome we want a short 'blip'.
-            // Note: note_off triggers the release phase.
+            // For a metronome, we want a very short 'blip'. 
+            // We trigger note off almost immediately after (next process call or next few ticks).
+            // For this test, let's just trigger note_off right away; the ADSR release will handle the decay.
+            if (beat == 1) engine_note_off(engine, 72); // C5
+            else engine_note_off(engine, 60); // C4
             
             // Log via thread-safe logger
             char log_msg[64];
