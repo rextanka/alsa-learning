@@ -85,7 +85,16 @@ if(APPLE)
     target_sources(engine_tests PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
     target_sources(filter_tests PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
 elseif(UNIX AND NOT APPLE)
-    # target_sources(audio_test PRIVATE hal/alsa/AlsaDriver.cpp)
+    target_sources(audio_test PRIVATE hal/alsa/AlsaDriver.cpp)
+    target_sources(engine_tests PRIVATE hal/alsa/AlsaDriver.cpp)
+    target_sources(filter_tests PRIVATE hal/alsa/AlsaDriver.cpp)
+
+    # ALSA Check utility
+    add_executable(alsa_check 
+        tests/AlsaCheck.cpp
+        hal/alsa/AlsaDriver.cpp
+    )
+    target_link_libraries(alsa_check ${PLATFORM_LIBS})
 endif()
 
 # Link platform-specific libraries
