@@ -40,6 +40,11 @@ public:
      * @return true if the envelope is processing, false if it has finished.
      */
     virtual bool is_active() const = 0;
+
+    /**
+     * @brief Check if the envelope is currently in the release stage.
+     */
+    virtual bool is_releasing() const = 0;
 };
 
 } // namespace audio

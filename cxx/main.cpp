@@ -327,10 +327,12 @@ int main() {
     auto voice = std::make_unique<audio::Voice>(sample_rate);
     
     // Set ADSR: slow attack (1s), short decay (0.2s), mid sustain (0.5), long release (1s)
-    voice->envelope().set_attack_time(1.0f);
-    voice->envelope().set_decay_time(0.2f);
-    voice->envelope().set_sustain_level(0.5f);
-    voice->envelope().set_release_time(1.0f);
+    if (auto* adsr = dynamic_cast<audio::AdsrEnvelopeProcessor*>(&voice->envelope())) {
+        adsr->set_attack_time(1.0f);
+        adsr->set_decay_time(0.2f);
+        adsr->set_sustain_level(0.5f);
+        adsr->set_release_time(1.0f);
+    }
     
     driver->set_callback([&voice](std::span<float> output) {
         voice->pull(output);

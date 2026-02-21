@@ -66,7 +66,7 @@ public:
     /**
      * @brief Access the envelope processor.
      */
-    AdsrEnvelopeProcessor& envelope() { return *envelope_; }
+    EnvelopeProcessor& envelope() { return *envelope_; }
 
     /**
      * @brief Access the filter processor.

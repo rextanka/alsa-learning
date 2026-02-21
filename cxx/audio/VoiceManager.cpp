@@ -43,24 +43,35 @@ void VoiceManager::note_on(int note, float /* velocity */) {
         }
     }
 
-    // 3. Voice Stealing: Implement LRU (Oldest Note)
-    VoiceSlot* oldest_slot = nullptr;
-    uint64_t oldest_time = std::numeric_limits<uint64_t>::max();
-
+    // 3. Voice Stealing: Priority (Idle > Releasing > Oldest Active)
+    VoiceSlot* candidate = nullptr;
+    
+    // Priority 1: Find Releasing Voice
     for (auto& slot : voices_) {
-        if (slot.last_note_on_time < oldest_time) {
-            oldest_time = slot.last_note_on_time;
-            oldest_slot = &slot;
+        if (slot.voice->envelope().is_releasing()) {
+            candidate = &slot;
+            break;
         }
     }
 
-    if (oldest_slot) {
-        oldest_slot->current_note = note;
-        oldest_slot->active = true;
-        oldest_slot->last_note_on_time = next_timestamp();
-        oldest_slot->voice->reset(); // Avoid artifacts
-        oldest_slot->voice->set_pan(0.0f); // Reset pan for reuse
-        oldest_slot->voice->note_on(note_to_freq(note));
+    // Priority 2: Steal Oldest Active Voice
+    if (!candidate) {
+        uint64_t oldest_time = std::numeric_limits<uint64_t>::max();
+        for (auto& slot : voices_) {
+            if (slot.last_note_on_time < oldest_time) {
+                oldest_time = slot.last_note_on_time;
+                candidate = &slot;
+            }
+        }
+    }
+
+    if (candidate) {
+        candidate->current_note = note;
+        candidate->active = true;
+        candidate->last_note_on_time = next_timestamp();
+        candidate->voice->reset(); // Avoid artifacts
+        candidate->voice->set_pan(0.0f); // Reset pan for reuse
+        candidate->voice->note_on(note_to_freq(note));
     }
 }
 
@@ -87,23 +98,35 @@ void VoiceManager::note_on_panned(int note, float velocity, float pan) {
         }
     }
 
-    // Steal oldest
-    VoiceSlot* oldest_slot = nullptr;
-    uint64_t oldest_time = std::numeric_limits<uint64_t>::max();
+    // 3. Voice Stealing: Priority (Idle > Releasing > Oldest Active)
+    VoiceSlot* candidate = nullptr;
+    
+    // Priority 1: Find Releasing Voice
     for (auto& slot : voices_) {
-        if (slot.last_note_on_time < oldest_time) {
-            oldest_time = slot.last_note_on_time;
-            oldest_slot = &slot;
+        if (slot.voice->envelope().is_releasing()) {
+            candidate = &slot;
+            break;
         }
     }
 
-    if (oldest_slot) {
-        oldest_slot->current_note = note;
-        oldest_slot->active = true;
-        oldest_slot->last_note_on_time = next_timestamp();
-        oldest_slot->voice->reset();
-        oldest_slot->voice->set_pan(pan);
-        oldest_slot->voice->note_on(note_to_freq(note));
+    // Priority 2: Steal Oldest Active Voice
+    if (!candidate) {
+        uint64_t oldest_time = std::numeric_limits<uint64_t>::max();
+        for (auto& slot : voices_) {
+            if (slot.last_note_on_time < oldest_time) {
+                oldest_time = slot.last_note_on_time;
+                candidate = &slot;
+            }
+        }
+    }
+
+    if (candidate) {
+        candidate->current_note = note;
+        candidate->active = true;
+        candidate->last_note_on_time = next_timestamp();
+        candidate->voice->reset();
+        candidate->voice->set_pan(pan);
+        candidate->voice->note_on(note_to_freq(note));
     }
 }
 
@@ -159,7 +182,6 @@ void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
     output.clear();
 
     // Use a temporary stereo buffer for each voice
-    // Ideally, we'd use the BufferPool here.
     static thread_local StereoBlock voice_buffer(0);
     if (voice_buffer.left.size() < output.frames()) {
         voice_buffer.left.resize(output.frames());
