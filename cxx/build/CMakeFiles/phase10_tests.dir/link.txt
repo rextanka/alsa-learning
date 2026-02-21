@@ -1,0 +1,1 @@
+/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/phase10_tests.dir/tests/Phase10Tests.cpp.o CMakeFiles/phase10_tests.dir/src/AudioBridge.cpp.o CMakeFiles/phase10_tests.dir/audio/Voice.cpp.o CMakeFiles/phase10_tests.dir/audio/VoiceManager.cpp.o -o bin/phase10_tests

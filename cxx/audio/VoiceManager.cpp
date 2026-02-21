@@ -22,12 +22,14 @@ VoiceManager::VoiceManager(int sample_rate)
     }
 }
 
-void VoiceManager::note_on(int note, float /* velocity */) {
+void VoiceManager::note_on(int note, float /* velocity */, double frequency) {
+    double freq = (frequency > 0.0) ? frequency : note_to_freq(note);
+
     // 1. Check if the note is already playing (re-trigger)
     for (auto& slot : voices_) {
         if (slot.active && slot.current_note == note) {
             slot.last_note_on_time = next_timestamp();
-            slot.voice->note_on(note_to_freq(note));
+            slot.voice->note_on(freq);
             return;
         }
     }
@@ -38,7 +40,7 @@ void VoiceManager::note_on(int note, float /* velocity */) {
             slot.current_note = note;
             slot.active = true;
             slot.last_note_on_time = next_timestamp();
-            slot.voice->note_on(note_to_freq(note));
+            slot.voice->note_on(freq);
             return;
         }
     }
@@ -71,7 +73,7 @@ void VoiceManager::note_on(int note, float /* velocity */) {
         candidate->last_note_on_time = next_timestamp();
         candidate->voice->reset(); // Avoid artifacts
         candidate->voice->set_pan(0.0f); // Reset pan for reuse
-        candidate->voice->note_on(note_to_freq(note));
+        candidate->voice->note_on(freq);
     }
 }
 

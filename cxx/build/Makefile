@@ -168,6 +168,19 @@ stereo_poly_test/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/build
 .PHONY : stereo_poly_test/fast
 
+#=============================================================================
+# Target rules for targets named phase10_tests
+
+# Build rule for target.
+phase10_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 phase10_tests
+.PHONY : phase10_tests
+
+# fast build rule for target.
+phase10_tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/build
+.PHONY : phase10_tests/fast
+
 audio/Voice.o: audio/Voice.cpp.o
 .PHONY : audio/Voice.o
 
@@ -177,6 +190,7 @@ audio/Voice.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/Voice.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/Voice.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/Voice.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/Voice.cpp.o
 .PHONY : audio/Voice.cpp.o
 
 audio/Voice.i: audio/Voice.cpp.i
@@ -188,6 +202,7 @@ audio/Voice.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/Voice.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/Voice.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/Voice.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/Voice.cpp.i
 .PHONY : audio/Voice.cpp.i
 
 audio/Voice.s: audio/Voice.cpp.s
@@ -199,6 +214,7 @@ audio/Voice.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/Voice.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/Voice.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/Voice.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/Voice.cpp.s
 .PHONY : audio/Voice.cpp.s
 
 audio/VoiceManager.o: audio/VoiceManager.cpp.o
@@ -210,6 +226,7 @@ audio/VoiceManager.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/VoiceManager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/VoiceManager.cpp.o
 .PHONY : audio/VoiceManager.cpp.o
 
 audio/VoiceManager.i: audio/VoiceManager.cpp.i
@@ -221,6 +238,7 @@ audio/VoiceManager.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/VoiceManager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/VoiceManager.cpp.i
 .PHONY : audio/VoiceManager.cpp.i
 
 audio/VoiceManager.s: audio/VoiceManager.cpp.s
@@ -232,6 +250,7 @@ audio/VoiceManager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/VoiceManager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/VoiceManager.cpp.s
 .PHONY : audio/VoiceManager.cpp.s
 
 hal/coreaudio/CoreAudioDriver.o: hal/coreaudio/CoreAudioDriver.cpp.o
@@ -276,6 +295,7 @@ src/AudioBridge.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/src/AudioBridge.cpp.o
 .PHONY : src/AudioBridge.cpp.o
 
 src/AudioBridge.i: src/AudioBridge.cpp.i
@@ -287,6 +307,7 @@ src/AudioBridge.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/src/AudioBridge.cpp.i
 .PHONY : src/AudioBridge.cpp.i
 
 src/AudioBridge.s: src/AudioBridge.cpp.s
@@ -298,6 +319,7 @@ src/AudioBridge.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/src/AudioBridge.cpp.s
 .PHONY : src/AudioBridge.cpp.s
 
 src/main.o: src/main.cpp.o
@@ -372,6 +394,30 @@ tests/FilterTests.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.s
 .PHONY : tests/FilterTests.cpp.s
 
+tests/Phase10Tests.o: tests/Phase10Tests.cpp.o
+.PHONY : tests/Phase10Tests.o
+
+# target to build an object file
+tests/Phase10Tests.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/tests/Phase10Tests.cpp.o
+.PHONY : tests/Phase10Tests.cpp.o
+
+tests/Phase10Tests.i: tests/Phase10Tests.cpp.i
+.PHONY : tests/Phase10Tests.i
+
+# target to preprocess a source file
+tests/Phase10Tests.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/tests/Phase10Tests.cpp.i
+.PHONY : tests/Phase10Tests.cpp.i
+
+tests/Phase10Tests.s: tests/Phase10Tests.cpp.s
+.PHONY : tests/Phase10Tests.s
+
+# target to generate assembly for a file
+tests/Phase10Tests.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/tests/Phase10Tests.cpp.s
+.PHONY : tests/Phase10Tests.cpp.s
+
 tests/StereoPolyTest.o: tests/StereoPolyTest.cpp.o
 .PHONY : tests/StereoPolyTest.o
 
@@ -407,6 +453,7 @@ help:
 	@echo "... audio_test"
 	@echo "... engine_tests"
 	@echo "... filter_tests"
+	@echo "... phase10_tests"
 	@echo "... stereo_poly_test"
 	@echo "... audio/Voice.o"
 	@echo "... audio/Voice.i"
@@ -429,6 +476,9 @@ help:
 	@echo "... tests/FilterTests.o"
 	@echo "... tests/FilterTests.i"
 	@echo "... tests/FilterTests.s"
+	@echo "... tests/Phase10Tests.o"
+	@echo "... tests/Phase10Tests.i"
+	@echo "... tests/Phase10Tests.s"
 	@echo "... tests/StereoPolyTest.o"
 	@echo "... tests/StereoPolyTest.i"
 	@echo "... tests/StereoPolyTest.s"

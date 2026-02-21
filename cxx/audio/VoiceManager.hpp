@@ -37,8 +37,9 @@ public:
      * 
      * @param note MIDI note number.
      * @param velocity Note velocity (0.0 to 1.0).
+     * @param frequency Optional frequency (if <= 0, calculated from MIDI note).
      */
-    void note_on(int note, float velocity);
+    void note_on(int note, float velocity, double frequency = 0.0);
 
     /**
      * @brief Trigger a note on with specific panning.

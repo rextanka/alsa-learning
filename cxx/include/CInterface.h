@@ -70,6 +70,14 @@ void engine_note_off(EngineHandle handle, int note);
 void engine_set_note_pan(EngineHandle handle, int note, float pan);
 int engine_process(EngineHandle handle, float* output, size_t frames);
 
+// Musical Clock and Logic
+int engine_set_bpm(EngineHandle handle, double bpm);
+double engine_get_bpm(EngineHandle handle);
+int engine_get_musical_time(EngineHandle handle, int* bar, int* beat, int* tick);
+
+// Playing notes with name
+int engine_note_on_name(EngineHandle handle, const char* note_name, float velocity);
+
 // Filter type enum
 enum FilterType {
     FILTER_MOOG  = 0,

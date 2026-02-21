@@ -90,6 +90,14 @@ add_executable(stereo_poly_test
     audio/VoiceManager.cpp
 )
 
+# Phase 10 Tests
+add_executable(phase10_tests 
+    tests/Phase10Tests.cpp
+    src/AudioBridge.cpp
+    audio/Voice.cpp
+    audio/VoiceManager.cpp
+)
+
 # HAL sources
 if(APPLE)
     target_sources(audio_test PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
