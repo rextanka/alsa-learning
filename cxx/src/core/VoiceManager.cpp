@@ -4,6 +4,7 @@
  */
 
 #include "VoiceManager.hpp"
+#include "Logger.hpp"
 #include <cmath>
 #include <algorithm>
 #include <limits>
@@ -68,6 +69,7 @@ void VoiceManager::note_on(int note, float /* velocity */, double frequency) {
     }
 
     if (candidate) {
+        AudioLogger::instance().log_event("VoiceSteal", static_cast<float>(candidate->current_note));
         candidate->current_note = note;
         candidate->active = true;
         candidate->last_note_on_time = next_timestamp();

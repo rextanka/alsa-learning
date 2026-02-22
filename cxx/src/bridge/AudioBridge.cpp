@@ -18,6 +18,7 @@
 #include "VoiceManager.hpp"
 #include "MusicalClock.hpp"
 #include "TuningSystem.hpp"
+#include "Logger.hpp"
 #include <memory>
 #include <span>
 #include <cstring>
@@ -412,6 +413,14 @@ int set_param(void* handle, const char* name, float value) {
         }
         return -1;
     } catch (...) { return -1; }
+}
+
+void audio_log_message(const char* tag, const char* message) {
+    audio::AudioLogger::instance().log_message(tag, message);
+}
+
+void audio_log_event(const char* tag, float value) {
+    audio::AudioLogger::instance().log_event(tag, value);
 }
 
 } // extern "C"
