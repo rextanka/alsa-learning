@@ -56,7 +56,16 @@ The generic `set_param` function allows you to control internal DSP parameters u
 |           | "feedback"| 0.0 - 0.99| Feedback coefficient |
 |           | "mix"     | 0.0 - 1.0 | Wet/Dry mix |
 
-## 4. Bridge Objects (Handles)
+## 4. Telemetry API
+
+The engine provides an RT-safe logging system for debugging and testing.
+
+| Function | Parameters | Description |
+|----------|------------|-------------|
+| `audio_log_message` | `tag, message` | Log a static message. |
+| `audio_log_event`   | `tag, value`   | Log a numeric event. |
+
+## 5. Bridge Objects (Handles)
 
 You can also create and manage individual DSP components if you are building your own graph externally.
 

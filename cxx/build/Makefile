@@ -678,6 +678,78 @@ tests/processor_check.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/processor_check.dir/build.make CMakeFiles/processor_check.dir/tests/processor_check.cpp.s
 .PHONY : tests/processor_check.cpp.s
 
+tests/unit/test_clock_logic.o: tests/unit/test_clock_logic.cpp.o
+.PHONY : tests/unit/test_clock_logic.o
+
+# target to build an object file
+tests/unit/test_clock_logic.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o
+.PHONY : tests/unit/test_clock_logic.cpp.o
+
+tests/unit/test_clock_logic.i: tests/unit/test_clock_logic.cpp.i
+.PHONY : tests/unit/test_clock_logic.i
+
+# target to preprocess a source file
+tests/unit/test_clock_logic.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.i
+.PHONY : tests/unit/test_clock_logic.cpp.i
+
+tests/unit/test_clock_logic.s: tests/unit/test_clock_logic.cpp.s
+.PHONY : tests/unit/test_clock_logic.s
+
+# target to generate assembly for a file
+tests/unit/test_clock_logic.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.s
+.PHONY : tests/unit/test_clock_logic.cpp.s
+
+tests/unit/test_envelope_stages.o: tests/unit/test_envelope_stages.cpp.o
+.PHONY : tests/unit/test_envelope_stages.o
+
+# target to build an object file
+tests/unit/test_envelope_stages.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o
+.PHONY : tests/unit/test_envelope_stages.cpp.o
+
+tests/unit/test_envelope_stages.i: tests/unit/test_envelope_stages.cpp.i
+.PHONY : tests/unit/test_envelope_stages.i
+
+# target to preprocess a source file
+tests/unit/test_envelope_stages.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.i
+.PHONY : tests/unit/test_envelope_stages.cpp.i
+
+tests/unit/test_envelope_stages.s: tests/unit/test_envelope_stages.cpp.s
+.PHONY : tests/unit/test_envelope_stages.s
+
+# target to generate assembly for a file
+tests/unit/test_envelope_stages.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.s
+.PHONY : tests/unit/test_envelope_stages.cpp.s
+
+tests/unit/test_logger.o: tests/unit/test_logger.cpp.o
+.PHONY : tests/unit/test_logger.o
+
+# target to build an object file
+tests/unit/test_logger.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o
+.PHONY : tests/unit/test_logger.cpp.o
+
+tests/unit/test_logger.i: tests/unit/test_logger.cpp.i
+.PHONY : tests/unit/test_logger.i
+
+# target to preprocess a source file
+tests/unit/test_logger.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.i
+.PHONY : tests/unit/test_logger.cpp.i
+
+tests/unit/test_logger.s: tests/unit/test_logger.cpp.s
+.PHONY : tests/unit/test_logger.s
+
+# target to generate assembly for a file
+tests/unit/test_logger.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.s
+.PHONY : tests/unit/test_logger.cpp.s
+
 tests/unit/test_oscillator.o: tests/unit/test_oscillator.cpp.o
 .PHONY : tests/unit/test_oscillator.o
 
@@ -701,6 +773,30 @@ tests/unit/test_oscillator.s: tests/unit/test_oscillator.cpp.s
 tests/unit/test_oscillator.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.s
 .PHONY : tests/unit/test_oscillator.cpp.s
+
+tests/unit/test_voice_stress.o: tests/unit/test_voice_stress.cpp.o
+.PHONY : tests/unit/test_voice_stress.o
+
+# target to build an object file
+tests/unit/test_voice_stress.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o
+.PHONY : tests/unit/test_voice_stress.cpp.o
+
+tests/unit/test_voice_stress.i: tests/unit/test_voice_stress.cpp.i
+.PHONY : tests/unit/test_voice_stress.i
+
+# target to preprocess a source file
+tests/unit/test_voice_stress.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.i
+.PHONY : tests/unit/test_voice_stress.cpp.i
+
+tests/unit/test_voice_stress.s: tests/unit/test_voice_stress.cpp.s
+.PHONY : tests/unit/test_voice_stress.s
+
+# target to generate assembly for a file
+tests/unit/test_voice_stress.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.s
+.PHONY : tests/unit/test_voice_stress.cpp.s
 
 # Help Target
 help:
@@ -769,9 +865,21 @@ help:
 	@echo "... tests/processor_check.o"
 	@echo "... tests/processor_check.i"
 	@echo "... tests/processor_check.s"
+	@echo "... tests/unit/test_clock_logic.o"
+	@echo "... tests/unit/test_clock_logic.i"
+	@echo "... tests/unit/test_clock_logic.s"
+	@echo "... tests/unit/test_envelope_stages.o"
+	@echo "... tests/unit/test_envelope_stages.i"
+	@echo "... tests/unit/test_envelope_stages.s"
+	@echo "... tests/unit/test_logger.o"
+	@echo "... tests/unit/test_logger.i"
+	@echo "... tests/unit/test_logger.s"
 	@echo "... tests/unit/test_oscillator.o"
 	@echo "... tests/unit/test_oscillator.i"
 	@echo "... tests/unit/test_oscillator.s"
+	@echo "... tests/unit/test_voice_stress.o"
+	@echo "... tests/unit/test_voice_stress.i"
+	@echo "... tests/unit/test_voice_stress.s"
 .PHONY : help
 
 

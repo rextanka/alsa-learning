@@ -11,6 +11,7 @@
 #define ADSR_ENVELOPE_PROCESSOR_HPP
 
 #include "EnvelopeProcessor.hpp"
+#include "Logger.hpp"
 #include <atomic>
 #include <span>
 #include <algorithm>
@@ -48,6 +49,7 @@ public:
     }
 
     void gate_on() override {
+        AudioLogger::instance().log_message("ADSR", "Gate On");
         state_ = State::Attack;
         // Start from current level to avoid clicks if re-triggered
         update_rates();

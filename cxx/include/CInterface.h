@@ -119,6 +119,20 @@ int engine_set_delay_enabled(EngineHandle handle, int enabled);
 int set_param(void* handle, const char* name, float value);
 int envelope_is_active(EnvelopeHandle handle);
 
+/**
+ * @brief Log a static message (RT-Safe).
+ * @param tag Category tag (max 31 chars).
+ * @param message Message text (max 63 chars).
+ */
+void audio_log_message(const char* tag, const char* message);
+
+/**
+ * @brief Log a telemetry event (RT-Safe).
+ * @param tag Category tag (max 31 chars).
+ * @param value Numeric value.
+ */
+void audio_log_event(const char* tag, float value);
+
 #ifdef __cplusplus
 }
 #endif
