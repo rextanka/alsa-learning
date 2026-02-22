@@ -4,6 +4,17 @@
 
 ---
 
+## Development Policy
+
+To maintain the high reliability required for professional-grade audio software, the following policies are strictly enforced:
+
+1.  **Green Build Requirement**: All existing tests must pass (`ctest` or `./bin/unit_tests`) before a Pull Request is created or merged.
+2.  **Test-First Features**: Every new feature or architectural change MUST be accompanied by at least one unit test or integration test.
+3.  **Regression Testing**: Every bug fix MUST include a corresponding regression test that fails without the fix and passes with it.
+4.  **RT-Safe Documentation**: Any new code in the audio callback path must be documented as "RT-Safe" (no locks, no allocations, no `printf`).
+
+---
+
 ## Design Manifesto
 
 ### Philosophy
@@ -90,8 +101,8 @@ cxx/
 | 1-10  | Core DSP, Factory, Polyphony, Musical Clock, Metronome Validation | 100% Complete |
 | 11    | **Dual-Layer Testing**: Establish GoogleTest (gtest) for internal C++ logic and C-API integration tests for the bridge. | 100% Complete |
 | 12    | **MIDI Integration**: MIDI HAL for Linux/Mac/Win with CC mapping and SysEx hooks. | Planned |
-| 13    | **Non-Intrusive Logger**: Implement a lock-free, real-time safe logger to replace `printf` in audio threads. | Planned |
-| 14    | **Unit & Integration Strategy**: Detail the plan for GUnit vs. standalone API tests. | Planned |
+| 13    | **Non-Intrusive Logger**: Implement a lock-free, real-time safe logger to replace `printf` in audio threads. | 100% Complete |
+| 14    | **Unit & Integration Strategy**: Detail the plan for GUnit vs. standalone API tests. | 100% Complete |
 | 15    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation to maximize polyphony. | Planned |
 
 ---

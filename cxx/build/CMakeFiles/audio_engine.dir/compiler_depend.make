@@ -998,6 +998,7 @@ CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o: /Users/nickthompson/sr
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioBuffer.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioGraph.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/BufferPool.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Logger.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MusicalClock.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/TuningSystem.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Voice.hpp \
@@ -2019,6 +2020,7 @@ CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o: /Users/nickthompson/src/cpp/au
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioBuffer.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioGraph.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/BufferPool.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Logger.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Voice.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceContext.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/InputSource.hpp \
@@ -3029,6 +3031,7 @@ CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o: /Users/nickthompson/src
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioBuffer.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioGraph.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/BufferPool.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Logger.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Voice.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceContext.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceManager.hpp \
@@ -4348,6 +4351,8 @@ CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o: /Users/nick
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/DelayLine.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/TuningSystem.hpp:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Logger.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioBuffer.hpp:
 

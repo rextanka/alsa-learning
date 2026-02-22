@@ -65,6 +65,11 @@ The engine provides an RT-safe logging system for debugging and testing.
 | `audio_log_message` | `tag, message` | Log a static message. |
 | `audio_log_event`   | `tag, value`   | Log a numeric event. |
 
+### Logging Best Practices:
+-   **No Format Strings**: `audio_log_message` only takes static strings. Formatting strings in the audio callback is NOT RT-safe.
+-   **Value Tagging**: Use `audio_log_event` to send dynamic numeric data (e.g. current filter cutoff, envelope level). This is much more efficient than string conversion.
+-   **Tag Consistency**: Use consistent tags (e.g. "Voice", "ADSR", "Filter") to make it easier to filter logs in the host application or test suite.
+
 ## 5. Bridge Objects (Handles)
 
 You can also create and manage individual DSP components if you are building your own graph externally.
