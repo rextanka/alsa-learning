@@ -106,6 +106,9 @@ int envelope_process(EnvelopeHandle handle, float* output, size_t frames);
 // ADSR API for Engine (VoiceManager)
 int engine_set_adsr(EngineHandle handle, float attack, float decay, float sustain, float release);
 
+// Meter API
+int engine_set_meter(EngineHandle handle, int beats_per_bar);
+
 // Filter API
 int engine_set_filter_type(EngineHandle handle, int type);
 
