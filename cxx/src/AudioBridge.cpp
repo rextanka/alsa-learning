@@ -300,12 +300,29 @@ void engine_set_note_pan(EngineHandle handle, int note, float pan) {
     impl->voice_manager->set_note_pan(note, pan);
 }
 
+int engine_set_adsr(EngineHandle handle, float attack, float decay, float sustain, float release) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    for (auto& slot : impl->voice_manager->get_voices()) {
+        if (auto* adsr = dynamic_cast<audio::AdsrEnvelopeProcessor*>(&slot.voice->envelope())) {
+            adsr->set_attack_time(attack);
+            adsr->set_decay_time(decay);
+            adsr->set_sustain_level(sustain);
+            adsr->set_release_time(release);
+        }
+    }
+    return 0;
+}
+
 int engine_process(EngineHandle handle, float* output, size_t frames) {
     if (!handle || !output || frames == 0) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
     try {
         std::span<float> output_span(output, frames);
+        
+        // Sample-accurate clock advance
         impl->clock.advance(static_cast<int32_t>(frames));
+        
         impl->voice_manager->pull(output_span);
         return 0;
     } catch (...) { return -1; }
@@ -314,6 +331,7 @@ int engine_process(EngineHandle handle, float* output, size_t frames) {
 int engine_set_bpm(EngineHandle handle, double bpm) {
     if (!handle) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
+    printf("[AudioBridge] Pointer: %p, Setting BPM: %.2f\n", (void*)impl, bpm);
     impl->clock.set_bpm(bpm);
     return 0;
 }
@@ -322,6 +340,14 @@ double engine_get_bpm(EngineHandle handle) {
     if (!handle) return 0.0;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
     return impl->clock.bpm();
+}
+
+int engine_set_meter(EngineHandle handle, int beats_per_bar) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    printf("[AudioBridge] Pointer: %p, Setting Meter: %d/4\n", (void*)impl, beats_per_bar);
+    impl->clock.set_meter(static_cast<int32_t>(beats_per_bar));
+    return 0;
 }
 
 int engine_get_musical_time(EngineHandle handle, int* bar, int* beat, int* tick) {

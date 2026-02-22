@@ -37,12 +37,12 @@ std::string format_time(std::chrono::system_clock::time_point tp) {
     std::tm bt = *std::localtime(&timer);
     std::ostringstream oss;
     oss << std::put_time(&bt, "%H:%M:%S");
-    oss << "." << std::setfill("0") << std::setw(3) << ms.count();
+    oss << "." << std::setfill('0') << std::setw(3) << ms.count();
     return oss.str();
 }
 
 int main() {
-    std::cout << "--- Audible Metronome Test (8 Bars at 80 BPM) ---" << std::endl;
+    std::cout << "--- Audible Metronome Test (16 Bars at 80 BPM) ---" << std::endl;
     std::cout << "Cadence: C4 on Beat 1, A3 on Beats 2, 3, 4." << std::endl;
     
     unsigned int sample_rate = 44100;
@@ -54,8 +54,11 @@ int main() {
     // Set BPM to 80
     engine_set_bpm(engine, 80.0);
     
-    // Set ADSR parameters (Attack: 0ms, Decay: 100ms, Sustain: 0.0, Release: 100ms)
-    engine_set_adsr(engine, 0.0f, 0.1f, 0.0f, 0.1f);
+    // Set ADSR parameters (Attack: 5ms, Decay: 50ms, Sustain: 0.0, Release: 50ms)
+    engine_set_adsr(engine, 0.005f, 0.05f, 0.0f, 0.05f);
+
+    // Set meter explicitly
+    engine_set_meter(engine, 4);
 
     long long current_sample_frame = 0;
     int last_beat = -1;
@@ -63,20 +66,20 @@ int main() {
 
     // Reserve space for logs
     std::vector<LogEntry> logs;
-    logs.reserve(32); 
+    logs.reserve(128); 
 
     // Sine wave parameters for bypass
     double sine_phase = 0.0;
     double sine_frequency = 440.0; // A4
-    double sine_amplitude = 0.5;
+    double sine_amplitude = 0.05;
 
     driver->set_callback([&](std::span<float> output) {
         // Sine bypass for the first 1 second
-        if (current_sample_frame < sample_rate) { // 1 second bypass
+        if (current_sample_frame < (long long)sample_rate) { // 1 second bypass
             for (size_t i = 0; i < output.size(); ++i) {
                 output[i] = static_cast<float>(sine_amplitude * std::sin(2.0 * M_PI * sine_frequency * sine_phase / sample_rate));
                 sine_phase += 1.0;
-                if (sine_phase >= sample_rate) sine_phase -= sample_rate;
+                if (sine_phase >= (double)sample_rate) sine_phase -= (double)sample_rate;
             }
         } else {
             engine_process(engine, output.data(), output.size());
@@ -84,20 +87,24 @@ int main() {
             int bar, beat, tick;
             engine_get_musical_time(engine, &bar, &beat, &tick);
             
-            // Edge-trigger logic
-            uint64_t current_tick = static_cast<uint64_t>(current_sample_frame / (sample_rate / 960.0));
-            uint64_t last_tick = static_cast<uint64_t>((current_sample_frame - output.size()) / (sample_rate / 960.0));
+            // Edge-trigger logic based on total ticks processed
+            // Note: In real scenarios, we would query the clock directly, 
+            // but here we use the engine_get_musical_time which depends on clock.advance().
+            
+            if (beat != last_beat) {
+                // Reset gates
+                engine_note_off(engine, 60); // C4
+                engine_note_off(engine, 57); // A3
 
-            if (current_tick / 960 > last_tick / 960) { // New beat detected
-                if (beat != last_beat) {
-                    if (beat == 1) {
-                        engine_note_on_name(engine, "C4", 0.8f); // C4 on Beat 1
-                    } else {
-                        engine_note_on_name(engine, "A3", 0.6f); // A3 on Beats 2-4
-                    }
-                    logs.push_back({std::chrono::system_clock::now(), "TICK (Bar: " + std::to_string(bar) + ", Beat: " + std::to_string(beat) + ")"});
-                    last_beat = beat;
+                if (beat == 1) {
+                    engine_note_on_name(engine, "C4", 1.0f); // C4 on Beat 1
+                } else {
+                    engine_note_on_name(engine, "A3", 1.0f); // A3 on Beats 2-4
                 }
+                char log_msg[128];
+                snprintf(log_msg, sizeof(log_msg), "TICK (Bar: %d, Beat: %d, Time: %d:%d:%d)", bar, beat, bar, beat, tick);
+                logs.push_back({std::chrono::system_clock::now(), log_msg});
+                last_beat = beat;
             }
         }
 
@@ -117,13 +124,8 @@ int main() {
         return 1;
     }
     
-    // Calculate total frames for 8 bars at 80 BPM (4/4 time)
-    // 80 BPM = 80 beats per minute
-    // 1 beat = 60 / 80 = 0.75 seconds
-    // 1 bar (4 beats) = 4 * 0.75 = 3 seconds
-    // 8 bars = 8 * 3 = 24 seconds
-    // Total frames = 24 seconds * sample_rate
-    double total_duration_seconds = 24.0; 
+    // 16 bars = 16 * 4 beats * (60s/80bpm) = 48 seconds
+    double total_duration_seconds = 48.0; 
     long long total_frames = static_cast<long long>(total_duration_seconds * sample_rate);
 
     while (current_sample_frame < total_frames) {
@@ -144,7 +146,7 @@ int main() {
 
     if (peak_amplitude < 0.01f) {
         std::cout << "WARNING: Peak amplitude is very low. Metronome might not be audible." << std::endl;
-        return 1; // Indicate a potential issue
+        return 1;
     }
 
     return 0;

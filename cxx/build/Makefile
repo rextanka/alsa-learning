@@ -117,17 +117,56 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named audio_test
+# Target rules for targets named audio_engine
 
 # Build rule for target.
-audio_test: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 audio_test
-.PHONY : audio_test
+audio_engine: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 audio_engine
+.PHONY : audio_engine
 
 # fast build rule for target.
-audio_test/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/build
-.PHONY : audio_test/fast
+audio_engine/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/build
+.PHONY : audio_engine/fast
+
+#=============================================================================
+# Target rules for targets named metronome_test
+
+# Build rule for target.
+metronome_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 metronome_test
+.PHONY : metronome_test
+
+# fast build rule for target.
+metronome_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/build
+.PHONY : metronome_test/fast
+
+#=============================================================================
+# Target rules for targets named processor_check
+
+# Build rule for target.
+processor_check: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 processor_check
+.PHONY : processor_check
+
+# fast build rule for target.
+processor_check/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/processor_check.dir/build.make CMakeFiles/processor_check.dir/build
+.PHONY : processor_check/fast
+
+#=============================================================================
+# Target rules for targets named audio_check
+
+# Build rule for target.
+audio_check: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 audio_check
+.PHONY : audio_check
+
+# fast build rule for target.
+audio_check/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_check.dir/build.make CMakeFiles/audio_check.dir/build
+.PHONY : audio_check/fast
 
 #=============================================================================
 # Target rules for targets named engine_tests
@@ -199,12 +238,7 @@ audio/Voice.o: audio/Voice.cpp.o
 
 # target to build an object file
 audio/Voice.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/Voice.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/Voice.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/Voice.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/Voice.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/Voice.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/audio/Voice.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/audio/Voice.cpp.o
 .PHONY : audio/Voice.cpp.o
 
 audio/Voice.i: audio/Voice.cpp.i
@@ -212,12 +246,7 @@ audio/Voice.i: audio/Voice.cpp.i
 
 # target to preprocess a source file
 audio/Voice.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/Voice.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/Voice.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/Voice.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/Voice.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/Voice.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/audio/Voice.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/audio/Voice.cpp.i
 .PHONY : audio/Voice.cpp.i
 
 audio/Voice.s: audio/Voice.cpp.s
@@ -225,12 +254,7 @@ audio/Voice.s: audio/Voice.cpp.s
 
 # target to generate assembly for a file
 audio/Voice.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/Voice.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/Voice.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/Voice.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/Voice.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/Voice.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/audio/Voice.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/audio/Voice.cpp.s
 .PHONY : audio/Voice.cpp.s
 
 audio/VoiceManager.o: audio/VoiceManager.cpp.o
@@ -238,12 +262,7 @@ audio/VoiceManager.o: audio/VoiceManager.cpp.o
 
 # target to build an object file
 audio/VoiceManager.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/VoiceManager.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/VoiceManager.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/audio/VoiceManager.cpp.o
 .PHONY : audio/VoiceManager.cpp.o
 
 audio/VoiceManager.i: audio/VoiceManager.cpp.i
@@ -251,12 +270,7 @@ audio/VoiceManager.i: audio/VoiceManager.cpp.i
 
 # target to preprocess a source file
 audio/VoiceManager.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/VoiceManager.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/VoiceManager.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/audio/VoiceManager.cpp.i
 .PHONY : audio/VoiceManager.cpp.i
 
 audio/VoiceManager.s: audio/VoiceManager.cpp.s
@@ -264,12 +278,7 @@ audio/VoiceManager.s: audio/VoiceManager.cpp.s
 
 # target to generate assembly for a file
 audio/VoiceManager.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/audio/VoiceManager.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/audio/VoiceManager.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/audio/VoiceManager.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/audio/VoiceManager.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/audio/VoiceManager.cpp.s
 .PHONY : audio/VoiceManager.cpp.s
 
 hal/coreaudio/CoreAudioDriver.o: hal/coreaudio/CoreAudioDriver.cpp.o
@@ -277,10 +286,7 @@ hal/coreaudio/CoreAudioDriver.o: hal/coreaudio/CoreAudioDriver.cpp.o
 
 # target to build an object file
 hal/coreaudio/CoreAudioDriver.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/hal/coreaudio/CoreAudioDriver.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/hal/coreaudio/CoreAudioDriver.cpp.o
 .PHONY : hal/coreaudio/CoreAudioDriver.cpp.o
 
 hal/coreaudio/CoreAudioDriver.i: hal/coreaudio/CoreAudioDriver.cpp.i
@@ -288,10 +294,7 @@ hal/coreaudio/CoreAudioDriver.i: hal/coreaudio/CoreAudioDriver.cpp.i
 
 # target to preprocess a source file
 hal/coreaudio/CoreAudioDriver.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/hal/coreaudio/CoreAudioDriver.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/hal/coreaudio/CoreAudioDriver.cpp.i
 .PHONY : hal/coreaudio/CoreAudioDriver.cpp.i
 
 hal/coreaudio/CoreAudioDriver.s: hal/coreaudio/CoreAudioDriver.cpp.s
@@ -299,10 +302,7 @@ hal/coreaudio/CoreAudioDriver.s: hal/coreaudio/CoreAudioDriver.cpp.s
 
 # target to generate assembly for a file
 hal/coreaudio/CoreAudioDriver.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/hal/coreaudio/CoreAudioDriver.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/hal/coreaudio/CoreAudioDriver.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/hal/coreaudio/CoreAudioDriver.cpp.s
 .PHONY : hal/coreaudio/CoreAudioDriver.cpp.s
 
 src/AudioBridge.o: src/AudioBridge.cpp.o
@@ -310,12 +310,7 @@ src/AudioBridge.o: src/AudioBridge.cpp.o
 
 # target to build an object file
 src/AudioBridge.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/src/AudioBridge.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/src/AudioBridge.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/AudioBridge.cpp.o
 .PHONY : src/AudioBridge.cpp.o
 
 src/AudioBridge.i: src/AudioBridge.cpp.i
@@ -323,12 +318,7 @@ src/AudioBridge.i: src/AudioBridge.cpp.i
 
 # target to preprocess a source file
 src/AudioBridge.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/src/AudioBridge.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/src/AudioBridge.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/AudioBridge.cpp.i
 .PHONY : src/AudioBridge.cpp.i
 
 src/AudioBridge.s: src/AudioBridge.cpp.s
@@ -336,37 +326,8 @@ src/AudioBridge.s: src/AudioBridge.cpp.s
 
 # target to generate assembly for a file
 src/AudioBridge.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/src/AudioBridge.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/src/AudioBridge.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/src/AudioBridge.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/src/AudioBridge.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/AudioBridge.cpp.s
 .PHONY : src/AudioBridge.cpp.s
-
-src/main.o: src/main.cpp.o
-.PHONY : src/main.o
-
-# target to build an object file
-src/main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/src/main.cpp.o
-.PHONY : src/main.cpp.o
-
-src/main.i: src/main.cpp.i
-.PHONY : src/main.i
-
-# target to preprocess a source file
-src/main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/src/main.cpp.i
-.PHONY : src/main.cpp.i
-
-src/main.s: src/main.cpp.s
-.PHONY : src/main.s
-
-# target to generate assembly for a file
-src/main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_test.dir/build.make CMakeFiles/audio_test.dir/src/main.cpp.s
-.PHONY : src/main.cpp.s
 
 tests/EngineTests.o: tests/EngineTests.cpp.o
 .PHONY : tests/EngineTests.o
@@ -488,6 +449,78 @@ tests/TimingValidation.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/tests/TimingValidation.cpp.s
 .PHONY : tests/TimingValidation.cpp.s
 
+tests/audio_check.o: tests/audio_check.cpp.o
+.PHONY : tests/audio_check.o
+
+# target to build an object file
+tests/audio_check.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_check.dir/build.make CMakeFiles/audio_check.dir/tests/audio_check.cpp.o
+.PHONY : tests/audio_check.cpp.o
+
+tests/audio_check.i: tests/audio_check.cpp.i
+.PHONY : tests/audio_check.i
+
+# target to preprocess a source file
+tests/audio_check.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_check.dir/build.make CMakeFiles/audio_check.dir/tests/audio_check.cpp.i
+.PHONY : tests/audio_check.cpp.i
+
+tests/audio_check.s: tests/audio_check.cpp.s
+.PHONY : tests/audio_check.s
+
+# target to generate assembly for a file
+tests/audio_check.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_check.dir/build.make CMakeFiles/audio_check.dir/tests/audio_check.cpp.s
+.PHONY : tests/audio_check.cpp.s
+
+tests/metronome_test.o: tests/metronome_test.cpp.o
+.PHONY : tests/metronome_test.o
+
+# target to build an object file
+tests/metronome_test.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o
+.PHONY : tests/metronome_test.cpp.o
+
+tests/metronome_test.i: tests/metronome_test.cpp.i
+.PHONY : tests/metronome_test.i
+
+# target to preprocess a source file
+tests/metronome_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.i
+.PHONY : tests/metronome_test.cpp.i
+
+tests/metronome_test.s: tests/metronome_test.cpp.s
+.PHONY : tests/metronome_test.s
+
+# target to generate assembly for a file
+tests/metronome_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.s
+.PHONY : tests/metronome_test.cpp.s
+
+tests/processor_check.o: tests/processor_check.cpp.o
+.PHONY : tests/processor_check.o
+
+# target to build an object file
+tests/processor_check.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/processor_check.dir/build.make CMakeFiles/processor_check.dir/tests/processor_check.cpp.o
+.PHONY : tests/processor_check.cpp.o
+
+tests/processor_check.i: tests/processor_check.cpp.i
+.PHONY : tests/processor_check.i
+
+# target to preprocess a source file
+tests/processor_check.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/processor_check.dir/build.make CMakeFiles/processor_check.dir/tests/processor_check.cpp.i
+.PHONY : tests/processor_check.cpp.i
+
+tests/processor_check.s: tests/processor_check.cpp.s
+.PHONY : tests/processor_check.s
+
+# target to generate assembly for a file
+tests/processor_check.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/processor_check.dir/build.make CMakeFiles/processor_check.dir/tests/processor_check.cpp.s
+.PHONY : tests/processor_check.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -496,10 +529,13 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... audio_test"
+	@echo "... audio_check"
+	@echo "... audio_engine"
 	@echo "... engine_tests"
 	@echo "... filter_tests"
+	@echo "... metronome_test"
 	@echo "... phase10_tests"
+	@echo "... processor_check"
 	@echo "... stereo_poly_test"
 	@echo "... timing_validation"
 	@echo "... audio/Voice.o"
@@ -514,9 +550,6 @@ help:
 	@echo "... src/AudioBridge.o"
 	@echo "... src/AudioBridge.i"
 	@echo "... src/AudioBridge.s"
-	@echo "... src/main.o"
-	@echo "... src/main.i"
-	@echo "... src/main.s"
 	@echo "... tests/EngineTests.o"
 	@echo "... tests/EngineTests.i"
 	@echo "... tests/EngineTests.s"
@@ -532,6 +565,15 @@ help:
 	@echo "... tests/TimingValidation.o"
 	@echo "... tests/TimingValidation.i"
 	@echo "... tests/TimingValidation.s"
+	@echo "... tests/audio_check.o"
+	@echo "... tests/audio_check.i"
+	@echo "... tests/audio_check.s"
+	@echo "... tests/metronome_test.o"
+	@echo "... tests/metronome_test.i"
+	@echo "... tests/metronome_test.s"
+	@echo "... tests/processor_check.o"
+	@echo "... tests/processor_check.i"
+	@echo "... tests/processor_check.s"
 .PHONY : help
 
 

@@ -58,86 +58,73 @@ else()
     message(STATUS "Performance profiling: DISABLED")
 endif()
 
-# Main executable (processor + oscillator tests)
-add_executable(audio_test 
-    src/main.cpp 
+# --- Core Audio Engine Library ---
+add_library(audio_engine STATIC
     src/AudioBridge.cpp
     audio/Voice.cpp
     audio/VoiceManager.cpp
 )
 
-# Audible Engine Tests
-add_executable(engine_tests 
-    tests/EngineTests.cpp
-    src/AudioBridge.cpp
-    audio/Voice.cpp
-    audio/VoiceManager.cpp
-)
-
-# Filter Tests
-add_executable(filter_tests 
-    tests/FilterTests.cpp
-    src/AudioBridge.cpp
-    audio/Voice.cpp
-    audio/VoiceManager.cpp
-)
-
-# Stereo Poly Test
-add_executable(stereo_poly_test 
-    tests/StereoPolyTest.cpp
-    src/AudioBridge.cpp
-    audio/Voice.cpp
-    audio/VoiceManager.cpp
-)
-
-# Phase 10 Tests
-add_executable(phase10_tests 
-    tests/Phase10Tests.cpp
-    src/AudioBridge.cpp
-    audio/Voice.cpp
-    audio/VoiceManager.cpp
-)
-
-# Timing Validation
-add_executable(timing_validation 
-    tests/TimingValidation.cpp
-    src/AudioBridge.cpp
-    audio/Voice.cpp
-    audio/VoiceManager.cpp
-)
-
-# HAL sources
 if(APPLE)
-    target_sources(audio_test PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
-    target_sources(engine_tests PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
-    target_sources(filter_tests PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
-    target_sources(stereo_poly_test PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
+    target_sources(audio_engine PRIVATE hal/coreaudio/CoreAudioDriver.cpp)
 elseif(UNIX AND NOT APPLE)
-    target_sources(audio_test PRIVATE hal/alsa/AlsaDriver.cpp)
-    target_sources(engine_tests PRIVATE hal/alsa/AlsaDriver.cpp)
-    target_sources(filter_tests PRIVATE hal/alsa/AlsaDriver.cpp)
-
-    # ALSA Check utility
-    add_executable(alsa_check 
-        tests/AlsaCheck.cpp
-        hal/alsa/AlsaDriver.cpp
-    )
-    target_link_libraries(alsa_check ${PLATFORM_LIBS})
+    target_sources(audio_engine PRIVATE hal/alsa/AlsaDriver.cpp)
 endif()
 
-# Link platform-specific libraries
-if(PLATFORM_LIBS)
-    target_link_libraries(audio_test ${PLATFORM_LIBS})
-    target_link_libraries(engine_tests ${PLATFORM_LIBS})
-    target_link_libraries(filter_tests ${PLATFORM_LIBS})
-    target_link_libraries(stereo_poly_test ${PLATFORM_LIBS})
-endif()
+target_include_directories(audio_engine PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/audio
+    ${CMAKE_CURRENT_SOURCE_DIR}/hal/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/audio/envelope
+    ${CMAKE_CURRENT_SOURCE_DIR}/audio/filter
+    ${CMAKE_CURRENT_SOURCE_DIR}/audio/oscillator
+)
 
-# Compiler options
-target_compile_options(audio_test PRIVATE
+target_compile_options(audio_engine PRIVATE
     -Wall
     -Wextra
     -Wpedantic
+    -fvisibility=default # Ensure RTTI consistency
 )
+
+# Link platform-specific libraries to the engine library
+if(PLATFORM_LIBS)
+    target_link_libraries(audio_engine ${PLATFORM_LIBS})
+endif()
+
+# --- Test Executables ---
+
+# 1. Metronome Validation Test (Phase 10)
+add_executable(metronome_test tests/metronome_test.cpp)
+target_link_libraries(metronome_test PRIVATE audio_engine)
+
+# 2. Legacy Processor Check (formerly main.cpp)
+add_executable(processor_check tests/processor_check.cpp)
+target_link_libraries(processor_check PRIVATE audio_engine)
+
+# 3. Basic Audio Driver Check
+add_executable(audio_check tests/audio_check.cpp)
+target_link_libraries(audio_check PRIVATE audio_engine)
+
+# Other existing tests (update to link against audio_engine)
+add_executable(engine_tests tests/EngineTests.cpp)
+target_link_libraries(engine_tests PRIVATE audio_engine)
+
+add_executable(filter_tests tests/FilterTests.cpp)
+target_link_libraries(filter_tests PRIVATE audio_engine)
+
+add_executable(stereo_poly_test tests/StereoPolyTest.cpp)
+target_link_libraries(stereo_poly_test PRIVATE audio_engine)
+
+add_executable(phase10_tests tests/Phase10Tests.cpp)
+target_link_libraries(phase10_tests PRIVATE audio_engine)
+
+add_executable(timing_validation tests/TimingValidation.cpp)
+target_link_libraries(timing_validation PRIVATE audio_engine)
+
+# ALSA Check utility (if UNIX)
+if(UNIX AND NOT APPLE)
+    add_executable(alsa_check tests/AlsaCheck.cpp hal/alsa/AlsaDriver.cpp)
+    target_link_libraries(alsa_check ${PLATFORM_LIBS})
+endif()
 
 message(STATUS "Build output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
