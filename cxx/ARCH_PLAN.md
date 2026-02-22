@@ -27,11 +27,11 @@ Create a portable, lightweight **'Musical Toolbox'** for creative exploration an
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    C Interface Layer                     │
-│              (bridge/CInterface.h, AudioBridge.cpp)      │
+│              (include/CInterface.h, bridge/AudioBridge.cpp) │
 └──────────────────────┬──────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────┐
-│              VoiceManager (Polyphony) [planned]         │
+│              VoiceManager (Polyphony)                   │
 │         ┌──────────────┐  ┌──────────────┐              │
 │         │    Voice 1   │  │    Voice N   │              │
 │         │  Graph      │  │  Graph       │              │
@@ -39,82 +39,47 @@ Create a portable, lightweight **'Musical Toolbox'** for creative exploration an
 └──────────────────────┬──────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────┐
-│              Processor base (audio/Processor.hpp)       │
-│  Oscillators │ Envelope [planned] │ Filter [planned]     │
+│              Processor base (dsp/Processor.hpp)         │
+│  Oscillators │ Envelope │ Filter                         │
 └──────────────────────┬──────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────┐
-│              AudioDriver HAL (hal/include) [planned]    │
+│              AudioDriver HAL (hal/AudioDriver.hpp)      │
 │         ALSA │ CoreAudio │ WASAPI                       │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Node Contract (Pull + NVI)
-
-- **InputSource**: Interface with `pull(std::span<float> output, const VoiceContext* voice_context = nullptr)`.
-- **Processor**: Inherits `InputSource`; public `pull()` starts/stops profiler and calls `do_pull()`. Subclasses implement **`do_pull()`** and **`reset()`**.
-- **Oscillators**: Source nodes (no inputs). Base `OscillatorProcessor::do_pull()` loops over the span, calls `update_frequency_ramp()` then `generate_sample()` per sample. Subclasses implement `generate_sample()` and `reset_oscillator_state()`.
-- **VoiceContext**: Optional query pattern for velocity/aftertouch/current note; processors may ignore it.
-- **Profiling**: Compile-time `AUDIO_ENABLE_PROFILING`; when off, zero cost. `get_metrics()` returns last/max ns and total blocks.
-
----
-
-## File Structure
-
-**Current (implemented):**
+## File Structure (New)
 
 ```
 cxx/
-├── audio/
-│   ├── InputSource.hpp
-│   ├── VoiceContext.hpp
-│   ├── PerformanceProfiler.hpp
-│   ├── Processor.hpp
-│   └── oscillator/
-│       ├── OscillatorProcessor.hpp
-│       ├── SineOscillatorProcessor.hpp
-│       ├── SquareOscillatorProcessor.hpp
-│       ├── SawtoothOscillatorProcessor.hpp
-│       ├── TriangleOscillatorProcessor.hpp
-│       └── WavetableOscillatorProcessor.hpp   # One class, shape at create (Sine/Saw/Square/Triangle)
-├── bridge/
-│   ├── CInterface.h
-│   └── AudioBridge.cpp
-├── hal/
-│   └── include/
-│       └── AudioDriver.hpp
-├── CMakeLists.txt
-├── main.cpp
-└── ARCH_PLAN.md
+├── include/
+│   └── CInterface.h           # Public C API
+├── src/
+│   ├── bridge/
+│   │   └── AudioBridge.cpp    # C-to-C++ implementation
+│   ├── core/
+│   │   ├── Engine.hpp         # High-level engine (planned)
+│   │   ├── VoiceManager.hpp   # Polyphony & stealing
+│   │   ├── Voice.hpp          # Per-voice graph
+│   │   ├── MusicalClock.hpp   # Sample-accurate timing
+│   │   └── AudioBuffer.hpp    # Multi-channel buffer handling
+│   ├── dsp/
+│   │   ├── Processor.hpp      # Base processor class
+│   │   ├── InputSource.hpp    # Pull interface
+│   │   ├── oscillator/        # Sine, Saw, Square, etc.
+│   │   ├── envelope/          # ADSR, AD
+│   │   └── filter/            # Moog, Diode
+│   └── hal/
+│       ├── AudioDriver.hpp    # HAL interface
+│       ├── alsa/              # Linux implementation
+│       └── coreaudio/         # macOS implementation
+└── tests/
+    ├── metronome_test.cpp     # Timing validation
+    └── (GTest files...)       # Upcoming Phase 11
 ```
-
-**Planned:**
-
-```
-cxx/audio/
-├── envelope/
-│   ├── EnvelopeProcessor.hpp
-│   ├── ADSREnvelopeProcessor.hpp
-│   └── ADEnvelopeProcessor.hpp
-├── Graph.hpp
-├── Voice.hpp
-└── VoiceManager.hpp
-cxx/hal/
-├── null/NullAudioDriver.hpp
-├── file/FileAudioDriver.hpp
-├── alsa/, coreaudio/, wasapi/
-```
-
----
-
-## C API Factory (Oscillators)
-
-- **Algorithm-based** (rotor/PolyBLEP): `OSC_SINE`, `OSC_SQUARE`, `OSC_TRIANGLE`, `OSC_SAWTOOTH`.
-- **Wavetable-based** (one class, shape at create): `OSC_WAVETABLE` (= `OSC_WAVETABLE_SINE`), `OSC_WAVETABLE_SINE`, `OSC_WAVETABLE_SAW`, `OSC_WAVETABLE_SQUARE`, `OSC_WAVETABLE_TRIANGLE`.
-
-`oscillator_create(type, sample_rate)` returns an opaque handle; all other APIs (set_frequency, process, reset, get_metrics, destroy) are unchanged. Swift/.NET need not care whether the backend is algorithm or wavetable.
 
 ---
 
@@ -122,19 +87,12 @@ cxx/hal/
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | Processor base, PerformanceProfiler, InputSource, VoiceContext | Done |
-| 2 | OscillatorProcessor + Sine, Square, Saw, Triangle + Wavetable (do_pull contract) | Done |
-| 3 | C bridge: oscillator_create/factory for all types (incl. wavetable shapes) | Done |
-| 4 | EnvelopeProcessor base + ADSR/AD | Planned |
-| 5 | Graph (pull model, buffer pool, optional feedback) | Planned |
-| 6 | Voice + VoiceManager (polyphony, stealing, query pattern) | Planned |
-| 7 | AudioDriver HAL (null/file, then ALSA/CoreAudio/WASAPI) | Planned |
-| 8 | Integration tests, performance validation | Done |
-| 9 | API Maturity & Documentation | In Progress |
-| 10 | **Musical Logic**: 960 PPQ `MusicalClock`, `TuningSystem` (Microtonality), and human-readable `Note('C4')` abstractions. | Planned |
-| 11 | **MPE & Scheduler**: MPE support, **ParameterManager**, and 'Safe Update' thread-safe command buffer for UI-to-Audio batch changes. | Planned |
-| 12 | **MIDI Integration**: MIDI HAL for Linux/Mac/Win with CC mapping and SysEx hooks. | Planned |
-| 13 | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation to maximize polyphony. | Planned |
+| 1-10  | Core DSP, Factory, Polyphony, Musical Clock, Metronome Validation | 100% Complete |
+| 11    | **Dual-Layer Testing**: Establish GoogleTest (gtest) for internal C++ logic and C-API integration tests for the bridge. | Immediate Next |
+| 12    | **MIDI Integration**: MIDI HAL for Linux/Mac/Win with CC mapping and SysEx hooks. | Planned |
+| 13    | **Non-Intrusive Logger**: Implement a lock-free, real-time safe logger to replace `printf` in audio threads. | Planned |
+| 14    | **Unit & Integration Strategy**: Detail the plan for GUnit vs. standalone API tests. | Planned |
+| 15    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation to maximize polyphony. | Planned |
 
 ---
 
@@ -153,6 +111,4 @@ cxx/hal/
 ---
 
 ## References
-
-- Full historical plan (optional): `.cursor/plans/c++20_block-based_dsp_architecture_4b3bff39.plan.md`
-- Project rules: repo root `.cursorrules` (branch naming, C++20/23, bin output, C interop).
+- Project rules: repo root `.clinerules` (Git workflow, NVI, C++20).

@@ -2,75 +2,57 @@
 
 ## Prerequisites
 
-### CMake
-CMake 3.20 or later is required.
+### Common
+- **CMake** (3.20+)
+- **C++20/23 Compiler** (Clang 15+, GCC 12+, or MSVC 19.30+)
+- **GoogleTest** (Required for Phase 11+ tests)
+  - Fedora: `sudo dnf install gtest-devel`
+  - Ubuntu: `sudo apt-get install libgtest-dev`
+  - macOS: `brew install googletest`
 
-**macOS:**
-```bash
-brew install cmake
-```
-
-**Linux (Fedora):**
-```bash
-sudo dnf install cmake
-```
-
-**Linux (Debian/Ubuntu):**
-```bash
-sudo apt-get install cmake
-```
-
-### Platform-Specific Libraries
-
-**macOS:**
-- CoreAudio and AudioToolbox frameworks are included with macOS (no installation needed)
-
-**Linux:**
-- ALSA development libraries:
+### Linux (Fedora/Ubuntu)
+- **ALSA Development Libraries**
   - Fedora: `sudo dnf install alsa-lib-devel`
-  - Debian/Ubuntu: `sudo apt-get install libasound2-dev`
+  - Ubuntu: `sudo apt-get install libasound2-dev`
 
-## Building
+### macOS
+- **CoreAudio Frameworks** (Included with Xcode/Command Line Tools)
 
-### Using CMake (Recommended)
+---
 
-```bash
-cd cxx
-mkdir -p build
-cd build
-cmake ..
-make
-```
+## Build Instructions
 
-The executable will be in `build/bin/audio_test`.
+1. **Create Build Directory**
+   ```bash
+   mkdir -p cxx/build
+   cd cxx/build
+   ```
 
-### Direct Compilation (Quick Test)
+2. **Configure with CMake**
+   ```bash
+   cmake ..
+   ```
 
-If CMake is not available, you can compile directly:
+3. **Compile**
+   ```bash
+   make
+   ```
 
-**macOS:**
-```bash
-cd cxx
-mkdir -p bin
-clang++ -std=c++20 -Wall -Wextra -DAUDIO_ENABLE_PROFILING=1 -I. main.cpp -o bin/audio_test -framework CoreAudio -framework AudioToolbox
-```
+## Running Tests
 
-**Linux:**
-```bash
-cd cxx
-mkdir -p bin
-g++ -std=c++20 -Wall -Wextra -DAUDIO_ENABLE_PROFILING=1 -I. main.cpp -o bin/audio_test -lasound
-```
+All binaries are output to `cxx/build/bin/`.
 
-## Running
-
-```bash
-./bin/audio_test
-```
-
-## CMake Options
-
-- `AUDIO_ENABLE_PROFILING`: Enable performance profiling (default: ON)
+- **Metronome Validation**:
   ```bash
-  cmake -DAUDIO_ENABLE_PROFILING=OFF ..
+  ./bin/metronome_test
+  ```
+
+- **Audio Driver Check**:
+  ```bash
+  ./bin/audio_check
+  ```
+
+- **GUnit Tests (Phase 11+)**:
+  ```bash
+  ./bin/unit_tests
   ```

@@ -233,101 +233,101 @@ timing_validation/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/build
 .PHONY : timing_validation/fast
 
-audio/Voice.o: audio/Voice.cpp.o
-.PHONY : audio/Voice.o
+src/bridge/AudioBridge.o: src/bridge/AudioBridge.cpp.o
+.PHONY : src/bridge/AudioBridge.o
 
 # target to build an object file
-audio/Voice.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/audio/Voice.cpp.o
-.PHONY : audio/Voice.cpp.o
+src/bridge/AudioBridge.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o
+.PHONY : src/bridge/AudioBridge.cpp.o
 
-audio/Voice.i: audio/Voice.cpp.i
-.PHONY : audio/Voice.i
+src/bridge/AudioBridge.i: src/bridge/AudioBridge.cpp.i
+.PHONY : src/bridge/AudioBridge.i
 
 # target to preprocess a source file
-audio/Voice.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/audio/Voice.cpp.i
-.PHONY : audio/Voice.cpp.i
+src/bridge/AudioBridge.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.i
+.PHONY : src/bridge/AudioBridge.cpp.i
 
-audio/Voice.s: audio/Voice.cpp.s
-.PHONY : audio/Voice.s
+src/bridge/AudioBridge.s: src/bridge/AudioBridge.cpp.s
+.PHONY : src/bridge/AudioBridge.s
 
 # target to generate assembly for a file
-audio/Voice.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/audio/Voice.cpp.s
-.PHONY : audio/Voice.cpp.s
+src/bridge/AudioBridge.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.s
+.PHONY : src/bridge/AudioBridge.cpp.s
 
-audio/VoiceManager.o: audio/VoiceManager.cpp.o
-.PHONY : audio/VoiceManager.o
+src/core/Voice.o: src/core/Voice.cpp.o
+.PHONY : src/core/Voice.o
 
 # target to build an object file
-audio/VoiceManager.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/audio/VoiceManager.cpp.o
-.PHONY : audio/VoiceManager.cpp.o
+src/core/Voice.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o
+.PHONY : src/core/Voice.cpp.o
 
-audio/VoiceManager.i: audio/VoiceManager.cpp.i
-.PHONY : audio/VoiceManager.i
+src/core/Voice.i: src/core/Voice.cpp.i
+.PHONY : src/core/Voice.i
 
 # target to preprocess a source file
-audio/VoiceManager.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/audio/VoiceManager.cpp.i
-.PHONY : audio/VoiceManager.cpp.i
+src/core/Voice.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/Voice.cpp.i
+.PHONY : src/core/Voice.cpp.i
 
-audio/VoiceManager.s: audio/VoiceManager.cpp.s
-.PHONY : audio/VoiceManager.s
+src/core/Voice.s: src/core/Voice.cpp.s
+.PHONY : src/core/Voice.s
 
 # target to generate assembly for a file
-audio/VoiceManager.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/audio/VoiceManager.cpp.s
-.PHONY : audio/VoiceManager.cpp.s
+src/core/Voice.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/Voice.cpp.s
+.PHONY : src/core/Voice.cpp.s
 
-hal/coreaudio/CoreAudioDriver.o: hal/coreaudio/CoreAudioDriver.cpp.o
-.PHONY : hal/coreaudio/CoreAudioDriver.o
+src/core/VoiceManager.o: src/core/VoiceManager.cpp.o
+.PHONY : src/core/VoiceManager.o
 
 # target to build an object file
-hal/coreaudio/CoreAudioDriver.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/hal/coreaudio/CoreAudioDriver.cpp.o
-.PHONY : hal/coreaudio/CoreAudioDriver.cpp.o
+src/core/VoiceManager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o
+.PHONY : src/core/VoiceManager.cpp.o
 
-hal/coreaudio/CoreAudioDriver.i: hal/coreaudio/CoreAudioDriver.cpp.i
-.PHONY : hal/coreaudio/CoreAudioDriver.i
+src/core/VoiceManager.i: src/core/VoiceManager.cpp.i
+.PHONY : src/core/VoiceManager.i
 
 # target to preprocess a source file
-hal/coreaudio/CoreAudioDriver.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/hal/coreaudio/CoreAudioDriver.cpp.i
-.PHONY : hal/coreaudio/CoreAudioDriver.cpp.i
+src/core/VoiceManager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.i
+.PHONY : src/core/VoiceManager.cpp.i
 
-hal/coreaudio/CoreAudioDriver.s: hal/coreaudio/CoreAudioDriver.cpp.s
-.PHONY : hal/coreaudio/CoreAudioDriver.s
+src/core/VoiceManager.s: src/core/VoiceManager.cpp.s
+.PHONY : src/core/VoiceManager.s
 
 # target to generate assembly for a file
-hal/coreaudio/CoreAudioDriver.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/hal/coreaudio/CoreAudioDriver.cpp.s
-.PHONY : hal/coreaudio/CoreAudioDriver.cpp.s
+src/core/VoiceManager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.s
+.PHONY : src/core/VoiceManager.cpp.s
 
-src/AudioBridge.o: src/AudioBridge.cpp.o
-.PHONY : src/AudioBridge.o
+src/hal/coreaudio/CoreAudioDriver.o: src/hal/coreaudio/CoreAudioDriver.cpp.o
+.PHONY : src/hal/coreaudio/CoreAudioDriver.o
 
 # target to build an object file
-src/AudioBridge.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/AudioBridge.cpp.o
-.PHONY : src/AudioBridge.cpp.o
+src/hal/coreaudio/CoreAudioDriver.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o
+.PHONY : src/hal/coreaudio/CoreAudioDriver.cpp.o
 
-src/AudioBridge.i: src/AudioBridge.cpp.i
-.PHONY : src/AudioBridge.i
+src/hal/coreaudio/CoreAudioDriver.i: src/hal/coreaudio/CoreAudioDriver.cpp.i
+.PHONY : src/hal/coreaudio/CoreAudioDriver.i
 
 # target to preprocess a source file
-src/AudioBridge.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/AudioBridge.cpp.i
-.PHONY : src/AudioBridge.cpp.i
+src/hal/coreaudio/CoreAudioDriver.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.i
+.PHONY : src/hal/coreaudio/CoreAudioDriver.cpp.i
 
-src/AudioBridge.s: src/AudioBridge.cpp.s
-.PHONY : src/AudioBridge.s
+src/hal/coreaudio/CoreAudioDriver.s: src/hal/coreaudio/CoreAudioDriver.cpp.s
+.PHONY : src/hal/coreaudio/CoreAudioDriver.s
 
 # target to generate assembly for a file
-src/AudioBridge.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/AudioBridge.cpp.s
-.PHONY : src/AudioBridge.cpp.s
+src/hal/coreaudio/CoreAudioDriver.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.s
+.PHONY : src/hal/coreaudio/CoreAudioDriver.cpp.s
 
 tests/EngineTests.o: tests/EngineTests.cpp.o
 .PHONY : tests/EngineTests.o
@@ -538,18 +538,18 @@ help:
 	@echo "... processor_check"
 	@echo "... stereo_poly_test"
 	@echo "... timing_validation"
-	@echo "... audio/Voice.o"
-	@echo "... audio/Voice.i"
-	@echo "... audio/Voice.s"
-	@echo "... audio/VoiceManager.o"
-	@echo "... audio/VoiceManager.i"
-	@echo "... audio/VoiceManager.s"
-	@echo "... hal/coreaudio/CoreAudioDriver.o"
-	@echo "... hal/coreaudio/CoreAudioDriver.i"
-	@echo "... hal/coreaudio/CoreAudioDriver.s"
-	@echo "... src/AudioBridge.o"
-	@echo "... src/AudioBridge.i"
-	@echo "... src/AudioBridge.s"
+	@echo "... src/bridge/AudioBridge.o"
+	@echo "... src/bridge/AudioBridge.i"
+	@echo "... src/bridge/AudioBridge.s"
+	@echo "... src/core/Voice.o"
+	@echo "... src/core/Voice.i"
+	@echo "... src/core/Voice.s"
+	@echo "... src/core/VoiceManager.o"
+	@echo "... src/core/VoiceManager.i"
+	@echo "... src/core/VoiceManager.s"
+	@echo "... src/hal/coreaudio/CoreAudioDriver.o"
+	@echo "... src/hal/coreaudio/CoreAudioDriver.i"
+	@echo "... src/hal/coreaudio/CoreAudioDriver.s"
 	@echo "... tests/EngineTests.o"
 	@echo "... tests/EngineTests.i"
 	@echo "... tests/EngineTests.s"

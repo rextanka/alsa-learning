@@ -13,7 +13,7 @@
 
 #include <functional>
 #include <span>
-#include "../../audio/AudioBuffer.hpp"
+#include "AudioBuffer.hpp"
 
 namespace hal {
 

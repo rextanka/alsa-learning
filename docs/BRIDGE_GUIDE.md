@@ -30,9 +30,6 @@ The engine supports 16-voice polyphony with LRU (Least Recently Used) voice stea
 engine_note_on(engine, 60, 0.8f);
 
 // Trigger a note with specific stereo placement (-1.0 Left to 1.0 Right)
-engine_note_on_panned(engine, 64, 0.8f, -0.5f);
-
-// Change pan position of an active note
 engine_set_note_pan(engine, 60, 0.5f);
 
 // Release a note (triggers the envelope Release phase)

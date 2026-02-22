@@ -6,7 +6,7 @@
 #ifndef HAL_ALSA_DRIVER_HPP
 #define HAL_ALSA_DRIVER_HPP
 
-#include "../include/AudioDriver.hpp"
+#include "AudioDriver.hpp"
 #ifdef __linux__
 #include <alsa/asoundlib.h>
 #else
