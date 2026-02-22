@@ -1,7 +1,10 @@
 {
 	"InstallScripts" : 
 	[
-		"/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/cmake_install.cmake"
+		"/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/cmake_install.cmake",
+		"/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-build/cmake_install.cmake",
+		"/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-build/googlemock/cmake_install.cmake",
+		"/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-build/googletest/cmake_install.cmake"
 	],
 	"Parallel" : false
 }

@@ -86,7 +86,39 @@ if(PLATFORM_LIBS)
     target_link_libraries(audio_engine ${PLATFORM_LIBS})
 endif()
 
-# --- Test Executables ---
+# --- Testing Infrastructure (Phase 11) ---
+
+option(BUILD_TESTING "Build tests" ON)
+
+if(BUILD_TESTING)
+    include(FetchContent)
+    FetchContent_Declare(
+      googletest
+      URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz
+    )
+    # For Windows: prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+
+    enable_testing()
+
+    # --- Unit Tests (C++) ---
+    add_executable(unit_tests
+        tests/unit/test_oscillator.cpp
+    )
+    target_link_libraries(unit_tests PRIVATE audio_engine gtest_main)
+    add_test(NAME unit_tests COMMAND unit_tests)
+
+    # --- Integration Tests (C API) ---
+    add_executable(integration_tests
+        tests/integration/test_bridge.cpp
+    )
+    # Note: We link against audio_engine but we ONLY include CInterface.h in the source
+    target_link_libraries(integration_tests PRIVATE audio_engine gtest_main)
+    add_test(NAME integration_tests COMMAND integration_tests)
+endif()
+
+# --- Legacy Test Executables ---
 
 # 1. Metronome Validation Test (Phase 10)
 add_executable(metronome_test tests/metronome_test.cpp)
