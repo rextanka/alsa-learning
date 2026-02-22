@@ -183,7 +183,7 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
     
     // Master gain adjusted for polyphony
     for (auto& sample : output) {
-        sample *= 0.2f;
+        sample *= 0.8f; // Phase 10 Temporary Boost
     }
 }
 

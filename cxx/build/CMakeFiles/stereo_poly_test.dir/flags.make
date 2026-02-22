@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = -DAUDIO_ENABLE_PROFILING=1
 
-CXX_INCLUDES = -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/include -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks
+CXX_INCLUDES = -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/include
 
 CXX_FLAGSarm64 = -std=c++20 -arch arm64
 

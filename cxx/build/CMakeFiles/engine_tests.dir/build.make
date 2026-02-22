@@ -86,81 +86,18 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/EngineTests.cpp -o CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.s
 
-CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.o: CMakeFiles/engine_tests.dir/flags.make
-CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp
-CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.o: CMakeFiles/engine_tests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.o -MF CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.o.d -o CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp
-
-CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp > CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.i
-
-CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp -o CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.s
-
-CMakeFiles/engine_tests.dir/audio/Voice.cpp.o: CMakeFiles/engine_tests.dir/flags.make
-CMakeFiles/engine_tests.dir/audio/Voice.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp
-CMakeFiles/engine_tests.dir/audio/Voice.cpp.o: CMakeFiles/engine_tests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/engine_tests.dir/audio/Voice.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/engine_tests.dir/audio/Voice.cpp.o -MF CMakeFiles/engine_tests.dir/audio/Voice.cpp.o.d -o CMakeFiles/engine_tests.dir/audio/Voice.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp
-
-CMakeFiles/engine_tests.dir/audio/Voice.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/engine_tests.dir/audio/Voice.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp > CMakeFiles/engine_tests.dir/audio/Voice.cpp.i
-
-CMakeFiles/engine_tests.dir/audio/Voice.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/engine_tests.dir/audio/Voice.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp -o CMakeFiles/engine_tests.dir/audio/Voice.cpp.s
-
-CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o: CMakeFiles/engine_tests.dir/flags.make
-CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp
-CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o: CMakeFiles/engine_tests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o -MF CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o.d -o CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp
-
-CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp > CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.i
-
-CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp -o CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.s
-
-CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o: CMakeFiles/engine_tests.dir/flags.make
-CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.cpp
-CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o: CMakeFiles/engine_tests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o -MF CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o.d -o CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.cpp
-
-CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.cpp > CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.i
-
-CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/hal/coreaudio/CoreAudioDriver.cpp -o CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.s
-
 # Object files for target engine_tests
 engine_tests_OBJECTS = \
-"CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o" \
-"CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.o" \
-"CMakeFiles/engine_tests.dir/audio/Voice.cpp.o" \
-"CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o" \
-"CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o"
+"CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o"
 
 # External object files for target engine_tests
 engine_tests_EXTERNAL_OBJECTS =
 
 bin/engine_tests: CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o
-bin/engine_tests: CMakeFiles/engine_tests.dir/src/AudioBridge.cpp.o
-bin/engine_tests: CMakeFiles/engine_tests.dir/audio/Voice.cpp.o
-bin/engine_tests: CMakeFiles/engine_tests.dir/audio/VoiceManager.cpp.o
-bin/engine_tests: CMakeFiles/engine_tests.dir/hal/coreaudio/CoreAudioDriver.cpp.o
 bin/engine_tests: CMakeFiles/engine_tests.dir/build.make
+bin/engine_tests: bin/libaudio_engine.a
 bin/engine_tests: CMakeFiles/engine_tests.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking CXX executable bin/engine_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable bin/engine_tests"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/engine_tests.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

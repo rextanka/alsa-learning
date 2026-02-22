@@ -86,65 +86,18 @@ CMakeFiles/timing_validation.dir/tests/TimingValidation.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/timing_validation.dir/tests/TimingValidation.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/TimingValidation.cpp -o CMakeFiles/timing_validation.dir/tests/TimingValidation.cpp.s
 
-CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.o: CMakeFiles/timing_validation.dir/flags.make
-CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp
-CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.o: CMakeFiles/timing_validation.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.o -MF CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.o.d -o CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp
-
-CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp > CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.i
-
-CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/AudioBridge.cpp -o CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.s
-
-CMakeFiles/timing_validation.dir/audio/Voice.cpp.o: CMakeFiles/timing_validation.dir/flags.make
-CMakeFiles/timing_validation.dir/audio/Voice.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp
-CMakeFiles/timing_validation.dir/audio/Voice.cpp.o: CMakeFiles/timing_validation.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/timing_validation.dir/audio/Voice.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/timing_validation.dir/audio/Voice.cpp.o -MF CMakeFiles/timing_validation.dir/audio/Voice.cpp.o.d -o CMakeFiles/timing_validation.dir/audio/Voice.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp
-
-CMakeFiles/timing_validation.dir/audio/Voice.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/timing_validation.dir/audio/Voice.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp > CMakeFiles/timing_validation.dir/audio/Voice.cpp.i
-
-CMakeFiles/timing_validation.dir/audio/Voice.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/timing_validation.dir/audio/Voice.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/Voice.cpp -o CMakeFiles/timing_validation.dir/audio/Voice.cpp.s
-
-CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.o: CMakeFiles/timing_validation.dir/flags.make
-CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp
-CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.o: CMakeFiles/timing_validation.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.o -MF CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.o.d -o CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp
-
-CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp > CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.i
-
-CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/audio/VoiceManager.cpp -o CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.s
-
 # Object files for target timing_validation
 timing_validation_OBJECTS = \
-"CMakeFiles/timing_validation.dir/tests/TimingValidation.cpp.o" \
-"CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.o" \
-"CMakeFiles/timing_validation.dir/audio/Voice.cpp.o" \
-"CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.o"
+"CMakeFiles/timing_validation.dir/tests/TimingValidation.cpp.o"
 
 # External object files for target timing_validation
 timing_validation_EXTERNAL_OBJECTS =
 
 bin/timing_validation: CMakeFiles/timing_validation.dir/tests/TimingValidation.cpp.o
-bin/timing_validation: CMakeFiles/timing_validation.dir/src/AudioBridge.cpp.o
-bin/timing_validation: CMakeFiles/timing_validation.dir/audio/Voice.cpp.o
-bin/timing_validation: CMakeFiles/timing_validation.dir/audio/VoiceManager.cpp.o
 bin/timing_validation: CMakeFiles/timing_validation.dir/build.make
+bin/timing_validation: bin/libaudio_engine.a
 bin/timing_validation: CMakeFiles/timing_validation.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable bin/timing_validation"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable bin/timing_validation"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/timing_validation.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

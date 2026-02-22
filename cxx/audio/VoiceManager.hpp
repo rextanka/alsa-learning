@@ -96,6 +96,9 @@ private:
 
     std::array<VoiceSlot, MAX_VOICES> voices_;
     int sample_rate_;
+
+public:
+    const std::array<VoiceSlot, MAX_VOICES>& get_voices() const { return voices_; }
 };
 
 } // namespace audio

@@ -73,6 +73,7 @@ int engine_process(EngineHandle handle, float* output, size_t frames);
 // Musical Clock and Logic
 int engine_set_bpm(EngineHandle handle, double bpm);
 double engine_get_bpm(EngineHandle handle);
+int engine_set_meter(EngineHandle handle, int beats_per_bar);
 int engine_get_musical_time(EngineHandle handle, int* bar, int* beat, int* tick);
 
 // Playing notes with name
@@ -101,6 +102,9 @@ int envelope_gate_off(EnvelopeHandle handle);
 int envelope_set_adsr(EnvelopeHandle handle, float attack, float decay, float sustain, float release);
 int envelope_set_ad(EnvelopeHandle handle, float attack, float decay);
 int envelope_process(EnvelopeHandle handle, float* output, size_t frames);
+
+// ADSR API for Engine (VoiceManager)
+int engine_set_adsr(EngineHandle handle, float attack, float decay, float sustain, float release);
 
 // Filter API
 int engine_set_filter_type(EngineHandle handle, int type);

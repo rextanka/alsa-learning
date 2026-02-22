@@ -1,4 +1,7 @@
-/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/audio_test.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/audio_engine.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/metronome_test.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/processor_check.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/audio_check.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/engine_tests.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/filter_tests.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/stereo_poly_test.dir
