@@ -20,10 +20,32 @@
 ## Build Instructions
 
 1. **Create Build Directory**
-   ```bash
-   mkdir -p cxx/build
-   cd cxx/build
-   ```
+```bash
+cd cxx/build
+./bin/processor_check
+```
+
+## Pre-Flight Checklist
+
+Before committing any changes, ensure you have completed the following "Green Build" loop:
+
+1.  **Configure**: Ensure the build system is up to date.
+    ```bash
+    cd cxx
+    mkdir -p build && cd build
+    cmake ..
+    ```
+2.  **Compile**: Build all targets, including tests.
+    ```bash
+    make -j$(nproc)
+    ```
+3.  **Validate**: Run the full test suite.
+    ```bash
+    ctest --output-on-failure
+    ```
+    *Note: You can also run unit tests directly via `./bin/unit_tests` for more detailed GoogleTest output.*
+
+4.  **Audio Thread Check**: Verify that no new code in `src/dsp` or `src/core` uses blocking calls or allocations. Use the `AudioLogger` for debugging in these paths.
 
 2. **Configure with CMake**
    ```bash

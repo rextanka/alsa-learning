@@ -32,25 +32,41 @@ We use **GoogleTest** for both Unit and Integration tests.
 
 ### 1. Behavioral Testing with Telemetry
 
-When testing components like the `VoiceManager`, checking the output buffer is often not enough to verify complex logic like voice stealing.
+When testing components like the `VoiceManager`, checking the output buffer is often not enough to verify complex logic like voice stealing. The `AudioLogger` allows us to verify **internal state** without the "observer effect" of slow I/O.
+
+**Key Techniques:**
+-   **Intercept Mode**: Before triggering the action, drain the logger (`while(logger.pop_entry());`).
+-   **Event Matching**: Use `audio_log_event` to log numeric IDs (e.g., "VoiceSteal" with the stolen note ID as the value).
+-   **Sequence Verification**: Telemetry entries are ordered. You can verify that event A happened before event B.
 
 ```cpp
-TEST(MyTest, VerifyStealing) {
+TEST(VoiceStressTest, VerifyOldestIsStolen) {
     auto& logger = audio::AudioLogger::instance();
-    // 1. Setup engine...
-    // 2. Trigger events that cause stealing...
+    while (logger.pop_entry()); // Intercept Mode: Clear existing logs
+
+    // 1. Trigger stealing...
+    engine.note_on(90, 0.5f);
     
-    // 3. Verify via telemetry
-    bool steal_detected = false;
+    // 2. Verify via telemetry
+    bool correct_note_stolen = false;
     while (auto entry = logger.pop_entry()) {
-        if (std::string(entry->tag) == "VoiceSteal") {
-            steal_detected = true;
+        if (std::string(entry->tag) == "VoiceSteal" && entry->value == 60.0f) {
+            correct_note_stolen = true;
             break;
         }
     }
-    EXPECT_TRUE(steal_detected);
+    EXPECT_TRUE(correct_note_stolen);
 }
 ```
+
+## Developer Workflow (Pre-Check-in)
+
+To maintain a "Green Build," every developer must follow this loop before pushing code:
+
+1.  **Build**: `cd cxx/build && cmake .. && make -j`
+2.  **Test**: `ctest --output-on-failure` or `./bin/unit_tests`
+3.  **Verify RT-Safety**: Ensure no new `printf` or `std::cout` calls were added to the audio thread (use `AudioLogger` instead).
+4.  **Documentation**: Update `BRIDGE_GUIDE.md` if any C-API changes were made.
 
 ### 2. Unit Tests
 
