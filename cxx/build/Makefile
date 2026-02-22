@@ -65,6 +65,16 @@ CMAKE_BINARY_DIR = /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build
 #=============================================================================
 # Targets provided globally by CMake.
 
+# Special rule for the target test
+test:
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running tests..."
+	/opt/homebrew/bin/ctest $(ARGS)
+.PHONY : test
+
+# Special rule for the target test
+test/fast: test
+.PHONY : test/fast
+
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running CMake cache editor..."
@@ -84,6 +94,51 @@ rebuild_cache:
 # Special rule for the target rebuild_cache
 rebuild_cache/fast: rebuild_cache
 .PHONY : rebuild_cache/fast
+
+# Special rule for the target list_install_components
+list_install_components:
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Available install components are: \"gmock\" \"gtest\""
+.PHONY : list_install_components
+
+# Special rule for the target list_install_components
+list_install_components/fast: list_install_components
+.PHONY : list_install_components/fast
+
+# Special rule for the target install
+install: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Install the project..."
+	/opt/homebrew/bin/cmake -P cmake_install.cmake
+.PHONY : install
+
+# Special rule for the target install
+install/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Install the project..."
+	/opt/homebrew/bin/cmake -P cmake_install.cmake
+.PHONY : install/fast
+
+# Special rule for the target install/local
+install/local: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing only the local directory..."
+	/opt/homebrew/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local
+
+# Special rule for the target install/local
+install/local/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing only the local directory..."
+	/opt/homebrew/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local/fast
+
+# Special rule for the target install/strip
+install/strip: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing the project stripped..."
+	/opt/homebrew/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+.PHONY : install/strip
+
+# Special rule for the target install/strip
+install/strip/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing the project stripped..."
+	/opt/homebrew/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+.PHONY : install/strip/fast
 
 # The main all target
 all: cmake_check_build_system
@@ -128,6 +183,32 @@ audio_engine: cmake_check_build_system
 audio_engine/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/build
 .PHONY : audio_engine/fast
+
+#=============================================================================
+# Target rules for targets named unit_tests
+
+# Build rule for target.
+unit_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 unit_tests
+.PHONY : unit_tests
+
+# fast build rule for target.
+unit_tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/build
+.PHONY : unit_tests/fast
+
+#=============================================================================
+# Target rules for targets named integration_tests
+
+# Build rule for target.
+integration_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 integration_tests
+.PHONY : integration_tests
+
+# fast build rule for target.
+integration_tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/build
+.PHONY : integration_tests/fast
 
 #=============================================================================
 # Target rules for targets named metronome_test
@@ -232,6 +313,58 @@ timing_validation: cmake_check_build_system
 timing_validation/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/build
 .PHONY : timing_validation/fast
+
+#=============================================================================
+# Target rules for targets named gmock
+
+# Build rule for target.
+gmock: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 gmock
+.PHONY : gmock
+
+# fast build rule for target.
+gmock/fast:
+	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/build
+.PHONY : gmock/fast
+
+#=============================================================================
+# Target rules for targets named gmock_main
+
+# Build rule for target.
+gmock_main: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 gmock_main
+.PHONY : gmock_main
+
+# fast build rule for target.
+gmock_main/fast:
+	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/build
+.PHONY : gmock_main/fast
+
+#=============================================================================
+# Target rules for targets named gtest
+
+# Build rule for target.
+gtest: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 gtest
+.PHONY : gtest
+
+# fast build rule for target.
+gtest/fast:
+	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest.dir/build
+.PHONY : gtest/fast
+
+#=============================================================================
+# Target rules for targets named gtest_main
+
+# Build rule for target.
+gtest_main: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 gtest_main
+.PHONY : gtest_main
+
+# fast build rule for target.
+gtest_main/fast:
+	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/build
+.PHONY : gtest_main/fast
 
 src/bridge/AudioBridge.o: src/bridge/AudioBridge.cpp.o
 .PHONY : src/bridge/AudioBridge.o
@@ -473,6 +606,30 @@ tests/audio_check.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_check.dir/build.make CMakeFiles/audio_check.dir/tests/audio_check.cpp.s
 .PHONY : tests/audio_check.cpp.s
 
+tests/integration/test_bridge.o: tests/integration/test_bridge.cpp.o
+.PHONY : tests/integration/test_bridge.o
+
+# target to build an object file
+tests/integration/test_bridge.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/tests/integration/test_bridge.cpp.o
+.PHONY : tests/integration/test_bridge.cpp.o
+
+tests/integration/test_bridge.i: tests/integration/test_bridge.cpp.i
+.PHONY : tests/integration/test_bridge.i
+
+# target to preprocess a source file
+tests/integration/test_bridge.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/tests/integration/test_bridge.cpp.i
+.PHONY : tests/integration/test_bridge.cpp.i
+
+tests/integration/test_bridge.s: tests/integration/test_bridge.cpp.s
+.PHONY : tests/integration/test_bridge.s
+
+# target to generate assembly for a file
+tests/integration/test_bridge.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/tests/integration/test_bridge.cpp.s
+.PHONY : tests/integration/test_bridge.cpp.s
+
 tests/metronome_test.o: tests/metronome_test.cpp.o
 .PHONY : tests/metronome_test.o
 
@@ -521,6 +678,30 @@ tests/processor_check.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/processor_check.dir/build.make CMakeFiles/processor_check.dir/tests/processor_check.cpp.s
 .PHONY : tests/processor_check.cpp.s
 
+tests/unit/test_oscillator.o: tests/unit/test_oscillator.cpp.o
+.PHONY : tests/unit/test_oscillator.o
+
+# target to build an object file
+tests/unit/test_oscillator.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.o
+.PHONY : tests/unit/test_oscillator.cpp.o
+
+tests/unit/test_oscillator.i: tests/unit/test_oscillator.cpp.i
+.PHONY : tests/unit/test_oscillator.i
+
+# target to preprocess a source file
+tests/unit/test_oscillator.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.i
+.PHONY : tests/unit/test_oscillator.cpp.i
+
+tests/unit/test_oscillator.s: tests/unit/test_oscillator.cpp.s
+.PHONY : tests/unit/test_oscillator.s
+
+# target to generate assembly for a file
+tests/unit/test_oscillator.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.s
+.PHONY : tests/unit/test_oscillator.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -528,16 +709,27 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... edit_cache"
+	@echo "... install"
+	@echo "... install/local"
+	@echo "... install/strip"
+	@echo "... list_install_components"
 	@echo "... rebuild_cache"
+	@echo "... test"
 	@echo "... audio_check"
 	@echo "... audio_engine"
 	@echo "... engine_tests"
 	@echo "... filter_tests"
+	@echo "... gmock"
+	@echo "... gmock_main"
+	@echo "... gtest"
+	@echo "... gtest_main"
+	@echo "... integration_tests"
 	@echo "... metronome_test"
 	@echo "... phase10_tests"
 	@echo "... processor_check"
 	@echo "... stereo_poly_test"
 	@echo "... timing_validation"
+	@echo "... unit_tests"
 	@echo "... src/bridge/AudioBridge.o"
 	@echo "... src/bridge/AudioBridge.i"
 	@echo "... src/bridge/AudioBridge.s"
@@ -568,12 +760,18 @@ help:
 	@echo "... tests/audio_check.o"
 	@echo "... tests/audio_check.i"
 	@echo "... tests/audio_check.s"
+	@echo "... tests/integration/test_bridge.o"
+	@echo "... tests/integration/test_bridge.i"
+	@echo "... tests/integration/test_bridge.s"
 	@echo "... tests/metronome_test.o"
 	@echo "... tests/metronome_test.i"
 	@echo "... tests/metronome_test.s"
 	@echo "... tests/processor_check.o"
 	@echo "... tests/processor_check.i"
 	@echo "... tests/processor_check.s"
+	@echo "... tests/unit/test_oscillator.o"
+	@echo "... tests/unit/test_oscillator.i"
+	@echo "... tests/unit/test_oscillator.s"
 .PHONY : help
 
 
