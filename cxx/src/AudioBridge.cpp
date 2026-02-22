@@ -331,7 +331,6 @@ int engine_process(EngineHandle handle, float* output, size_t frames) {
 int engine_set_bpm(EngineHandle handle, double bpm) {
     if (!handle) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
-    printf("[AudioBridge] Pointer: %p, Setting BPM: %.2f\n", (void*)impl, bpm);
     impl->clock.set_bpm(bpm);
     return 0;
 }
@@ -345,7 +344,6 @@ double engine_get_bpm(EngineHandle handle) {
 int engine_set_meter(EngineHandle handle, int beats_per_bar) {
     if (!handle) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
-    printf("[AudioBridge] Pointer: %p, Setting Meter: %d/4\n", (void*)impl, beats_per_bar);
     impl->clock.set_meter(static_cast<int32_t>(beats_per_bar));
     return 0;
 }
