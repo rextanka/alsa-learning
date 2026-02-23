@@ -8,7 +8,9 @@
 #include <thread>
 #include <chrono>
 #include <string>
-#include "CInterface.h"
+#include <functional>
+#include "../src/core/AudioBuffer.hpp"
+#include "../include/CInterface.h"
 
 // Note: For real-time audio in this test, we'll still use the HAL C++ classes
 // but we will wrap the engine calls exclusively in the C API.
@@ -16,8 +18,10 @@
 #include "../hal/coreaudio/CoreAudioDriver.hpp"
 using NativeDriver = hal::CoreAudioDriver;
 #else
+#include "../src/hal/AudioDriver.hpp"
 namespace hal { class DummyDriver : public AudioDriver { 
 public: 
+    DummyDriver(int /*sr*/, int /*bs*/) {}
     bool start() override { return true; } 
     void stop() override {} 
     void set_callback(AudioCallback) override {} 

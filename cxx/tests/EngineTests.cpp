@@ -9,7 +9,10 @@
 #include <chrono>
 #include <string>
 #include <vector>
-#include "CInterface.h"
+#include <span>
+#include <functional>
+#include "../src/hal/AudioDriver.hpp"
+#include "../include/CInterface.h"
 
 #ifdef __APPLE__
 #include "../hal/coreaudio/CoreAudioDriver.hpp"
@@ -17,6 +20,7 @@ using NativeDriver = hal::CoreAudioDriver;
 #else
 namespace hal { class DummyDriver : public AudioDriver { 
 public: 
+    DummyDriver(int /*sr*/, int /*bs*/) {}
     bool start() override { return true; } 
     void stop() override {} 
     void set_callback(AudioCallback) override {} 

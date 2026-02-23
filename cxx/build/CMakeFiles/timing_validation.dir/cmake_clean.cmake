@@ -1,4 +1,5 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/timing_validation.dir/link.d"
   "CMakeFiles/timing_validation.dir/tests/TimingValidation.cpp.o"
   "CMakeFiles/timing_validation.dir/tests/TimingValidation.cpp.o.d"
   "bin/timing_validation"

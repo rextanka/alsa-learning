@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cassert>
 #include <cmath>
-#include "include/CInterface.h"
+#include "../include/CInterface.h"
 
 void test_musical_logic() {
     std::cout << "--- Testing Musical Logic (Phase 10) ---" << std::endl;

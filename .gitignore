@@ -21,3 +21,8 @@ bin/
 .vscode/*
 !.vscode/tasks.json
 !.vscode/launch.json
+
+# --- Linux & Build Performance ---
+cxx/build/
+_deps/
+.cache/

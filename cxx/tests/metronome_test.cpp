@@ -7,6 +7,7 @@
 #include <memory>
 #include <numeric> // For std::accumulate
 #include <algorithm> // For std::max
+#include <cmath>
 
 #include "../../cxx/include/CInterface.h"
 
@@ -14,7 +15,9 @@
 #include "../hal/coreaudio/CoreAudioDriver.hpp"
 using NativeDriver = hal::CoreAudioDriver;
 #elif defined(__linux__)
-#include "../hal/alsa/AlsaDriver.hpp"
+#include <functional>
+#include <span>
+#include "../src/hal/alsa/AlsaDriver.hpp"
 using NativeDriver = hal::AlsaDriver;
 #endif
 

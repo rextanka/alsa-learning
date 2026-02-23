@@ -1,1 +1,1 @@
-/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/processor_check.dir/tests/processor_check.cpp.o -o bin/processor_check  bin/libaudio_engine.a -framework CoreAudio -framework AudioToolbox
+/usr/lib64/ccache/c++ -Wl,--dependency-file=CMakeFiles/processor_check.dir/link.d CMakeFiles/processor_check.dir/tests/processor_check.cpp.o -o bin/processor_check  bin/libaudio_engine.a -lasound

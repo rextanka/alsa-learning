@@ -1,4 +1,5 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/audio_check.dir/link.d"
   "CMakeFiles/audio_check.dir/tests/audio_check.cpp.o"
   "CMakeFiles/audio_check.dir/tests/audio_check.cpp.o.d"
   "bin/audio_check"

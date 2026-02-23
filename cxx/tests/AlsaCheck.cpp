@@ -3,13 +3,14 @@
  * @brief Utility to verify ALSA driver and audio processing.
  */
 
-#include "../hal/alsa/AlsaDriver.hpp"
-#include "../audio/oscillator/SineOscillatorProcessor.hpp"
+#include "../src/hal/alsa/AlsaDriver.hpp"
+#include "../src/dsp/oscillator/SineOscillatorProcessor.hpp"
 #include <iostream>
 #include <chrono>
 #include <thread>
 #include <memory>
 #include <span>
+#include <functional>
 
 int main() {
     std::cout << "--- ALSA Driver Check ---" << std::endl;
