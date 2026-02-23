@@ -25,8 +25,18 @@ int main() {
     auto sine = std::make_shared<audio::SineOscillatorProcessor>(sample_rate);
     sine->set_frequency(440.0f); // A4
 
-    driver->set_callback([sine](std::span<float> output) {
-        sine->pull(output);
+    driver->set_callback([sine, num_channels](std::span<float> output) {
+        // AlsaDriver provides a flat span. For interleaved stereo, we need to
+        // fill L, R, L, R...
+        // SineOscillatorProcessor::pull(span) generates mono samples.
+        // We must fill the interleaved buffer correctly.
+        for (size_t i = 0; i < output.size(); i += num_channels) {
+            float sample = 0.0f;
+            sine->pull(std::span<float>(&sample, 1));
+            for (int ch = 0; ch < num_channels; ++ch) {
+                output[i + ch] = sample;
+            }
+        }
     });
 
     std::cout << "Starting ALSA driver (440Hz Sine Wave)..." << std::endl;

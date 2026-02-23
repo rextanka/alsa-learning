@@ -1075,6 +1075,7 @@ CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o: /home/nickt/src/alsa/al
 CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o: /home/nickt/src/alsa/alsa-learning/cxx/src/hal/alsa/AlsaDriver.cpp \
   /home/nickt/src/alsa/alsa-learning/cxx/src/core/AudioBuffer.hpp \
   /home/nickt/src/alsa/alsa-learning/cxx/src/hal/AudioDriver.hpp \
+  /home/nickt/src/alsa/alsa-learning/cxx/src/core/Logger.hpp \
   /home/nickt/src/alsa/alsa-learning/cxx/src/hal/alsa/AlsaDriver.hpp \
   /usr/include/alloca.h \
   /usr/include/alsa/asoundef.h \
@@ -1207,7 +1208,9 @@ CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o: /home/nickt/src/alsa/
   /usr/include/c++/15/backward/binders.h \
   /usr/include/c++/15/bit \
   /usr/include/c++/15/bits/algorithmfwd.h \
+  /usr/include/c++/15/bits/align.h \
   /usr/include/c++/15/bits/alloc_traits.h \
+  /usr/include/c++/15/bits/allocated_ptr.h \
   /usr/include/c++/15/bits/allocator.h \
   /usr/include/c++/15/bits/atomic_base.h \
   /usr/include/c++/15/bits/atomic_lockfree_defines.h \
@@ -1220,6 +1223,8 @@ CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o: /home/nickt/src/alsa/
   /usr/include/c++/15/bits/char_traits.h \
   /usr/include/c++/15/bits/charconv.h \
   /usr/include/c++/15/bits/chrono.h \
+  /usr/include/c++/15/bits/chrono_io.h \
+  /usr/include/c++/15/bits/codecvt.h \
   /usr/include/c++/15/bits/concept_check.h \
   /usr/include/c++/15/bits/cpp_type_traits.h \
   /usr/include/c++/15/bits/cxxabi_forced.h \
@@ -1229,6 +1234,7 @@ CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o: /home/nickt/src/alsa/
   /usr/include/c++/15/bits/exception.h \
   /usr/include/c++/15/bits/exception_defines.h \
   /usr/include/c++/15/bits/exception_ptr.h \
+  /usr/include/c++/15/bits/formatfwd.h \
   /usr/include/c++/15/bits/functexcept.h \
   /usr/include/c++/15/bits/functional_hash.h \
   /usr/include/c++/15/bits/hash_bytes.h \
@@ -1240,12 +1246,16 @@ CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o: /home/nickt/src/alsa/
   /usr/include/c++/15/bits/iterator_concepts.h \
   /usr/include/c++/15/bits/locale_classes.h \
   /usr/include/c++/15/bits/locale_classes.tcc \
+  /usr/include/c++/15/bits/locale_conv.h \
   /usr/include/c++/15/bits/locale_facets.h \
   /usr/include/c++/15/bits/locale_facets.tcc \
+  /usr/include/c++/15/bits/locale_facets_nonio.h \
+  /usr/include/c++/15/bits/locale_facets_nonio.tcc \
   /usr/include/c++/15/bits/localefwd.h \
   /usr/include/c++/15/bits/max_size_type.h \
   /usr/include/c++/15/bits/memory_resource.h \
   /usr/include/c++/15/bits/memoryfwd.h \
+  /usr/include/c++/15/bits/monostate.h \
   /usr/include/c++/15/bits/move.h \
   /usr/include/c++/15/bits/nested_exception.h \
   /usr/include/c++/15/bits/new_allocator.h \
@@ -1257,6 +1267,7 @@ CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o: /home/nickt/src/alsa/
   /usr/include/c++/15/bits/postypes.h \
   /usr/include/c++/15/bits/predefined_ops.h \
   /usr/include/c++/15/bits/ptr_traits.h \
+  /usr/include/c++/15/bits/quoted_string.h \
   /usr/include/c++/15/bits/range_access.h \
   /usr/include/c++/15/bits/ranges_algo.h \
   /usr/include/c++/15/bits/ranges_algobase.h \
@@ -1266,7 +1277,10 @@ CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o: /home/nickt/src/alsa/
   /usr/include/c++/15/bits/refwrap.h \
   /usr/include/c++/15/bits/requires_hosted.h \
   /usr/include/c++/15/bits/semaphore_base.h \
+  /usr/include/c++/15/bits/shared_ptr.h \
+  /usr/include/c++/15/bits/shared_ptr_base.h \
   /usr/include/c++/15/bits/specfun.h \
+  /usr/include/c++/15/bits/sstream.tcc \
   /usr/include/c++/15/bits/std_abs.h \
   /usr/include/c++/15/bits/std_function.h \
   /usr/include/c++/15/bits/std_mutex.h \
@@ -1289,6 +1303,8 @@ CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o: /home/nickt/src/alsa/
   /usr/include/c++/15/bits/string_view.tcc \
   /usr/include/c++/15/bits/stringfwd.h \
   /usr/include/c++/15/bits/this_thread_sleep.h \
+  /usr/include/c++/15/bits/unicode-data.h \
+  /usr/include/c++/15/bits/unicode.h \
   /usr/include/c++/15/bits/uniform_int_dist.h \
   /usr/include/c++/15/bits/unique_ptr.h \
   /usr/include/c++/15/bits/unordered_map.h \
@@ -1299,6 +1315,8 @@ CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o: /home/nickt/src/alsa/
   /usr/include/c++/15/bits/version.h \
   /usr/include/c++/15/cctype \
   /usr/include/c++/15/cerrno \
+  /usr/include/c++/15/charconv \
+  /usr/include/c++/15/chrono \
   /usr/include/c++/15/climits \
   /usr/include/c++/15/clocale \
   /usr/include/c++/15/cmath \
@@ -1308,6 +1326,7 @@ CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o: /home/nickt/src/alsa/
   /usr/include/c++/15/cstdint \
   /usr/include/c++/15/cstdio \
   /usr/include/c++/15/cstdlib \
+  /usr/include/c++/15/cstring \
   /usr/include/c++/15/ctime \
   /usr/include/c++/15/cwchar \
   /usr/include/c++/15/cwctype \
@@ -1317,18 +1336,23 @@ CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o: /home/nickt/src/alsa/
   /usr/include/c++/15/ext/aligned_buffer.h \
   /usr/include/c++/15/ext/alloc_traits.h \
   /usr/include/c++/15/ext/atomicity.h \
+  /usr/include/c++/15/ext/concurrence.h \
   /usr/include/c++/15/ext/numeric_traits.h \
   /usr/include/c++/15/ext/string_conversions.h \
   /usr/include/c++/15/ext/type_traits.h \
+  /usr/include/c++/15/format \
   /usr/include/c++/15/functional \
   /usr/include/c++/15/initializer_list \
+  /usr/include/c++/15/iomanip \
   /usr/include/c++/15/ios \
   /usr/include/c++/15/iosfwd \
   /usr/include/c++/15/iostream \
   /usr/include/c++/15/istream \
   /usr/include/c++/15/limits \
+  /usr/include/c++/15/locale \
   /usr/include/c++/15/new \
   /usr/include/c++/15/numbers \
+  /usr/include/c++/15/optional \
   /usr/include/c++/15/ostream \
   /usr/include/c++/15/pstl/execution_defs.h \
   /usr/include/c++/15/pstl/glue_algorithm_defs.h \
@@ -1336,6 +1360,7 @@ CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o: /home/nickt/src/alsa/
   /usr/include/c++/15/ratio \
   /usr/include/c++/15/semaphore \
   /usr/include/c++/15/span \
+  /usr/include/c++/15/sstream \
   /usr/include/c++/15/stdexcept \
   /usr/include/c++/15/stdlib.h \
   /usr/include/c++/15/stop_token \
@@ -1371,7 +1396,9 @@ CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o: /home/nickt/src/alsa/
   /usr/include/c++/15/x86_64-redhat-linux/bits/error_constants.h \
   /usr/include/c++/15/x86_64-redhat-linux/bits/gthr-default.h \
   /usr/include/c++/15/x86_64-redhat-linux/bits/gthr.h \
+  /usr/include/c++/15/x86_64-redhat-linux/bits/messages_members.h \
   /usr/include/c++/15/x86_64-redhat-linux/bits/os_defines.h \
+  /usr/include/c++/15/x86_64-redhat-linux/bits/time_members.h \
   /usr/include/ctype.h \
   /usr/include/endian.h \
   /usr/include/errno.h \
@@ -1380,6 +1407,7 @@ CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o: /home/nickt/src/alsa/
   /usr/include/features.h \
   /usr/include/gnu/stubs-64.h \
   /usr/include/gnu/stubs.h \
+  /usr/include/libintl.h \
   /usr/include/limits.h \
   /usr/include/linux/close_range.h \
   /usr/include/linux/errno.h \
