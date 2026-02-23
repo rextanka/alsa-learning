@@ -1,6 +1,6 @@
 # CMake generated Testfile for 
-# Source directory: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-src
-# Build directory: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-build
+# Source directory: /home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-src
+# Build directory: /home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-build
 # 
 # This file includes the relevant testing commands required for 
 # testing this directory and lists subdirectories to be tested as well.

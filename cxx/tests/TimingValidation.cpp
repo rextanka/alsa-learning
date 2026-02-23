@@ -2,12 +2,14 @@
 #include <cassert>
 #include <cmath>
 #include <vector>
-#include "audio/MusicalClock.hpp"
-#include "audio/TuningSystem.hpp"
-#include "include/CInterface.h"
+#include <memory>
+#include <functional>
+#include "../src/core/MusicalClock.hpp"
+#include "../src/core/TuningSystem.hpp"
+#include "../include/CInterface.h"
 
 // For testing internal state
-#include "../audio/VoiceManager.hpp"
+#include "../src/core/VoiceManager.hpp"
 struct InternalEngine {
     std::unique_ptr<audio::VoiceManager> voice_manager;
     audio::MusicalClock clock;

@@ -5,13 +5,15 @@
 
 #include <iostream>
 #include <memory>
+#include <functional>
+#include <span>
 #include <thread>
 #include <chrono>
 #include <string>
-#include "../audio/Voice.hpp"
-#include "../audio/filter/MoogLadderProcessor.hpp"
-#include "../audio/filter/DiodeLadderProcessor.hpp"
-#include "../hal/include/AudioDriver.hpp"
+#include "../src/core/Voice.hpp"
+#include "../src/dsp/filter/MoogLadderProcessor.hpp"
+#include "../src/dsp/filter/DiodeLadderProcessor.hpp"
+#include "../src/hal/AudioDriver.hpp"
 
 #ifdef __APPLE__
 #include "../hal/coreaudio/CoreAudioDriver.hpp"
@@ -19,9 +21,11 @@ using NativeDriver = hal::CoreAudioDriver;
 #else
 namespace hal { class DummyDriver : public AudioDriver { 
 public: 
+    DummyDriver(int /*sr*/, int /*bs*/) {}
     bool start() override { return true; } 
     void stop() override {} 
     void set_callback(AudioCallback) override {} 
+    void set_stereo_callback(StereoAudioCallback) override {}
     int sample_rate() const override { return 44100; }
     int block_size() const override { return 512; }
 }; }

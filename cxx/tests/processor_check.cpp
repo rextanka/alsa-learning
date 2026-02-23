@@ -4,11 +4,11 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include "../audio/Processor.hpp"
-#include "../audio/VoiceContext.hpp"
-#include "../audio/oscillator/SineOscillatorProcessor.hpp"
-#include "../audio/oscillator/WavetableOscillatorProcessor.hpp"
-#include "../audio/Voice.hpp"
+#include "../src/dsp/Processor.hpp"
+#include "../src/core/VoiceContext.hpp"
+#include "../src/dsp/oscillator/SineOscillatorProcessor.hpp"
+#include "../src/dsp/oscillator/WavetableOscillatorProcessor.hpp"
+#include "../src/core/Voice.hpp"
 #include "../../cxx/include/CInterface.h" // Corrected path to CInterface.h
 
 #ifdef __APPLE__

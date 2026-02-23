@@ -11,7 +11,9 @@
 #include "../hal/coreaudio/CoreAudioDriver.hpp"
 using NativeDriver = hal::CoreAudioDriver;
 #elif defined(__linux__)
-#include "../hal/alsa/AlsaDriver.hpp"
+#include "../src/hal/alsa/AlsaDriver.hpp"
+#include <functional>
+#include <span>
 using NativeDriver = hal::AlsaDriver;
 #endif
 
@@ -21,7 +23,7 @@ std::string format_time(std::chrono::system_clock::time_point tp) {
     std::tm bt = *std::localtime(&timer);
     std::ostringstream oss;
     oss << std::put_time(&bt, "%H:%M:%S");
-    oss << "." << std::setfill("0") << std::setw(3) << ms.count();
+    oss << "." << std::setfill('0') << std::setw(3) << ms.count();
     return oss.str();
 }
 

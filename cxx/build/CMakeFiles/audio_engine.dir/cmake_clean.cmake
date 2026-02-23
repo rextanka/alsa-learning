@@ -5,8 +5,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o.d"
   "CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o"
   "CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o.d"
-  "CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o"
-  "CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o.d"
+  "CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o"
+  "CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o.d"
   "bin/libaudio_engine.a"
   "bin/libaudio_engine.pdb"
 )

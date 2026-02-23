@@ -1,1 +1,1 @@
-/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/timing_validation.dir/tests/TimingValidation.cpp.o -o bin/timing_validation  bin/libaudio_engine.a -framework CoreAudio -framework AudioToolbox
+/usr/lib64/ccache/c++ -Wl,--dependency-file=CMakeFiles/timing_validation.dir/link.d CMakeFiles/timing_validation.dir/tests/TimingValidation.cpp.o -o bin/timing_validation  bin/libaudio_engine.a -lasound

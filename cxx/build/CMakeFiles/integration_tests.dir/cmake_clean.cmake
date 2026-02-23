@@ -1,4 +1,5 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/integration_tests.dir/link.d"
   "CMakeFiles/integration_tests.dir/tests/integration/test_bridge.cpp.o"
   "CMakeFiles/integration_tests.dir/tests/integration/test_bridge.cpp.o.d"
   "bin/integration_tests"
