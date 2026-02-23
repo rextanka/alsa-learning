@@ -368,6 +368,44 @@ CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o: /home/nickt/src/alsa/alsa-l
   /usr/lib/gcc/x86_64-redhat-linux/15/include/stdint.h \
   /usr/lib/gcc/x86_64-redhat-linux/15/include/syslimits.h
 
+bin/filter_tests: /lib64/ld-linux-x86-64.so.2 \
+  /lib64/libc.so.6 \
+  /lib64/libgcc_s.so.1 \
+  /lib64/libm.so.6 \
+  /lib64/libmvec.so.1 \
+  /usr/lib64/crt1.o \
+  /usr/lib64/crti.o \
+  /usr/lib64/crtn.o \
+  /usr/lib64/libasound.so \
+  /usr/lib64/libc.so \
+  /usr/lib64/libm.so \
+  /usr/lib/gcc/x86_64-redhat-linux/15/crtbegin.o \
+  /usr/lib/gcc/x86_64-redhat-linux/15/crtend.o \
+  /usr/lib/gcc/x86_64-redhat-linux/15/libgcc.a \
+  /usr/lib/gcc/x86_64-redhat-linux/15/libgcc_s.so \
+  /usr/lib/gcc/x86_64-redhat-linux/15/libstdc++.so \
+  /usr/lib64/libc_nonshared.a \
+  CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o \
+  bin/libaudio_engine.a
+
+
+/usr/lib/gcc/x86_64-redhat-linux/15/libstdc++.so:
+
+/usr/lib/gcc/x86_64-redhat-linux/15/libgcc.a:
+
+/usr/lib/gcc/x86_64-redhat-linux/15/crtbegin.o:
+
+/usr/lib64/libm.so:
+
+/usr/lib64/libasound.so:
+
+/lib64/libmvec.so.1:
+
+/lib64/libgcc_s.so.1:
+
+/lib64/libc.so.6:
+
+/lib64/ld-linux-x86-64.so.2:
 
 /usr/lib/gcc/x86_64-redhat-linux/15/include/syslimits.h:
 
@@ -517,6 +555,8 @@ CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o: /home/nickt/src/alsa/alsa-l
 
 /usr/include/bits/xopen_lim.h:
 
+/usr/lib64/crti.o:
+
 /usr/include/stdio.h:
 
 /usr/include/bits/wordsize.h:
@@ -534,6 +574,8 @@ CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o: /home/nickt/src/alsa/alsa-l
 /usr/lib/gcc/x86_64-redhat-linux/15/include/stddef.h:
 
 /usr/include/c++/15/bits/localefwd.h:
+
+bin/libaudio_engine.a:
 
 /usr/include/bits/waitflags.h:
 
@@ -657,6 +699,8 @@ CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o: /home/nickt/src/alsa/alsa-l
 
 /usr/include/bits/uintn-identity.h:
 
+/usr/lib64/libc.so:
+
 /usr/include/ctype.h:
 
 /home/nickt/src/alsa/alsa-learning/cxx/src/core/Logger.hpp:
@@ -740,6 +784,8 @@ CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o: /home/nickt/src/alsa/alsa-l
 /home/nickt/src/alsa/alsa-learning/cxx/src/dsp/InputSource.hpp:
 
 /usr/include/c++/15/bits/functional_hash.h:
+
+/usr/lib64/crt1.o:
 
 /home/nickt/src/alsa/alsa-learning/cxx/src/core/AudioGraph.hpp:
 
@@ -857,6 +903,8 @@ CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o: /home/nickt/src/alsa/alsa-l
 
 /usr/include/c++/15/bits/chrono_io.h:
 
+/usr/lib/gcc/x86_64-redhat-linux/15/libgcc_s.so:
+
 /usr/include/c++/15/compare:
 
 /usr/include/c++/15/bits/cxxabi_forced.h:
@@ -901,6 +949,8 @@ CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o: /home/nickt/src/alsa/alsa-l
 
 /usr/include/c++/15/bits/iterator_concepts.h:
 
+/lib64/libm.so.6:
+
 /usr/lib/gcc/x86_64-redhat-linux/15/include/limits.h:
 
 /usr/include/c++/15/algorithm:
@@ -918,6 +968,8 @@ CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o: /home/nickt/src/alsa/alsa-l
 /usr/include/c++/15/bits/uses_allocator.h:
 
 /usr/include/c++/15/bits/invoke.h:
+
+/usr/lib64/crtn.o:
 
 /usr/include/c++/15/bits/ios_base.h:
 
@@ -960,6 +1012,8 @@ CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o: /home/nickt/src/alsa/alsa-l
 /usr/include/c++/15/bits/postypes.h:
 
 /usr/include/c++/15/bits/quoted_string.h:
+
+/usr/lib64/libc_nonshared.a:
 
 /usr/include/c++/15/ext/numeric_traits.h:
 
@@ -1036,6 +1090,10 @@ CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o: /home/nickt/src/alsa/alsa-l
 /usr/include/c++/15/bits/semaphore_base.h:
 
 /usr/include/c++/15/bits/stl_construct.h:
+
+CMakeFiles/filter_tests.dir/tests/FilterTests.cpp.o:
+
+/usr/lib/gcc/x86_64-redhat-linux/15/crtend.o:
 
 /usr/include/c++/15/bits/stl_iterator_base_types.h:
 

@@ -4,10 +4,13 @@
  */
 
 #include "AlsaDriver.hpp"
+#include "../../core/Logger.hpp"
 #include <iostream>
 #include <algorithm>
 #include <cmath>
 #include <span>
+#include <chrono>
+#include <pthread.h>
 
 namespace hal {
 
@@ -143,8 +146,24 @@ bool AlsaDriver::setup_pcm() {
 }
 
 void AlsaDriver::thread_loop() {
+    // Set Real-Time Priority (SCHED_FIFO, Priority 80)
+    struct sched_param param;
+    param.sched_priority = 80;
+    int res = pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
+    if (res != 0) {
+        if (res == EPERM) {
+            audio::AudioLogger::instance().log_message("ALSA", "Priority Failed: EPERM (Need ulimit -r 80+)");
+        } else {
+            audio::AudioLogger::instance().log_message("ALSA", "Priority Failed: Unknown Error");
+        }
+    } else {
+        audio::AudioLogger::instance().log_message("ALSA", "Real-Time Priority Set (SCHED_FIFO, 80)");
+    }
+
     while (running_) {
         if (stereo_callback_ || callback_) {
+            auto start_time = std::chrono::high_resolution_clock::now();
+
             audio::AudioBuffer buffer;
             buffer.left = std::span<float>(left_buffer_);
             buffer.right = std::span<float>(right_buffer_);
@@ -155,6 +174,10 @@ void AlsaDriver::thread_loop() {
                 callback_(buffer.left);
                 std::copy(buffer.left.begin(), buffer.left.end(), buffer.right.begin());
             }
+
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+            audio::AudioLogger::instance().log_event("PROC_US", static_cast<float>(duration));
 
             // Interleave and Convert to S32_LE (High Res)
             int32_t* s32_ptr = reinterpret_cast<int32_t*>(interleaved_buffer_.data());
