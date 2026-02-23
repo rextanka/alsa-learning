@@ -318,6 +318,48 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /home/nickt/src/alsa/alsa-l
   /usr/lib/gcc/x86_64-redhat-linux/15/include/stdint.h \
   /usr/lib/gcc/x86_64-redhat-linux/15/include/syslimits.h
 
+bin/engine_tests: /lib64/ld-linux-x86-64.so.2 \
+  /lib64/libc.so.6 \
+  /lib64/libgcc_s.so.1 \
+  /lib64/libm.so.6 \
+  /lib64/libmvec.so.1 \
+  /usr/lib64/crt1.o \
+  /usr/lib64/crti.o \
+  /usr/lib64/crtn.o \
+  /usr/lib64/libasound.so \
+  /usr/lib64/libc.so \
+  /usr/lib64/libm.so \
+  /usr/lib/gcc/x86_64-redhat-linux/15/crtbegin.o \
+  /usr/lib/gcc/x86_64-redhat-linux/15/crtend.o \
+  /usr/lib/gcc/x86_64-redhat-linux/15/libgcc.a \
+  /usr/lib/gcc/x86_64-redhat-linux/15/libgcc_s.so \
+  /usr/lib/gcc/x86_64-redhat-linux/15/libstdc++.so \
+  /usr/lib64/libc_nonshared.a \
+  CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o \
+  bin/libaudio_engine.a
+
+
+CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o:
+
+/usr/lib/gcc/x86_64-redhat-linux/15/libstdc++.so:
+
+/usr/lib/gcc/x86_64-redhat-linux/15/libgcc.a:
+
+/usr/lib/gcc/x86_64-redhat-linux/15/crtbegin.o:
+
+/usr/lib64/libm.so:
+
+/usr/lib64/libasound.so:
+
+/usr/lib64/crt1.o:
+
+/lib64/libmvec.so.1:
+
+/lib64/libgcc_s.so.1:
+
+/lib64/libc.so.6:
+
+/lib64/ld-linux-x86-64.so.2:
 
 /usr/lib/gcc/x86_64-redhat-linux/15/include/syslimits.h:
 
@@ -366,6 +408,8 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /home/nickt/src/alsa/alsa-l
 /usr/include/stdint.h:
 
 /usr/include/endian.h:
+
+/usr/lib64/libc.so:
 
 /usr/include/ctype.h:
 
@@ -433,6 +477,8 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /home/nickt/src/alsa/alsa-l
 
 /usr/include/bits/xopen_lim.h:
 
+/usr/lib64/crti.o:
+
 /usr/include/stdio.h:
 
 /usr/include/bits/wordsize.h:
@@ -458,6 +504,8 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /home/nickt/src/alsa/alsa-l
 /usr/lib/gcc/x86_64-redhat-linux/15/include/stddef.h:
 
 /usr/include/c++/15/bits/localefwd.h:
+
+bin/libaudio_engine.a:
 
 /usr/include/bits/waitflags.h:
 
@@ -703,6 +751,8 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /home/nickt/src/alsa/alsa-l
 
 /usr/include/bits/types/FILE.h:
 
+/lib64/libm.so.6:
+
 /usr/lib/gcc/x86_64-redhat-linux/15/include/limits.h:
 
 /usr/include/c++/15/bits/hash_bytes.h:
@@ -718,6 +768,8 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /home/nickt/src/alsa/alsa-l
 /usr/include/c++/15/bits/uses_allocator.h:
 
 /usr/include/c++/15/bits/invoke.h:
+
+/usr/lib64/crtn.o:
 
 /usr/include/c++/15/bits/ios_base.h:
 
@@ -764,6 +816,8 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /home/nickt/src/alsa/alsa-l
 /usr/include/c++/15/bits/postypes.h:
 
 /usr/include/c++/15/bits/quoted_string.h:
+
+/usr/lib64/libc_nonshared.a:
 
 /usr/include/c++/15/ext/numeric_traits.h:
 
@@ -815,6 +869,8 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /home/nickt/src/alsa/alsa-l
 
 /usr/include/c++/15/bits/stl_algo.h:
 
+/usr/lib/gcc/x86_64-redhat-linux/15/libgcc_s.so:
+
 /usr/include/c++/15/bits/cxxabi_forced.h:
 
 /usr/include/c++/15/compare:
@@ -850,6 +906,8 @@ CMakeFiles/engine_tests.dir/tests/EngineTests.cpp.o: /home/nickt/src/alsa/alsa-l
 /usr/include/c++/15/bits/exception_defines.h:
 
 /usr/include/c++/15/bits/stl_heap.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/15/crtend.o:
 
 /usr/include/c++/15/bits/stl_iterator_base_types.h:
 
