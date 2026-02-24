@@ -10,39 +10,49 @@
 #include <cmath>
 #include <string>
 #include <atomic>
+#include <vector>
 #include "../../include/CInterface.h"
 #include "../TestHelper.hpp"
 
+void print_usage() {
+    std::cout << "Usage: metronome_test [bpm] [bars] [time_signature_numerator]" << std::endl;
+    std::cout << "Defaults: bpm=80, bars=2, time_sig=4" << std::endl;
+    std::cout << "Example: ./metronome_test 120 4 3 (120 BPM, 4 bars, 3/4 time)" << std::endl;
+}
+
 int main(int argc, char* argv[]) {
-    // 1. Command-Line Argument Handling
+    // 1. Command-Line Argument Handling & Defaults
     double bpm = 80.0;
     int total_bars = 2;
     int time_sig_num = 4;
 
-    if (argc > 1) {
-        try {
+    std::vector<std::string> args(argv, argv + argc);
+    for (const auto& arg : args) {
+        if (arg == "--help" || arg == "-h") {
+            print_usage();
+            return 0;
+        }
+    }
+
+    try {
+        if (argc > 1) {
             bpm = std::stod(argv[1]);
-        } catch (...) {
-            std::cerr << "Invalid BPM. Using default: " << bpm << std::endl;
         }
-    }
-    if (argc > 2) {
-        try {
+        if (argc > 2) {
             total_bars = std::stoi(argv[2]);
-        } catch (...) {
-            std::cerr << "Invalid bars. Using default: " << total_bars << std::endl;
         }
-    }
-    if (argc > 3) {
-        try {
+        if (argc > 3) {
             time_sig_num = std::stoi(argv[3]);
-        } catch (...) {
-            std::cerr << "Invalid time signature. Using default: " << time_sig_num << std::endl;
         }
+    } catch (...) {
+        std::cerr << "Error: Invalid arguments." << std::endl;
+        print_usage();
+        return 1;
     }
 
     if (bpm <= 0 || total_bars <= 0 || time_sig_num <= 0) {
         std::cerr << "Error: All parameters must be positive values." << std::endl;
+        print_usage();
         return 1;
     }
 
