@@ -5,47 +5,29 @@
 
 #include <iostream>
 #include <memory>
-#include <thread>
-#include <chrono>
-#include <string>
-#include <functional>
-#include "../src/core/AudioBuffer.hpp"
+#include <vector>
+#include <algorithm>
+#include "TestHelper.hpp"
 #include "../include/CInterface.h"
-
-// Note: For real-time audio in this test, we'll still use the HAL C++ classes
-// but we will wrap the engine calls exclusively in the C API.
-#ifdef __APPLE__
-#include "../hal/coreaudio/CoreAudioDriver.hpp"
-using NativeDriver = hal::CoreAudioDriver;
-#else
-#include "../src/hal/AudioDriver.hpp"
-namespace hal { class DummyDriver : public AudioDriver { 
-public: 
-    DummyDriver(int /*sr*/, int /*bs*/) {}
-    bool start() override { return true; } 
-    void stop() override {} 
-    void set_callback(AudioCallback) override {} 
-    void set_stereo_callback(StereoAudioCallback) override {}
-    int sample_rate() const override { return 44100; }
-    int block_size() const override { return 512; }
-}; }
-using NativeDriver = hal::DummyDriver;
-#endif
 
 int main() {
     std::cout << "--- Starting Stereo Polyphonic Test (C API) ---" << std::endl;
 
-    unsigned int sample_rate = 44100;
-    auto driver = std::make_unique<NativeDriver>(sample_rate, 512);
-    
-    // Use C API to create engine
+    test::init_test_environment();
+    auto driver = test::create_driver();
+    if (!driver) return 1;
+
+    unsigned int sample_rate = static_cast<unsigned int>(driver->sample_rate());
     EngineHandle engine = engine_create(sample_rate);
 
     driver->set_stereo_callback([engine](audio::AudioBuffer& output) {
         // Use C API for processing
+        // Task 2: The engine internal VoiceManager already sums voices.
+        // We just need to make sure the C API pulls into a buffer.
         engine_process(engine, output.left.data(), output.left.size());
-        // Since engine_process currently assumes mono output, we copy to right
-        // In a real stereo engine process, it would fill both.
+        
+        // Temporarily copy L to R as our engine currently outputs mono via engine_process.
+        // In the future, engine_process will support stereo AudioBuffer.
         std::copy(output.left.begin(), output.left.end(), output.right.begin());
     });
 
@@ -59,28 +41,33 @@ int main() {
     engine_note_on(engine, 69, 0.8f);
     engine_note_on(engine, 72, 0.8f);
 
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    test::wait_while_running(1);
 
-    std::cout << "Step 2: Gradual Panning (over 1s)..." << std::endl;
-    const int steps = 50;
-    for (int i = 1; i <= steps; ++i) {
-        float t = static_cast<float>(i) / steps;
-        engine_set_note_pan(engine, 65, -t);
-        engine_set_note_pan(engine, 72, t);
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    if (test::g_keep_running) {
+        std::cout << "Step 2: Gradual Panning (over 1s)..." << std::endl;
+        const int steps = 50;
+        for (int i = 1; i <= steps && test::g_keep_running; ++i) {
+            float t = static_cast<float>(i) / steps;
+            engine_set_note_pan(engine, 65, -t);
+            engine_set_note_pan(engine, 72, t);
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
     }
 
-    std::cout << "Step 3: Holding panned chord..." << std::endl;
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    if (test::g_keep_running) {
+        std::cout << "Step 3: Holding panned chord..." << std::endl;
+        test::wait_while_running(2);
+    }
 
-    std::cout << "Step 4: Releasing notes..." << std::endl;
-    engine_note_off(engine, 65);
-    engine_note_off(engine, 69);
-    engine_note_off(engine, 72);
+    if (test::g_keep_running) {
+        std::cout << "Step 4: Releasing notes..." << std::endl;
+        engine_note_off(engine, 65);
+        engine_note_off(engine, 69);
+        engine_note_off(engine, 72);
+        test::wait_while_running(1);
+    }
 
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
-    driver->stop();
+    test::cleanup_test_environment(driver.get());
     engine_destroy(engine);
     std::cout << "--- Test Completed ---" << std::endl;
 

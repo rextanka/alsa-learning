@@ -5,6 +5,7 @@
 #include <array>
 #include <optional>
 #include <cstring>
+#include <iostream>
 
 namespace audio {
 
@@ -102,6 +103,20 @@ public:
     // Background Thread Methods
     std::optional<LogEntry> pop_entry() {
         return ring_buffer.pop();
+    }
+
+    /**
+     * @brief Dumps all pending log entries to std::cout.
+     * Not RT-safe. Call from main thread/cleanup.
+     */
+    void flush() {
+        while (auto entry = pop_entry()) {
+            if (entry->type == LogEntry::Type::Message) {
+                std::cout << "[" << entry->tag << "] " << entry->message << std::endl;
+            } else {
+                std::cout << "[" << entry->tag << "] " << entry->value << std::endl;
+            }
+        }
     }
 
 private:

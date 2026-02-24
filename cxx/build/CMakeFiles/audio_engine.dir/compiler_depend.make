@@ -273,6 +273,7 @@ CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o: /home/nickt/src/alsa/a
   /usr/include/c++/15/iomanip \
   /usr/include/c++/15/ios \
   /usr/include/c++/15/iosfwd \
+  /usr/include/c++/15/iostream \
   /usr/include/c++/15/istream \
   /usr/include/c++/15/limits \
   /usr/include/c++/15/locale \
@@ -626,6 +627,7 @@ CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o: /home/nickt/src/alsa/alsa-lear
   /usr/include/c++/15/iomanip \
   /usr/include/c++/15/ios \
   /usr/include/c++/15/iosfwd \
+  /usr/include/c++/15/iostream \
   /usr/include/c++/15/istream \
   /usr/include/c++/15/limits \
   /usr/include/c++/15/locale \
@@ -979,6 +981,7 @@ CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o: /home/nickt/src/alsa/al
   /usr/include/c++/15/iomanip \
   /usr/include/c++/15/ios \
   /usr/include/c++/15/iosfwd \
+  /usr/include/c++/15/iostream \
   /usr/include/c++/15/istream \
   /usr/include/c++/15/limits \
   /usr/include/c++/15/locale \
