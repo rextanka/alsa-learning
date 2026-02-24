@@ -96,8 +96,32 @@ AUDIO_API double engine_get_bpm(EngineHandle handle);
 AUDIO_API int engine_set_meter(EngineHandle handle, int beats_per_bar);
 AUDIO_API int engine_get_musical_time(EngineHandle handle, int* bar, int* beat, int* tick);
 AUDIO_API int engine_note_on_name(EngineHandle handle, const char* note_name, float velocity);
+AUDIO_API int engine_note_off_name(EngineHandle handle, const char* note_name);
 AUDIO_API int engine_set_filter_type(EngineHandle handle, int type);
 AUDIO_API int engine_set_delay_enabled(EngineHandle handle, int enabled);
+
+// Host & Device API
+/**
+ * @brief Get the number of available audio output devices.
+ * @return Number of devices.
+ */
+AUDIO_API int host_get_device_count();
+
+/**
+ * @brief Get the name of an audio device by index.
+ * @param index Device index (0 to count-1).
+ * @param buffer Output buffer for the name (UTF-8).
+ * @param buffer_size Size of the output buffer.
+ * @return 0 on success, non-zero on error.
+ */
+AUDIO_API int host_get_device_name(int index, char* buffer, size_t buffer_size);
+
+/**
+ * @brief Get the native sample rate of an audio device by index.
+ * @param index Device index.
+ * @return Sample rate in Hz, or 0 on error.
+ */
+AUDIO_API int host_get_device_sample_rate(int index);
 
 // Generic Parameter API
 AUDIO_API int set_param(void* handle, const char* name, float value);
