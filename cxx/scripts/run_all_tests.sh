@@ -5,7 +5,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CXX_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 TEST_DIR="$CXX_ROOT/build/bin"
 
-TESTS=("audio_check" "metronome_test" "filter_tests" "stereo_poly_test" "processor_check" "engine_tests")
+TESTS=("audio_check" "metronome_test" "filter_tests" "stereo_poly_test" "processor_check" "engine_tests" "Phase10Tests" "TimingValidation")
 
 echo "========================================"
 echo "   Audio Engine Test Suite Runner"

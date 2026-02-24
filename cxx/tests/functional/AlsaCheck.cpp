@@ -3,10 +3,10 @@
  * @brief Utility to verify ALSA driver and audio processing.
  */
 
-#include "../src/hal/alsa/AlsaDriver.hpp"
-#include "../src/dsp/oscillator/SineOscillatorProcessor.hpp"
-#include "../src/dsp/routing/MonoToStereoProcessor.hpp"
-#include "../src/core/AudioSettings.hpp"
+#include "../../src/hal/alsa/AlsaDriver.hpp"
+#include "../../src/dsp/oscillator/SineOscillatorProcessor.hpp"
+#include "../../src/dsp/routing/MonoToStereoProcessor.hpp"
+#include "../../src/core/AudioSettings.hpp"
 #include <iostream>
 #include <chrono>
 #include <thread>

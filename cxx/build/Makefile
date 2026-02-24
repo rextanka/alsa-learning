@@ -302,6 +302,32 @@ engine_tests/fast:
 .PHONY : engine_tests/fast
 
 #=============================================================================
+# Target rules for targets named Phase10Tests
+
+# Build rule for target.
+Phase10Tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Phase10Tests
+.PHONY : Phase10Tests
+
+# fast build rule for target.
+Phase10Tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Phase10Tests.dir/build.make CMakeFiles/Phase10Tests.dir/build
+.PHONY : Phase10Tests/fast
+
+#=============================================================================
+# Target rules for targets named TimingValidation
+
+# Build rule for target.
+TimingValidation: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 TimingValidation
+.PHONY : TimingValidation
+
+# fast build rule for target.
+TimingValidation/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/TimingValidation.dir/build.make CMakeFiles/TimingValidation.dir/build
+.PHONY : TimingValidation/fast
+
+#=============================================================================
 # Target rules for targets named gmock
 
 # Build rule for target.
@@ -460,6 +486,54 @@ src/hal/coreaudio/CoreAudioDriver.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/hal/coreaudio/CoreAudioDriver.cpp.s
 .PHONY : src/hal/coreaudio/CoreAudioDriver.cpp.s
+
+tests/functional/Phase10Tests.o: tests/functional/Phase10Tests.cpp.o
+.PHONY : tests/functional/Phase10Tests.o
+
+# target to build an object file
+tests/functional/Phase10Tests.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Phase10Tests.dir/build.make CMakeFiles/Phase10Tests.dir/tests/functional/Phase10Tests.cpp.o
+.PHONY : tests/functional/Phase10Tests.cpp.o
+
+tests/functional/Phase10Tests.i: tests/functional/Phase10Tests.cpp.i
+.PHONY : tests/functional/Phase10Tests.i
+
+# target to preprocess a source file
+tests/functional/Phase10Tests.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Phase10Tests.dir/build.make CMakeFiles/Phase10Tests.dir/tests/functional/Phase10Tests.cpp.i
+.PHONY : tests/functional/Phase10Tests.cpp.i
+
+tests/functional/Phase10Tests.s: tests/functional/Phase10Tests.cpp.s
+.PHONY : tests/functional/Phase10Tests.s
+
+# target to generate assembly for a file
+tests/functional/Phase10Tests.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Phase10Tests.dir/build.make CMakeFiles/Phase10Tests.dir/tests/functional/Phase10Tests.cpp.s
+.PHONY : tests/functional/Phase10Tests.cpp.s
+
+tests/functional/TimingValidation.o: tests/functional/TimingValidation.cpp.o
+.PHONY : tests/functional/TimingValidation.o
+
+# target to build an object file
+tests/functional/TimingValidation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/TimingValidation.dir/build.make CMakeFiles/TimingValidation.dir/tests/functional/TimingValidation.cpp.o
+.PHONY : tests/functional/TimingValidation.cpp.o
+
+tests/functional/TimingValidation.i: tests/functional/TimingValidation.cpp.i
+.PHONY : tests/functional/TimingValidation.i
+
+# target to preprocess a source file
+tests/functional/TimingValidation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/TimingValidation.dir/build.make CMakeFiles/TimingValidation.dir/tests/functional/TimingValidation.cpp.i
+.PHONY : tests/functional/TimingValidation.cpp.i
+
+tests/functional/TimingValidation.s: tests/functional/TimingValidation.cpp.s
+.PHONY : tests/functional/TimingValidation.s
+
+# target to generate assembly for a file
+tests/functional/TimingValidation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/TimingValidation.dir/build.make CMakeFiles/TimingValidation.dir/tests/functional/TimingValidation.cpp.s
+.PHONY : tests/functional/TimingValidation.cpp.s
 
 tests/functional/audio_check.o: tests/functional/audio_check.cpp.o
 .PHONY : tests/functional/audio_check.o
@@ -762,6 +836,8 @@ help:
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... test"
+	@echo "... Phase10Tests"
+	@echo "... TimingValidation"
 	@echo "... audio_check"
 	@echo "... audio_engine"
 	@echo "... audio_engine_shared"
@@ -788,6 +864,12 @@ help:
 	@echo "... src/hal/coreaudio/CoreAudioDriver.o"
 	@echo "... src/hal/coreaudio/CoreAudioDriver.i"
 	@echo "... src/hal/coreaudio/CoreAudioDriver.s"
+	@echo "... tests/functional/Phase10Tests.o"
+	@echo "... tests/functional/Phase10Tests.i"
+	@echo "... tests/functional/Phase10Tests.s"
+	@echo "... tests/functional/TimingValidation.o"
+	@echo "... tests/functional/TimingValidation.i"
+	@echo "... tests/functional/TimingValidation.s"
 	@echo "... tests/functional/audio_check.o"
 	@echo "... tests/functional/audio_check.i"
 	@echo "... tests/functional/audio_check.s"
