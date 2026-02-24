@@ -4,16 +4,17 @@
 #include <vector>
 #include <memory>
 #include <functional>
-#include "../src/core/MusicalClock.hpp"
-#include "../src/core/TuningSystem.hpp"
-#include "../include/CInterface.h"
+#include "../../src/core/MusicalClock.hpp"
+#include "../../src/core/TuningSystem.hpp"
+#include "../../include/CInterface.h"
 
 // For testing internal state
-#include "../src/core/VoiceManager.hpp"
+#include "../../src/core/VoiceManager.hpp"
 struct InternalEngine {
     std::unique_ptr<audio::VoiceManager> voice_manager;
     audio::MusicalClock clock;
     audio::TwelveToneEqual tuning;
+    int sample_rate;
 };
 
 void test_timing_accuracy() {
