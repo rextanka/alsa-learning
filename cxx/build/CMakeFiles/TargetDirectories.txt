@@ -1,4 +1,5 @@
 /home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles/audio_engine.dir
+/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles/audio_engine_shared.dir
 /home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles/unit_tests.dir
 /home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles/integration_tests.dir
 /home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles/metronome_test.dir

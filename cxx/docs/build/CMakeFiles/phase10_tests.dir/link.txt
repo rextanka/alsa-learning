@@ -1,0 +1,1 @@
+/usr/lib64/ccache/c++ -Wl,--dependency-file=CMakeFiles/phase10_tests.dir/link.d CMakeFiles/phase10_tests.dir/tests/Phase10Tests.cpp.o -o bin/phase10_tests  bin/libaudio_engine.a -lasound

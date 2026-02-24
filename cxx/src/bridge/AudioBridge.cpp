@@ -423,4 +423,7 @@ void audio_log_event(const char* tag, float value) {
     audio::AudioLogger::instance().log_event(tag, value);
 }
 
+void audio_engine_init() {}
+void audio_engine_cleanup() {}
+
 } // extern "C"

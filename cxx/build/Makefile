@@ -185,6 +185,19 @@ audio_engine/fast:
 .PHONY : audio_engine/fast
 
 #=============================================================================
+# Target rules for targets named audio_engine_shared
+
+# Build rule for target.
+audio_engine_shared: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 audio_engine_shared
+.PHONY : audio_engine_shared
+
+# fast build rule for target.
+audio_engine_shared/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/build
+.PHONY : audio_engine_shared/fast
+
+#=============================================================================
 # Target rules for targets named unit_tests
 
 # Build rule for target.
@@ -385,6 +398,7 @@ src/bridge/AudioBridge.o: src/bridge/AudioBridge.cpp.o
 # target to build an object file
 src/bridge/AudioBridge.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/bridge/AudioBridge.cpp.o
 .PHONY : src/bridge/AudioBridge.cpp.o
 
 src/bridge/AudioBridge.i: src/bridge/AudioBridge.cpp.i
@@ -393,6 +407,7 @@ src/bridge/AudioBridge.i: src/bridge/AudioBridge.cpp.i
 # target to preprocess a source file
 src/bridge/AudioBridge.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/bridge/AudioBridge.cpp.i
 .PHONY : src/bridge/AudioBridge.cpp.i
 
 src/bridge/AudioBridge.s: src/bridge/AudioBridge.cpp.s
@@ -401,6 +416,7 @@ src/bridge/AudioBridge.s: src/bridge/AudioBridge.cpp.s
 # target to generate assembly for a file
 src/bridge/AudioBridge.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/bridge/AudioBridge.cpp.s
 .PHONY : src/bridge/AudioBridge.cpp.s
 
 src/core/Voice.o: src/core/Voice.cpp.o
@@ -409,6 +425,7 @@ src/core/Voice.o: src/core/Voice.cpp.o
 # target to build an object file
 src/core/Voice.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/Voice.cpp.o
 .PHONY : src/core/Voice.cpp.o
 
 src/core/Voice.i: src/core/Voice.cpp.i
@@ -417,6 +434,7 @@ src/core/Voice.i: src/core/Voice.cpp.i
 # target to preprocess a source file
 src/core/Voice.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/Voice.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/Voice.cpp.i
 .PHONY : src/core/Voice.cpp.i
 
 src/core/Voice.s: src/core/Voice.cpp.s
@@ -425,6 +443,7 @@ src/core/Voice.s: src/core/Voice.cpp.s
 # target to generate assembly for a file
 src/core/Voice.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/Voice.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/Voice.cpp.s
 .PHONY : src/core/Voice.cpp.s
 
 src/core/VoiceManager.o: src/core/VoiceManager.cpp.o
@@ -433,6 +452,7 @@ src/core/VoiceManager.o: src/core/VoiceManager.cpp.o
 # target to build an object file
 src/core/VoiceManager.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/VoiceManager.cpp.o
 .PHONY : src/core/VoiceManager.cpp.o
 
 src/core/VoiceManager.i: src/core/VoiceManager.cpp.i
@@ -441,6 +461,7 @@ src/core/VoiceManager.i: src/core/VoiceManager.cpp.i
 # target to preprocess a source file
 src/core/VoiceManager.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/VoiceManager.cpp.i
 .PHONY : src/core/VoiceManager.cpp.i
 
 src/core/VoiceManager.s: src/core/VoiceManager.cpp.s
@@ -449,6 +470,7 @@ src/core/VoiceManager.s: src/core/VoiceManager.cpp.s
 # target to generate assembly for a file
 src/core/VoiceManager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/VoiceManager.cpp.s
 .PHONY : src/core/VoiceManager.cpp.s
 
 src/hal/alsa/AlsaDriver.o: src/hal/alsa/AlsaDriver.cpp.o
@@ -457,6 +479,7 @@ src/hal/alsa/AlsaDriver.o: src/hal/alsa/AlsaDriver.cpp.o
 # target to build an object file
 src/hal/alsa/AlsaDriver.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/hal/alsa/AlsaDriver.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/alsa_check.dir/build.make CMakeFiles/alsa_check.dir/src/hal/alsa/AlsaDriver.cpp.o
 .PHONY : src/hal/alsa/AlsaDriver.cpp.o
 
@@ -466,6 +489,7 @@ src/hal/alsa/AlsaDriver.i: src/hal/alsa/AlsaDriver.cpp.i
 # target to preprocess a source file
 src/hal/alsa/AlsaDriver.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/hal/alsa/AlsaDriver.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/alsa_check.dir/build.make CMakeFiles/alsa_check.dir/src/hal/alsa/AlsaDriver.cpp.i
 .PHONY : src/hal/alsa/AlsaDriver.cpp.i
 
@@ -475,6 +499,7 @@ src/hal/alsa/AlsaDriver.s: src/hal/alsa/AlsaDriver.cpp.s
 # target to generate assembly for a file
 src/hal/alsa/AlsaDriver.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/hal/alsa/AlsaDriver.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/alsa_check.dir/build.make CMakeFiles/alsa_check.dir/src/hal/alsa/AlsaDriver.cpp.s
 .PHONY : src/hal/alsa/AlsaDriver.cpp.s
 
@@ -854,6 +879,7 @@ help:
 	@echo "... alsa_check"
 	@echo "... audio_check"
 	@echo "... audio_engine"
+	@echo "... audio_engine_shared"
 	@echo "... engine_tests"
 	@echo "... filter_tests"
 	@echo "... gmock"

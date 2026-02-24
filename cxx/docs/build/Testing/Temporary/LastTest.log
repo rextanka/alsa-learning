@@ -1,0 +1,91 @@
+Start testing: Feb 23 17:03 PST
+----------------------------------------------------------
+1/2 Testing: unit_tests
+1/2 Test: unit_tests
+Command: "/home/nickt/src/alsa/alsa-learning/cxx/build/bin/unit_tests"
+Directory: /home/nickt/src/alsa/alsa-learning/cxx/build
+"unit_tests" start time: Feb 23 17:03 PST
+Output:
+----------------------------------------------------------
+Running main() from /home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 12 tests from 5 test suites.
+[----------] Global test environment set-up.
+[----------] 3 tests from OscillatorTest
+[ RUN      ] OscillatorTest.SignalGeneration
+[       OK ] OscillatorTest.SignalGeneration (0 ms)
+[ RUN      ] OscillatorTest.FrequencyChange
+[       OK ] OscillatorTest.FrequencyChange (0 ms)
+[ RUN      ] OscillatorTest.ResetPhase
+[       OK ] OscillatorTest.ResetPhase (0 ms)
+[----------] 3 tests from OscillatorTest (0 ms total)
+
+[----------] 2 tests from LoggerTest
+[ RUN      ] LoggerTest.SingleThreadedPushPop
+[       OK ] LoggerTest.SingleThreadedPushPop (0 ms)
+[ RUN      ] LoggerTest.MultiThreadedCapture
+[       OK ] LoggerTest.MultiThreadedCapture (11 ms)
+[----------] 2 tests from LoggerTest (11 ms total)
+
+[----------] 3 tests from ClockTest
+[ RUN      ] ClockTest.PPQResolution
+[       OK ] ClockTest.PPQResolution (0 ms)
+[ RUN      ] ClockTest.BarBoundary
+[       OK ] ClockTest.BarBoundary (0 ms)
+[ RUN      ] ClockTest.TempoRamp
+[       OK ] ClockTest.TempoRamp (0 ms)
+[----------] 3 tests from ClockTest (0 ms total)
+
+[----------] 2 tests from VoiceStressTest
+[ RUN      ] VoiceStressTest.LruStealing
+[       OK ] VoiceStressTest.LruStealing (8 ms)
+[ RUN      ] VoiceStressTest.ReleasePriorityStealing
+[       OK ] VoiceStressTest.ReleasePriorityStealing (6 ms)
+[----------] 2 tests from VoiceStressTest (15 ms total)
+
+[----------] 2 tests from EnvelopeTest
+[ RUN      ] EnvelopeTest.ZeroCrossing
+[       OK ] EnvelopeTest.ZeroCrossing (0 ms)
+[ RUN      ] EnvelopeTest.SustainLevelZero
+[       OK ] EnvelopeTest.SustainLevelZero (0 ms)
+[----------] 2 tests from EnvelopeTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 12 tests from 5 test suites ran. (28 ms total)
+[  PASSED  ] 12 tests.
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Passed.
+"unit_tests" end time: Feb 23 17:03 PST
+"unit_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/2 Testing: integration_tests
+2/2 Test: integration_tests
+Command: "/home/nickt/src/alsa/alsa-learning/cxx/build/bin/integration_tests"
+Directory: /home/nickt/src/alsa/alsa-learning/cxx/build
+"integration_tests" start time: Feb 23 17:03 PST
+Output:
+----------------------------------------------------------
+Running main() from /home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 2 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 2 tests from BridgeTest
+[ RUN      ] BridgeTest.LifecycleAndProcess
+[       OK ] BridgeTest.LifecycleAndProcess (6 ms)
+[ RUN      ] BridgeTest.NoteOff
+[       OK ] BridgeTest.NoteOff (5 ms)
+[----------] 2 tests from BridgeTest (12 ms total)
+
+[----------] Global test environment tear-down
+[==========] 2 tests from 1 test suite ran. (12 ms total)
+[  PASSED  ] 2 tests.
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"integration_tests" end time: Feb 23 17:03 PST
+"integration_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Feb 23 17:03 PST

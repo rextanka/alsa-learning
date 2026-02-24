@@ -1,0 +1,2 @@
+/usr/bin/ar qc bin/libaudio_engine.a CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o CMakeFiles/audio_engine.dir/src/hal/alsa/AlsaDriver.cpp.o
+/usr/bin/ranlib bin/libaudio_engine.a
