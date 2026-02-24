@@ -28,9 +28,9 @@ int main() {
     auto sine = std::make_shared<audio::SineOscillatorProcessor>(sample_rate);
     sine->set_frequency(440.0f); // A4
 
-    // RT-Safe: Pre-allocate mono scratch buffer. 
-    // We'll resize it to the actual hardware block size after start().
-    auto mono_buffer = std::make_shared<std::vector<float>>(block_size);
+    // RT-Safe: Pre-allocate mono scratch buffer to a safe maximum to avoid runtime resizes.
+    const size_t max_frames = 2048;
+    auto mono_buffer = std::make_shared<std::vector<float>>(max_frames, 0.0f);
 
     // RT-Safe callback: 100% hardware-driven.
     driver->set_interleaved_callback([sine, mono_buffer](std::span<float> output) {
@@ -42,8 +42,15 @@ int main() {
 
         std::span<float> mono_span(mono_buffer->data(), frames_needed);
         sine->pull(mono_span);
+        
+        // Interleave exactly the number of frames requested by the driver.
         audio::MonoToStereoProcessor::process(mono_span, output);
     });
+
+    // --- Pitch Accuracy: Get the hardware-negotiated sample rate before starting if possible,
+    // or sync immediately before start.
+    // For this test, we'll sync with the driver's configured rate.
+    sine->set_sample_rate(sample_rate);
 
     std::cout << "Starting ALSA driver (440Hz Sine Wave)..." << std::endl;
     if (!driver->start()) {
@@ -51,15 +58,12 @@ int main() {
         return 1;
     }
 
-    // --- Dynamic Stabilization: Sync with Actual Hardware ---
+    // Dynamic Stabilization: Sync with Actual Hardware (after start)
     const int actual_rate = audio::AudioSettings::instance().sample_rate;
     const int actual_block = audio::AudioSettings::instance().block_size;
     
-    // Update oscillator for perfect pitch accuracy
-    sine->set_sample_rate(static_cast<float>(actual_rate));
-    
-    // Ensure scratch buffer matches hardware block size
-    mono_buffer->resize(actual_block);
+    // Re-sync pitch if hardware forced a different rate
+    sine->set_sample_rate(actual_rate);
 
     std::cout << "Driver running for 3 seconds..." << std::endl;
     std::cout << "Actual Sample Rate: " << actual_rate << " Hz" << std::endl;

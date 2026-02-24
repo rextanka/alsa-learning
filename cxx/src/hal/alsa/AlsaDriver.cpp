@@ -171,6 +171,10 @@ void AlsaDriver::thread_loop() {
     std::vector<float> float_interleaved(block_size_ * num_channels_, 0.0f);
 
     while (running_) {
+        // Zeroing: Kill 'zombie data' clicks by ensuring ALL internal buffers are silent
+        // before they are filled or converted.
+        std::fill(float_interleaved.begin(), float_interleaved.end(), 0.0f);
+
         if (interleaved_callback_) {
             // Dynamic Capacity: Ensure buffer is large enough for current hardware state
             // (In practice, block_size_ is stable once started, but safety first)
