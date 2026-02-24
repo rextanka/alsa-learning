@@ -160,12 +160,14 @@ void AlsaDriver::thread_loop() {
         audio::AudioLogger::instance().log_message("ALSA", "Real-Time Priority Set (SCHED_FIFO, 80)");
     }
 
+    // RT-Safe: Pre-allocate float buffer for interleaved callback
+    std::vector<float> float_interleaved(block_size_ * num_channels_, 0.0f);
+
     while (running_) {
         if (interleaved_callback_) {
             auto start_time = std::chrono::high_resolution_clock::now();
 
             // Direct float buffer for interleaved output
-            std::vector<float> float_interleaved(block_size_ * num_channels_);
             interleaved_callback_(std::span<float>(float_interleaved));
 
             auto end_time = std::chrono::high_resolution_clock::now();

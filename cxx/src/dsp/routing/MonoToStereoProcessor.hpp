@@ -29,13 +29,14 @@ public:
      * @param interleaved_stereo_output Output span of interleaved stereo samples (2x size of input).
      */
     static void process(std::span<const float> mono_input, std::span<float> interleaved_stereo_output) {
-        // Interleaved stereo requires 2x the samples
-        assert(interleaved_stereo_output.size() >= mono_input.size() * 2);
+        // Calculate the number of frames to process based on available input and output space
+        const size_t frames = std::min(mono_input.size(), interleaved_stereo_output.size() / 2);
 
-        for (size_t i = 0; i < mono_input.size(); ++i) {
-            float sample = mono_input[i];
-            interleaved_stereo_output[i * 2] = sample;     // Left
-            interleaved_stereo_output[i * 2 + 1] = sample; // Right
+        for (size_t i = 0; i < frames; ++i) {
+            const float sample = mono_input[i];
+            const size_t out_idx = i << 1; // i * 2
+            interleaved_stereo_output[out_idx] = sample;     // Left
+            interleaved_stereo_output[out_idx + 1] = sample; // Right
         }
     }
 };
