@@ -4,7 +4,7 @@
 # compile CXX with /usr/lib64/ccache/c++
 CXX_DEFINES = -DAUDIO_ENABLE_PROFILING=1
 
-CXX_INCLUDES = -I/home/nickt/src/alsa/alsa-learning/cxx/include -I/home/nickt/src/alsa/alsa-learning/cxx/src/core -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/oscillator -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/envelope -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/filter -I/home/nickt/src/alsa/alsa-learning/cxx/src/hal
+CXX_INCLUDES = -I/home/nickt/src/alsa/alsa-learning/cxx/include -I/home/nickt/src/alsa/alsa-learning/cxx/src/core -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/oscillator -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/envelope -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/filter -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/routing -I/home/nickt/src/alsa/alsa-learning/cxx/src/hal
 
 CXX_FLAGS = -std=c++20 -Wall -Wextra -Wpedantic -fvisibility=default
 

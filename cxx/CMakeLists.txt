@@ -44,6 +44,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/oscillator)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/envelope)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/filter)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/routing)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/hal)
 
 # Optional: Enable profiling (can be controlled via CMake)

@@ -102,9 +102,11 @@ cxx/
 | 11    | **Dual-Layer Testing**: Established GoogleTest (gtest) for internal C++ logic and C-API integration tests for the bridge. | 100% Complete |
 | 11.5  | **ALSA Real-Time Hardening**: Implement SCHED_FIFO, priority 80, and PROC_US timing telemetry to eliminate breakups at 512-sample buffers. | In Progress |
 | 12    | **MIDI Integration**: MIDI HAL for Linux/Mac/Win with CC mapping and SysEx hooks. | Planned |
-| 13    | **Non-Intrusive Logger**: Implemented a lock-free, real-time safe logger to replace `printf` in audio threads. | 100% Complete |
-| 14    | **Unit & Integration Strategy**: Detail the plan for GUnit vs. standalone API tests. | 100% Complete |
-| 15    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation to maximize polyphony. | Planned |
+| 13    | **The Stereo Mixer & Bus**: Summing mono sources with panning to stereo output. | Planned |
+| 14    | **Spatial & Stereo FX**: Reverb, Chorus, Flanger, and Delay with mono/stereo support. | Planned |
+| 15    | **Non-Intrusive Logger**: Implemented a lock-free, real-time safe logger to replace `printf` in audio threads. | 100% Complete |
+| 16    | **Unit & Integration Strategy**: Detail the plan for GUnit vs. standalone API tests. | 100% Complete |
+| 17    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation to maximize polyphony. | Planned |
 
 ---
 

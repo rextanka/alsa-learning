@@ -1,0 +1,46 @@
+/**
+ * @file MonoToStereoProcessor.hpp
+ * @brief Utility for interleaving mono signals into stereo buffers.
+ * 
+ * Part of Phase 13/14 preparation for Mixer and FX.
+ */
+
+#ifndef AUDIO_MONO_TO_STEREO_PROCESSOR_HPP
+#define AUDIO_MONO_TO_STEREO_PROCESSOR_HPP
+
+#include <span>
+#include <cassert>
+#include <cstddef>
+
+namespace audio {
+
+/**
+ * @brief A non-owning functional filter for mono-to-stereo conversion.
+ * 
+ * Bridges the gap between mono DSP chains and stereo hardware outputs.
+ * Follows the "Mono-until-Stereo" philosophy from ARCH_PLAN.md.
+ */
+class MonoToStereoProcessor {
+public:
+    /**
+     * @brief Interleaves mono input into stereo output (L=R).
+     * 
+     * @param mono_input Input span of mono samples.
+     * @param interleaved_stereo_output Output span of interleaved stereo samples (2x size of input).
+     */
+    static void process(std::span<const float> mono_input, std::span<float> interleaved_stereo_output) {
+        // Calculate the number of frames to process based on available input and output space
+        const size_t frames = std::min(mono_input.size(), interleaved_stereo_output.size() / 2);
+
+        for (size_t i = 0; i < frames; ++i) {
+            const float sample = mono_input[i];
+            const size_t out_idx = i << 1; // i * 2
+            interleaved_stereo_output[out_idx] = sample;     // Left
+            interleaved_stereo_output[out_idx + 1] = sample; // Right
+        }
+    }
+};
+
+} // namespace audio
+
+#endif // AUDIO_MONO_TO_STEREO_PROCESSOR_HPP
