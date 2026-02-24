@@ -1,6 +1,6 @@
 /**
  * @file metronome_test.cpp
- * @brief Real-time metronome utility using the C-Bridge and AudioDriver.
+ * @brief Real-time metronome utility using the C-Bridge, AudioDriver, and Logger.
  */
 
 #include <iostream>
@@ -11,67 +11,75 @@
 #include <string>
 #include <atomic>
 #include <vector>
+#include <sstream>
 #include "../../include/CInterface.h"
 #include "../TestHelper.hpp"
+#include "../../src/core/Logger.hpp"
 
 void print_usage() {
-    std::cout << "Usage: metronome_test [bpm] [bars] [time_signature_numerator]" << std::endl;
-    std::cout << "Defaults: bpm=80, bars=2, time_sig=4" << std::endl;
-    std::cout << "Example: ./metronome_test 120 4 3 (120 BPM, 4 bars, 3/4 time)" << std::endl;
+    std::stringstream ss;
+    ss << "Usage: metronome_test [bpm] [bars] [time_signature_numerator] [-v|--analyze]\n"
+       << "Defaults: 80 2 4\n"
+       << "Example: ./metronome_test 120 4 3 --analyze";
+    LOG_INFO("Usage", ss.str().c_str());
 }
 
 int main(int argc, char* argv[]) {
-    // 1. Command-Line Argument Handling & Defaults
+    // 1. Unified Logging Setup
+    audio::AudioLogger::instance().set_log_to_console(true);
+
+    // 2. Command-Line Argument Handling & Defaults
     double bpm = 80.0;
     int total_bars = 2;
     int time_sig_num = 4;
+    bool analyze = false;
 
     std::vector<std::string> args(argv, argv + argc);
-    for (const auto& arg : args) {
-        if (arg == "--help" || arg == "-h") {
+    for (size_t i = 1; i < args.size(); ++i) {
+        if (args[i] == "--help" || args[i] == "-h") {
             print_usage();
             return 0;
         }
-    }
-
-    try {
-        if (argc > 1) {
-            bpm = std::stod(argv[1]);
+        if (args[i] == "--analyze" || args[i] == "-v") {
+            analyze = true;
+            continue;
         }
-        if (argc > 2) {
-            total_bars = std::stoi(argv[2]);
+        
+        // Positional arguments (only if they look like numbers)
+        try {
+            if (i == 1) bpm = std::stod(args[i]);
+            else if (i == 2) total_bars = std::stoi(args[i]);
+            else if (i == 3) time_sig_num = std::stoi(args[i]);
+        } catch (...) {
+            // Might be a flag, ignore if handled above
         }
-        if (argc > 3) {
-            time_sig_num = std::stoi(argv[3]);
-        }
-    } catch (...) {
-        std::cerr << "Error: Invalid arguments." << std::endl;
-        print_usage();
-        return 1;
     }
 
     if (bpm <= 0 || total_bars <= 0 || time_sig_num <= 0) {
-        std::cerr << "Error: All parameters must be positive values." << std::endl;
+        LOG_ERROR("Args", "All parameters must be positive values.");
         print_usage();
         return 1;
     }
 
-    std::cout << "--- Real-Time Metronome ---" << std::endl;
-    std::cout << "BPM: " << bpm << ", Bars: " << total_bars << ", Time Signature: " << time_sig_num << "/4" << std::endl;
-
-    // 2. Real-Time Audio Integration
+    // 3. Hardware Initialization & Metadata Logging
     test::init_test_environment();
     
-    // Get hardware sample rate via bridge call (Phase 15 implementation)
     int sample_rate = host_get_device_sample_rate(0);
-    if (sample_rate <= 0) {
-        sample_rate = 44100; // Fallback
+    if (sample_rate <= 0) sample_rate = 44100;
+
+    double seconds_per_beat = 60.0 / bpm;
+    double total_duration = seconds_per_beat * time_sig_num * total_bars;
+
+    {
+        std::stringstream ss;
+        ss << "Sample Rate: " << sample_rate << " Hz, BPM: " << bpm 
+           << ", Meter: " << time_sig_num << "/4, Duration: " << total_duration << "s";
+        LOG_INFO("Metronome", ss.str().c_str());
     }
-    std::cout << "Using Hardware Sample Rate: " << sample_rate << " Hz" << std::endl;
 
     EngineHandle engine = engine_create(static_cast<unsigned int>(sample_rate));
     if (!engine) {
-        std::cerr << "Failed to create audio engine." << std::endl;
+        LOG_ERROR("Engine", "Failed to create engine.");
         return 1;
     }
 
@@ -86,17 +94,16 @@ int main(int argc, char* argv[]) {
 
     driver->set_stereo_callback([engine](audio::AudioBuffer& buffer) {
         engine_process(engine, buffer.left.data(), buffer.left.size());
-        // Copy mono result to right for stereo output
         std::copy(buffer.left.begin(), buffer.left.end(), buffer.right.begin());
     });
 
     if (!driver->start()) {
-        std::cerr << "Failed to start audio driver." << std::endl;
+        LOG_ERROR("Driver", "Failed to start audio driver.");
         engine_destroy(engine);
         return 1;
     }
 
-    // 3. Rhythmic Logic & Polling Thread
+    // 4. Rhythmic Logic & Precision Polling
     std::atomic<bool> running{true};
     int last_beat = -1;
     
@@ -106,49 +113,46 @@ int main(int argc, char* argv[]) {
             engine_get_musical_time(engine, &bar, &beat, &tick);
             
             if (beat != last_beat) {
-                if (beat == 1) {
-                    std::cout << "[Beat " << beat << "] Triggering C4 (Downbeat)" << std::endl;
-                    engine_note_on_name(engine, "C4", 0.8f);
+                std::string note_name = (beat == 1) ? "C4" : "A3";
+                
+                if (analyze) {
+                    auto now = std::chrono::high_resolution_clock::now();
+                    auto micros = std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
+                    std::stringstream ss;
+                    ss << "[ANALYSIS] Beat " << beat << " Triggered at " << micros << "us";
+                    LOG_INFO("BeatTrigger", ss.str().c_str());
                 } else {
-                    std::cout << "[Beat " << beat << "] Triggering A3" << std::endl;
-                    engine_note_on_name(engine, "A3", 0.8f);
+                    std::stringstream ss;
+                    ss << "[Beat " << beat << "] Triggering " << note_name << " (Bar " << bar << ")";
+                    LOG_INFO("BeatTrigger", ss.str().c_str());
                 }
                 
+                engine_note_on_name(engine, note_name.c_str(), 0.8f);
+                
                 // 50ms Gate Management
-                std::thread([engine, beat]() {
+                std::thread([engine, note_name]() {
                     std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                    if (beat == 1) {
-                        engine_note_off_name(engine, "C4");
-                    } else {
-                        engine_note_off_name(engine, "A3");
-                    }
+                    engine_note_off_name(engine, note_name.c_str());
                 }).detach();
 
                 last_beat = beat;
             }
-            
-            // High-frequency polling
             std::this_thread::sleep_for(std::chrono::milliseconds(2));
         }
     });
 
-    // 4. Synchronous Wait
-    double seconds_per_beat = 60.0 / bpm;
-    double total_duration = seconds_per_beat * time_sig_num * total_bars;
-    
-    std::cout << "Playing for " << total_duration << " seconds..." << std::endl;
+    // 5. Synchronous Wait
     std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(total_duration * 1000)));
 
     // Cleanup
     running = false;
-    if (polling_thread.joinable()) {
-        polling_thread.join();
-    }
+    if (polling_thread.joinable()) polling_thread.join();
 
     test::cleanup_test_environment(driver.get());
     engine_destroy(engine);
     
-    std::cout << "--- Metronome Finished ---" << std::endl;
+    LOG_INFO("Metronome", "Finished.");
+    audio::AudioLogger::instance().flush();
 
     return 0;
 }
