@@ -24,7 +24,6 @@ int main() {
     clock.set_meter(4);
 
     audio::PulseOscillatorProcessor click(sample_rate);
-    click.set_frequency(880.0);
     click.set_pulse_width(0.1f);
 
     driver->set_callback([&clock, &click, sample_rate](std::span<float> output) {
@@ -37,6 +36,13 @@ int main() {
         bool is_beat = (new_time.beat != old_time.beat) || (new_time.bar != old_time.bar);
         
         if (is_beat) {
+            // Middle C (261.63 Hz) for the first beat of the bar, 
+            // A below (220.0 Hz) for other beats.
+            if (new_time.beat == 1) {
+                click.set_frequency(261.63);
+            } else {
+                click.set_frequency(220.0);
+            }
             click.reset(); // Restart pulse
             std::cout << "[Beat] " << new_time.bar << "." << new_time.beat << std::endl;
         }
