@@ -224,6 +224,84 @@ integration_tests/fast:
 .PHONY : integration_tests/fast
 
 #=============================================================================
+# Target rules for targets named audio_check
+
+# Build rule for target.
+audio_check: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 audio_check
+.PHONY : audio_check
+
+# fast build rule for target.
+audio_check/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_check.dir/build.make CMakeFiles/audio_check.dir/build
+.PHONY : audio_check/fast
+
+#=============================================================================
+# Target rules for targets named metronome_test
+
+# Build rule for target.
+metronome_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 metronome_test
+.PHONY : metronome_test
+
+# fast build rule for target.
+metronome_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/build
+.PHONY : metronome_test/fast
+
+#=============================================================================
+# Target rules for targets named filter_tests
+
+# Build rule for target.
+filter_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 filter_tests
+.PHONY : filter_tests
+
+# fast build rule for target.
+filter_tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/build
+.PHONY : filter_tests/fast
+
+#=============================================================================
+# Target rules for targets named stereo_poly_test
+
+# Build rule for target.
+stereo_poly_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 stereo_poly_test
+.PHONY : stereo_poly_test
+
+# fast build rule for target.
+stereo_poly_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/build
+.PHONY : stereo_poly_test/fast
+
+#=============================================================================
+# Target rules for targets named processor_check
+
+# Build rule for target.
+processor_check: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 processor_check
+.PHONY : processor_check
+
+# fast build rule for target.
+processor_check/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/processor_check.dir/build.make CMakeFiles/processor_check.dir/build
+.PHONY : processor_check/fast
+
+#=============================================================================
+# Target rules for targets named engine_tests
+
+# Build rule for target.
+engine_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 engine_tests
+.PHONY : engine_tests
+
+# fast build rule for target.
+engine_tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/build
+.PHONY : engine_tests/fast
+
+#=============================================================================
 # Target rules for targets named gmock
 
 # Build rule for target.
@@ -383,29 +461,149 @@ src/hal/coreaudio/CoreAudioDriver.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/hal/coreaudio/CoreAudioDriver.cpp.s
 .PHONY : src/hal/coreaudio/CoreAudioDriver.cpp.s
 
-tests/integration/metronome_test.o: tests/integration/metronome_test.cpp.o
-.PHONY : tests/integration/metronome_test.o
+tests/functional/audio_check.o: tests/functional/audio_check.cpp.o
+.PHONY : tests/functional/audio_check.o
 
 # target to build an object file
-tests/integration/metronome_test.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/tests/integration/metronome_test.cpp.o
-.PHONY : tests/integration/metronome_test.cpp.o
+tests/functional/audio_check.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_check.dir/build.make CMakeFiles/audio_check.dir/tests/functional/audio_check.cpp.o
+.PHONY : tests/functional/audio_check.cpp.o
 
-tests/integration/metronome_test.i: tests/integration/metronome_test.cpp.i
-.PHONY : tests/integration/metronome_test.i
+tests/functional/audio_check.i: tests/functional/audio_check.cpp.i
+.PHONY : tests/functional/audio_check.i
 
 # target to preprocess a source file
-tests/integration/metronome_test.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/tests/integration/metronome_test.cpp.i
-.PHONY : tests/integration/metronome_test.cpp.i
+tests/functional/audio_check.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_check.dir/build.make CMakeFiles/audio_check.dir/tests/functional/audio_check.cpp.i
+.PHONY : tests/functional/audio_check.cpp.i
 
-tests/integration/metronome_test.s: tests/integration/metronome_test.cpp.s
-.PHONY : tests/integration/metronome_test.s
+tests/functional/audio_check.s: tests/functional/audio_check.cpp.s
+.PHONY : tests/functional/audio_check.s
 
 # target to generate assembly for a file
-tests/integration/metronome_test.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/tests/integration/metronome_test.cpp.s
-.PHONY : tests/integration/metronome_test.cpp.s
+tests/functional/audio_check.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_check.dir/build.make CMakeFiles/audio_check.dir/tests/functional/audio_check.cpp.s
+.PHONY : tests/functional/audio_check.cpp.s
+
+tests/functional/engine_tests.o: tests/functional/engine_tests.cpp.o
+.PHONY : tests/functional/engine_tests.o
+
+# target to build an object file
+tests/functional/engine_tests.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/tests/functional/engine_tests.cpp.o
+.PHONY : tests/functional/engine_tests.cpp.o
+
+tests/functional/engine_tests.i: tests/functional/engine_tests.cpp.i
+.PHONY : tests/functional/engine_tests.i
+
+# target to preprocess a source file
+tests/functional/engine_tests.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/tests/functional/engine_tests.cpp.i
+.PHONY : tests/functional/engine_tests.cpp.i
+
+tests/functional/engine_tests.s: tests/functional/engine_tests.cpp.s
+.PHONY : tests/functional/engine_tests.s
+
+# target to generate assembly for a file
+tests/functional/engine_tests.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/tests/functional/engine_tests.cpp.s
+.PHONY : tests/functional/engine_tests.cpp.s
+
+tests/functional/filter_tests.o: tests/functional/filter_tests.cpp.o
+.PHONY : tests/functional/filter_tests.o
+
+# target to build an object file
+tests/functional/filter_tests.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/tests/functional/filter_tests.cpp.o
+.PHONY : tests/functional/filter_tests.cpp.o
+
+tests/functional/filter_tests.i: tests/functional/filter_tests.cpp.i
+.PHONY : tests/functional/filter_tests.i
+
+# target to preprocess a source file
+tests/functional/filter_tests.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/tests/functional/filter_tests.cpp.i
+.PHONY : tests/functional/filter_tests.cpp.i
+
+tests/functional/filter_tests.s: tests/functional/filter_tests.cpp.s
+.PHONY : tests/functional/filter_tests.s
+
+# target to generate assembly for a file
+tests/functional/filter_tests.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/tests/functional/filter_tests.cpp.s
+.PHONY : tests/functional/filter_tests.cpp.s
+
+tests/functional/metronome_test.o: tests/functional/metronome_test.cpp.o
+.PHONY : tests/functional/metronome_test.o
+
+# target to build an object file
+tests/functional/metronome_test.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/tests/functional/metronome_test.cpp.o
+.PHONY : tests/functional/metronome_test.cpp.o
+
+tests/functional/metronome_test.i: tests/functional/metronome_test.cpp.i
+.PHONY : tests/functional/metronome_test.i
+
+# target to preprocess a source file
+tests/functional/metronome_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/tests/functional/metronome_test.cpp.i
+.PHONY : tests/functional/metronome_test.cpp.i
+
+tests/functional/metronome_test.s: tests/functional/metronome_test.cpp.s
+.PHONY : tests/functional/metronome_test.s
+
+# target to generate assembly for a file
+tests/functional/metronome_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/tests/functional/metronome_test.cpp.s
+.PHONY : tests/functional/metronome_test.cpp.s
+
+tests/functional/processor_check.o: tests/functional/processor_check.cpp.o
+.PHONY : tests/functional/processor_check.o
+
+# target to build an object file
+tests/functional/processor_check.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/processor_check.dir/build.make CMakeFiles/processor_check.dir/tests/functional/processor_check.cpp.o
+.PHONY : tests/functional/processor_check.cpp.o
+
+tests/functional/processor_check.i: tests/functional/processor_check.cpp.i
+.PHONY : tests/functional/processor_check.i
+
+# target to preprocess a source file
+tests/functional/processor_check.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/processor_check.dir/build.make CMakeFiles/processor_check.dir/tests/functional/processor_check.cpp.i
+.PHONY : tests/functional/processor_check.cpp.i
+
+tests/functional/processor_check.s: tests/functional/processor_check.cpp.s
+.PHONY : tests/functional/processor_check.s
+
+# target to generate assembly for a file
+tests/functional/processor_check.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/processor_check.dir/build.make CMakeFiles/processor_check.dir/tests/functional/processor_check.cpp.s
+.PHONY : tests/functional/processor_check.cpp.s
+
+tests/functional/stereo_poly_test.o: tests/functional/stereo_poly_test.cpp.o
+.PHONY : tests/functional/stereo_poly_test.o
+
+# target to build an object file
+tests/functional/stereo_poly_test.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/tests/functional/stereo_poly_test.cpp.o
+.PHONY : tests/functional/stereo_poly_test.cpp.o
+
+tests/functional/stereo_poly_test.i: tests/functional/stereo_poly_test.cpp.i
+.PHONY : tests/functional/stereo_poly_test.i
+
+# target to preprocess a source file
+tests/functional/stereo_poly_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/tests/functional/stereo_poly_test.cpp.i
+.PHONY : tests/functional/stereo_poly_test.cpp.i
+
+tests/functional/stereo_poly_test.s: tests/functional/stereo_poly_test.cpp.s
+.PHONY : tests/functional/stereo_poly_test.s
+
+# target to generate assembly for a file
+tests/functional/stereo_poly_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/tests/functional/stereo_poly_test.cpp.s
+.PHONY : tests/functional/stereo_poly_test.cpp.s
 
 tests/integration/test_bridge.o: tests/integration/test_bridge.cpp.o
 .PHONY : tests/integration/test_bridge.o
@@ -564,13 +762,19 @@ help:
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... test"
+	@echo "... audio_check"
 	@echo "... audio_engine"
 	@echo "... audio_engine_shared"
+	@echo "... engine_tests"
+	@echo "... filter_tests"
 	@echo "... gmock"
 	@echo "... gmock_main"
 	@echo "... gtest"
 	@echo "... gtest_main"
 	@echo "... integration_tests"
+	@echo "... metronome_test"
+	@echo "... processor_check"
+	@echo "... stereo_poly_test"
 	@echo "... unit_tests"
 	@echo "... src/bridge/AudioBridge.o"
 	@echo "... src/bridge/AudioBridge.i"
@@ -584,9 +788,24 @@ help:
 	@echo "... src/hal/coreaudio/CoreAudioDriver.o"
 	@echo "... src/hal/coreaudio/CoreAudioDriver.i"
 	@echo "... src/hal/coreaudio/CoreAudioDriver.s"
-	@echo "... tests/integration/metronome_test.o"
-	@echo "... tests/integration/metronome_test.i"
-	@echo "... tests/integration/metronome_test.s"
+	@echo "... tests/functional/audio_check.o"
+	@echo "... tests/functional/audio_check.i"
+	@echo "... tests/functional/audio_check.s"
+	@echo "... tests/functional/engine_tests.o"
+	@echo "... tests/functional/engine_tests.i"
+	@echo "... tests/functional/engine_tests.s"
+	@echo "... tests/functional/filter_tests.o"
+	@echo "... tests/functional/filter_tests.i"
+	@echo "... tests/functional/filter_tests.s"
+	@echo "... tests/functional/metronome_test.o"
+	@echo "... tests/functional/metronome_test.i"
+	@echo "... tests/functional/metronome_test.s"
+	@echo "... tests/functional/processor_check.o"
+	@echo "... tests/functional/processor_check.i"
+	@echo "... tests/functional/processor_check.s"
+	@echo "... tests/functional/stereo_poly_test.o"
+	@echo "... tests/functional/stereo_poly_test.i"
+	@echo "... tests/functional/stereo_poly_test.s"
 	@echo "... tests/integration/test_bridge.o"
 	@echo "... tests/integration/test_bridge.i"
 	@echo "... tests/integration/test_bridge.s"

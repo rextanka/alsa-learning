@@ -1,6 +1,4 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/integration_tests.dir/tests/integration/metronome_test.cpp.o"
-  "CMakeFiles/integration_tests.dir/tests/integration/metronome_test.cpp.o.d"
   "CMakeFiles/integration_tests.dir/tests/integration/test_bridge.cpp.o"
   "CMakeFiles/integration_tests.dir/tests/integration/test_bridge.cpp.o.d"
   "bin/integration_tests"

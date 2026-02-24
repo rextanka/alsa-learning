@@ -138,16 +138,30 @@ if(BUILD_TESTING)
     target_include_directories(unit_tests PRIVATE tests/unit tests)
     target_link_libraries(unit_tests PRIVATE audio_engine gtest_main)
     add_test(NAME unit_tests COMMAND unit_tests)
+    set_tests_properties(unit_tests PROPERTIES LABELS "unit")
 
     # --- Integration Tests (C API) ---
     add_executable(integration_tests
         tests/integration/test_bridge.cpp
-        tests/integration/metronome_test.cpp
     )
     # Note: We link against audio_engine but we ONLY include CInterface.h in the source
     target_include_directories(integration_tests PRIVATE tests)
     target_link_libraries(integration_tests PRIVATE audio_engine gtest_main)
     add_test(NAME integration_tests COMMAND integration_tests)
+
+    # --- Functional Tests (Standalone) ---
+    function(add_functional_test name source)
+        add_executable(${name} tests/functional/${source})
+        target_include_directories(${name} PRIVATE tests)
+        target_link_libraries(${name} PRIVATE audio_engine)
+    endfunction()
+
+    add_functional_test(audio_check audio_check.cpp)
+    add_functional_test(metronome_test metronome_test.cpp)
+    add_functional_test(filter_tests filter_tests.cpp)
+    add_functional_test(stereo_poly_test stereo_poly_test.cpp)
+    add_functional_test(processor_check processor_check.cpp)
+    add_functional_test(engine_tests engine_tests.cpp)
 endif()
 
 message(STATUS "Build output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
