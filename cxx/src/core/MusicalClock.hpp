@@ -37,11 +37,17 @@ public:
     }
 
     void set_bpm(double bpm) {
+        // Sync total_ticks before changing tempo
+        total_ticks_base_ = total_ticks_;
+        total_samples_base_ = total_samples_;
         bpm_ = bpm;
         update_tick_duration();
     }
 
     void set_sample_rate(double sample_rate) {
+        // Sync total_ticks before changing sample rate
+        total_ticks_base_ = total_ticks_;
+        total_samples_base_ = total_samples_;
         sample_rate_ = sample_rate;
         update_tick_duration();
     }
@@ -55,12 +61,13 @@ public:
      * @brief Advance the clock by a number of samples.
      */
     void advance(int32_t num_samples) {
-        samples_acc_ += static_cast<double>(num_samples);
+        total_samples_ += static_cast<double>(num_samples);
         
-        while (samples_acc_ >= samples_per_tick_) {
-            samples_acc_ -= samples_per_tick_;
-            total_ticks_++;
-        }
+        // Calculate ticks since the last tempo/rate change
+        double samples_since_base = total_samples_ - total_samples_base_;
+        int64_t ticks_since_base = static_cast<int64_t>(std::floor(samples_since_base / samples_per_tick_));
+        
+        total_ticks_ = total_ticks_base_ + ticks_since_base;
     }
 
     MusicalTime current_time() const {
@@ -92,8 +99,10 @@ private:
     int32_t beats_per_bar_;
     
     double samples_per_tick_ = 0;
-    double samples_acc_ = 0;
-    int64_t total_ticks_ = 0;
+    double total_samples_ = 0;       // Continuous high precision sample counter
+    double total_samples_base_ = 0;  // Sample count at last tempo/rate change
+    int64_t total_ticks_ = 0;        // Current total ticks
+    int64_t total_ticks_base_ = 0;   // Ticks at last tempo/rate change
 };
 
 } // namespace audio

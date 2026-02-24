@@ -39,6 +39,22 @@ CoreAudioDriver::CoreAudioDriver(int sample_rate, int block_size)
         return;
     }
 
+    // Query hardware sample rate
+    AudioStreamBasicDescription hwFormat;
+    UInt32 propSize = sizeof(hwFormat);
+    status = AudioUnitGetProperty(
+        audio_unit_,
+        kAudioUnitProperty_StreamFormat,
+        kAudioUnitScope_Output,
+        0,
+        &hwFormat,
+        &propSize);
+    
+    if (status == noErr) {
+        sample_rate_ = static_cast<int>(hwFormat.mSampleRate);
+        std::cout << "CoreAudioDriver: Host sample rate detected as " << sample_rate_ << " Hz" << std::endl;
+    }
+
     // 4. Set the stream format (PCM Float32, Stereo, Interleaved)
     AudioStreamBasicDescription streamFormat;
     streamFormat.mSampleRate = static_cast<double>(sample_rate_);
@@ -86,6 +102,21 @@ CoreAudioDriver::CoreAudioDriver(int sample_rate, int block_size)
     if (status != noErr) {
         std::cerr << "CoreAudioDriver: AudioUnitInitialize failed" << std::endl;
         return;
+    }
+
+    // Confirm actual sample rate after initialization
+    propSize = sizeof(streamFormat);
+    status = AudioUnitGetProperty(
+        audio_unit_,
+        kAudioUnitProperty_StreamFormat,
+        kAudioUnitScope_Input,
+        0,
+        &streamFormat,
+        &propSize);
+    
+    if (status == noErr) {
+        sample_rate_ = static_cast<int>(streamFormat.mSampleRate);
+        std::cout << "CoreAudioDriver: Final sample rate confirmed as " << sample_rate_ << " Hz" << std::endl;
     }
 }
 

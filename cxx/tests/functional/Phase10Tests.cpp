@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cassert>
 #include <cmath>
+#include <algorithm>
 #include "../../include/CInterface.h"
 
 void test_musical_logic() {
@@ -20,14 +21,21 @@ void test_musical_logic() {
     assert(bar == 1 && beat == 1 && tick == 0);
     
     // Process some frames to advance clock
-    // At 120 BPM, 44100 samples is 2 seconds, which is 4 beats (1 bar)
+    // At 120 BPM, 1 beat is 0.5 seconds.
+    // At 44100 Hz, 1 beat is 22050 samples.
+    // To get to 1:3:0, we need exactly 2 beats = 44100 samples.
     float dummy_buffer[512];
-    for(int i = 0; i < 44100 / 512; ++i) {
-        engine_process(engine, dummy_buffer, 512);
+    int samples_to_process = 44100;
+    int processed = 0;
+    while (processed < samples_to_process) {
+        int to_process = std::min(512, samples_to_process - processed);
+        engine_process(engine, dummy_buffer, to_process);
+        processed += to_process;
     }
     
     engine_get_musical_time(engine, &bar, &beat, &tick);
-    std::cout << "Time after ~1 bar: " << bar << ":" << beat << ":" << tick << std::endl;
+    std::cout << "Time after exactly 44,100 samples: " << bar << ":" << beat << ":" << tick << std::endl;
+    assert(bar == 1 && beat == 3 && tick == 0);
     
     // Test Playing by Name
     std::cout << "Playing 'C4'..." << std::endl;
