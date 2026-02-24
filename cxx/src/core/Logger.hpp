@@ -105,23 +105,42 @@ public:
         return ring_buffer.pop();
     }
 
+    void set_log_to_console(bool enabled) {
+        log_to_console_ = enabled;
+    }
+
     /**
      * @brief Dumps all pending log entries to std::cout.
      * Not RT-safe. Call from main thread/cleanup.
      */
     void flush() {
         while (auto entry = pop_entry()) {
-            if (entry->type == LogEntry::Type::Message) {
-                std::cout << "[" << entry->tag << "] " << entry->message << std::endl;
-            } else {
-                std::cout << "[" << entry->tag << "] " << entry->value << std::endl;
-            }
+            process_entry(*entry);
+        }
+    }
+
+    /**
+     * @brief Process a single entry (helper for polling).
+     */
+    void process_entry(const LogEntry& entry) {
+        if (!log_to_console_) return;
+        
+        if (entry.type == LogEntry::Type::Message) {
+            std::cout << "[" << entry.tag << "] " << entry.message << std::endl;
+        } else {
+            std::cout << "[" << entry.tag << "] " << entry.value << std::endl;
         }
     }
 
 private:
     AudioLogger() = default;
     LockFreeRingBuffer<LogEntry, 1024> ring_buffer;
+    bool log_to_console_ = false;
 };
 
 } // namespace audio
+
+// Macros for project-wide use
+#define LOG_INFO(tag, msg) audio::AudioLogger::instance().log_message(tag, msg)
+#define LOG_ERROR(tag, msg) audio::AudioLogger::instance().log_message(tag, msg)
+#define LOG_EVENT(tag, val) audio::AudioLogger::instance().log_event(tag, val)

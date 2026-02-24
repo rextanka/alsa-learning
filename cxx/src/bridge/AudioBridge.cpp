@@ -372,6 +372,18 @@ int engine_note_on_name(EngineHandle handle, const char* note_name, float veloci
     }
 }
 
+int engine_note_off_name(EngineHandle handle, const char* note_name) {
+    if (!handle || !note_name) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    try {
+        audio::Note note(note_name);
+        impl->voice_manager->note_off(note.midi_note());
+        return 0;
+    } catch (...) {
+        return -1;
+    }
+}
+
 int engine_set_filter_type(EngineHandle handle, int /* type */) {
     return 0; // Interface presence
 }
