@@ -5,6 +5,7 @@
 
 #include "AlsaDriver.hpp"
 #include "../../core/Logger.hpp"
+#include "../../core/AudioSettings.hpp"
 #include <iostream>
 #include <algorithm>
 #include <cmath>
@@ -126,6 +127,12 @@ bool AlsaDriver::setup_pcm() {
 
     snd_pcm_hw_params_free(hw_params);
 
+    // Update global settings with actual hardware values
+    auto& settings = audio::AudioSettings::instance();
+    settings.sample_rate = sample_rate_;
+    settings.block_size = block_size_;
+    settings.num_channels = num_channels_;
+
     // Resize internal buffers
     left_buffer_.assign(block_size_, 0.0f);
     right_buffer_.assign(block_size_, 0.0f);
@@ -165,6 +172,16 @@ void AlsaDriver::thread_loop() {
 
     while (running_) {
         if (interleaved_callback_) {
+            // Dynamic Capacity: Ensure buffer is large enough for current hardware state
+            // (In practice, block_size_ is stable once started, but safety first)
+            const size_t required_size = static_cast<size_t>(block_size_ * num_channels_);
+            if (float_interleaved.size() < required_size) {
+                float_interleaved.resize(required_size, 0.0f);
+            }
+
+            // Zeroing: Kill 'zombie data' clicks by ensuring gaps are silent
+            std::fill(float_interleaved.begin(), float_interleaved.end(), 0.0f);
+
             auto start_time = std::chrono::high_resolution_clock::now();
 
             // Direct float buffer for interleaved output

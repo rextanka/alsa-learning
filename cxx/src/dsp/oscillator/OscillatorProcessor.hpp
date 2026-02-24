@@ -84,6 +84,14 @@ public:
         reset_oscillator_state();
     }
 
+    /**
+     * @brief Update sample rate.
+     */
+    void set_sample_rate(int sample_rate) {
+        sample_rate_ = sample_rate;
+        update_rotation_steps();
+    }
+
 protected:
     int sample_rate_;
     double current_freq_;

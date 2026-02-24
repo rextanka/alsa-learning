@@ -6,6 +6,7 @@
 #include "../src/hal/alsa/AlsaDriver.hpp"
 #include "../src/dsp/oscillator/SineOscillatorProcessor.hpp"
 #include "../src/dsp/routing/MonoToStereoProcessor.hpp"
+#include "../src/core/AudioSettings.hpp"
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -23,25 +24,24 @@ int main() {
 
     auto driver = std::make_unique<hal::AlsaDriver>(sample_rate, block_size, num_channels, "default");
     
-    // Create a sine oscillator for testing
+    // Create a sine oscillator for testing (initially with requested rate)
     auto sine = std::make_shared<audio::SineOscillatorProcessor>(sample_rate);
     sine->set_frequency(440.0f); // A4
 
-    // RT-Safe: Pre-allocate mono buffer outside the callback to avoid heap allocations
-    // while the audio driver is running.
+    // RT-Safe: Pre-allocate mono scratch buffer. 
+    // We'll resize it to the actual hardware block size after start().
     auto mono_buffer = std::make_shared<std::vector<float>>(block_size);
 
-    // RT-Safe callback: No heap allocations or hidden gaps.
+    // RT-Safe callback: 100% hardware-driven.
     driver->set_interleaved_callback([sine, mono_buffer](std::span<float> output) {
-        // AlsaDriver block_size is 512, stereo output is 1024.
-        // mono_buffer is also 512.
-        std::span<float> mono_span(mono_buffer->data(), mono_buffer->size());
+        // The hardware span (output) is the "master truth"
+        size_t frames_needed = output.size() / 2;
 
-        // Fill exactly 512 mono samples
+        // Safety check: ensure our mono scratch buffer is large enough
+        if (mono_buffer->size() < frames_needed) return;
+
+        std::span<float> mono_span(mono_buffer->data(), frames_needed);
         sine->pull(mono_span);
-
-        // Interleave exactly 512 mono samples into 1024 stereo samples.
-        // This MUST cover the full output span to avoid clicking gaps.
         audio::MonoToStereoProcessor::process(mono_span, output);
     });
 
@@ -51,9 +51,19 @@ int main() {
         return 1;
     }
 
+    // --- Dynamic Stabilization: Sync with Actual Hardware ---
+    const int actual_rate = audio::AudioSettings::instance().sample_rate;
+    const int actual_block = audio::AudioSettings::instance().block_size;
+    
+    // Update oscillator for perfect pitch accuracy
+    sine->set_sample_rate(static_cast<float>(actual_rate));
+    
+    // Ensure scratch buffer matches hardware block size
+    mono_buffer->resize(actual_block);
+
     std::cout << "Driver running for 3 seconds..." << std::endl;
-    std::cout << "Sample Rate: " << driver->sample_rate() << " Hz" << std::endl;
-    std::cout << "Block Size: " << driver->block_size() << " frames" << std::endl;
+    std::cout << "Actual Sample Rate: " << actual_rate << " Hz" << std::endl;
+    std::cout << "Actual Block Size: " << actual_block << " frames" << std::endl;
     std::cout << "Channels: " << driver->channels() << std::endl;
 
     std::this_thread::sleep_for(std::chrono::seconds(3));
