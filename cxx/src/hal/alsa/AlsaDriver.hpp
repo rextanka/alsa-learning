@@ -44,6 +44,10 @@ public:
     void stop() override;
     void set_callback(AudioCallback callback) override;
     void set_stereo_callback(StereoAudioCallback callback) override;
+
+    // Direct interleaved callback for tests/low-level access
+    using InterleavedCallback = std::function<void(std::span<float>)>;
+    void set_interleaved_callback(InterleavedCallback callback) { interleaved_callback_ = callback; }
     int sample_rate() const override { return sample_rate_; }
     int block_size() const override { return block_size_; }
     int channels() const { return num_channels_; }
@@ -60,6 +64,7 @@ private:
     int num_channels_;
     AudioCallback callback_;
     StereoAudioCallback stereo_callback_;
+    InterleavedCallback interleaved_callback_;
     std::atomic<bool> running_;
     std::thread processing_thread_;
     

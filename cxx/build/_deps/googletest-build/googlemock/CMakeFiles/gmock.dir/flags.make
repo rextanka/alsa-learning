@@ -4,7 +4,7 @@
 # compile CXX with /usr/lib64/ccache/c++
 CXX_DEFINES = -DAUDIO_ENABLE_PROFILING=1
 
-CXX_INCLUDES = -I/home/nickt/src/alsa/alsa-learning/cxx/include -I/home/nickt/src/alsa/alsa-learning/cxx/src/core -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/oscillator -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/envelope -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/filter -I/home/nickt/src/alsa/alsa-learning/cxx/src/hal -I/home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-src/googlemock/include -I/home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-src/googlemock -isystem /home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-src/googletest/include -isystem /home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-src/googletest
+CXX_INCLUDES = -I/home/nickt/src/alsa/alsa-learning/cxx/include -I/home/nickt/src/alsa/alsa-learning/cxx/src/core -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/oscillator -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/envelope -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/filter -I/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/routing -I/home/nickt/src/alsa/alsa-learning/cxx/src/hal -I/home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-src/googlemock/include -I/home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-src/googlemock -isystem /home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-src/googletest/include -isystem /home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-src/googletest
 
 CXX_FLAGS = -std=c++20 -Wall -Wshadow -Wundef -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers
 

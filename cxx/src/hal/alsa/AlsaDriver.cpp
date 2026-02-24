@@ -161,7 +161,29 @@ void AlsaDriver::thread_loop() {
     }
 
     while (running_) {
-        if (stereo_callback_ || callback_) {
+        if (interleaved_callback_) {
+            auto start_time = std::chrono::high_resolution_clock::now();
+
+            // Direct float buffer for interleaved output
+            std::vector<float> float_interleaved(block_size_ * num_channels_);
+            interleaved_callback_(std::span<float>(float_interleaved));
+
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+            audio::AudioLogger::instance().log_event("PROC_US", static_cast<float>(duration));
+
+            // Convert to S32_LE
+            int32_t* s32_ptr = reinterpret_cast<int32_t*>(interleaved_buffer_.data());
+            for (size_t i = 0; i < float_interleaved.size(); ++i) {
+                float sample = std::clamp(float_interleaved[i], -1.0f, 1.0f);
+                s32_ptr[i] = static_cast<int32_t>(sample * 2147483647.0f);
+            }
+
+            int err = snd_pcm_writei(pcm_handle_, interleaved_buffer_.data(), block_size_);
+            if (err < 0) {
+                recover_pcm(err);
+            }
+        } else if (stereo_callback_ || callback_) {
             auto start_time = std::chrono::high_resolution_clock::now();
 
             audio::AudioBuffer buffer;

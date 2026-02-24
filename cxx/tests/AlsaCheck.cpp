@@ -5,12 +5,14 @@
 
 #include "../src/hal/alsa/AlsaDriver.hpp"
 #include "../src/dsp/oscillator/SineOscillatorProcessor.hpp"
+#include "../src/dsp/routing/MonoToStereoProcessor.hpp"
 #include <iostream>
 #include <chrono>
 #include <thread>
 #include <memory>
 #include <span>
 #include <functional>
+#include <vector>
 
 int main() {
     std::cout << "--- ALSA Driver Check ---" << std::endl;
@@ -25,18 +27,18 @@ int main() {
     auto sine = std::make_shared<audio::SineOscillatorProcessor>(sample_rate);
     sine->set_frequency(440.0f); // A4
 
-    driver->set_callback([sine, num_channels](std::span<float> output) {
-        // AlsaDriver provides a flat span. For interleaved stereo, we need to
-        // fill L, R, L, R...
-        // SineOscillatorProcessor::pull(span) generates mono samples.
-        // We must fill the interleaved buffer correctly.
-        for (size_t i = 0; i < output.size(); i += num_channels) {
-            float sample = 0.0f;
-            sine->pull(std::span<float>(&sample, 1));
-            for (int ch = 0; ch < num_channels; ++ch) {
-                output[i + ch] = sample;
-            }
-        }
+    // RT-Safe: Pre-allocate mono buffer outside the callback to avoid heap allocations
+    // while the audio driver is running.
+    auto mono_buffer = std::make_shared<std::vector<float>>(block_size);
+
+    driver->set_interleaved_callback([sine, mono_buffer](std::span<float> output) {
+        // 1. Pull mono samples from oscillator into pre-allocated scratch buffer
+        std::span<float> mono_span(*mono_buffer);
+        sine->pull(mono_span);
+
+        // 2. Interleave mono to stereo using the formal processor node
+        // This ensures the 512-frame mono oscillator fills the 1024-sample stereo driver span correctly.
+        audio::MonoToStereoProcessor::process(mono_span, output);
     });
 
     std::cout << "Starting ALSA driver (440Hz Sine Wave)..." << std::endl;
