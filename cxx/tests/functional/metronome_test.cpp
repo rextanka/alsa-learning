@@ -17,11 +17,10 @@
 #include "../../src/core/Logger.hpp"
 
 void print_usage() {
-    std::stringstream ss;
-    ss << "Usage: metronome_test [bpm] [bars] [time_signature_numerator] [-v|--analyze]\n"
-       << "Defaults: 80 2 4\n"
-       << "Example: ./metronome_test 120 4 3 --analyze";
-    LOG_INFO("Usage", ss.str().c_str());
+    std::cout << "Usage: metronome_test [bpm] [bars] [time_sig_numerator] [--analyze]" << std::endl;
+    std::cout << "Defaults: 80 2 4" << std::endl;
+    std::cout << "Flags: --analyze/-v : Enable high-precision timing logs" << std::endl;
+    std::cout << "Example: ./metronome_test 120 4 3 --analyze" << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -34,25 +33,28 @@ int main(int argc, char* argv[]) {
     int time_sig_num = 4;
     bool analyze = false;
 
-    std::vector<std::string> args(argv, argv + argc);
-    for (size_t i = 1; i < args.size(); ++i) {
-        if (args[i] == "--help" || args[i] == "-h") {
+    std::vector<std::string> args;
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--help" || arg == "-h") {
             print_usage();
             return 0;
         }
-        if (args[i] == "--analyze" || args[i] == "-v") {
+        if (arg == "--analyze" || arg == "-v") {
             analyze = true;
-            continue;
+        } else {
+            args.push_back(arg);
         }
-        
-        // Positional arguments (only if they look like numbers)
-        try {
-            if (i == 1) bpm = std::stod(args[i]);
-            else if (i == 2) total_bars = std::stoi(args[i]);
-            else if (i == 3) time_sig_num = std::stoi(args[i]);
-        } catch (...) {
-            // Might be a flag, ignore if handled above
-        }
+    }
+
+    try {
+        if (args.size() > 0) bpm = std::stod(args[0]);
+        if (args.size() > 1) total_bars = std::stoi(args[1]);
+        if (args.size() > 2) time_sig_num = std::stoi(args[2]);
+    } catch (...) {
+        LOG_ERROR("Args", "Invalid numeric arguments provided.");
+        print_usage();
+        return 1;
     }
 
     if (bpm <= 0 || total_bars <= 0 || time_sig_num <= 0) {
@@ -104,11 +106,11 @@ int main(int argc, char* argv[]) {
     }
 
     // 4. Rhythmic Logic & Precision Polling
-    std::atomic<bool> running{true};
+    std::atomic<bool> polling_running{true};
     int last_beat = -1;
     
     std::thread polling_thread([&]() {
-        while (running) {
+        while (polling_running) {
             int bar, beat, tick;
             engine_get_musical_time(engine, &bar, &beat, &tick);
             
@@ -145,7 +147,7 @@ int main(int argc, char* argv[]) {
     std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(total_duration * 1000)));
 
     // Cleanup
-    running = false;
+    polling_running = false;
     if (polling_thread.joinable()) polling_thread.join();
 
     test::cleanup_test_environment(driver.get());
