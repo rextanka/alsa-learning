@@ -117,9 +117,10 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
 | 12    | **MIDI Integration**: Creation of `MidiHAL` and `MidiParser` feeding into `VoiceManager`. | Planned |
 | 13    | **The Stereo Mixer & Bus**: Summing mono sources with panning to stereo output. | 100% Complete |
 | 14    | **Spatial & Stereo FX**: Reverb, Chorus, Flanger, and Delay. | Planned |
-| 15    | **Non-Intrusive Logger**: RT-safe lock-free logging. | 100% Complete |
-| 16    | **Unit & Integration Strategy**: GUnit vs. standalone API tests. | 100% Complete |
-| 17    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation. | Planned |
+| 15    | **Host Interrogation & Enumeration**: Safely query device list and hardware sample rates via UTF-8 C-Bridge. | Planned |
+| 16    | **Non-Intrusive Logger**: RT-safe lock-free logging. | 100% Complete |
+| 17    | **Unit & Integration Strategy**: GUnit vs. standalone API tests. | 100% Complete |
+| 18    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation. | Planned |
 
 ---
 
