@@ -1,74 +1,59 @@
 /**
  * @file metronome_test.cpp
- * @brief Simple validation of MusicalClock and PulseOscillator.
+ * @brief Simple validation of MusicalClock and PulseOscillator using the C-Bridge.
  */
 
 #include <iostream>
 #include <memory>
 #include <thread>
 #include <chrono>
-#include "TestHelper.hpp"
-#include "../src/core/MusicalClock.hpp"
-#include "../src/dsp/oscillator/PulseOscillatorProcessor.hpp"
+#include <cmath>
+#include "../../include/CInterface.h"
 
 int main() {
-    std::cout << "--- Starting Metronome Validation Test ---" << std::endl;
+    std::cout << "--- Starting Metronome Validation Test (Bridge-Based) ---" << std::endl;
 
-    test::init_test_environment();
-    auto driver = test::create_driver();
-    if (!driver) return 1;
+    unsigned int sample_rate = 44100;
+    EngineHandle engine = engine_create(sample_rate);
+    if (!engine) return 1;
 
-    int sample_rate = driver->sample_rate();
-    audio::MusicalClock clock(static_cast<double>(sample_rate));
-    clock.set_bpm(120.0);
-    clock.set_meter(4);
+    engine_set_bpm(engine, 120.0);
+    
+    // In a real scenario, we'd use a real AudioDriver, but for this functional test 
+    // we'll manually pump the engine to simulate time passing and check triggers.
+    
+    int last_beat = -1;
+    int bars_to_run = 2;
+    
+    std::cout << "Simulating " << bars_to_run << " bars at 120 BPM..." << std::endl;
 
-    audio::PulseOscillatorProcessor click(sample_rate);
-    click.set_pulse_width(0.1f);
-
-    driver->set_callback([&clock, &click, sample_rate](std::span<float> output) {
-        int32_t frames = static_cast<int32_t>(output.size());
+    float buffer[512];
+    int bar, beat, tick;
+    
+    // 120 BPM, 44100 Hz -> 22050 samples per beat.
+    // 2 bars = 8 beats = 176400 samples.
+    int total_samples = 176400;
+    int processed = 0;
+    
+    while (processed < total_samples) {
+        engine_get_musical_time(engine, &bar, &beat, &tick);
         
-        auto old_time = clock.current_time();
-        clock.advance(frames);
-        auto new_time = clock.current_time();
-
-        bool is_beat = (new_time.beat != old_time.beat) || (new_time.bar != old_time.bar);
-        
-        if (is_beat) {
-            // Middle C (261.63 Hz) for the first beat of the bar, 
-            // A below (220.0 Hz) for other beats.
-            if (new_time.beat == 1) {
-                click.set_frequency(261.63);
+        if (beat != last_beat) {
+            if (beat == 1) {
+                std::cout << "[Beat 1] Triggering C4" << std::endl;
+                engine_note_on_name(engine, "C4", 0.8f);
             } else {
-                click.set_frequency(220.0);
+                std::cout << "[Beat " << beat << "] Triggering A3" << std::endl;
+                engine_note_on_name(engine, "A3", 0.8f);
             }
-            click.reset(); // Restart pulse
-            std::cout << "[Beat] " << new_time.bar << "." << new_time.beat << std::endl;
+            last_beat = beat;
         }
-
-        click.pull(output);
-
-        // Simple envelope: only play for the first 50ms of a beat
-        static int32_t samples_since_beat = 10000; 
-        if (is_beat) samples_since_beat = 0;
         
-        for (float& sample : output) {
-            if (samples_since_beat > (sample_rate * 0.05)) {
-                sample = 0.0f;
-            }
-            samples_since_beat++;
-        }
-    });
-
-    if (!driver->start()) {
-        return 1;
+        engine_process(engine, buffer, 512);
+        processed += 512;
     }
 
-    std::cout << "Playing 120 BPM metronome for 5 seconds (Ctrl+C to stop early)..." << std::endl;
-    test::wait_while_running(5);
-
-    test::cleanup_test_environment(driver.get());
+    engine_destroy(engine);
     std::cout << "--- Test Completed ---" << std::endl;
 
     return 0;

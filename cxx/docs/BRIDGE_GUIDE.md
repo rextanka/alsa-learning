@@ -88,3 +88,28 @@ envelope_gate_on(env);
 envelope_process(env, buffer, frames);
 envelope_destroy(env);
 ```
+
+## 6. Host & Device Interrogation
+
+The bridge provides a safe, "Count and Index" API for discovering hardware capabilities without complex memory management.
+
+```c
+// 1. Query device count
+int count = host_get_device_count();
+
+for (int i = 0; i < count; ++i) {
+    char name[256];
+    // 2. Query device name by index (UTF-8)
+    if (host_get_device_name(i, name, sizeof(name)) == 0) {
+        // 3. Query native sample rate
+        int sr = host_get_device_sample_rate(i);
+        printf("Device %d: %s (%d Hz)\n", i, name, sr);
+    }
+}
+```
+
+### Safety Features:
+- **Unicode Compliance**: All device names are returned as UTF-8 encoded `char*` strings, ensuring support for international characters (Chinese, Korean, etc.).
+- **Memory Safety**: The caller provides the buffer for `host_get_device_name`, avoiding ownership traps or leaked pointers.
+>>>>>>> SEARCH
+

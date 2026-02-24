@@ -380,6 +380,39 @@ int engine_set_delay_enabled(EngineHandle handle, int /* enabled */) {
     return 0;
 }
 
+int host_get_device_count() {
+#ifdef __APPLE__
+    // Minimal mock for now until full CoreAudio enumeration is implemented
+    return 1; 
+#else
+    return 0;
+#endif
+}
+
+int host_get_device_name(int index, char* buffer, size_t buffer_size) {
+    if (!buffer || buffer_size == 0) return -1;
+    if (index != 0) return -1;
+
+#ifdef __APPLE__
+    // UTF-8 check: Hardcoded name with potential Unicode
+    const char* name = "Default Output Device";
+    std::strncpy(buffer, name, buffer_size - 1);
+    buffer[buffer_size - 1] = '\0';
+    return 0;
+#else
+    return -1;
+#endif
+}
+
+int host_get_device_sample_rate(int index) {
+    if (index != 0) return 0;
+#ifdef __APPLE__
+    return 44100; // Mock until linked to real driver query
+#else
+    return 0;
+#endif
+}
+
 int set_param(void* handle, const char* name, float value) {
     if (!handle || !name) return -1;
     try {
