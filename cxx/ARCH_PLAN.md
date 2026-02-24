@@ -30,6 +30,7 @@ Create a portable, lightweight **'Musical Toolbox'** for creative exploration an
 - **Mono-until-Stereo**: Keep signal paths mono for CPU efficiency until spatial effects or stereo-specific processing (panners/reverb) are required.
 - **MPE & Microtonality**: Per-voice independence with a modular `TuningSystem` for cross-platform musical flexibility.
 - **Centralized Zipper-Free Control**: A dedicated `ParameterManager` handles all ramping and smoothing "magic," hiding complexity from the toy developer and ensuring artifact-free parameter updates.
+- **HAL-Only Interaction**: High-level DSP logic and tests MUST interact ONLY with the `hal::AudioDriver` base class. Platform-specific headers (e.g., `AlsaDriver.hpp`, `CoreAudioDriver.hpp`) are forbidden in `src/dsp/` and `tests/` except within dedicated factory/instantiation blocks.
 
 ---
 

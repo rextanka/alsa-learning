@@ -92,6 +92,7 @@ set(CMAKE_MAKEFILE_PRODUCTS
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/audio_engine.dir/DependInfo.cmake"
+  "CMakeFiles/audio_engine_shared.dir/DependInfo.cmake"
   "CMakeFiles/unit_tests.dir/DependInfo.cmake"
   "CMakeFiles/integration_tests.dir/DependInfo.cmake"
   "CMakeFiles/metronome_test.dir/DependInfo.cmake"

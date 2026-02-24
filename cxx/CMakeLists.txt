@@ -56,18 +56,20 @@ else()
     message(STATUS "Performance profiling: DISABLED")
 endif()
 
-# --- Core Audio Engine Library ---
-add_library(audio_engine STATIC
+# --- Core Audio Engine Library (Static) ---
+set(ENGINE_SOURCES
     src/bridge/AudioBridge.cpp
     src/core/Voice.cpp
     src/core/VoiceManager.cpp
 )
 
 if(APPLE)
-    target_sources(audio_engine PRIVATE src/hal/coreaudio/CoreAudioDriver.cpp)
+    list(APPEND ENGINE_SOURCES src/hal/coreaudio/CoreAudioDriver.cpp)
 elseif(UNIX AND NOT APPLE)
-    target_sources(audio_engine PRIVATE src/hal/alsa/AlsaDriver.cpp)
+    list(APPEND ENGINE_SOURCES src/hal/alsa/AlsaDriver.cpp)
 endif()
+
+add_library(audio_engine STATIC ${ENGINE_SOURCES})
 
 target_include_directories(audio_engine PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core
@@ -79,13 +81,35 @@ target_compile_options(audio_engine PRIVATE
     -Wall
     -Wextra
     -Wpedantic
-    -fvisibility=default # Ensure RTTI consistency
+    -fvisibility=default
 )
 
-# Link platform-specific libraries to the engine library
 if(PLATFORM_LIBS)
     target_link_libraries(audio_engine ${PLATFORM_LIBS})
 endif()
+
+# --- Core Audio Engine Library (Shared) ---
+add_library(audio_engine_shared SHARED ${ENGINE_SOURCES})
+
+target_include_directories(audio_engine_shared PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/dsp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/hal
+)
+
+target_compile_options(audio_engine_shared PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+    -fvisibility=default
+)
+
+if(PLATFORM_LIBS)
+    target_link_libraries(audio_engine_shared ${PLATFORM_LIBS})
+endif()
+
+# Ensure the shared library is named consistently across platforms
+set_target_properties(audio_engine_shared PROPERTIES OUTPUT_NAME "audio_engine")
 
 # --- Testing Infrastructure (Phase 11) ---
 

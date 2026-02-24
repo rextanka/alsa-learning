@@ -1,0 +1,1 @@
+/usr/lib64/ccache/c++ -Wl,--dependency-file=CMakeFiles/alsa_check.dir/link.d CMakeFiles/alsa_check.dir/tests/AlsaCheck.cpp.o CMakeFiles/alsa_check.dir/src/hal/alsa/AlsaDriver.cpp.o -o bin/alsa_check  -lasound

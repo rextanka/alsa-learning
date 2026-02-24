@@ -3,9 +3,20 @@
 
 CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o: /home/nickt/src/alsa/alsa-learning/cxx/tests/metronome_test.cpp \
   /home/nickt/src/alsa/alsa-learning/cxx/src/core/AudioBuffer.hpp \
+  /home/nickt/src/alsa/alsa-learning/cxx/src/core/VoiceContext.hpp \
   /home/nickt/src/alsa/alsa-learning/cxx/src/hal/AudioDriver.hpp \
-  /home/nickt/src/alsa/alsa-learning/cxx/include/CInterface.h \
+  /home/nickt/src/alsa/alsa-learning/cxx/src/core/AudioSettings.hpp \
+  /home/nickt/src/alsa/alsa-learning/cxx/src/core/Logger.hpp \
+  /home/nickt/src/alsa/alsa-learning/cxx/src/core/MusicalClock.hpp \
+  /home/nickt/src/alsa/alsa-learning/cxx/src/dsp/InputSource.hpp \
+  /home/nickt/src/alsa/alsa-learning/cxx/src/dsp/PerformanceProfiler.hpp \
+  /home/nickt/src/alsa/alsa-learning/cxx/src/dsp/Processor.hpp \
+  /home/nickt/src/alsa/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp \
+  /home/nickt/src/alsa/alsa-learning/cxx/src/dsp/oscillator/PulseOscillatorProcessor.hpp \
+  /home/nickt/src/alsa/alsa-learning/cxx/src/dsp/oscillator/SquareOscillatorProcessor.hpp \
+  /home/nickt/src/alsa/alsa-learning/cxx/src/hal/AudioDriver.hpp \
   /home/nickt/src/alsa/alsa-learning/cxx/src/hal/alsa/AlsaDriver.hpp \
+  /home/nickt/src/alsa/alsa-learning/cxx/tests/TestHelper.hpp \
   /usr/include/alloca.h \
   /usr/include/alsa/asoundef.h \
   /usr/include/alsa/asoundlib.h \
@@ -80,6 +91,19 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o: /home/nickt/src/alsa/a
   /usr/include/bits/select.h \
   /usr/include/bits/semaphore.h \
   /usr/include/bits/setjmp.h \
+  /usr/include/bits/sigaction.h \
+  /usr/include/bits/sigcontext.h \
+  /usr/include/bits/sigevent-consts.h \
+  /usr/include/bits/siginfo-arch.h \
+  /usr/include/bits/siginfo-consts-arch.h \
+  /usr/include/bits/siginfo-consts.h \
+  /usr/include/bits/signal_ext.h \
+  /usr/include/bits/signum-arch.h \
+  /usr/include/bits/signum-generic.h \
+  /usr/include/bits/sigstack.h \
+  /usr/include/bits/sigstksz.h \
+  /usr/include/bits/sigthread.h \
+  /usr/include/bits/ss_flags.h \
   /usr/include/bits/stat.h \
   /usr/include/bits/stdint-intn.h \
   /usr/include/bits/stdint-least.h \
@@ -103,18 +127,25 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o: /home/nickt/src/alsa/a
   /usr/include/bits/types/__locale_t.h \
   /usr/include/bits/types/__mbstate_t.h \
   /usr/include/bits/types/__sigset_t.h \
+  /usr/include/bits/types/__sigval_t.h \
   /usr/include/bits/types/clock_t.h \
   /usr/include/bits/types/clockid_t.h \
   /usr/include/bits/types/cookie_io_functions_t.h \
   /usr/include/bits/types/error_t.h \
   /usr/include/bits/types/locale_t.h \
   /usr/include/bits/types/mbstate_t.h \
+  /usr/include/bits/types/sig_atomic_t.h \
+  /usr/include/bits/types/sigevent_t.h \
+  /usr/include/bits/types/siginfo_t.h \
   /usr/include/bits/types/sigset_t.h \
+  /usr/include/bits/types/sigval_t.h \
+  /usr/include/bits/types/stack_t.h \
   /usr/include/bits/types/struct_FILE.h \
   /usr/include/bits/types/struct___jmp_buf_tag.h \
   /usr/include/bits/types/struct_iovec.h \
   /usr/include/bits/types/struct_itimerspec.h \
   /usr/include/bits/types/struct_sched_param.h \
+  /usr/include/bits/types/struct_sigstack.h \
   /usr/include/bits/types/struct_timespec.h \
   /usr/include/bits/types/struct_timeval.h \
   /usr/include/bits/types/struct_tm.h \
@@ -226,7 +257,6 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o: /home/nickt/src/alsa/a
   /usr/include/c++/15/bits/stl_iterator.h \
   /usr/include/c++/15/bits/stl_iterator_base_funcs.h \
   /usr/include/c++/15/bits/stl_iterator_base_types.h \
-  /usr/include/c++/15/bits/stl_numeric.h \
   /usr/include/c++/15/bits/stl_pair.h \
   /usr/include/c++/15/bits/stl_raw_storage_iter.h \
   /usr/include/c++/15/bits/stl_tempbuf.h \
@@ -256,10 +286,12 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o: /home/nickt/src/alsa/a
   /usr/include/c++/15/cmath \
   /usr/include/c++/15/compare \
   /usr/include/c++/15/concepts \
+  /usr/include/c++/15/csignal \
   /usr/include/c++/15/cstddef \
   /usr/include/c++/15/cstdint \
   /usr/include/c++/15/cstdio \
   /usr/include/c++/15/cstdlib \
+  /usr/include/c++/15/cstring \
   /usr/include/c++/15/ctime \
   /usr/include/c++/15/cwchar \
   /usr/include/c++/15/cwctype \
@@ -286,13 +318,11 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o: /home/nickt/src/alsa/a
   /usr/include/c++/15/memory \
   /usr/include/c++/15/new \
   /usr/include/c++/15/numbers \
-  /usr/include/c++/15/numeric \
   /usr/include/c++/15/optional \
   /usr/include/c++/15/ostream \
   /usr/include/c++/15/pstl/execution_defs.h \
   /usr/include/c++/15/pstl/glue_algorithm_defs.h \
   /usr/include/c++/15/pstl/glue_memory_defs.h \
-  /usr/include/c++/15/pstl/glue_numeric_defs.h \
   /usr/include/c++/15/pstl/pstl_config.h \
   /usr/include/c++/15/ratio \
   /usr/include/c++/15/semaphore \
@@ -360,6 +390,7 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o: /home/nickt/src/alsa/a
   /usr/include/pthread.h \
   /usr/include/sched.h \
   /usr/include/semaphore.h \
+  /usr/include/signal.h \
   /usr/include/stdc-predef.h \
   /usr/include/stdint.h \
   /usr/include/stdio.h \
@@ -373,6 +404,7 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o: /home/nickt/src/alsa/a
   /usr/include/sys/syscall.h \
   /usr/include/sys/time.h \
   /usr/include/sys/types.h \
+  /usr/include/sys/ucontext.h \
   /usr/include/syscall.h \
   /usr/include/time.h \
   /usr/include/unistd.h \
@@ -445,9 +477,13 @@ bin/metronome_test: /lib64/ld-linux-x86-64.so.2 \
 
 /usr/include/stdlib.h:
 
+/usr/include/sys/ucontext.h:
+
 /usr/include/stdc-predef.h:
 
 /usr/include/pthread.h:
+
+/usr/include/poll.h:
 
 /usr/include/math.h:
 
@@ -463,8 +499,6 @@ bin/metronome_test: /lib64/ld-linux-x86-64.so.2 \
 
 /usr/include/gnu/stubs.h:
 
-/usr/include/gnu/stubs-64.h:
-
 /usr/include/features-time64.h:
 
 /usr/include/fcntl.h:
@@ -473,13 +507,7 @@ bin/metronome_test: /lib64/ld-linux-x86-64.so.2 \
 
 /usr/include/endian.h:
 
-/usr/lib64/libc.so:
-
-/usr/include/ctype.h:
-
 /usr/include/c++/15/x86_64-redhat-linux/bits/messages_members.h:
-
-/usr/include/c++/15/x86_64-redhat-linux/bits/gthr.h:
 
 /usr/include/c++/15/x86_64-redhat-linux/bits/error_constants.h:
 
@@ -493,10 +521,6 @@ bin/metronome_test: /lib64/ld-linux-x86-64.so.2 \
 
 /usr/include/c++/15/tr1/special_function_util.h:
 
-/usr/include/c++/15/x86_64-redhat-linux/bits/time_members.h:
-
-/usr/include/c++/15/tr1/riemann_zeta.tcc:
-
 /usr/include/c++/15/tr1/poly_hermite.tcc:
 
 /usr/include/c++/15/tr1/modified_bessel_func.tcc:
@@ -504,8 +528,6 @@ bin/metronome_test: /lib64/ld-linux-x86-64.so.2 \
 /usr/include/c++/15/tr1/legendre_function.tcc:
 
 /usr/include/c++/15/tr1/exp_integral.tcc:
-
-/usr/include/c++/15/tr1/ell_integral.tcc:
 
 /usr/include/c++/15/tr1/beta_function.tcc:
 
@@ -517,25 +539,11 @@ bin/metronome_test: /lib64/ld-linux-x86-64.so.2 \
 
 /usr/include/c++/15/stop_token:
 
-/usr/include/sys/syscall.h:
-
-/usr/include/c++/15/tr1/gamma.tcc:
-
-/usr/include/c++/15/span:
-
 /usr/include/c++/15/semaphore:
-
-/usr/include/c++/15/pstl/pstl_config.h:
 
 /usr/include/c++/15/pstl/glue_memory_defs.h:
 
 /usr/include/c++/15/pstl/execution_defs.h:
-
-/usr/include/poll.h:
-
-/usr/include/c++/15/numeric:
-
-/usr/include/c++/15/numbers:
 
 /usr/include/linux/errno.h:
 
@@ -567,63 +575,57 @@ bin/metronome_test: /lib64/ld-linux-x86-64.so.2 \
 
 /usr/include/c++/15/ext/alloc_traits.h:
 
-/usr/include/c++/15/ext/aligned_buffer.h:
-
-/usr/include/c++/15/exception:
-
-/usr/include/c++/15/cwchar:
-
 /usr/include/c++/15/stdlib.h:
 
 /usr/include/c++/15/ctime:
 
+/usr/include/c++/15/cstring:
+
 /usr/include/c++/15/cstdlib:
 
-/usr/include/c++/15/cstdio:
+/usr/include/c++/15/cstdint:
 
-/usr/include/c++/15/string:
+/usr/include/c++/15/exception:
 
-/usr/include/alsa/output.h:
+/usr/include/c++/15/csignal:
 
-/usr/include/bits/timesize.h:
+/usr/include/c++/15/concepts:
 
-/usr/include/bits/types/struct_timespec.h:
+/usr/include/semaphore.h:
 
-/usr/include/c++/15/vector:
+/usr/include/c++/15/cmath:
 
-/usr/include/alsa/seqmid.h:
+/usr/include/c++/15/clocale:
 
-/usr/lib/gcc/x86_64-redhat-linux/15/include/stddef.h:
+/usr/include/c++/15/climits:
 
-/usr/include/c++/15/bits/localefwd.h:
+/usr/include/c++/15/unordered_map:
 
-bin/libaudio_engine.a:
+/usr/include/c++/15/chrono:
 
-/usr/include/bits/waitflags.h:
+/usr/include/c++/15/charconv:
 
-/usr/include/bits/types/struct_sched_param.h:
+/usr/include/c++/15/bits/version.h:
 
-/usr/include/alsa/asoundlib.h:
+/usr/include/c++/15/iostream:
 
-/usr/include/c++/15/bits/cxxabi_init_exception.h:
+/usr/include/c++/15/bits/vector.tcc:
 
-/usr/include/bits/types/sigset_t.h:
+/usr/include/c++/15/bits/utility.h:
 
-/usr/include/bits/types/mbstate_t.h:
+/usr/include/c++/15/bits/uses_allocator_args.h:
 
-/usr/include/c++/15/bits/locale_conv.h:
+/usr/include/c++/15/bits/unordered_map.h:
 
-/usr/include/bits/semaphore.h:
+/usr/include/c++/15/bits/unique_ptr.h:
 
-/usr/include/bits/types/locale_t.h:
+/usr/include/c++/15/bits/uniform_int_dist.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/15/include/stdint.h:
+/usr/include/c++/15/bits/unicode.h:
 
-/usr/include/linux/stddef.h:
+/usr/include/c++/15/bits/streambuf_iterator.h:
 
-/usr/include/c++/15/bits/locale_classes.h:
-
-/usr/include/bits/mathcalls.h:
+/usr/include/c++/15/bits/stl_tempbuf.h:
 
 /usr/include/bits/types/__locale_t.h:
 
@@ -647,15 +649,31 @@ bin/libaudio_engine.a:
 
 /usr/include/bits/types/time_t.h:
 
-/usr/include/bits/struct_mutex.h:
+/usr/include/c++/15/x86_64-redhat-linux/bits/gthr.h:
 
-/usr/include/c++/15/bits/utility.h:
+/usr/include/bits/sigstksz.h:
+
+/usr/include/bits/signum-generic.h:
+
+/usr/include/sys/syscall.h:
+
+/usr/include/c++/15/tr1/gamma.tcc:
+
+/usr/include/c++/15/span:
+
+/usr/include/bits/signum-arch.h:
+
+/usr/include/bits/sigevent-consts.h:
+
+CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
+
+/usr/include/bits/posix2_lim.h:
+
+/usr/include/alsa/mixer.h:
 
 /usr/include/bits/setjmp.h:
 
 /usr/include/c++/15/bits/char_traits.h:
-
-/usr/include/bits/types/cookie_io_functions_t.h:
 
 /usr/include/features.h:
 
@@ -663,17 +681,15 @@ bin/libaudio_engine.a:
 
 /usr/include/bits/sched.h:
 
+/usr/include/c++/15/ext/aligned_buffer.h:
+
+/usr/include/bits/types/siginfo_t.h:
+
 /usr/include/bits/pthreadtypes.h:
 
 /usr/include/bits/pthreadtypes-arch.h:
 
 /usr/include/bits/pthread_stack_min-dynamic.h:
-
-CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
-
-/usr/include/bits/posix2_lim.h:
-
-/usr/include/alsa/mixer.h:
 
 /usr/include/bits/poll.h:
 
@@ -683,8 +699,6 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/bits/fp-fast.h:
 
-/usr/include/c++/15/bits/version.h:
-
 /usr/include/bits/mathcalls-narrow.h:
 
 /usr/include/c++/15/bits/formatfwd.h:
@@ -693,9 +707,9 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/bits/mathcalls-macros.h:
 
-/usr/include/alsa/seq.h:
+/usr/include/c++/15/bits/uses_allocator.h:
 
-/usr/include/c++/15/bits/memoryfwd.h:
+/usr/include/bits/struct_rwlock.h:
 
 /usr/include/c++/15/bits/hashtable.h:
 
@@ -707,73 +721,53 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/c++/15/bits/stl_function.h:
 
-/usr/include/bits/uio_lim.h:
-
-/usr/include/c++/15/bits/concept_check.h:
-
-/usr/include/bits/math-vector.h:
-
-/usr/include/c++/15/unordered_map:
-
-/usr/include/c++/15/chrono:
-
-/usr/include/bits/long-double.h:
-
-/usr/include/bits/types/__fpos_t.h:
-
-/usr/include/asm/unistd_64.h:
-
 /usr/include/bits/syscall.h:
 
 /usr/include/bits/iscanonical.h:
 
-/usr/include/c++/15/bits/stl_numeric.h:
-
 /usr/include/bits/locale.h:
+
+/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp:
 
 /usr/include/c++/15/bits/std_mutex.h:
 
-/usr/include/c++/15/bits/unordered_map.h:
+/usr/include/bits/siginfo-consts.h:
 
-/usr/include/bits/libm-simd-decl-stubs.h:
+/usr/include/bits/libc-header-start.h:
 
-/usr/include/c++/15/bits/ostream.h:
+/usr/include/bits/sigstack.h:
+
+/usr/include/c++/15/debug/debug.h:
+
+/usr/include/bits/getopt_core.h:
+
+/usr/include/bits/sigaction.h:
+
+/usr/include/errno.h:
+
+/usr/include/c++/15/cstddef:
+
+/usr/include/bits/getopt_posix.h:
+
+/usr/include/bits/types.h:
+
+/usr/include/c++/15/cstdio:
+
+/usr/include/bits/siginfo-arch.h:
+
+/usr/include/alsa/control.h:
+
+/usr/include/c++/15/bits/chrono_io.h:
 
 /usr/include/asm-generic/errno.h:
 
 /usr/include/alsa/hwdep.h:
 
-/usr/include/asm-generic/errno-base.h:
+/usr/include/wchar.h:
 
-/usr/include/bits/select.h:
+/usr/include/c++/15/sstream:
 
-/usr/include/asm-generic/int-ll64.h:
-
-/usr/include/alsa/ump_msg.h:
-
-/usr/include/bits/posix_opt.h:
-
-/usr/include/bits/atomic_wide_counter.h:
-
-/usr/include/alsa/input.h:
-
-/usr/lib64/crtn.o:
-
-/usr/include/c++/15/bits/ios_base.h:
-
-/usr/include/bits/types/struct_timeval.h:
-
-/usr/include/bits/stdio_lim.h:
-
-/usr/include/bits/types/__mbstate_t.h:
-
-/usr/include/c++/15/bits/locale_facets.tcc:
-
-/home/nickt/src/alsa/alsa-learning/cxx/src/hal/AudioDriver.hpp:
-
-/usr/include/alloca.h:
-
-/home/nickt/src/alsa/alsa-learning/cxx/tests/metronome_test.cpp:
+/usr/include/bits/posix1_lim.h:
 
 /usr/include/bits/floatn.h:
 
@@ -781,47 +775,27 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/c++/15/bits/refwrap.h:
 
-/usr/include/bits/types/__fpos64_t.h:
+/usr/include/c++/15/bits/memoryfwd.h:
 
-/home/nickt/src/alsa/alsa-learning/cxx/src/hal/alsa/AlsaDriver.hpp:
+/usr/include/alsa/seq.h:
 
-/usr/include/linux/falloc.h:
+/usr/include/bits/signal_ext.h:
 
-/usr/include/bits/unistd_ext.h:
+/usr/include/bits/types/mbstate_t.h:
 
-/usr/include/alsa/asoundef.h:
+/usr/include/alsa/input.h:
 
-/usr/include/c++/15/bits/move.h:
+/usr/lib64/crtn.o:
 
-/usr/include/alsa/rawmidi.h:
+/usr/include/c++/15/bits/ios_base.h:
 
-/usr/include/alsa/conf.h:
+/usr/include/c++/15/type_traits:
 
-/usr/include/alsa/pcm.h:
+/usr/include/alsa/seq_midi_event.h:
 
-/usr/include/c++/15/bits/sstream.tcc:
+/usr/include/bits/fp-logb.h:
 
-/usr/include/c++/15/cwctype:
-
-/usr/include/bits/types/struct_iovec.h:
-
-/usr/include/bits/timex.h:
-
-/usr/include/bits/errno.h:
-
-/usr/include/bits/types/error_t.h:
-
-/usr/include/c++/15/bits/ostream_insert.h:
-
-/home/nickt/src/alsa/alsa-learning/cxx/include/CInterface.h:
-
-/usr/include/alsa/control.h:
-
-/usr/include/c++/15/bits/chrono_io.h:
-
-/usr/include/libintl.h:
-
-/usr/include/bits/endianness.h:
+/usr/include/alsa/error.h:
 
 /usr/include/c++/15/x86_64-redhat-linux/bits/ctype_base.h:
 
@@ -829,19 +803,7 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/alsa/version.h:
 
-/usr/include/c++/15/pstl/glue_numeric_defs.h:
-
-/usr/include/bits/fp-logb.h:
-
-/usr/include/alsa/error.h:
-
 /usr/include/bits/confname.h:
-
-/usr/include/bits/types/__sigset_t.h:
-
-/usr/include/c++/15/type_traits:
-
-/usr/include/alsa/seq_midi_event.h:
 
 /usr/lib64/libasound.so:
 
@@ -849,23 +811,171 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/bits/stat.h:
 
+/usr/include/c++/15/string:
+
+/usr/include/alsa/output.h:
+
+/usr/include/bits/timesize.h:
+
+/usr/include/libintl.h:
+
+/usr/include/bits/endianness.h:
+
+/usr/include/c++/15/bits/move.h:
+
+/usr/include/alsa/pcm.h:
+
+/usr/include/bits/types/stack_t.h:
+
+/usr/include/c++/15/bits/sstream.tcc:
+
+/usr/include/alsa/asoundef.h:
+
+/usr/include/c++/15/bits/this_thread_sleep.h:
+
+/usr/include/bits/stdint-least.h:
+
+/home/nickt/src/alsa/alsa-learning/cxx/src/core/AudioSettings.hpp:
+
+/usr/include/bits/sigthread.h:
+
+/usr/include/c++/15/ext/concurrence.h:
+
+/usr/include/bits/floatn-common.h:
+
+/usr/include/c++/15/bits/exception_ptr.h:
+
+/usr/include/alloca.h:
+
+/home/nickt/src/alsa/alsa-learning/cxx/tests/TestHelper.hpp:
+
+/usr/include/sys/cdefs.h:
+
+/usr/include/c++/15/debug/assertions.h:
+
+/usr/include/c++/15/bits/std_thread.h:
+
+/usr/include/bits/posix_opt.h:
+
+/usr/include/bits/atomic_wide_counter.h:
+
+/usr/include/alsa/conf.h:
+
+/usr/include/alsa/rawmidi.h:
+
+/usr/include/bits/long-double.h:
+
+/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/Processor.hpp:
+
+/usr/include/bits/stdio_lim.h:
+
+/usr/include/bits/types/__mbstate_t.h:
+
+/usr/include/bits/timex.h:
+
+/usr/include/bits/errno.h:
+
+/usr/include/bits/mathcalls.h:
+
+/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/InputSource.hpp:
+
+/usr/include/c++/15/bits/functional_hash.h:
+
+/usr/lib64/libc.so:
+
+/usr/include/ctype.h:
+
+/home/nickt/src/alsa/alsa-learning/cxx/src/core/Logger.hpp:
+
+/usr/include/c++/15/tr1/ell_integral.tcc:
+
+/home/nickt/src/alsa/alsa-learning/cxx/src/core/MusicalClock.hpp:
+
+/usr/include/c++/15/bits/stl_algobase.h:
+
+/usr/include/alsa/asoundlib.h:
+
+/usr/include/bits/types/struct_sched_param.h:
+
+/usr/include/c++/15/bits/cxxabi_init_exception.h:
+
+/usr/include/bits/libm-simd-decl-stubs.h:
+
+/usr/include/c++/15/bits/ostream.h:
+
+/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/PerformanceProfiler.hpp:
+
+/usr/include/c++/15/bits/parse_numbers.h:
+
+/usr/include/bits/types/__fpos64_t.h:
+
+/home/nickt/src/alsa/alsa-learning/cxx/src/hal/alsa/AlsaDriver.hpp:
+
+/usr/lib/gcc/x86_64-redhat-linux/15/libgcc_s.so:
+
+/usr/include/c++/15/compare:
+
+/usr/include/c++/15/bits/cxxabi_forced.h:
+
+/usr/include/bits/fcntl-linux.h:
+
+/home/nickt/src/alsa/alsa-learning/cxx/tests/metronome_test.cpp:
+
+/usr/include/bits/struct_mutex.h:
+
+/usr/include/c++/15/x86_64-redhat-linux/bits/time_members.h:
+
+/usr/include/c++/15/tr1/riemann_zeta.tcc:
+
+/usr/include/bits/siginfo-consts-arch.h:
+
+/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/oscillator/SquareOscillatorProcessor.hpp:
+
+/usr/include/c++/15/vector:
+
+/usr/include/alsa/seqmid.h:
+
+/usr/include/bits/types/struct_timespec.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/15/include/stddef.h:
+
+/usr/include/c++/15/bits/localefwd.h:
+
+/usr/include/bits/types/__sigset_t.h:
+
+/usr/include/bits/select.h:
+
+/usr/include/asm-generic/int-ll64.h:
+
+/usr/include/alsa/ump_msg.h:
+
+/usr/include/c++/15/cerrno:
+
+/home/nickt/src/alsa/alsa-learning/cxx/src/core/VoiceContext.hpp:
+
+/usr/include/c++/15/cwctype:
+
+/usr/include/bits/types/struct_iovec.h:
+
+/usr/include/asm-generic/errno-base.h:
+
+/usr/include/alsa/global.h:
+
 /usr/include/asm-generic/bitsperlong.h:
 
 /usr/include/asm-generic/types.h:
 
-/usr/include/alsa/global.h:
-
-/usr/include/c++/15/bits/node_handle.h:
-
-/usr/include/bits/uintn-identity.h:
-
-/usr/include/bits/typesizes.h:
-
 /usr/include/c++/15/string_view:
+
+/home/nickt/src/alsa/alsa-learning/cxx/src/dsp/oscillator/PulseOscillatorProcessor.hpp:
 
 /home/nickt/src/alsa/alsa-learning/cxx/src/core/AudioBuffer.hpp:
 
 /usr/include/c++/15/bits/ostream.tcc:
+
+/usr/include/c++/15/pstl/pstl_config.h:
+
+/usr/include/bits/sigcontext.h:
 
 /usr/include/alsa/ump.h:
 
@@ -881,6 +991,16 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/c++/15/bits/charconv.h:
 
+/usr/include/bits/ss_flags.h:
+
+/usr/include/c++/15/cctype:
+
+/usr/include/bits/environments.h:
+
+/usr/include/bits/types/struct_FILE.h:
+
+/usr/include/c++/15/bits/node_handle.h:
+
 /usr/include/asm/types.h:
 
 /usr/include/c++/15/bits/monostate.h:
@@ -891,6 +1011,14 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/c++/15/bits/alloc_traits.h:
 
+/usr/include/c++/15/bits/stringfwd.h:
+
+/usr/include/c++/15/bits/erase_if.h:
+
+/usr/include/gnu/stubs-64.h:
+
+/usr/include/bits/types/__sigval_t.h:
+
 /usr/include/bits/stdint-uintn.h:
 
 /usr/include/asm/errno.h:
@@ -899,31 +1027,79 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/bits/endian.h:
 
+/usr/include/bits/byteswap.h:
+
 /usr/include/c++/15/typeinfo:
 
 /usr/include/bits/stdint-intn.h:
 
 /usr/include/bits/types/clockid_t.h:
 
-/usr/include/bits/byteswap.h:
+/usr/include/bits/types/cookie_io_functions_t.h:
 
-/usr/include/wchar.h:
+/usr/include/c++/15/bits/ostream_insert.h:
 
-/usr/include/c++/15/sstream:
+/usr/include/bits/types/error_t.h:
 
-/usr/include/bits/posix1_lim.h:
+/usr/include/bits/types/locale_t.h:
 
-/usr/include/c++/15/cerrno:
+/usr/lib/gcc/x86_64-redhat-linux/15/include/stdint.h:
 
-/usr/include/bits/types.h:
+/usr/include/linux/stddef.h:
 
-/usr/include/c++/15/bits/streambuf_iterator.h:
+/usr/include/c++/15/bits/locale_classes.h:
 
-/usr/include/c++/15/debug/debug.h:
+/usr/include/bits/types/__fpos_t.h:
 
-/usr/include/bits/getopt_core.h:
+/usr/include/asm/unistd_64.h:
 
-/usr/include/bits/libc-header-start.h:
+/usr/include/bits/types/sig_atomic_t.h:
+
+/usr/include/bits/typesizes.h:
+
+/usr/include/c++/15/numbers:
+
+/usr/include/bits/types/sigevent_t.h:
+
+/usr/include/bits/types/sigset_t.h:
+
+/usr/include/c++/15/cwchar:
+
+/usr/include/bits/types/struct_sigstack.h:
+
+/usr/include/bits/types/struct_timeval.h:
+
+/usr/include/c++/15/bits/unicode-data.h:
+
+/usr/include/c++/15/bits/ranges_cmp.h:
+
+/usr/include/c++/15/bits/string_view.tcc:
+
+/usr/include/bits/types/struct_tm.h:
+
+/usr/include/bits/uintn-identity.h:
+
+/usr/include/bits/math-vector.h:
+
+/usr/include/c++/15/bits/concept_check.h:
+
+/usr/include/bits/uio_lim.h:
+
+/usr/include/linux/falloc.h:
+
+/usr/include/bits/unistd_ext.h:
+
+bin/libaudio_engine.a:
+
+/usr/include/bits/waitflags.h:
+
+/usr/include/bits/semaphore.h:
+
+/usr/include/c++/15/bits/locale_conv.h:
+
+/home/nickt/src/alsa/alsa-learning/cxx/src/hal/AudioDriver.hpp:
+
+/usr/include/c++/15/bits/locale_facets.tcc:
 
 /usr/lib64/crti.o:
 
@@ -950,12 +1126,6 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 /usr/include/c++/15/bits/algorithmfwd.h:
 
 /usr/include/c++/15/bits/align.h:
-
-/usr/include/c++/15/bits/unicode.h:
-
-/usr/include/c++/15/iostream:
-
-/usr/include/c++/15/bits/vector.tcc:
 
 /usr/include/asm-generic/posix_types.h:
 
@@ -991,14 +1161,6 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/c++/15/bits/chrono.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/15/libgcc_s.so:
-
-/usr/include/bits/fcntl-linux.h:
-
-/usr/include/c++/15/compare:
-
-/usr/include/c++/15/bits/cxxabi_forced.h:
-
 /usr/include/bits/waitstatus.h:
 
 /usr/include/bits/wchar.h:
@@ -1010,6 +1172,8 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 /usr/include/c++/15/bits/stl_iterator_base_funcs.h:
 
 /usr/include/strings.h:
+
+/usr/include/signal.h:
 
 /usr/include/c++/15/ostream:
 
@@ -1029,18 +1193,6 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/c++/15/bits/predefined_ops.h:
 
-/usr/include/c++/15/ext/concurrence.h:
-
-/usr/include/bits/floatn-common.h:
-
-/usr/include/c++/15/bits/exception_ptr.h:
-
-/usr/include/errno.h:
-
-/usr/include/bits/getopt_posix.h:
-
-/usr/include/c++/15/cstddef:
-
 /usr/include/c++/15/x86_64-redhat-linux/bits/os_defines.h:
 
 /usr/include/c++/15/bits/stl_vector.h:
@@ -1048,8 +1200,6 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 /usr/include/c++/15/bits/functexcept.h:
 
 /usr/include/c++/15/bits/iterator_concepts.h:
-
-/usr/include/c++/15/bits/functional_hash.h:
 
 /lib64/libm.so.6:
 
@@ -1071,10 +1221,6 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/c++/15/bits/new_allocator.h:
 
-/usr/include/bits/struct_rwlock.h:
-
-/usr/include/c++/15/bits/uses_allocator.h:
-
 /usr/include/c++/15/bits/invoke.h:
 
 /usr/include/c++/15/bits/allocated_ptr.h:
@@ -1088,10 +1234,6 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 /usr/include/c++/15/bits/requires_hosted.h:
 
 /usr/include/c++/15/bits/locale_facets_nonio.h:
-
-/usr/include/c++/15/bits/ranges_cmp.h:
-
-/usr/include/c++/15/bits/unicode-data.h:
 
 /usr/include/c++/15/bits/locale_facets_nonio.tcc:
 
@@ -1107,8 +1249,6 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/c++/15/bits/ranges_base.h:
 
-/usr/include/c++/15/bits/parse_numbers.h:
-
 /usr/include/bits/local_lim.h:
 
 /usr/include/c++/15/bits/postypes.h:
@@ -1121,27 +1261,13 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/c++/15/bits/ranges_uninitialized.h:
 
-/usr/include/bits/types/struct_FILE.h:
-
-/usr/include/bits/environments.h:
-
-/usr/include/c++/15/cctype:
-
 /usr/include/c++/15/bits/shared_ptr.h:
-
-/usr/include/c++/15/bits/erase_if.h:
-
-/usr/include/c++/15/bits/stringfwd.h:
 
 /usr/include/c++/15/bits/shared_ptr_atomic.h:
 
 /usr/include/c++/15/bits/stl_uninitialized.h:
 
 /usr/include/c++/15/bits/shared_ptr_base.h:
-
-/usr/include/bits/stdint-least.h:
-
-/usr/include/c++/15/bits/this_thread_sleep.h:
 
 /usr/include/c++/15/backward/binders.h:
 
@@ -1155,19 +1281,7 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 
 /usr/include/c++/15/bits/std_function.h:
 
-/usr/include/c++/15/concepts:
-
-/usr/include/sys/cdefs.h:
-
-/usr/include/c++/15/debug/assertions.h:
-
-/usr/include/c++/15/bits/std_thread.h:
-
-/usr/include/c++/15/charconv:
-
-/usr/include/c++/15/bits/stl_algobase.h:
-
-/usr/include/c++/15/clocale:
+/usr/include/bits/types/sigval_t.h:
 
 /usr/include/c++/15/bits/stl_pair.h:
 
@@ -1186,23 +1300,3 @@ CMakeFiles/metronome_test.dir/tests/metronome_test.cpp.o:
 /usr/lib/gcc/x86_64-redhat-linux/15/crtend.o:
 
 /usr/include/c++/15/bits/stl_iterator_base_types.h:
-
-/usr/include/c++/15/bits/stl_tempbuf.h:
-
-/usr/include/bits/types/struct_tm.h:
-
-/usr/include/c++/15/bits/string_view.tcc:
-
-/usr/include/c++/15/bits/uniform_int_dist.h:
-
-/usr/include/c++/15/bits/unique_ptr.h:
-
-/usr/include/c++/15/bits/uses_allocator_args.h:
-
-/usr/include/c++/15/climits:
-
-/usr/include/semaphore.h:
-
-/usr/include/c++/15/cmath:
-
-/usr/include/c++/15/cstdint:

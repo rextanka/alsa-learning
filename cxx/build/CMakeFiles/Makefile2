@@ -64,6 +64,7 @@ CMAKE_BINARY_DIR = /home/nickt/src/alsa/alsa-learning/cxx/build
 
 # The main recursive "all" target.
 all: CMakeFiles/audio_engine.dir/all
+all: CMakeFiles/audio_engine_shared.dir/all
 all: CMakeFiles/unit_tests.dir/all
 all: CMakeFiles/integration_tests.dir/all
 all: CMakeFiles/metronome_test.dir/all
@@ -80,6 +81,7 @@ all: _deps/googletest-build/all
 
 # The main recursive "codegen" target.
 codegen: CMakeFiles/audio_engine.dir/codegen
+codegen: CMakeFiles/audio_engine_shared.dir/codegen
 codegen: CMakeFiles/unit_tests.dir/codegen
 codegen: CMakeFiles/integration_tests.dir/codegen
 codegen: CMakeFiles/metronome_test.dir/codegen
@@ -100,6 +102,7 @@ preinstall: _deps/googletest-build/preinstall
 
 # The main recursive "clean" target.
 clean: CMakeFiles/audio_engine.dir/clean
+clean: CMakeFiles/audio_engine_shared.dir/clean
 clean: CMakeFiles/unit_tests.dir/clean
 clean: CMakeFiles/integration_tests.dir/clean
 clean: CMakeFiles/metronome_test.dir/clean
@@ -213,6 +216,38 @@ CMakeFiles/audio_engine.dir/clean:
 .PHONY : CMakeFiles/audio_engine.dir/clean
 
 #=============================================================================
+# Target rules for target CMakeFiles/audio_engine_shared.dir
+
+# All Build rule for target.
+CMakeFiles/audio_engine_shared.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=11,12,13,14,15 "Built target audio_engine_shared"
+.PHONY : CMakeFiles/audio_engine_shared.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/audio_engine_shared.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles 5
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/audio_engine_shared.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles 0
+.PHONY : CMakeFiles/audio_engine_shared.dir/rule
+
+# Convenience name for target.
+audio_engine_shared: CMakeFiles/audio_engine_shared.dir/rule
+.PHONY : audio_engine_shared
+
+# codegen rule for target.
+CMakeFiles/audio_engine_shared.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=11,12,13,14,15 "Finished codegen for target audio_engine_shared"
+.PHONY : CMakeFiles/audio_engine_shared.dir/codegen
+
+# clean rule for target.
+CMakeFiles/audio_engine_shared.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/clean
+.PHONY : CMakeFiles/audio_engine_shared.dir/clean
+
+#=============================================================================
 # Target rules for target CMakeFiles/unit_tests.dir
 
 # All Build rule for target.
@@ -221,7 +256,7 @@ CMakeFiles/unit_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtes
 CMakeFiles/unit_tests.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=35,36,37,38,39,40 "Built target unit_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=40,41,42,43,44,45 "Built target unit_tests"
 .PHONY : CMakeFiles/unit_tests.dir/all
 
 # Build rule for subdir invocation for target.
@@ -238,7 +273,7 @@ unit_tests: CMakeFiles/unit_tests.dir/rule
 # codegen rule for target.
 CMakeFiles/unit_tests.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=35,36,37,38,39,40 "Finished codegen for target unit_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=40,41,42,43,44,45 "Finished codegen for target unit_tests"
 .PHONY : CMakeFiles/unit_tests.dir/codegen
 
 # clean rule for target.
@@ -255,7 +290,7 @@ CMakeFiles/integration_tests.dir/all: _deps/googletest-build/googletest/CMakeFil
 CMakeFiles/integration_tests.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=23,24 "Built target integration_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=28,29 "Built target integration_tests"
 .PHONY : CMakeFiles/integration_tests.dir/all
 
 # Build rule for subdir invocation for target.
@@ -272,7 +307,7 @@ integration_tests: CMakeFiles/integration_tests.dir/rule
 # codegen rule for target.
 CMakeFiles/integration_tests.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=23,24 "Finished codegen for target integration_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=28,29 "Finished codegen for target integration_tests"
 .PHONY : CMakeFiles/integration_tests.dir/codegen
 
 # clean rule for target.
@@ -287,7 +322,7 @@ CMakeFiles/integration_tests.dir/clean:
 CMakeFiles/metronome_test.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=25,26 "Built target metronome_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=30,31 "Built target metronome_test"
 .PHONY : CMakeFiles/metronome_test.dir/all
 
 # Build rule for subdir invocation for target.
@@ -304,7 +339,7 @@ metronome_test: CMakeFiles/metronome_test.dir/rule
 # codegen rule for target.
 CMakeFiles/metronome_test.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=25,26 "Finished codegen for target metronome_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=30,31 "Finished codegen for target metronome_test"
 .PHONY : CMakeFiles/metronome_test.dir/codegen
 
 # clean rule for target.
@@ -319,7 +354,7 @@ CMakeFiles/metronome_test.dir/clean:
 CMakeFiles/processor_check.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/processor_check.dir/build.make CMakeFiles/processor_check.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/processor_check.dir/build.make CMakeFiles/processor_check.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=29,30 "Built target processor_check"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=34,35 "Built target processor_check"
 .PHONY : CMakeFiles/processor_check.dir/all
 
 # Build rule for subdir invocation for target.
@@ -336,7 +371,7 @@ processor_check: CMakeFiles/processor_check.dir/rule
 # codegen rule for target.
 CMakeFiles/processor_check.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/processor_check.dir/build.make CMakeFiles/processor_check.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=29,30 "Finished codegen for target processor_check"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=34,35 "Finished codegen for target processor_check"
 .PHONY : CMakeFiles/processor_check.dir/codegen
 
 # clean rule for target.
@@ -383,7 +418,7 @@ CMakeFiles/audio_check.dir/clean:
 CMakeFiles/engine_tests.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=11,12 "Built target engine_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=16,17 "Built target engine_tests"
 .PHONY : CMakeFiles/engine_tests.dir/all
 
 # Build rule for subdir invocation for target.
@@ -400,7 +435,7 @@ engine_tests: CMakeFiles/engine_tests.dir/rule
 # codegen rule for target.
 CMakeFiles/engine_tests.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=11,12 "Finished codegen for target engine_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=16,17 "Finished codegen for target engine_tests"
 .PHONY : CMakeFiles/engine_tests.dir/codegen
 
 # clean rule for target.
@@ -415,7 +450,7 @@ CMakeFiles/engine_tests.dir/clean:
 CMakeFiles/filter_tests.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=13,14 "Built target filter_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=18,19 "Built target filter_tests"
 .PHONY : CMakeFiles/filter_tests.dir/all
 
 # Build rule for subdir invocation for target.
@@ -432,7 +467,7 @@ filter_tests: CMakeFiles/filter_tests.dir/rule
 # codegen rule for target.
 CMakeFiles/filter_tests.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=13,14 "Finished codegen for target filter_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=18,19 "Finished codegen for target filter_tests"
 .PHONY : CMakeFiles/filter_tests.dir/codegen
 
 # clean rule for target.
@@ -447,7 +482,7 @@ CMakeFiles/filter_tests.dir/clean:
 CMakeFiles/stereo_poly_test.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=31,32 "Built target stereo_poly_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=36,37 "Built target stereo_poly_test"
 .PHONY : CMakeFiles/stereo_poly_test.dir/all
 
 # Build rule for subdir invocation for target.
@@ -464,7 +499,7 @@ stereo_poly_test: CMakeFiles/stereo_poly_test.dir/rule
 # codegen rule for target.
 CMakeFiles/stereo_poly_test.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=31,32 "Finished codegen for target stereo_poly_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=36,37 "Finished codegen for target stereo_poly_test"
 .PHONY : CMakeFiles/stereo_poly_test.dir/codegen
 
 # clean rule for target.
@@ -479,7 +514,7 @@ CMakeFiles/stereo_poly_test.dir/clean:
 CMakeFiles/phase10_tests.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=27,28 "Built target phase10_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=32,33 "Built target phase10_tests"
 .PHONY : CMakeFiles/phase10_tests.dir/all
 
 # Build rule for subdir invocation for target.
@@ -496,7 +531,7 @@ phase10_tests: CMakeFiles/phase10_tests.dir/rule
 # codegen rule for target.
 CMakeFiles/phase10_tests.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/phase10_tests.dir/build.make CMakeFiles/phase10_tests.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=27,28 "Finished codegen for target phase10_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=32,33 "Finished codegen for target phase10_tests"
 .PHONY : CMakeFiles/phase10_tests.dir/codegen
 
 # clean rule for target.
@@ -511,7 +546,7 @@ CMakeFiles/phase10_tests.dir/clean:
 CMakeFiles/timing_validation.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=33,34 "Built target timing_validation"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=38,39 "Built target timing_validation"
 .PHONY : CMakeFiles/timing_validation.dir/all
 
 # Build rule for subdir invocation for target.
@@ -528,7 +563,7 @@ timing_validation: CMakeFiles/timing_validation.dir/rule
 # codegen rule for target.
 CMakeFiles/timing_validation.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/timing_validation.dir/build.make CMakeFiles/timing_validation.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=33,34 "Finished codegen for target timing_validation"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=38,39 "Finished codegen for target timing_validation"
 .PHONY : CMakeFiles/timing_validation.dir/codegen
 
 # clean rule for target.
@@ -575,7 +610,7 @@ CMakeFiles/alsa_check.dir/clean:
 _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/depend
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=15,16 "Built target gmock"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=20,21 "Built target gmock"
 .PHONY : _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/all
 
 # Build rule for subdir invocation for target.
@@ -592,7 +627,7 @@ gmock: _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/rule
 # codegen rule for target.
 _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=15,16 "Finished codegen for target gmock"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=20,21 "Finished codegen for target gmock"
 .PHONY : _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/codegen
 
 # clean rule for target.
@@ -608,7 +643,7 @@ _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/all: _deps/googletes
 _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/depend
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=17,18 "Built target gmock_main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=22,23 "Built target gmock_main"
 .PHONY : _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/all
 
 # Build rule for subdir invocation for target.
@@ -625,7 +660,7 @@ gmock_main: _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/rule
 # codegen rule for target.
 _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=17,18 "Finished codegen for target gmock_main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=22,23 "Finished codegen for target gmock_main"
 .PHONY : _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/codegen
 
 # clean rule for target.
@@ -640,7 +675,7 @@ _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/clean:
 _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all:
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest.dir/depend
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=19,20 "Built target gtest"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=24,25 "Built target gtest"
 .PHONY : _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 
 # Build rule for subdir invocation for target.
@@ -657,7 +692,7 @@ gtest: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/rule
 # codegen rule for target.
 _deps/googletest-build/googletest/CMakeFiles/gtest.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=19,20 "Finished codegen for target gtest"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=24,25 "Finished codegen for target gtest"
 .PHONY : _deps/googletest-build/googletest/CMakeFiles/gtest.dir/codegen
 
 # clean rule for target.
@@ -672,7 +707,7 @@ _deps/googletest-build/googletest/CMakeFiles/gtest.dir/clean:
 _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/depend
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=21,22 "Built target gtest_main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=26,27 "Built target gtest_main"
 .PHONY : _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all
 
 # Build rule for subdir invocation for target.
@@ -689,7 +724,7 @@ gtest_main: _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/rule
 # codegen rule for target.
 _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=21,22 "Finished codegen for target gtest_main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/nickt/src/alsa/alsa-learning/cxx/build/CMakeFiles --progress-num=26,27 "Finished codegen for target gtest_main"
 .PHONY : _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/codegen
 
 # clean rule for target.
