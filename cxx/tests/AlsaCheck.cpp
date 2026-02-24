@@ -31,21 +31,18 @@ int main() {
     // while the audio driver is running.
     auto mono_buffer = std::make_shared<std::vector<float>>(block_size);
 
-    // Capture by reference for RT-safety (shared_ptr copy is okay but let's be explicit)
+    // RT-Safe callback: No heap allocations or hidden gaps.
     driver->set_interleaved_callback([sine, mono_buffer](std::span<float> output) {
-        // 1. Pull mono samples from oscillator into pre-allocated scratch buffer
-        // Using a fixed size span from the pre-allocated vector
+        // AlsaDriver block_size is 512, stereo output is 1024.
+        // mono_buffer is also 512.
         std::span<float> mono_span(mono_buffer->data(), mono_buffer->size());
-        
-        // Ensure we only process what fits in the output
-        size_t frames_to_process = std::min(mono_span.size(), output.size() / 2);
-        std::span<float> active_mono = mono_span.subspan(0, frames_to_process);
-        std::span<float> active_output = output.subspan(0, frames_to_process * 2);
 
-        sine->pull(active_mono);
+        // Fill exactly 512 mono samples
+        sine->pull(mono_span);
 
-        // 2. Interleave mono to stereo using the formal processor node
-        audio::MonoToStereoProcessor::process(active_mono, active_output);
+        // Interleave exactly 512 mono samples into 1024 stereo samples.
+        // This MUST cover the full output span to avoid clicking gaps.
+        audio::MonoToStereoProcessor::process(mono_span, output);
     });
 
     std::cout << "Starting ALSA driver (440Hz Sine Wave)..." << std::endl;
