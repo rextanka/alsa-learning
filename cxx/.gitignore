@@ -1,0 +1,13 @@
+# C++ Build Artifacts
+build/
+bin/
+_deps/
+
+# GoogleTest
+Testing/
+
+# OS/IDE Artifacts
+.DS_Store
+.vscode/
+.idea/
+*.swp

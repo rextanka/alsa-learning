@@ -21,16 +21,20 @@ To maintain the high reliability required for professional-grade audio software,
 Create a portable, lightweight **'Musical Toolbox'** for creative exploration and **'Sound Toy'** development. The library is designed to be approachable and educational, allowing developers to easily build small musical programs and understand core DSP concepts.
 
 ### Target Platforms
-- **macOS**: Tahoe 26.3+
-- **Windows**: 11
-- **Linux**: Fedora 42+, Ubuntu 22.04+
+- **macOS**: Tahoe 26.3+ (CoreAudio)
+- **Linux**: Fedora 42+ (ALSA)
+- **Windows**: 11 (WASAPI)
 
 ### Technical Pillars
 - **Pull-Based Heartbeat**: Sample-accurate timing driven by the `AudioDriver`. Output pulls from the graph; processors pull from their inputs.
+- **Modular Routing Vision**: Moving from fixed-function blocks to a dynamic graph of:
+    - **Sources**: Oscillators, Wavetables, File Players.
+    - **Processors**: Filters, Envelopes, FX (Reverb, Delay).
+    - **Sinks**: Audio Output (HAL), Non-Intrusive Loggers, Visualizers.
 - **Mono-until-Stereo**: Keep signal paths mono for CPU efficiency until spatial effects or stereo-specific processing (panners/reverb) are required.
 - **MPE & Microtonality**: Per-voice independence with a modular `TuningSystem` for cross-platform musical flexibility.
-- **Centralized Zipper-Free Control**: A dedicated `ParameterManager` handles all ramping and smoothing "magic," hiding complexity from the toy developer and ensuring artifact-free parameter updates.
-- **HAL-Only Interaction**: High-level DSP logic and tests MUST interact ONLY with the `hal::AudioDriver` base class. Platform-specific headers (e.g., `AlsaDriver.hpp`, `CoreAudioDriver.hpp`) are forbidden in `src/dsp/` and `tests/` except within dedicated factory/instantiation blocks.
+- **Centralized Zipper-Free Control**: A dedicated `ParameterManager` handles all ramping and smoothing "magic."
+- **HAL-Only Interaction**: High-level DSP logic and tests interact ONLY with the `hal::AudioDriver` base class. Platform parity is maintained by swapping the HAL implementation (ALSA vs. CoreAudio) while keeping core C++ logic identical.
 
 ---
 
@@ -63,35 +67,45 @@ Create a portable, lightweight **'Musical Toolbox'** for creative exploration an
 
 ---
 
-## File Structure (New)
+## File Structure (Finalized)
 
 ```
 cxx/
 ├── include/
-│   └── CInterface.h           # Public C API
+│   └── CInterface.h           # Public C API for Cross-Platform Interop
 ├── src/
 │   ├── bridge/
-│   │   └── AudioBridge.cpp    # C-to-C++ implementation
+│   │   └── AudioBridge.cpp    # C-to-C++ implementation (Bridge)
 │   ├── core/
 │   │   ├── Engine.hpp         # High-level engine (planned)
-│   │   ├── VoiceManager.hpp   # Polyphony & stealing
-│   │   ├── Voice.hpp          # Per-voice graph
-│   │   ├── MusicalClock.hpp   # Sample-accurate timing
+│   │   ├── VoiceManager.hpp   # Polyphony & Voice Stealing
+│   │   ├── Voice.hpp          # Per-voice graph container
+│   │   ├── MusicalClock.hpp   # Sample-accurate timing logic
+│   │   ├── Logger.hpp         # RT-Safe Non-Intrusive Logging
 │   │   └── AudioBuffer.hpp    # Multi-channel buffer handling
 │   ├── dsp/
-│   │   ├── Processor.hpp      # Base processor class
+│   │   ├── Processor.hpp      # Base processor class (NVI Pattern)
 │   │   ├── InputSource.hpp    # Pull interface
-│   │   ├── oscillator/        # Sine, Saw, Square, etc.
+│   │   ├── oscillator/        # Sine, Saw, Pulse, Wavetable
 │   │   ├── envelope/          # ADSR, AD
-│   │   └── filter/            # Moog, Diode
+│   │   └── filter/            # Moog, Diode Ladder
 │   └── hal/
-│       ├── AudioDriver.hpp    # HAL interface
-│       ├── alsa/              # Linux implementation
+│       ├── AudioDriver.hpp    # Cross-platform HAL interface
+│       ├── alsa/              # Linux/Fedora implementation
 │       └── coreaudio/         # macOS implementation
 └── tests/
-    ├── metronome_test.cpp     # Timing validation
-    └── (GTest files...)       # Upcoming Phase 11
+    ├── unit/                  # GTest-based C++ logic tests
+    └── integration/           # Bridge and Hardware validation tests
 ```
+
+---
+
+## Cross-Platform Strategy
+
+The project maintains a strict separation between **Platform HAL** and **Core DSP**. 
+- **Fedora (ALSA)**: Primary development environment for high-priority RT-hardening.
+- **macOS (CoreAudio)**: Target for Swift/Bridge interop and creative UI development.
+- **Portability Guard**: The `CInterface` ensures that regardless of the underlying OS or HAL, the binary contract remains stable for host applications (Swift, .NET, or C++ GUIs).
 
 ---
 
@@ -99,15 +113,13 @@ cxx/
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1-10  | Core DSP, Factory, Polyphony, Musical Clock, Metronome Validation | 100% Complete |
-| 11    | **Dual-Layer Testing**: Established GoogleTest (gtest) for internal C++ logic and C-API integration tests for the bridge. | 100% Complete |
-| 11.5  | **ALSA Real-Time Hardening**: Implement SCHED_FIFO, priority 80, and PROC_US timing telemetry to eliminate breakups at 512-sample buffers. | In Progress |
-| 12    | **MIDI Integration**: MIDI HAL for Linux/Mac/Win with CC mapping and SysEx hooks. | Planned |
-| 13    | **The Stereo Mixer & Bus**: Summing mono sources with panning to stereo output. | Planned |
-| 14    | **Spatial & Stereo FX**: Reverb, Chorus, Flanger, and Delay with mono/stereo support. | Planned |
-| 15    | **Non-Intrusive Logger**: Implemented a lock-free, real-time safe logger to replace `printf` in audio threads. | 100% Complete |
-| 16    | **Unit & Integration Strategy**: Detail the plan for GUnit vs. standalone API tests. | 100% Complete |
-| 17    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation to maximize polyphony. | Planned |
+| 1-11  | Core DSP, Factory, Polyphony, Musical Clock, Dual-Layer Testing | 100% Complete |
+| 12    | **MIDI Integration**: Creation of `MidiHAL` and `MidiParser` feeding into `VoiceManager`. | Planned |
+| 13    | **The Stereo Mixer & Bus**: Summing mono sources with panning to stereo output. | 100% Complete |
+| 14    | **Spatial & Stereo FX**: Reverb, Chorus, Flanger, and Delay. | Planned |
+| 15    | **Non-Intrusive Logger**: RT-safe lock-free logging. | 100% Complete |
+| 16    | **Unit & Integration Strategy**: GUnit vs. standalone API tests. | 100% Complete |
+| 17    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation. | Planned |
 
 ---
 

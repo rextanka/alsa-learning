@@ -8,12 +8,11 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/nickt/src/alsa/alsa-learning/cxx/tests/unit/test_clock_logic.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o.d"
-  "/home/nickt/src/alsa/alsa-learning/cxx/tests/unit/test_envelope_stages.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o.d"
-  "/home/nickt/src/alsa/alsa-learning/cxx/tests/unit/test_logger.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o.d"
-  "/home/nickt/src/alsa/alsa-learning/cxx/tests/unit/test_oscillator.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.o.d"
-  "/home/nickt/src/alsa/alsa-learning/cxx/tests/unit/test_voice_stress.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o.d"
-  "" "bin/unit_tests" "gcc" "CMakeFiles/unit_tests.dir/link.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_clock_logic.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_envelope_stages.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_logger.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_oscillator.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_voice_stress.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

@@ -135,52 +135,19 @@ if(BUILD_TESTING)
         tests/unit/test_voice_stress.cpp
         tests/unit/test_envelope_stages.cpp
     )
+    target_include_directories(unit_tests PRIVATE tests/unit tests)
     target_link_libraries(unit_tests PRIVATE audio_engine gtest_main)
     add_test(NAME unit_tests COMMAND unit_tests)
 
     # --- Integration Tests (C API) ---
     add_executable(integration_tests
         tests/integration/test_bridge.cpp
+        tests/integration/metronome_test.cpp
     )
     # Note: We link against audio_engine but we ONLY include CInterface.h in the source
+    target_include_directories(integration_tests PRIVATE tests)
     target_link_libraries(integration_tests PRIVATE audio_engine gtest_main)
     add_test(NAME integration_tests COMMAND integration_tests)
-endif()
-
-# --- Legacy Test Executables ---
-
-# 1. Metronome Validation Test (Phase 10)
-add_executable(metronome_test tests/metronome_test.cpp)
-target_link_libraries(metronome_test PRIVATE audio_engine)
-
-# 2. Legacy Processor Check (formerly main.cpp)
-add_executable(processor_check tests/processor_check.cpp)
-target_link_libraries(processor_check PRIVATE audio_engine)
-
-# 3. Basic Audio Driver Check
-add_executable(audio_check tests/audio_check.cpp)
-target_link_libraries(audio_check PRIVATE audio_engine)
-
-# Other existing tests
-add_executable(engine_tests tests/EngineTests.cpp)
-target_link_libraries(engine_tests PRIVATE audio_engine)
-
-add_executable(filter_tests tests/FilterTests.cpp)
-target_link_libraries(filter_tests PRIVATE audio_engine)
-
-add_executable(stereo_poly_test tests/StereoPolyTest.cpp)
-target_link_libraries(stereo_poly_test PRIVATE audio_engine)
-
-add_executable(phase10_tests tests/Phase10Tests.cpp)
-target_link_libraries(phase10_tests PRIVATE audio_engine)
-
-add_executable(timing_validation tests/TimingValidation.cpp)
-target_link_libraries(timing_validation PRIVATE audio_engine)
-
-# ALSA Check utility (if UNIX)
-if(UNIX AND NOT APPLE)
-    add_executable(alsa_check tests/AlsaCheck.cpp src/hal/alsa/AlsaDriver.cpp)
-    target_link_libraries(alsa_check ${PLATFORM_LIBS})
 endif()
 
 message(STATUS "Build output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")

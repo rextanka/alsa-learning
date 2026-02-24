@@ -1,27 +1,27 @@
 # Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
-# file Copyright.txt or https://cmake.org/licensing for details.
+# file LICENSE.rst or https://cmake.org/licensing for details.
 
 cmake_minimum_required(VERSION ${CMAKE_VERSION}) # this file comes with cmake
 
 # If CMAKE_DISABLE_SOURCE_CHANGES is set to true and the source directory is an
 # existing directory in our source tree, calling file(MAKE_DIRECTORY) on it
 # would cause a fatal error, even though it would be a no-op.
-if(NOT EXISTS "/home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-src")
-  file(MAKE_DIRECTORY "/home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-src")
+if(NOT EXISTS "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-src")
+  file(MAKE_DIRECTORY "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-src")
 endif()
 file(MAKE_DIRECTORY
-  "/home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-build"
-  "/home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-subbuild/googletest-populate-prefix"
-  "/home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-subbuild/googletest-populate-prefix/tmp"
-  "/home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp"
-  "/home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-subbuild/googletest-populate-prefix/src"
-  "/home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-build"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-subbuild/googletest-populate-prefix"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-subbuild/googletest-populate-prefix/tmp"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-subbuild/googletest-populate-prefix/src"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp"
 )
 
 set(configSubDirs )
 foreach(subDir IN LISTS configSubDirs)
-    file(MAKE_DIRECTORY "/home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/${subDir}")
+    file(MAKE_DIRECTORY "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/${subDir}")
 endforeach()
 if(cfgdir)
-  file(MAKE_DIRECTORY "/home/nickt/src/alsa/alsa-learning/cxx/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp${cfgdir}") # cfgdir has leading slash
+  file(MAKE_DIRECTORY "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp${cfgdir}") # cfgdir has leading slash
 endif()
