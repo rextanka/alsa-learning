@@ -28,7 +28,12 @@ int main() {
     auto sine = std::make_shared<audio::SineOscillatorProcessor>(sample_rate);
     sine->set_frequency(440.0f); // A4
 
+    // --- Pitch Accuracy: Get the hardware-negotiated sample rate before starting if possible.
+    // We sync here to avoid mid-stream updates.
+    sine->set_sample_rate(sample_rate);
+
     // RT-Safe: Pre-allocate mono scratch buffer to a safe maximum to avoid runtime resizes.
+    // 2048 frames is plenty for most hardware.
     const size_t max_frames = 2048;
     auto mono_buffer = std::make_shared<std::vector<float>>(max_frames, 0.0f);
 
@@ -47,23 +52,20 @@ int main() {
         audio::MonoToStereoProcessor::process(mono_span, output);
     });
 
-    // --- Pitch Accuracy: Get the hardware-negotiated sample rate before starting if possible,
-    // or sync immediately before start.
-    // For this test, we'll sync with the driver's configured rate.
-    sine->set_sample_rate(sample_rate);
-
     std::cout << "Starting ALSA driver (440Hz Sine Wave)..." << std::endl;
     if (!driver->start()) {
         std::cerr << "Failed to start ALSA driver." << std::endl;
         return 1;
     }
 
-    // Dynamic Stabilization: Sync with Actual Hardware (after start)
+    // Dynamic Stabilization: Audit hardware parameters
     const int actual_rate = audio::AudioSettings::instance().sample_rate;
     const int actual_block = audio::AudioSettings::instance().block_size;
     
-    // Re-sync pitch if hardware forced a different rate
-    sine->set_sample_rate(actual_rate);
+    // Audit check: If the hardware rate changed, we update only once here.
+    if (actual_rate != sample_rate) {
+        sine->set_sample_rate(actual_rate);
+    }
 
     std::cout << "Driver running for 3 seconds..." << std::endl;
     std::cout << "Actual Sample Rate: " << actual_rate << " Hz" << std::endl;

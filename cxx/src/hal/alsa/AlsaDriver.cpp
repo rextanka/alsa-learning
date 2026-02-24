@@ -139,9 +139,11 @@ bool AlsaDriver::setup_pcm() {
     
     // Determine byte size per frame for interleaved buffer
     snd_pcm_format_t format;
-    snd_pcm_hw_params_get_format(hw_params, &format); // This might not work after free, but we know the formats.
-    // Re-query format if needed, but we'll assume the one we set.
+    snd_pcm_hw_params_get_format(hw_params, &format);
+    std::string format_msg = "Final Negotiated Format: " + std::to_string(format);
+    audio::AudioLogger::instance().log_message("ALSA", format_msg.c_str());
 
+    // Zero out on creation
     interleaved_buffer_.assign(block_size_ * num_channels_ * 4, 0); // Use 4 bytes per sample (S32)
 
     if ((err = snd_pcm_prepare(pcm_handle_)) < 0) {
@@ -195,11 +197,13 @@ void AlsaDriver::thread_loop() {
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
             audio::AudioLogger::instance().log_event("PROC_US", static_cast<float>(duration));
 
-            // Convert to S32_LE
+            // Convert to S32_LE with strict clamping to prevent wrap-around
             int32_t* s32_ptr = reinterpret_cast<int32_t*>(interleaved_buffer_.data());
             for (size_t i = 0; i < float_interleaved.size(); ++i) {
                 float sample = std::clamp(float_interleaved[i], -1.0f, 1.0f);
-                s32_ptr[i] = static_cast<int32_t>(sample * 2147483647.0f);
+                // Clamp to prevent integer overflow before casting
+                double scaled = std::clamp(static_cast<double>(sample) * 2147483647.0, -2147483648.0, 2147483647.0);
+                s32_ptr[i] = static_cast<int32_t>(scaled);
             }
 
             int err = snd_pcm_writei(pcm_handle_, interleaved_buffer_.data(), block_size_);
@@ -224,15 +228,17 @@ void AlsaDriver::thread_loop() {
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
             audio::AudioLogger::instance().log_event("PROC_US", static_cast<float>(duration));
 
-            // Interleave and Convert to S32_LE (High Res)
+            // Interleave and Convert to S32_LE (High Res) with strict clamping
             int32_t* s32_ptr = reinterpret_cast<int32_t*>(interleaved_buffer_.data());
             for (size_t i = 0; i < left_buffer_.size(); ++i) {
                 float left = std::clamp(left_buffer_[i], -1.0f, 1.0f);
                 float right = std::clamp(right_buffer_[i], -1.0f, 1.0f);
                 
-                s32_ptr[i * num_channels_ + 0] = static_cast<int32_t>(left * 2147483647.0f);
+                double scaled_l = std::clamp(static_cast<double>(left) * 2147483647.0, -2147483648.0, 2147483647.0);
+                s32_ptr[i * num_channels_ + 0] = static_cast<int32_t>(scaled_l);
                 if (num_channels_ > 1) {
-                    s32_ptr[i * num_channels_ + 1] = static_cast<int32_t>(right * 2147483647.0f);
+                    double scaled_r = std::clamp(static_cast<double>(right) * 2147483647.0, -2147483648.0, 2147483647.0);
+                    s32_ptr[i * num_channels_ + 1] = static_cast<int32_t>(scaled_r);
                 }
             }
 
