@@ -328,6 +328,19 @@ TimingValidation/fast:
 .PHONY : TimingValidation/fast
 
 #=============================================================================
+# Target rules for targets named BachOrgan
+
+# Build rule for target.
+BachOrgan: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 BachOrgan
+.PHONY : BachOrgan
+
+# fast build rule for target.
+BachOrgan/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/BachOrgan.dir/build.make CMakeFiles/BachOrgan.dir/build
+.PHONY : BachOrgan/fast
+
+#=============================================================================
 # Target rules for targets named gmock
 
 # Build rule for target.
@@ -513,6 +526,30 @@ src/hal/coreaudio/CoreAudioDriver.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/hal/coreaudio/CoreAudioDriver.cpp.s
 .PHONY : src/hal/coreaudio/CoreAudioDriver.cpp.s
+
+tests/functional/BachOrgan.o: tests/functional/BachOrgan.cpp.o
+.PHONY : tests/functional/BachOrgan.o
+
+# target to build an object file
+tests/functional/BachOrgan.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/BachOrgan.dir/build.make CMakeFiles/BachOrgan.dir/tests/functional/BachOrgan.cpp.o
+.PHONY : tests/functional/BachOrgan.cpp.o
+
+tests/functional/BachOrgan.i: tests/functional/BachOrgan.cpp.i
+.PHONY : tests/functional/BachOrgan.i
+
+# target to preprocess a source file
+tests/functional/BachOrgan.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/BachOrgan.dir/build.make CMakeFiles/BachOrgan.dir/tests/functional/BachOrgan.cpp.i
+.PHONY : tests/functional/BachOrgan.cpp.i
+
+tests/functional/BachOrgan.s: tests/functional/BachOrgan.cpp.s
+.PHONY : tests/functional/BachOrgan.s
+
+# target to generate assembly for a file
+tests/functional/BachOrgan.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/BachOrgan.dir/build.make CMakeFiles/BachOrgan.dir/tests/functional/BachOrgan.cpp.s
+.PHONY : tests/functional/BachOrgan.cpp.s
 
 tests/functional/Phase10Tests.o: tests/functional/Phase10Tests.cpp.o
 .PHONY : tests/functional/Phase10Tests.o
@@ -887,6 +924,7 @@ help:
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... test"
+	@echo "... BachOrgan"
 	@echo "... Phase10Tests"
 	@echo "... TimingValidation"
 	@echo "... audio_check"
@@ -918,6 +956,9 @@ help:
 	@echo "... src/hal/coreaudio/CoreAudioDriver.o"
 	@echo "... src/hal/coreaudio/CoreAudioDriver.i"
 	@echo "... src/hal/coreaudio/CoreAudioDriver.s"
+	@echo "... tests/functional/BachOrgan.o"
+	@echo "... tests/functional/BachOrgan.i"
+	@echo "... tests/functional/BachOrgan.s"
 	@echo "... tests/functional/Phase10Tests.o"
 	@echo "... tests/functional/Phase10Tests.i"
 	@echo "... tests/functional/Phase10Tests.s"

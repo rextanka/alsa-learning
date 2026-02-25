@@ -166,6 +166,7 @@ if(BUILD_TESTING)
     add_functional_test(engine_tests engine_tests.cpp)
     add_functional_test(Phase10Tests Phase10Tests.cpp)
     add_functional_test(TimingValidation TimingValidation.cpp)
+    add_functional_test(BachOrgan BachOrgan.cpp)
 
     add_test(NAME Functional_Phase10 COMMAND Phase10Tests)
     add_test(NAME Functional_Timing COMMAND TimingValidation)

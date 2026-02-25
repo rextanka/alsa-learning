@@ -16,6 +16,12 @@
 #include "DiodeLadderProcessor.hpp"
 #include "DelayLine.hpp"
 #include "VoiceManager.hpp"
+#include "AudioDriver.hpp"
+#ifdef __APPLE__
+#include "coreaudio/CoreAudioDriver.hpp"
+#else
+#include "alsa/AlsaDriver.hpp"
+#endif
 #include "MusicalClock.hpp"
 #include "TuningSystem.hpp"
 #include "Logger.hpp"
@@ -48,6 +54,7 @@ struct EnvelopeHandleImpl {
 
 struct EngineHandleImpl {
     std::unique_ptr<audio::VoiceManager> voice_manager;
+    std::unique_ptr<hal::AudioDriver> driver;
     audio::MusicalClock clock;
     audio::TwelveToneEqual tuning;
     int sample_rate;
@@ -57,6 +64,15 @@ struct EngineHandleImpl {
         , clock(static_cast<double>(sr))
         , sample_rate(sr)
     {
+#ifdef __APPLE__
+        driver = std::make_unique<hal::CoreAudioDriver>(sr, 512);
+#else
+        driver = std::make_unique<hal::AlsaDriver>(sr, 512);
+#endif
+        // Link the driver to the voice manager
+        driver->set_stereo_callback([this](audio::AudioBuffer& buffer) {
+            voice_manager->pull(buffer);
+        });
     }
 };
 
@@ -325,6 +341,23 @@ int engine_process(EngineHandle handle, float* output, size_t frames) {
         impl->clock.advance(static_cast<int32_t>(frames));
         
         impl->voice_manager->pull(output_span);
+        return 0;
+    } catch (...) { return -1; }
+}
+
+int engine_start(EngineHandle handle) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    try {
+        return impl->driver->start() ? 0 : -1;
+    } catch (...) { return -1; }
+}
+
+int engine_stop(EngineHandle handle) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    try {
+        impl->driver->stop();
         return 0;
     } catch (...) { return -1; }
 }

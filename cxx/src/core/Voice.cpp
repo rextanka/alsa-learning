@@ -55,7 +55,6 @@ void Voice::note_on(double frequency) {
     oscillator_->set_frequency(frequency);
     envelope_->gate_on();
     
-    // Optional: Reset filter for consistent "chiff" if we were using a filter envelope
     if (filter_) filter_->reset();
 }
 
@@ -77,7 +76,7 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
     // 1. Process the graph (Oscillator -> Filter)
     graph_->pull(output, context);
 
-    // 2. Apply VCA (ADSR)
+    // 2. Apply VCA (ADSR) & "Chiff" Filter Modulation
     static thread_local std::vector<float> envelope_buffer;
     if (envelope_buffer.size() < output.size()) {
         envelope_buffer.resize(output.size());
@@ -87,7 +86,15 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
     envelope_->pull(env_span, context);
     
     for (size_t i = 0; i < output.size(); ++i) {
-        output[i] *= env_span[i];
+        float gain = env_span[i];
+        
+        // Apply "Chiff": Modulate filter cutoff based on envelope
+        // Scale: Base Cutoff (4000Hz) + (Envelope * 2000Hz)
+        if (filter_) {
+            filter_->set_cutoff(4000.0f + (gain * 2000.0f));
+        }
+
+        output[i] *= gain;
     }
 }
 
@@ -95,7 +102,7 @@ void Voice::do_pull(AudioBuffer& output, const VoiceContext* context) {
     // 1. Process the graph (Oscillator -> Filter)
     graph_->pull(output, context);
 
-    // 2. Apply VCA (ADSR)
+    // 2. Apply VCA (ADSR) & "Chiff" Filter Modulation
     static thread_local std::vector<float> envelope_buffer;
     if (envelope_buffer.size() < output.frames()) {
         envelope_buffer.resize(output.frames());
@@ -111,6 +118,11 @@ void Voice::do_pull(AudioBuffer& output, const VoiceContext* context) {
 
     for (size_t i = 0; i < output.frames(); ++i) {
         float gain = env_span[i];
+        
+        if (filter_) {
+            filter_->set_cutoff(4000.0f + (gain * 2000.0f));
+        }
+
         output.left[i] *= (gain * gain_l);
         output.right[i] *= (gain * gain_r);
     }

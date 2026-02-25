@@ -7,11 +7,6 @@
 /**
  * @file CInterface.h
  * @brief C-compatible API for the Audio Engine.
- * 
- * This header serves as the FFI bridge for:
- * - macOS: Swift interop
- * - Linux: C++ GUI stacks (Qt, GTK)
- * - Windows: .NET (C#) via P/Invoke
  */
 
 #if defined(_WIN32)
@@ -91,6 +86,8 @@ AUDIO_API void engine_note_off(EngineHandle handle, int note);
 AUDIO_API void engine_set_note_pan(EngineHandle handle, int note, float pan);
 AUDIO_API int engine_set_adsr(EngineHandle handle, float attack, float decay, float sustain, float release);
 AUDIO_API int engine_process(EngineHandle handle, float* output, size_t frames);
+AUDIO_API int engine_start(EngineHandle handle);
+AUDIO_API int engine_stop(EngineHandle handle);
 AUDIO_API int engine_set_bpm(EngineHandle handle, double bpm);
 AUDIO_API double engine_get_bpm(EngineHandle handle);
 AUDIO_API int engine_set_meter(EngineHandle handle, int beats_per_bar);
@@ -101,26 +98,8 @@ AUDIO_API int engine_set_filter_type(EngineHandle handle, int type);
 AUDIO_API int engine_set_delay_enabled(EngineHandle handle, int enabled);
 
 // Host & Device API
-/**
- * @brief Get the number of available audio output devices.
- * @return Number of devices.
- */
 AUDIO_API int host_get_device_count();
-
-/**
- * @brief Get the name of an audio device by index.
- * @param index Device index (0 to count-1).
- * @param buffer Output buffer for the name (UTF-8).
- * @param buffer_size Size of the output buffer.
- * @return 0 on success, non-zero on error.
- */
 AUDIO_API int host_get_device_name(int index, char* buffer, size_t buffer_size);
-
-/**
- * @brief Get the native sample rate of an audio device by index.
- * @param index Device index.
- * @return Sample rate in Hz, or 0 on error.
- */
 AUDIO_API int host_get_device_sample_rate(int index);
 
 // Generic Parameter API
