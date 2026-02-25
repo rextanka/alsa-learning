@@ -8,12 +8,13 @@
 #include <cmath>
 #include <algorithm>
 #include <limits>
+#include <iostream>
 
 namespace audio {
 
 VoiceManager::VoiceManager(int sample_rate)
-    : sample_rate_(sample_rate)
-    , timestamp_counter_(0)
+    : timestamp_counter_(0)
+    , sample_rate_(sample_rate)
 {
     for (auto& slot : voices_) {
         slot.voice = std::make_unique<Voice>(sample_rate);
@@ -53,6 +54,7 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
         slot.active = true;
         slot.last_note_on_time = next_timestamp();
         note_to_voice_map_[note & 0x7F] = idle_idx;
+        std::cout << "[VoiceMap] Note " << note << " -> Voice " << idle_idx << std::endl;
         slot.voice->note_on(freq);
         return;
     }
@@ -92,8 +94,9 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
         candidate.active = true;
         candidate.last_note_on_time = next_timestamp();
         note_to_voice_map_[note & 0x7F] = candidate_idx;
-        candidate.voice->reset(); // Avoid artifacts
-        candidate.voice->set_pan(0.0f); // Reset pan for reuse
+        std::cout << "[VoiceMap] Stealing Note " << note << " -> Voice " << candidate_idx << std::endl;
+        candidate.voice->reset(); 
+        candidate.voice->set_pan(0.0f);
         candidate.voice->note_on(freq);
     }
 }
@@ -118,6 +121,7 @@ void VoiceManager::note_off(int note) {
     if (voice_idx != -1) {
         auto& slot = voices_[voice_idx];
         if (slot.active && slot.current_note == note) {
+            std::cout << "[VoiceMap] Release Note " << note << " (Voice " << voice_idx << ")" << std::endl;
             slot.voice->note_off();
             note_to_voice_map_[note & 0x7F] = -1;
         }
@@ -160,7 +164,6 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
             } else {
                 slot.active = false;
                 if (slot.current_note != -1) {
-                    // Only clear the map if it still points to this voice
                     if (note_to_voice_map_[slot.current_note & 0x7F] == i) {
                         note_to_voice_map_[slot.current_note & 0x7F] = -1;
                     }
@@ -171,7 +174,7 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
     }
     
     for (auto& sample : output) {
-        sample *= 0.4f; // Safety factor
+        sample *= 0.4f; 
     }
 }
 

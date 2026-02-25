@@ -28,7 +28,7 @@ Voice::Voice(int sample_rate)
     // 3. Filter: Moog ladder with moderate resonance for "chiff"
     filter_ = std::make_unique<MoogLadderProcessor>(sample_rate);
     filter_->set_cutoff(4000.0f); // Moderate open for pipe character
-    filter_->set_resonance(0.2f); // Slight resonance to accentuate fundamental
+    filter_->set_resonance(0.4f); // Increased resonance for audible chiff
 
     graph_ = std::make_unique<AudioGraph>();
     rebuild_graph();

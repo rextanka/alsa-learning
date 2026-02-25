@@ -42,52 +42,47 @@ protected:
 
 /**
  * BWV 578 Subject (G Minor Fugue)
- * Audible verification of the British Organ.
+ * Audible verification with proper Note Offs and 72 BPM tempo.
  */
 TEST_F(FunctionalBachMidi, BWV578_Subject_Audible) {
-    std::cout << "[BachAudible] Starting BWV 578 Subject (British Organ)..." << std::endl;
+    std::cout << "[BachAudible] Starting BWV 578 Subject (British Organ) @ 72 BPM..." << std::endl;
     
-    struct MidiMessage {
-        std::vector<uint8_t> data;
-        int delay_ms;
+    struct Note {
+        uint8_t pitch;
+        int duration_ms;
     };
 
-    // Subject: G4, D5, Bb4, A4, G4, Bb4, A4, G4, F#4, A4, D4
-    std::vector<MidiMessage> subject = {
-        {{0x90, 67, 100}, 400}, // G4
-        {{0x80, 67, 0}, 0},
-        {{0x90, 74, 100}, 400}, // D5
-        {{0x80, 74, 0}, 0},
-        {{0x90, 70, 100}, 400}, // Bb4
-        {{0x80, 70, 0}, 0},
-        {{0x90, 69, 100}, 200}, // A4
-        {{0x80, 69, 0}, 0},
-        {{0x90, 67, 100}, 200}, // G4
-        {{0x80, 67, 0}, 0},
-        {{0x90, 70, 100}, 200}, // Bb4
-        {{0x80, 70, 0}, 0},
-        {{0x90, 69, 100}, 200}, // A4
-        {{0x80, 69, 0}, 0},
-        {{0x90, 67, 100}, 200}, // G4
-        {{0x80, 67, 0}, 0},
-        {{0x90, 66, 100}, 200}, // F#4
-        {{0x80, 66, 0}, 0},
-        {{0x90, 69, 100}, 200}, // A4
-        {{0x80, 69, 0}, 0},
-        {{0x90, 62, 100}, 600}, // D4
-        {{0x80, 62, 0}, 500}
+    // Fugue Subject: G4, D5, Bb4, A4, G4, Bb4, A4, G4, F#4, A4, D4
+    // Rhythmic values (72 BPM): 
+    // Quarter = 833ms, Eighth = 416ms, Sixteenth = 208ms
+    std::vector<Note> subject = {
+        {67, 416}, // G4 (8th)
+        {74, 416}, // D5 (8th)
+        {70, 416}, // Bb4 (8th)
+        {69, 208}, // A4 (16th)
+        {67, 208}, // G4 (16th)
+        {70, 208}, // Bb4 (16th)
+        {69, 208}, // A4 (16th)
+        {67, 208}, // G4 (16th)
+        {66, 208}, // F#4 (16th)
+        {69, 208}, // A4 (16th)
+        {62, 833}  // D4 (Quarter)
     };
 
     ASSERT_TRUE(driver->start());
 
-    for (const auto& msg : subject) {
-        parser.parse(msg.data.data(), msg.data.size(), 0, [this](const MidiEvent& e) {
-            voiceManager->handleMidiEvent(e);
-        });
+    for (const auto& n : subject) {
+        // Note On
+        voiceManager->handleMidiEvent({0x90, n.pitch, 100, 0});
         
-        if (msg.delay_ms > 0) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(msg.delay_ms));
-        }
+        // Hold for duration (minus a tiny gap for articulation)
+        std::this_thread::sleep_for(std::chrono::milliseconds(n.duration_ms - 20));
+        
+        // Note Off
+        voiceManager->handleMidiEvent({0x80, n.pitch, 0, 0});
+        
+        // Articulation gap
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
