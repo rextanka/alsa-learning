@@ -28,6 +28,16 @@ protected:
         driver->set_stereo_callback([this](audio::AudioBuffer& buffer) {
             voiceManager->pull(buffer);
         });
+
+        // Initialize Modular Patch for British Church Organ
+        // Base Cutoff is 4000Hz. Chiff: Env -> Cutoff (+0.585 octaves ≈ 6000Hz peak)
+        for (auto& slot : voiceManager->get_voices()) {
+            if (slot.voice) {
+                slot.voice->matrix().set_connection(ModulationSource::Envelope, ModulationTarget::Cutoff, 0.585f);
+            }
+        }
+        
+        std::cout << "[BachTest] Modular 'Chiff' Patch Initialized (+0.585 octaves)." << std::endl;
     }
 
     void TearDown() override {

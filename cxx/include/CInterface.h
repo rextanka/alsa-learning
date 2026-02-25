@@ -126,6 +126,7 @@ AUDIO_API int engine_set_delay_enabled(EngineHandle handle, int enabled);
 
 // Modulation Matrix Control
 AUDIO_API int engine_set_modulation(EngineHandle handle, int source, int target, float intensity);
+AUDIO_API int engine_clear_modulations(EngineHandle handle);
 
 // Host & Device API
 AUDIO_API int host_get_device_count();

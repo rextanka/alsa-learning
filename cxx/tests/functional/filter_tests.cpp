@@ -30,11 +30,14 @@ void test_filter(hal::AudioDriver* driver, const std::string& name, std::unique_
         wavetable->setWaveType(audio::WaveType::Saw);
     }
     
-    // Configure filter
-    filter->set_cutoff(5000.0f);
-    filter->set_resonance(0.7f);
+    // Configure filter base parameters
+    voice->set_parameter(1, 5000.0f); // Cutoff
+    voice->set_parameter(2, 0.7f);    // Resonance
     voice->set_filter_type(std::move(filter));
     
+    // Disable default chiff for clean sweep
+    voice->matrix().clear_all();
+
     driver->set_callback([&voice](std::span<float> output) {
         voice->pull(output);
     });
@@ -44,10 +47,11 @@ void test_filter(hal::AudioDriver* driver, const std::string& name, std::unique_
     std::cout << "  Playing with sweeping cutoff..." << std::endl;
     voice->note_on(110.0); // A2
     
-    // Sweep cutoff down
+    // Sweep cutoff down via ModulationMatrix (Inversion check)
+    // We'll use the LFO as a fixed source (intensity sweep) or just set_parameter
     for (int i = 0; i < 100 && test::g_keep_running; ++i) {
         float cutoff = 5000.0f * (1.0f - i / 100.0f) + 100.0f;
-        voice->filter()->set_cutoff(cutoff);
+        voice->set_parameter(1, cutoff);
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
     

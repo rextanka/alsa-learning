@@ -11,6 +11,14 @@ void test_musical_logic() {
     EngineHandle engine = engine_create(sample_rate);
     assert(engine != nullptr);
     
+    // Patch a basic default route for signal verification
+    engine_set_modulation(engine, MOD_SRC_ENVELOPE, MOD_TGT_AMPLITUDE, 0.0f); // Just ensure VCA is driven
+    
+    // Audit modulation report
+    char report[256];
+    engine_get_modulation_report(engine, report, sizeof(report));
+    std::cout << "[Phase10] Modulation State:\n" << report << std::endl;
+
     // Test BPM and Clock
     engine_set_bpm(engine, 120.0);
     assert(std::abs(engine_get_bpm(engine) - 120.0) < 0.001);
