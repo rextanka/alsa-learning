@@ -11,6 +11,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_clock_logic.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_envelope_stages.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_logger.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_modulation_matrix.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_oscillator.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_voice_stress.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o.d"
   )

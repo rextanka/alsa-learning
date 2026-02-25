@@ -433,6 +433,34 @@ int engine_set_delay_enabled(EngineHandle handle, int /* enabled */) {
     return 0;
 }
 
+int engine_set_modulation(EngineHandle handle, int source, int target, float intensity) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    
+    // Apply to all voices for now
+    for (auto& slot : impl->voice_manager->get_voices()) {
+        if (slot.voice) {
+            slot.voice->matrix().set_connection(
+                static_cast<audio::ModulationSource>(source),
+                static_cast<audio::ModulationTarget>(target),
+                intensity
+            );
+        }
+    }
+    return 0;
+}
+
+int engine_clear_modulations(EngineHandle handle) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    for (auto& slot : impl->voice_manager->get_voices()) {
+        if (slot.voice) {
+            slot.voice->matrix().clear_all();
+        }
+    }
+    return 0;
+}
+
 int host_get_device_count() {
 #ifdef __APPLE__
     // Minimal mock for now until full CoreAudio enumeration is implemented

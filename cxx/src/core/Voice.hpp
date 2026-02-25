@@ -10,8 +10,11 @@
 #include "oscillator/OscillatorProcessor.hpp"
 #include "envelope/AdsrEnvelopeProcessor.hpp"
 #include "filter/FilterProcessor.hpp"
+#include "oscillator/LfoProcessor.hpp"
 #include "AudioGraph.hpp"
+#include "ModulationMatrix.hpp"
 #include <memory>
+#include <array>
 
 namespace audio {
 
@@ -30,6 +33,8 @@ public:
     OscillatorProcessor& oscillator() { return *oscillator_; }
     EnvelopeProcessor& envelope() { return *envelope_; }
     FilterProcessor* filter() { return filter_.get(); }
+    LfoProcessor& lfo() { return *lfo_; }
+    ModulationMatrix& matrix() { return matrix_; }
 
     void set_filter_type(std::unique_ptr<FilterProcessor> filter);
     BufferPool::BufferPtr borrow_buffer() { return graph_->borrow_buffer(); }
@@ -48,13 +53,27 @@ protected:
 
 private:
     void rebuild_graph();
+    void apply_modulation();
 
     std::unique_ptr<OscillatorProcessor> oscillator_;
     std::unique_ptr<AdsrEnvelopeProcessor> envelope_;
     std::unique_ptr<FilterProcessor> filter_;
+    std::unique_ptr<LfoProcessor> lfo_;
     std::unique_ptr<AudioGraph> graph_;
+    
+    ModulationMatrix matrix_;
+    
+    // Base parameters (anchors for modulation)
+    double base_frequency_;
+    float base_cutoff_;
+    float base_resonance_;
+    float base_amplitude_;
+
     int sample_rate_;
     float pan_; // -1.0 to 1.0
+
+    // Temporary buffers for modulation sources
+    std::array<float, static_cast<size_t>(ModulationSource::Count)> current_source_values_;
 };
 
 } // namespace audio

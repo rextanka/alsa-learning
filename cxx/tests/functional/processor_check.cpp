@@ -318,6 +318,9 @@ int main() {
     auto driver = std::make_unique<hal::CoreAudioDriver>(sample_rate, 512);
     auto voice = std::make_unique<audio::Voice>(sample_rate);
     
+    // Clear default chiff for raw sine test
+    voice->matrix().clear_all();
+
     // Set ADSR: slow attack (1s), short decay (0.2s), mid sustain (0.5), long release (1s)
     if (auto* adsr = dynamic_cast<audio::AdsrEnvelopeProcessor*>(&voice->envelope())) {
         adsr->set_attack_time(1.0f);

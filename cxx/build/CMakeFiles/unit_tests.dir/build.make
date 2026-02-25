@@ -86,10 +86,38 @@ CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_oscillator.cpp -o CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.s
 
+CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o: CMakeFiles/unit_tests.dir/flags.make
+CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_envelope_stages.cpp
+CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o: CMakeFiles/unit_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o -MF CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o.d -o CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_envelope_stages.cpp
+
+CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_envelope_stages.cpp > CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.i
+
+CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_envelope_stages.cpp -o CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.s
+
+CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o: CMakeFiles/unit_tests.dir/flags.make
+CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_voice_stress.cpp
+CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o: CMakeFiles/unit_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o -MF CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o.d -o CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_voice_stress.cpp
+
+CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_voice_stress.cpp > CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.i
+
+CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_voice_stress.cpp -o CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.s
+
 CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o: CMakeFiles/unit_tests.dir/flags.make
 CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_logger.cpp
 CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o: CMakeFiles/unit_tests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o -MF CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o.d -o CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_logger.cpp
 
 CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.i: cmake_force
@@ -103,7 +131,7 @@ CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.s: cmake_force
 CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o: CMakeFiles/unit_tests.dir/flags.make
 CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_clock_logic.cpp
 CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o: CMakeFiles/unit_tests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o -MF CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o.d -o CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_clock_logic.cpp
 
 CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.i: cmake_force
@@ -114,56 +142,44 @@ CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_clock_logic.cpp -o CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.s
 
-CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o: CMakeFiles/unit_tests.dir/flags.make
-CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_voice_stress.cpp
-CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o: CMakeFiles/unit_tests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o -MF CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o.d -o CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_voice_stress.cpp
+CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.o: CMakeFiles/unit_tests.dir/flags.make
+CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_modulation_matrix.cpp
+CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.o: CMakeFiles/unit_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.o -MF CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.o.d -o CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_modulation_matrix.cpp
 
-CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_voice_stress.cpp > CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.i
+CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_modulation_matrix.cpp > CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.i
 
-CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_voice_stress.cpp -o CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.s
-
-CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o: CMakeFiles/unit_tests.dir/flags.make
-CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_envelope_stages.cpp
-CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o: CMakeFiles/unit_tests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o -MF CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o.d -o CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_envelope_stages.cpp
-
-CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_envelope_stages.cpp > CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.i
-
-CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_envelope_stages.cpp -o CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.s
+CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_modulation_matrix.cpp -o CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.s
 
 # Object files for target unit_tests
 unit_tests_OBJECTS = \
 "CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.o" \
+"CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o" \
+"CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o" \
 "CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o" \
 "CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o" \
-"CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o" \
-"CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o"
+"CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.o"
 
 # External object files for target unit_tests
 unit_tests_EXTERNAL_OBJECTS =
 
 bin/unit_tests: CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.o
+bin/unit_tests: CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o
+bin/unit_tests: CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o
 bin/unit_tests: CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o
 bin/unit_tests: CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o
-bin/unit_tests: CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o
-bin/unit_tests: CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o
+bin/unit_tests: CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.o
 bin/unit_tests: CMakeFiles/unit_tests.dir/build.make
 bin/unit_tests: bin/libaudio_engine.a
 bin/unit_tests: lib/libgtest_main.a
 bin/unit_tests: lib/libgtest.a
 bin/unit_tests: CMakeFiles/unit_tests.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking CXX executable bin/unit_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Linking CXX executable bin/unit_tests"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/unit_tests.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

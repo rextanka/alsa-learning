@@ -112,9 +112,40 @@ for (int i = 0; i < count; ++i) {
 - **Unicode Compliance**: All device names are returned as UTF-8 encoded `char*` strings, ensuring support for international characters (Chinese, Korean, etc.).
 - **Memory Safety**: The caller provides the buffer for `host_get_device_name`, avoiding ownership traps or leaked pointers.
 
-## 7. Modular Modulation System
+## 7. Modular Modulation Matrix (Phase 12+)
 
-The engine supports a dynamic signal graph where processors (like LFOs) can modulate parameters of other components.
+The engine features a generic `ModulationMatrix` per voice, supporting bipolar intensity and exponential scaling for Pitch and Cutoff.
+
+### Modulation Sources (Internal)
+- `MOD_SRC_ENVELOPE` (0): The ADSR envelope of the voice.
+- `MOD_SRC_LFO` (1): The internal LFO of the voice.
+- `MOD_SRC_VELOCITY` (2): MIDI Velocity.
+- `MOD_SRC_AFTERTOUCH` (3): MIDI Aftertouch.
+
+### Modulation Targets
+- `MOD_TGT_PITCH` (0): Oscillator frequency (exponential, octaves). Formula: $f_{final} = f_{base} \cdot 2^{mod}$.
+- `MOD_TGT_CUTOFF` (1): Filter cutoff frequency (exponential, octaves).
+- `MOD_TGT_RESONANCE` (2): Filter resonance (linear offset).
+- `MOD_TGT_AMPLITUDE` (3): Final output gain (linear factor).
+
+### API Functions
+```c
+/**
+ * Set a modulation connection.
+ * intensity: modulation depth in octaves (pitch/cutoff) or linear (res/amp).
+ * Supports bipolar (negative) values for inversion.
+ */
+int engine_set_modulation(EngineHandle handle, int source, int target, float intensity);
+```
+
+Example: Set Vibrato (Internal LFO -> Pitch) with 0.1 octave depth.
+```c
+engine_set_modulation(engine, MOD_SRC_LFO, MOD_TGT_PITCH, 0.1f);
+```
+
+## 8. Modular Routing (External/Legacy)
+
+The engine also supports dynamic modular connections between external processors.
 
 ### Processor Types
 - `PROC_OSCILLATOR` (0)
@@ -122,11 +153,11 @@ The engine supports a dynamic signal graph where processors (like LFOs) can modu
 - `PROC_FILTER` (2)
 - `PROC_ENVELOPE` (3)
 
-### Modulation Parameters
-- `PARAM_PITCH` (0): Modulates pitch in octaves. Formula: $f_{final} = f_{target} \cdot 2^{mod}$.
-- `PARAM_CUTOFF` (1): Modulates filter cutoff in Hz.
-- `PARAM_AMPLITUDE` (2): Modulates gain/volume.
-- `PARAM_RESONANCE` (3): Modulates filter resonance.
+### Generic Modulation Parameters (Legacy)
+- `PARAM_PITCH` (0)
+- `PARAM_CUTOFF` (1)
+- `PARAM_AMPLITUDE` (2)
+- `PARAM_RESONANCE` (3)
 
 ### Creating and Linking
 ```c
@@ -134,12 +165,10 @@ The engine supports a dynamic signal graph where processors (like LFOs) can modu
 int lfo_id = engine_create_processor(engine, PROC_LFO);
 
 // Connect LFO to modulate pitch of ALL active voices
-// intensity: modulation depth (e.g., 0.02 for subtle vibrato)
 engine_connect_mod(engine, lfo_id, ALL_VOICES, PARAM_PITCH, 0.02f);
 ```
 
 ### Auditing
-You can retrieve a text-based report of all active modulation links:
 ```c
 char report[1024];
 engine_get_modulation_report(engine, report, sizeof(report));

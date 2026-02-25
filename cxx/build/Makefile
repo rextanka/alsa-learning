@@ -876,6 +876,30 @@ tests/unit/test_logger.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.s
 .PHONY : tests/unit/test_logger.cpp.s
 
+tests/unit/test_modulation_matrix.o: tests/unit/test_modulation_matrix.cpp.o
+.PHONY : tests/unit/test_modulation_matrix.o
+
+# target to build an object file
+tests/unit/test_modulation_matrix.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.o
+.PHONY : tests/unit/test_modulation_matrix.cpp.o
+
+tests/unit/test_modulation_matrix.i: tests/unit/test_modulation_matrix.cpp.i
+.PHONY : tests/unit/test_modulation_matrix.i
+
+# target to preprocess a source file
+tests/unit/test_modulation_matrix.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.i
+.PHONY : tests/unit/test_modulation_matrix.cpp.i
+
+tests/unit/test_modulation_matrix.s: tests/unit/test_modulation_matrix.cpp.s
+.PHONY : tests/unit/test_modulation_matrix.s
+
+# target to generate assembly for a file
+tests/unit/test_modulation_matrix.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.s
+.PHONY : tests/unit/test_modulation_matrix.cpp.s
+
 tests/unit/test_oscillator.o: tests/unit/test_oscillator.cpp.o
 .PHONY : tests/unit/test_oscillator.o
 
@@ -1012,6 +1036,9 @@ help:
 	@echo "... tests/unit/test_logger.o"
 	@echo "... tests/unit/test_logger.i"
 	@echo "... tests/unit/test_logger.s"
+	@echo "... tests/unit/test_modulation_matrix.o"
+	@echo "... tests/unit/test_modulation_matrix.i"
+	@echo "... tests/unit/test_modulation_matrix.s"
 	@echo "... tests/unit/test_oscillator.o"
 	@echo "... tests/unit/test_oscillator.i"
 	@echo "... tests/unit/test_oscillator.s"

@@ -5,6 +5,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o.d"
   "CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o"
   "CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o.d"
+  "CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.o"
+  "CMakeFiles/unit_tests.dir/tests/unit/test_modulation_matrix.cpp.o.d"
   "CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.o"
   "CMakeFiles/unit_tests.dir/tests/unit/test_oscillator.cpp.o.d"
   "CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o"

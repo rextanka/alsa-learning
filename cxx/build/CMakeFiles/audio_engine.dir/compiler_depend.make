@@ -1156,6 +1156,7 @@ CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o: /Users/nickthompson/sr
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Logger.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiEvent.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiParser.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/ModulationMatrix.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MusicalClock.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/TuningSystem.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Voice.hpp \
@@ -3087,6 +3088,7 @@ CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o: /Users/nickthompson/src/cpp/au
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioGraph.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/BufferPool.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Logger.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/ModulationMatrix.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Voice.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceContext.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/InputSource.hpp \
@@ -3099,6 +3101,7 @@ CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o: /Users/nickthompson/src/cpp/au
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/FilterProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/MoogLadderProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/LfoProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SquareOscillatorProcessor.hpp
 
@@ -4102,6 +4105,7 @@ CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o: /Users/nickthompson/src
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Logger.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiEvent.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiParser.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/ModulationMatrix.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Voice.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceContext.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceManager.hpp \
@@ -4114,6 +4118,7 @@ CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o: /Users/nickthompson/src
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/FilterProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/LfoProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp
 
 CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal/coreaudio/CoreAudioDriver.cpp \
@@ -5269,6 +5274,8 @@ CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o: /Users/nick
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/DelayLine.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/TuningSystem.hpp:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/ModulationMatrix.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiParser.hpp:
 
