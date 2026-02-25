@@ -1,11 +1,13 @@
 /**
  * @file Voice.cpp
- * @brief Implementation of the Voice class.
+ * @brief Implementation of the Voice class for the British Church Organ timbre.
  */
 
 #include "Voice.hpp"
+#include "oscillator/SquareOscillatorProcessor.hpp"
 #include "filter/MoogLadderProcessor.hpp"
 #include <vector>
+#include <cmath>
 
 namespace audio {
 
@@ -13,11 +15,20 @@ Voice::Voice(int sample_rate)
     : sample_rate_(sample_rate)
     , pan_(0.0f) // Center
 {
-    oscillator_ = std::make_unique<WavetableOscillatorProcessor>(static_cast<double>(sample_rate));
+    // 1. Oscillator: 50% Pulse (Square Wave) for pipe organ aesthetic
+    oscillator_ = std::make_unique<SquareOscillatorProcessor>(static_cast<double>(sample_rate));
+    
+    // 2. ADSR: British Church Organ settings
     envelope_ = std::make_unique<AdsrEnvelopeProcessor>(sample_rate);
-    // Default to Moog filter
+    envelope_->set_attack_time(0.015f);  // 15ms Attack: Air pressure building
+    envelope_->set_decay_time(0.001f);   // Organs don't decay (min 1ms)
+    envelope_->set_sustain_level(1.0f);  // Full volume
+    envelope_->set_release_time(0.050f); // 50ms Release: Valve closure & initial reflection
+
+    // 3. Filter: Moog ladder with moderate resonance for "chiff"
     filter_ = std::make_unique<MoogLadderProcessor>(sample_rate);
-    filter_->set_cutoff(20000.0f); // Default open
+    filter_->set_cutoff(4000.0f); // Moderate open for pipe character
+    filter_->set_resonance(0.4f); // Increased resonance for audible chiff
 
     graph_ = std::make_unique<AudioGraph>();
     rebuild_graph();
@@ -38,13 +49,13 @@ void Voice::rebuild_graph() {
     if (filter_) {
         graph_->add_node(filter_.get());
     }
-    // Envelope is applied manually for now to control the VCA logic
-    // but could also be a node if it processed the signal.
 }
 
 void Voice::note_on(double frequency) {
-    oscillator_->setFrequency(frequency);
+    oscillator_->set_frequency(frequency);
     envelope_->gate_on();
+    
+    if (filter_) filter_->reset();
 }
 
 void Voice::note_off() {
@@ -65,7 +76,7 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
     // 1. Process the graph (Oscillator -> Filter)
     graph_->pull(output, context);
 
-    // 2. Apply VCA (ADSR)
+    // 2. Apply VCA (ADSR) & "Chiff" Filter Modulation
     static thread_local std::vector<float> envelope_buffer;
     if (envelope_buffer.size() < output.size()) {
         envelope_buffer.resize(output.size());
@@ -75,7 +86,15 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
     envelope_->pull(env_span, context);
     
     for (size_t i = 0; i < output.size(); ++i) {
-        output[i] *= env_span[i];
+        float gain = env_span[i];
+        
+        // Apply "Chiff": Modulate filter cutoff based on envelope
+        // Scale: Base Cutoff (4000Hz) + (Envelope * 2000Hz)
+        if (filter_) {
+            filter_->set_cutoff(4000.0f + (gain * 2000.0f));
+        }
+
+        output[i] *= gain;
     }
 }
 
@@ -83,7 +102,7 @@ void Voice::do_pull(AudioBuffer& output, const VoiceContext* context) {
     // 1. Process the graph (Oscillator -> Filter)
     graph_->pull(output, context);
 
-    // 2. Apply VCA (ADSR)
+    // 2. Apply VCA (ADSR) & "Chiff" Filter Modulation
     static thread_local std::vector<float> envelope_buffer;
     if (envelope_buffer.size() < output.frames()) {
         envelope_buffer.resize(output.frames());
@@ -99,6 +118,11 @@ void Voice::do_pull(AudioBuffer& output, const VoiceContext* context) {
 
     for (size_t i = 0; i < output.frames(); ++i) {
         float gain = env_span[i];
+        
+        if (filter_) {
+            filter_->set_cutoff(4000.0f + (gain * 2000.0f));
+        }
+
         output.left[i] *= (gain * gain_l);
         output.right[i] *= (gain * gain_r);
     }

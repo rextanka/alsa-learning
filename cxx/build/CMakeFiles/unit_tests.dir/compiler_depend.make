@@ -5251,6 +5251,7 @@ CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o: /Users/nickthompso
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioGraph.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/BufferPool.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Logger.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiEvent.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Voice.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceContext.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceManager.hpp \
@@ -5263,10 +5264,12 @@ CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o: /Users/nickthompso
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/FilterProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/WavetableOscillatorProcessor.hpp
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp
 
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/FilterProcessor.hpp:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiEvent.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_voice_stress.cpp:
 
@@ -5283,6 +5286,8 @@ CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o: /Users/nickthompso
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope/EnvelopeProcessor.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope/AdsrEnvelopeProcessor.hpp:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/InputSource.hpp:
 

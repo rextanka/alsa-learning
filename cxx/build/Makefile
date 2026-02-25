@@ -328,6 +328,19 @@ TimingValidation/fast:
 .PHONY : TimingValidation/fast
 
 #=============================================================================
+# Target rules for targets named Functional_BachMidi
+
+# Build rule for target.
+Functional_BachMidi: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Functional_BachMidi
+.PHONY : Functional_BachMidi
+
+# fast build rule for target.
+Functional_BachMidi/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_BachMidi.dir/build.make CMakeFiles/Functional_BachMidi.dir/build
+.PHONY : Functional_BachMidi/fast
+
+#=============================================================================
 # Target rules for targets named gmock
 
 # Build rule for target.
@@ -405,6 +418,33 @@ src/bridge/AudioBridge.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/bridge/AudioBridge.cpp.s
 .PHONY : src/bridge/AudioBridge.cpp.s
+
+src/core/MidiParser.o: src/core/MidiParser.cpp.o
+.PHONY : src/core/MidiParser.o
+
+# target to build an object file
+src/core/MidiParser.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/MidiParser.cpp.o
+.PHONY : src/core/MidiParser.cpp.o
+
+src/core/MidiParser.i: src/core/MidiParser.cpp.i
+.PHONY : src/core/MidiParser.i
+
+# target to preprocess a source file
+src/core/MidiParser.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/MidiParser.cpp.i
+.PHONY : src/core/MidiParser.cpp.i
+
+src/core/MidiParser.s: src/core/MidiParser.cpp.s
+.PHONY : src/core/MidiParser.s
+
+# target to generate assembly for a file
+src/core/MidiParser.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/MidiParser.cpp.s
+.PHONY : src/core/MidiParser.cpp.s
 
 src/core/Voice.o: src/core/Voice.cpp.o
 .PHONY : src/core/Voice.o
@@ -486,6 +526,30 @@ src/hal/coreaudio/CoreAudioDriver.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/hal/coreaudio/CoreAudioDriver.cpp.s
 .PHONY : src/hal/coreaudio/CoreAudioDriver.cpp.s
+
+tests/functional/Functional_BachMidi.o: tests/functional/Functional_BachMidi.cpp.o
+.PHONY : tests/functional/Functional_BachMidi.o
+
+# target to build an object file
+tests/functional/Functional_BachMidi.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_BachMidi.dir/build.make CMakeFiles/Functional_BachMidi.dir/tests/functional/Functional_BachMidi.cpp.o
+.PHONY : tests/functional/Functional_BachMidi.cpp.o
+
+tests/functional/Functional_BachMidi.i: tests/functional/Functional_BachMidi.cpp.i
+.PHONY : tests/functional/Functional_BachMidi.i
+
+# target to preprocess a source file
+tests/functional/Functional_BachMidi.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_BachMidi.dir/build.make CMakeFiles/Functional_BachMidi.dir/tests/functional/Functional_BachMidi.cpp.i
+.PHONY : tests/functional/Functional_BachMidi.cpp.i
+
+tests/functional/Functional_BachMidi.s: tests/functional/Functional_BachMidi.cpp.s
+.PHONY : tests/functional/Functional_BachMidi.s
+
+# target to generate assembly for a file
+tests/functional/Functional_BachMidi.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_BachMidi.dir/build.make CMakeFiles/Functional_BachMidi.dir/tests/functional/Functional_BachMidi.cpp.s
+.PHONY : tests/functional/Functional_BachMidi.cpp.s
 
 tests/functional/Phase10Tests.o: tests/functional/Phase10Tests.cpp.o
 .PHONY : tests/functional/Phase10Tests.o
@@ -836,6 +900,7 @@ help:
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... test"
+	@echo "... Functional_BachMidi"
 	@echo "... Phase10Tests"
 	@echo "... TimingValidation"
 	@echo "... audio_check"
@@ -855,6 +920,9 @@ help:
 	@echo "... src/bridge/AudioBridge.o"
 	@echo "... src/bridge/AudioBridge.i"
 	@echo "... src/bridge/AudioBridge.s"
+	@echo "... src/core/MidiParser.o"
+	@echo "... src/core/MidiParser.i"
+	@echo "... src/core/MidiParser.s"
 	@echo "... src/core/Voice.o"
 	@echo "... src/core/Voice.i"
 	@echo "... src/core/Voice.s"
@@ -864,6 +932,9 @@ help:
 	@echo "... src/hal/coreaudio/CoreAudioDriver.o"
 	@echo "... src/hal/coreaudio/CoreAudioDriver.i"
 	@echo "... src/hal/coreaudio/CoreAudioDriver.s"
+	@echo "... tests/functional/Functional_BachMidi.o"
+	@echo "... tests/functional/Functional_BachMidi.i"
+	@echo "... tests/functional/Functional_BachMidi.s"
 	@echo "... tests/functional/Phase10Tests.o"
 	@echo "... tests/functional/Phase10Tests.i"
 	@echo "... tests/functional/Phase10Tests.s"

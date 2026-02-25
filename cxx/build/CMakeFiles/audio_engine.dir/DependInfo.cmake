@@ -9,6 +9,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/bridge/AudioBridge.cpp" "CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o" "gcc" "CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o.d"
+  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiParser.cpp" "CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o" "gcc" "CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Voice.cpp" "CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o" "gcc" "CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceManager.cpp" "CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o" "gcc" "CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal/coreaudio/CoreAudioDriver.cpp" "CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o" "gcc" "CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o.d"

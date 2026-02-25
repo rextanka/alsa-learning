@@ -1,10 +1,6 @@
 /**
  * @file VoiceManager.hpp
  * @brief Manages a pool of polyphonic voices.
- * 
- * This file follows the project rules:
- * - NVI Pattern: Inherits from audio::Processor.
- * - Sample-rate independence: Passed to constructor.
  */
 
 #ifndef AUDIO_VOICE_MANAGER_HPP
@@ -12,11 +8,15 @@
 
 #include "Processor.hpp"
 #include "Voice.hpp"
+#include "MidiEvent.hpp"
+#include "MidiParser.hpp"
 #include <vector>
 #include <array>
 #include <memory>
 
 namespace audio {
+
+using namespace engine::core;
 
 /**
  * @brief Manages a pool of voices for polyphonic playback.
@@ -59,6 +59,16 @@ public:
     void note_off(int note);
 
     /**
+     * @brief Handle a MIDI event.
+     */
+    void handleMidiEvent(const MidiEvent& event);
+
+    /**
+     * @brief Process raw MIDI bytes.
+     */
+    void processMidiBytes(const uint8_t* data, size_t size, uint32_t sampleOffset);
+
+    /**
      * @brief Reset all voices.
      */
     void reset() override;
@@ -95,6 +105,8 @@ private:
     };
 
     std::array<VoiceSlot, MAX_VOICES> voices_;
+    std::array<int, 128> note_to_voice_map_; // Maps MIDI pitch to voice index
+    MidiParser midi_parser_;
     int sample_rate_;
 
 public:

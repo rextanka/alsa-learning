@@ -114,10 +114,24 @@ CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceManager.cpp -o CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.s
 
+CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o: CMakeFiles/audio_engine.dir/flags.make
+CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiParser.cpp
+CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o: CMakeFiles/audio_engine.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o -MF CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o.d -o CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiParser.cpp
+
+CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiParser.cpp > CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.i
+
+CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiParser.cpp -o CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.s
+
 CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o: CMakeFiles/audio_engine.dir/flags.make
 CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal/coreaudio/CoreAudioDriver.cpp
 CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o: CMakeFiles/audio_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o -MF CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o.d -o CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o -c /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal/coreaudio/CoreAudioDriver.cpp
 
 CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.i: cmake_force
@@ -133,6 +147,7 @@ audio_engine_OBJECTS = \
 "CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o" \
 "CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o" \
 "CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o" \
+"CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o" \
 "CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o"
 
 # External object files for target audio_engine
@@ -141,10 +156,11 @@ audio_engine_EXTERNAL_OBJECTS =
 bin/libaudio_engine.a: CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o
 bin/libaudio_engine.a: CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o
 bin/libaudio_engine.a: CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o
+bin/libaudio_engine.a: CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o
 bin/libaudio_engine.a: CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o
 bin/libaudio_engine.a: CMakeFiles/audio_engine.dir/build.make
 bin/libaudio_engine.a: CMakeFiles/audio_engine.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX static library bin/libaudio_engine.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking CXX static library bin/libaudio_engine.a"
 	$(CMAKE_COMMAND) -P CMakeFiles/audio_engine.dir/cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/audio_engine.dir/link.txt --verbose=$(VERBOSE)
 

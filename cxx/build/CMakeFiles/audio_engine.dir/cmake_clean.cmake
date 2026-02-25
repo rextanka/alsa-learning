@@ -1,6 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o"
   "CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o.d"
+  "CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o"
+  "CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o.d"
   "CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o"
   "CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o.d"
   "CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o"

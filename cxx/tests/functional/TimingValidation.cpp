@@ -10,8 +10,11 @@
 
 // For testing internal state
 #include "../../src/core/VoiceManager.hpp"
+#include "../../src/hal/AudioDriver.hpp"
+
 struct InternalEngine {
     std::unique_ptr<audio::VoiceManager> voice_manager;
+    std::unique_ptr<hal::AudioDriver> driver;
     audio::MusicalClock clock;
     audio::TwelveToneEqual tuning;
     int sample_rate;
@@ -27,13 +30,6 @@ void test_timing_accuracy() {
     // 1,000,000 samples
     int32_t num_samples = 1000000;
     clock.advance(num_samples);
-    
-    // Mathematical Expectation:
-    // seconds = 1000000 / 44100 = 22.675736961
-    // beats = seconds * (bpm / 60) = seconds * 2 = 45.351473922 beats
-    // PPQ = 960
-    // total_ticks = beats * 960 = 43537.4149659...
-    // floor(total_ticks) = 43537
     
     int64_t expected_ticks = static_cast<int64_t>((static_cast<double>(num_samples) / sample_rate) * (bpm / 60.0) * 960.0);
     
@@ -91,8 +87,8 @@ void test_note_edge_cases() {
         }
     };
     
-    test_note("C-1", true, 0);   // ((-1) + 1) * 12 + 0 = 0
-    test_note("G9", true, 127);  // (9 + 1) * 12 + 7 = 127
+    test_note("C-1", true, 0);   // MIDI 0
+    test_note("G9", true, 127);  // MIDI 127
     
     test_note("H#4", false);
     test_note("Banana", false);
