@@ -174,6 +174,7 @@ if(BUILD_TESTING)
     add_functional_test(TimingValidation TimingValidation.cpp)
     
     add_functional_gtest(Functional_BachMidi Functional_BachMidi.cpp)
+    add_functional_gtest(tremulant_tests test_tremulant_preset.cpp)
 
     add_test(NAME Functional_Phase10 COMMAND Phase10Tests)
     add_test(NAME Functional_Timing COMMAND TimingValidation)

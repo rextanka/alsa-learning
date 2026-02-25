@@ -43,6 +43,26 @@ void Voice::set_pan(float pan) {
     pan_ = std::clamp(pan, -1.0f, 1.0f);
 }
 
+void Voice::set_parameter(int param, float value) {
+    // These constants will be defined in CInterface.h
+    // PARAM_PITCH = 0
+    // PARAM_CUTOFF = 1
+    // PARAM_AMPLITUDE = 2
+    switch (param) {
+        case 0: // PARAM_PITCH
+            oscillator_->set_pitch_modulation(static_cast<double>(value));
+            break;
+        case 1: // PARAM_CUTOFF
+            if (filter_) filter_->set_cutoff(value);
+            break;
+        case 2: // PARAM_AMPLITUDE
+            // Potentially modulate VCA here if needed
+            break;
+        default:
+            break;
+    }
+}
+
 void Voice::rebuild_graph() {
     graph_->clear();
     graph_->add_node(oscillator_.get());

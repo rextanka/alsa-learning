@@ -48,6 +48,21 @@ typedef void* EngineHandle;
 #define ENV_ADSR 0
 #define ENV_AD 1
 
+// Processor Types for registration
+#define PROC_OSCILLATOR 0
+#define PROC_LFO 1
+#define PROC_FILTER 2
+#define PROC_ENVELOPE 3
+
+// Modulation Parameters
+#define PARAM_PITCH 0
+#define PARAM_CUTOFF 1
+#define PARAM_AMPLITUDE 2
+#define PARAM_RESONANCE 3
+
+// Special IDs
+#define ALL_VOICES -1
+
 /**
  * @brief Placeholder for future FFI initialization.
  */
@@ -104,6 +119,11 @@ AUDIO_API int host_get_device_sample_rate(int index);
 
 // Generic Parameter API
 AUDIO_API int set_param(void* handle, const char* name, float value);
+
+// Modular Routing API
+AUDIO_API int engine_create_processor(EngineHandle handle, int type);
+AUDIO_API int engine_connect_mod(EngineHandle handle, int source_id, int target_id, int param, float intensity);
+AUDIO_API int engine_get_modulation_report(EngineHandle handle, char* buffer, size_t buffer_size);
 
 // Logging API
 AUDIO_API void audio_log_message(const char* tag, const char* message);

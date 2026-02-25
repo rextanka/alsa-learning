@@ -1,1 +1,0 @@
-/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/phase10_tests.dir/tests/Phase10Tests.cpp.o -o bin/phase10_tests  bin/libaudio_engine.a -framework CoreAudio -framework AudioToolbox

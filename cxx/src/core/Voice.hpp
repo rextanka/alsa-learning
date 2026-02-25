@@ -34,6 +34,11 @@ public:
     void set_filter_type(std::unique_ptr<FilterProcessor> filter);
     BufferPool::BufferPtr borrow_buffer() { return graph_->borrow_buffer(); }
 
+    /**
+     * @brief Set a modulation parameter.
+     */
+    void set_parameter(int param, float value);
+
     void set_pan(float pan);
     float pan() const { return pan_; }
 

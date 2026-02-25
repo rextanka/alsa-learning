@@ -1,3 +1,0 @@
-unit_tests 2 0.0164753
-integration_tests 2 0.00812109
----
