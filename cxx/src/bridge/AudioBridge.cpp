@@ -10,6 +10,7 @@
 #include "SawtoothOscillatorProcessor.hpp"
 #include "TriangleOscillatorProcessor.hpp"
 #include "WavetableOscillatorProcessor.hpp"
+#include "LfoProcessor.hpp"
 #include "AdsrEnvelopeProcessor.hpp"
 #include "ADEnvelopeProcessor.hpp"
 #include "MoogLadderProcessor.hpp"
@@ -58,6 +59,7 @@ struct EngineHandleImpl {
     audio::MusicalClock clock;
     audio::TwelveToneEqual tuning;
     int sample_rate;
+    int next_processor_id = 100; // Start at 100 to avoid confusion with voice indices
 
     EngineHandleImpl(int sr)
         : voice_manager(std::make_unique<audio::VoiceManager>(sr))
@@ -505,6 +507,62 @@ void audio_log_message(const char* tag, const char* message) {
 
 void audio_log_event(const char* tag, float value) {
     audio::AudioLogger::instance().log_event(tag, value);
+}
+
+int engine_create_processor(EngineHandle handle, int type) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    
+    int id = impl->next_processor_id++;
+    std::shared_ptr<audio::Processor> processor;
+
+    switch (type) {
+        case PROC_LFO:
+            processor = std::make_shared<audio::LfoProcessor>(impl->sample_rate);
+            break;
+        case PROC_OSCILLATOR:
+            processor = std::make_shared<audio::SineOscillatorProcessor>(impl->sample_rate);
+            break;
+        case PROC_FILTER:
+            processor = std::make_shared<audio::MoogLadderProcessor>(impl->sample_rate);
+            break;
+        default:
+            return -1;
+    }
+
+    impl->voice_manager->set_mod_source(id, processor);
+    return id;
+}
+
+int engine_connect_mod(EngineHandle handle, int source_id, int target_id, int param, float intensity) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->voice_manager->add_connection(source_id, target_id, param, intensity);
+    return 0;
+}
+
+int engine_get_modulation_report(EngineHandle handle, char* buffer, size_t buffer_size) {
+    if (!handle || !buffer || buffer_size == 0) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    
+    std::string report = "Modulation Report:\n";
+    report += "------------------\n";
+    
+    auto& conns = impl->voice_manager->get_connections();
+    for (const auto& c : conns) {
+        report += "Src: " + std::to_string(c.source_id);
+        report += " -> Tgt: " + std::to_string(c.target_id);
+        report += " (Param: " + std::to_string(c.param);
+        report += ") @ " + std::to_string(c.intensity) + "\n";
+    }
+    
+    if (conns.empty()) {
+        report += "No active connections.\n";
+    }
+    
+    std::strncpy(buffer, report.c_str(), buffer_size - 1);
+    buffer[buffer_size - 1] = '\0';
+    return 0;
 }
 
 void audio_engine_init() {}

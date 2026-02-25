@@ -111,5 +111,39 @@ for (int i = 0; i < count; ++i) {
 ### Safety Features:
 - **Unicode Compliance**: All device names are returned as UTF-8 encoded `char*` strings, ensuring support for international characters (Chinese, Korean, etc.).
 - **Memory Safety**: The caller provides the buffer for `host_get_device_name`, avoiding ownership traps or leaked pointers.
+
+## 7. Modular Modulation System
+
+The engine supports a dynamic signal graph where processors (like LFOs) can modulate parameters of other components.
+
+### Processor Types
+- `PROC_OSCILLATOR` (0)
+- `PROC_LFO` (1)
+- `PROC_FILTER` (2)
+- `PROC_ENVELOPE` (3)
+
+### Modulation Parameters
+- `PARAM_PITCH` (0): Modulates pitch in octaves. Formula: $f_{final} = f_{target} \cdot 2^{mod}$.
+- `PARAM_CUTOFF` (1): Modulates filter cutoff in Hz.
+- `PARAM_AMPLITUDE` (2): Modulates gain/volume.
+- `PARAM_RESONANCE` (3): Modulates filter resonance.
+
+### Creating and Linking
+```c
+// Create a standalone LFO
+int lfo_id = engine_create_processor(engine, PROC_LFO);
+
+// Connect LFO to modulate pitch of ALL active voices
+// intensity: modulation depth (e.g., 0.02 for subtle vibrato)
+engine_connect_mod(engine, lfo_id, ALL_VOICES, PARAM_PITCH, 0.02f);
+```
+
+### Auditing
+You can retrieve a text-based report of all active modulation links:
+```c
+char report[1024];
+engine_get_modulation_report(engine, report, sizeof(report));
+printf("%s\n", report);
+```
 >>>>>>> SEARCH
 

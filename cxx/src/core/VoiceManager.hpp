@@ -73,6 +73,21 @@ public:
      */
     void reset() override;
 
+    /**
+     * @brief Clear all modulation connections for a specific processor ID.
+     */
+    void clear_connections(int id);
+
+    /**
+     * @brief Add a modulation connection.
+     */
+    void add_connection(int source_id, int target_id, int param, float intensity);
+
+    /**
+     * @brief Set a modulation source processor.
+     */
+    void set_mod_source(int id, std::shared_ptr<Processor> processor);
+
 protected:
     /**
      * @brief Pull audio from all active voices and sum them.
@@ -108,6 +123,22 @@ private:
     std::array<int, 128> note_to_voice_map_; // Maps MIDI pitch to voice index
     MidiParser midi_parser_;
     int sample_rate_;
+
+public:
+    struct Connection {
+        int source_id;
+        int target_id;
+        int param;
+        float intensity;
+    };
+
+    const std::vector<Connection>& get_connections() const { return connections_; }
+    const std::unordered_map<int, std::shared_ptr<Processor>>& get_mod_sources() const { return mod_sources_; }
+
+private:
+    std::vector<Connection> connections_;
+    std::unordered_map<int, std::shared_ptr<Processor>> mod_sources_;
+    std::vector<float> mod_buffer_;
 
 public:
     const std::array<VoiceSlot, MAX_VOICES>& get_voices() const { return voices_; }

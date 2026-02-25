@@ -23,6 +23,7 @@ VoiceManager::VoiceManager(int sample_rate)
         slot.last_note_on_time = 0;
     }
     note_to_voice_map_.fill(-1);
+    mod_buffer_.resize(512); // Default block size
 }
 
 void VoiceManager::note_on(int note, float velocity, double frequency) {
@@ -152,11 +153,53 @@ void VoiceManager::reset() {
     }
     note_to_voice_map_.fill(-1);
     timestamp_counter_ = 0;
+    for (auto& [id, source] : mod_sources_) {
+        source->reset();
+    }
+}
+
+void VoiceManager::clear_connections(int id) {
+    connections_.erase(
+        std::remove_if(connections_.begin(), connections_.end(),
+            [id](const Connection& c) { return c.source_id == id || c.target_id == id; }),
+        connections_.end());
+    mod_sources_.erase(id);
+}
+
+void VoiceManager::add_connection(int source_id, int target_id, int param, float intensity) {
+    connections_.push_back({source_id, target_id, param, intensity});
+}
+
+void VoiceManager::set_mod_source(int id, std::shared_ptr<Processor> processor) {
+    mod_sources_[id] = std::move(processor);
 }
 
 void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context) {
     std::fill(output.begin(), output.end(), 0.0f);
 
+    if (mod_buffer_.size() < output.size()) {
+        mod_buffer_.resize(output.size());
+    }
+
+    // 1. Process modulation links
+    for (const auto& conn : connections_) {
+        auto it = mod_sources_.find(conn.source_id);
+        if (it != mod_sources_.end()) {
+            std::span<float> mod_span(mod_buffer_.data(), output.size());
+            it->second->pull(mod_span, context);
+            
+            float mod_value = mod_span[0]; // Block-rate: use first value
+            float applied_val = mod_value * conn.intensity;
+
+            if (conn.target_id == -1) { // ALL_VOICES
+                for (int i = 0; i < MAX_VOICES; ++i) {
+                    voices_[i].voice->set_parameter(conn.param, applied_val);
+                }
+            }
+        }
+    }
+
+    // 2. Sum active voices
     auto block = voices_[0].voice->borrow_buffer();
     std::span<float> voice_span(block->left.data(), output.size());
 

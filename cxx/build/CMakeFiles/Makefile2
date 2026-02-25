@@ -76,6 +76,7 @@ all: CMakeFiles/engine_tests.dir/all
 all: CMakeFiles/Phase10Tests.dir/all
 all: CMakeFiles/TimingValidation.dir/all
 all: CMakeFiles/Functional_BachMidi.dir/all
+all: CMakeFiles/tremulant_tests.dir/all
 all: _deps/googletest-build/all
 .PHONY : all
 
@@ -93,6 +94,7 @@ codegen: CMakeFiles/engine_tests.dir/codegen
 codegen: CMakeFiles/Phase10Tests.dir/codegen
 codegen: CMakeFiles/TimingValidation.dir/codegen
 codegen: CMakeFiles/Functional_BachMidi.dir/codegen
+codegen: CMakeFiles/tremulant_tests.dir/codegen
 codegen: _deps/googletest-build/codegen
 .PHONY : codegen
 
@@ -114,6 +116,7 @@ clean: CMakeFiles/engine_tests.dir/clean
 clean: CMakeFiles/Phase10Tests.dir/clean
 clean: CMakeFiles/TimingValidation.dir/clean
 clean: CMakeFiles/Functional_BachMidi.dir/clean
+clean: CMakeFiles/tremulant_tests.dir/clean
 clean: _deps/googletest-build/clean
 .PHONY : clean
 
@@ -256,7 +259,7 @@ CMakeFiles/unit_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtes
 CMakeFiles/unit_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=41,42,43,44,45,46 "Built target unit_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=43,44,45,46,47,48 "Built target unit_tests"
 .PHONY : CMakeFiles/unit_tests.dir/all
 
 # Build rule for subdir invocation for target.
@@ -273,7 +276,7 @@ unit_tests: CMakeFiles/unit_tests.dir/rule
 # codegen rule for target.
 CMakeFiles/unit_tests.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=41,42,43,44,45,46 "Finished codegen for target unit_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=43,44,45,46,47,48 "Finished codegen for target unit_tests"
 .PHONY : CMakeFiles/unit_tests.dir/codegen
 
 # clean rule for target.
@@ -604,6 +607,40 @@ CMakeFiles/Functional_BachMidi.dir/codegen:
 CMakeFiles/Functional_BachMidi.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_BachMidi.dir/build.make CMakeFiles/Functional_BachMidi.dir/clean
 .PHONY : CMakeFiles/Functional_BachMidi.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/tremulant_tests.dir
+
+# All Build rule for target.
+CMakeFiles/tremulant_tests.dir/all: CMakeFiles/audio_engine.dir/all
+CMakeFiles/tremulant_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
+CMakeFiles/tremulant_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tremulant_tests.dir/build.make CMakeFiles/tremulant_tests.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tremulant_tests.dir/build.make CMakeFiles/tremulant_tests.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=41,42 "Built target tremulant_tests"
+.PHONY : CMakeFiles/tremulant_tests.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/tremulant_tests.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles 12
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/tremulant_tests.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles 0
+.PHONY : CMakeFiles/tremulant_tests.dir/rule
+
+# Convenience name for target.
+tremulant_tests: CMakeFiles/tremulant_tests.dir/rule
+.PHONY : tremulant_tests
+
+# codegen rule for target.
+CMakeFiles/tremulant_tests.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tremulant_tests.dir/build.make CMakeFiles/tremulant_tests.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=41,42 "Finished codegen for target tremulant_tests"
+.PHONY : CMakeFiles/tremulant_tests.dir/codegen
+
+# clean rule for target.
+CMakeFiles/tremulant_tests.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tremulant_tests.dir/build.make CMakeFiles/tremulant_tests.dir/clean
+.PHONY : CMakeFiles/tremulant_tests.dir/clean
 
 #=============================================================================
 # Target rules for target _deps/googletest-build/googlemock/CMakeFiles/gmock.dir

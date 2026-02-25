@@ -33,8 +33,19 @@ public:
         , current_freq_(0.0)
         , target_freq_(0.0)
         , freq_step_(0.0)
+        , pitch_mod_(0.0)
         , transitioning_(false)
     {
+    }
+
+    /**
+     * @brief Set pitch modulation in octaves.
+     * 
+     * f_final = f_target * 2^pitch_mod
+     */
+    void set_pitch_modulation(double octaves) {
+        pitch_mod_ = octaves;
+        update_rotation_steps();
     }
 
     /**
@@ -97,7 +108,16 @@ protected:
     double current_freq_;
     double target_freq_;
     double freq_step_;
+    double pitch_mod_;
     bool transitioning_;
+
+    /**
+     * @brief Get effective frequency including modulation.
+     */
+    double get_effective_frequency() const {
+        if (pitch_mod_ == 0.0) return current_freq_;
+        return current_freq_ * std::pow(2.0, pitch_mod_);
+    }
 
     /**
      * @brief Update frequency ramp if transitioning.
@@ -105,6 +125,7 @@ protected:
      * Called once per sample during processing.
      */
     void update_frequency_ramp() {
+        bool needs_update = false;
         if (transitioning_) {
             current_freq_ += freq_step_;
             
@@ -114,8 +135,10 @@ protected:
                 current_freq_ = target_freq_;
                 transitioning_ = false;
             }
+            needs_update = true;
+        }
 
-            // Update rotation steps for the new frequency
+        if (needs_update) {
             update_rotation_steps();
         }
     }

@@ -1174,6 +1174,7 @@ CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o: /Users/nickthompson/sr
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/InputSource.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/PerformanceProfiler.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/LfoProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SawtoothOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SineOscillatorProcessor.hpp \
@@ -5250,6 +5251,8 @@ CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o: /Users/nick
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SquareOscillatorProcessor.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SawtoothOscillatorProcessor.hpp:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/LfoProcessor.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp:
 

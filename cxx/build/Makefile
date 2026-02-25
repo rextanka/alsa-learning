@@ -341,6 +341,19 @@ Functional_BachMidi/fast:
 .PHONY : Functional_BachMidi/fast
 
 #=============================================================================
+# Target rules for targets named tremulant_tests
+
+# Build rule for target.
+tremulant_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tremulant_tests
+.PHONY : tremulant_tests
+
+# fast build rule for target.
+tremulant_tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tremulant_tests.dir/build.make CMakeFiles/tremulant_tests.dir/build
+.PHONY : tremulant_tests/fast
+
+#=============================================================================
 # Target rules for targets named gmock
 
 # Build rule for target.
@@ -743,6 +756,30 @@ tests/functional/stereo_poly_test.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/tests/functional/stereo_poly_test.cpp.s
 .PHONY : tests/functional/stereo_poly_test.cpp.s
 
+tests/functional/test_tremulant_preset.o: tests/functional/test_tremulant_preset.cpp.o
+.PHONY : tests/functional/test_tremulant_preset.o
+
+# target to build an object file
+tests/functional/test_tremulant_preset.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tremulant_tests.dir/build.make CMakeFiles/tremulant_tests.dir/tests/functional/test_tremulant_preset.cpp.o
+.PHONY : tests/functional/test_tremulant_preset.cpp.o
+
+tests/functional/test_tremulant_preset.i: tests/functional/test_tremulant_preset.cpp.i
+.PHONY : tests/functional/test_tremulant_preset.i
+
+# target to preprocess a source file
+tests/functional/test_tremulant_preset.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tremulant_tests.dir/build.make CMakeFiles/tremulant_tests.dir/tests/functional/test_tremulant_preset.cpp.i
+.PHONY : tests/functional/test_tremulant_preset.cpp.i
+
+tests/functional/test_tremulant_preset.s: tests/functional/test_tremulant_preset.cpp.s
+.PHONY : tests/functional/test_tremulant_preset.s
+
+# target to generate assembly for a file
+tests/functional/test_tremulant_preset.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tremulant_tests.dir/build.make CMakeFiles/tremulant_tests.dir/tests/functional/test_tremulant_preset.cpp.s
+.PHONY : tests/functional/test_tremulant_preset.cpp.s
+
 tests/integration/test_bridge.o: tests/integration/test_bridge.cpp.o
 .PHONY : tests/integration/test_bridge.o
 
@@ -916,6 +953,7 @@ help:
 	@echo "... metronome_test"
 	@echo "... processor_check"
 	@echo "... stereo_poly_test"
+	@echo "... tremulant_tests"
 	@echo "... unit_tests"
 	@echo "... src/bridge/AudioBridge.o"
 	@echo "... src/bridge/AudioBridge.i"
@@ -959,6 +997,9 @@ help:
 	@echo "... tests/functional/stereo_poly_test.o"
 	@echo "... tests/functional/stereo_poly_test.i"
 	@echo "... tests/functional/stereo_poly_test.s"
+	@echo "... tests/functional/test_tremulant_preset.o"
+	@echo "... tests/functional/test_tremulant_preset.i"
+	@echo "... tests/functional/test_tremulant_preset.s"
 	@echo "... tests/integration/test_bridge.o"
 	@echo "... tests/integration/test_bridge.i"
 	@echo "... tests/integration/test_bridge.s"
