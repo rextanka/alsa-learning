@@ -9,6 +9,7 @@
 #include "Processor.hpp"
 #include "Voice.hpp"
 #include "MidiEvent.hpp"
+#include "MidiParser.hpp"
 #include <vector>
 #include <array>
 #include <memory>
@@ -63,6 +64,11 @@ public:
     void handleMidiEvent(const MidiEvent& event);
 
     /**
+     * @brief Process raw MIDI bytes.
+     */
+    void processMidiBytes(const uint8_t* data, size_t size, uint32_t sampleOffset);
+
+    /**
      * @brief Reset all voices.
      */
     void reset() override;
@@ -100,6 +106,7 @@ private:
 
     std::array<VoiceSlot, MAX_VOICES> voices_;
     std::array<int, 128> note_to_voice_map_; // Maps MIDI pitch to voice index
+    MidiParser midi_parser_;
     int sample_rate_;
 
 public:

@@ -362,6 +362,12 @@ int engine_stop(EngineHandle handle) {
     } catch (...) { return -1; }
 }
 
+void engine_process_midi_bytes(EngineHandle handle, const uint8_t* data, size_t size, uint32_t sampleOffset) {
+    if (!handle || !data || size == 0) return;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->voice_manager->processMidiBytes(data, size, sampleOffset);
+}
+
 int engine_set_bpm(EngineHandle handle, double bpm) {
     if (!handle) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);

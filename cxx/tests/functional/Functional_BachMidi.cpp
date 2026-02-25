@@ -53,47 +53,107 @@ TEST_F(FunctionalBachMidi, BWV578_Subject_Audible) {
     };
 
     // Fugue Subject: G4, D5, Bb4, A4, G4, Bb4, A4, G4, F#4, A4, D4
-    // Rhythmic values (72 BPM): 
-    // Quarter = 833ms, Eighth = 416ms, Sixteenth = 208ms
     std::vector<Note> subject = {
-        {67, 416}, // G4 (8th)
-        {74, 416}, // D5 (8th)
-        {70, 416}, // Bb4 (8th)
-        {69, 208}, // A4 (16th)
-        {67, 208}, // G4 (16th)
-        {70, 208}, // Bb4 (16th)
-        {69, 208}, // A4 (16th)
-        {67, 208}, // G4 (16th)
-        {66, 208}, // F#4 (16th)
-        {69, 208}, // A4 (16th)
-        {62, 833}  // D4 (Quarter)
+        {67, 416}, // G4
+        {74, 416}, // D5
+        {70, 416}, // Bb4
+        {69, 208}, // A4
+        {67, 208}, // G4
+        {70, 208}, // Bb4
+        {69, 208}, // A4
+        {67, 208}, // G4
+        {66, 208}, // F#4
+        {69, 208}, // A4
+        {62, 833}  // D4
     };
 
     ASSERT_TRUE(driver->start());
 
-    for (const auto& n : subject) {
-        // Note On
-        voiceManager->handleMidiEvent({0x90, n.pitch, 100, 0});
-        
-        // Hold for duration (minus a tiny gap for articulation)
-        std::this_thread::sleep_for(std::chrono::milliseconds(n.duration_ms - 20));
-        
-        // Note Off
-        voiceManager->handleMidiEvent({0x80, n.pitch, 0, 0});
-        
-        // Articulation gap
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    }
+    // Play loop in a separate thread to avoid blocking GTest/Audio
+    std::thread playback([this, subject]() {
+        for (const auto& n : subject) {
+            voiceManager->handleMidiEvent({0x90, n.pitch, 100, 0});
+            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(n.duration_ms * 0.9)));
+            voiceManager->handleMidiEvent({0x80, n.pitch, 0, 0});
+            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(n.duration_ms * 0.1)));
+        }
+    });
 
+    playback.join();
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     std::cout << "[BachAudible] BWV 578 Finished." << std::endl;
 }
 
+/**
+ * BWV 846 (Prelude in C) - Opening Arpeggios
+ * Stress-tests polyphonic release clarity.
+ */
+TEST_F(FunctionalBachMidi, BWV846_Arpeggio_Clarity) {
+    std::cout << "[BachAudible] Starting BWV 846 Prelude (Arpeggio Clarity)..." << std::endl;
+
+    std::vector<uint8_t> pattern = {60, 64, 67, 72, 76};
+    
+    ASSERT_TRUE(driver->start());
+
+    std::thread playback([this, pattern]() {
+        for (int repeat = 0; repeat < 2; ++repeat) {
+            for (uint8_t pitch : pattern) {
+                voiceManager->handleMidiEvent({0x90, pitch, 80, 0});
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                voiceManager->handleMidiEvent({0x80, pitch, 0, 0});
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            }
+        }
+    });
+
+    playback.join();
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::cout << "[BachAudible] BWV 846 Finished." << std::endl;
+}
+
+/**
+ * BWV 565 (Toccata Intro)
+ * Stress-tests polyphonic impact and voice stealing.
+ */
+TEST_F(FunctionalBachMidi, BWV565_Toccata_Impact) {
+    std::cout << "[BachAudible] Starting BWV 565 Toccata (Polyphonic Impact)..." << std::endl;
+
+    ASSERT_TRUE(driver->start());
+
+    std::thread playback([this]() {
+        // Mordent: A4 G4 A4
+        uint8_t mordent[] = {69, 67, 69};
+        for (uint8_t p : mordent) {
+            voiceManager->handleMidiEvent({0x90, p, 110, 0});
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            voiceManager->handleMidiEvent({0x80, p, 0, 0});
+        }
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+        // Massive Chord: D2 D3 F3 A3 D4
+        uint8_t chord[] = {38, 50, 53, 57, 62};
+        for (uint8_t p : chord) {
+            voiceManager->handleMidiEvent({0x90, p, 127, 0});
+        }
+        
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        
+        for (uint8_t p : chord) {
+            voiceManager->handleMidiEvent({0x80, p, 0, 0});
+        }
+    });
+
+    playback.join();
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::cout << "[BachAudible] BWV 565 Finished." << std::endl;
+}
+
 TEST_F(FunctionalBachMidi, RunningStatus_Validation) {
     std::vector<uint8_t> midiData = {
-        0x90, 0x43, 0x64, // G4
-              0x45, 0x64, // A4 (Running Status)
-              0x47, 0x64  // B4 (Running Status)
+        0x90, 0x43, 0x64, 
+              0x45, 0x64, 
+              0x47, 0x64  
     };
 
     std::vector<MidiEvent> events;

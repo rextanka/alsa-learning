@@ -85,7 +85,9 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
         auto& candidate = voices_[candidate_idx];
         AudioLogger::instance().log_event("VoiceSteal", static_cast<float>(candidate.current_note));
         
-        // Clear old mapping if it exists
+        // Soft Stealing: Quick reset before re-assigning
+        candidate.voice->reset(); 
+
         if (candidate.current_note != -1) {
             note_to_voice_map_[candidate.current_note & 0x7F] = -1;
         }
@@ -95,7 +97,6 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
         candidate.last_note_on_time = next_timestamp();
         note_to_voice_map_[note & 0x7F] = candidate_idx;
         std::cout << "[VoiceMap] Stealing Note " << note << " -> Voice " << candidate_idx << std::endl;
-        candidate.voice->reset(); 
         candidate.voice->set_pan(0.0f);
         candidate.voice->note_on(freq);
     }
@@ -136,6 +137,12 @@ void VoiceManager::handleMidiEvent(const MidiEvent& event) {
     }
 }
 
+void VoiceManager::processMidiBytes(const uint8_t* data, size_t size, uint32_t sampleOffset) {
+    midi_parser_.parse(data, size, sampleOffset, [this](const MidiEvent& event) {
+        handleMidiEvent(event);
+    });
+}
+
 void VoiceManager::reset() {
     for (auto& slot : voices_) {
         slot.voice->reset();
@@ -173,8 +180,11 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
         }
     }
     
+    // Master Safety Gain (0.15) and Simple Soft Clipping
     for (auto& sample : output) {
-        sample *= 0.4f; 
+        sample *= 0.15f;
+        if (sample > 0.95f) sample = 0.95f + 0.05f * std::tanh((sample - 0.95f) / 0.05f);
+        else if (sample < -0.95f) sample = -0.95f + 0.05f * std::tanh((sample + 0.95f) / 0.05f);
     }
 }
 
@@ -210,9 +220,18 @@ void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
         }
     }
     
+    // Master Safety Gain (0.15) and Simple Soft Clipping
     for (size_t j = 0; j < output.frames(); ++j) {
-        output.left[j] *= 0.2f;
-        output.right[j] *= 0.2f;
+        output.left[j] *= 0.15f;
+        output.right[j] *= 0.15f;
+        
+        // Left Soft Clip
+        if (output.left[j] > 0.95f) output.left[j] = 0.95f + 0.05f * std::tanh((output.left[j] - 0.95f) / 0.05f);
+        else if (output.left[j] < -0.95f) output.left[j] = -0.95f + 0.05f * std::tanh((output.left[j] + 0.95f) / 0.05f);
+        
+        // Right Soft Clip
+        if (output.right[j] > 0.95f) output.right[j] = 0.95f + 0.05f * std::tanh((output.right[j] - 0.95f) / 0.05f);
+        else if (output.right[j] < -0.95f) output.right[j] = -0.95f + 0.05f * std::tanh((output.right[j] + 0.95f) / 0.05f);
     }
 }
 
