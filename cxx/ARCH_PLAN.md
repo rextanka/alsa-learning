@@ -135,6 +135,23 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
 - **Wavetable**: Single `WavetableOscillatorProcessor` class; shape selected at create.
 - **10ms MMA Latency Target**: Optimize buffer sizes and processing for consistent real-time response.
 - **Nord-style Modular Routing**: Supporting "Audio-as-Control" where audio signals can be used as modulation sources across the graph.
+- **Exponential Parameter Scaling**: Pitch and Filter Cutoff modulation follow a logarithmic/octave-based response: $f_{final} = f_{base} \cdot 2^{mod}$, where $mod$ is the sum of modulation offsets in octaves.
+- **Base + Offset Accumulation**: Processors maintain a "Base" value (anchor). Each block, the `ModulationMatrix` sums all offsets (bipolar) and applies them exponentially to the base.
+
+---
+
+## Modular Modulation Matrix
+
+The `ModulationMatrix` is a RT-safe central hub within each `Voice` that manages connections between sources and targets.
+
+### Architecture
+- **Bipolar Modulation**: Supports negative intensity for inverted envelopes (closing a filter) or phase-flipped LFOs.
+- **Summing Logic**: Multiple sources targeting the same parameter are summed into a single modulation delta before being applied exponentially to the base parameter.
+- **Encapsulation**: Owned by the `Voice`, keeping each instrument instance self-contained.
+
+### Core Musical Mappings
+- **Chiff**: Refactored as an `Envelope -> Filter Cutoff` modular route with positive intensity (e.g., +1.0 octaves).
+- **90/10 Articulation**: Treated as a modular "Gate-to-Amplitude" link with a specific timing offset, defining the organ's detached feel as a patch setting.
 
 ---
 

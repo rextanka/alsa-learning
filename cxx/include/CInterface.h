@@ -60,6 +60,18 @@ typedef void* EngineHandle;
 #define PARAM_AMPLITUDE 2
 #define PARAM_RESONANCE 3
 
+// Modulation Sources (Modular Matrix)
+#define MOD_SRC_ENVELOPE  0
+#define MOD_SRC_LFO       1
+#define MOD_SRC_VELOCITY  2
+#define MOD_SRC_AFTERTOUCH 3
+
+// Modulation Targets (Modular Matrix)
+#define MOD_TGT_PITCH     0
+#define MOD_TGT_CUTOFF    1
+#define MOD_TGT_RESONANCE 2
+#define MOD_TGT_AMPLITUDE 3
+
 // Special IDs
 #define ALL_VOICES -1
 
@@ -111,6 +123,9 @@ AUDIO_API int engine_note_on_name(EngineHandle handle, const char* note_name, fl
 AUDIO_API int engine_note_off_name(EngineHandle handle, const char* note_name);
 AUDIO_API int engine_set_filter_type(EngineHandle handle, int type);
 AUDIO_API int engine_set_delay_enabled(EngineHandle handle, int enabled);
+
+// Modulation Matrix Control
+AUDIO_API int engine_set_modulation(EngineHandle handle, int source, int target, float intensity);
 
 // Host & Device API
 AUDIO_API int host_get_device_count();

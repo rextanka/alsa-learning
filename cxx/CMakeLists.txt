@@ -131,10 +131,11 @@ if(BUILD_TESTING)
     # --- Unit Tests (C++) ---
     add_executable(unit_tests
         tests/unit/test_oscillator.cpp
+        tests/unit/test_envelope_stages.cpp
+        tests/unit/test_voice_stress.cpp
         tests/unit/test_logger.cpp
         tests/unit/test_clock_logic.cpp
-        tests/unit/test_voice_stress.cpp
-        tests/unit/test_envelope_stages.cpp
+        tests/unit/test_modulation_matrix.cpp
     )
     target_include_directories(unit_tests PRIVATE tests/unit tests)
     target_link_libraries(unit_tests PRIVATE audio_engine gtest_main)
