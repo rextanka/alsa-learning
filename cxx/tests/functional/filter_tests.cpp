@@ -13,6 +13,7 @@
 #include <algorithm>
 #include "TestHelper.hpp"
 #include "../src/core/Voice.hpp"
+#include "../src/dsp/oscillator/WavetableOscillatorProcessor.hpp"
 #include "../src/dsp/filter/MoogLadderProcessor.hpp"
 #include "../src/dsp/filter/DiodeLadderProcessor.hpp"
 
@@ -24,8 +25,10 @@ void test_filter(hal::AudioDriver* driver, const std::string& name, std::unique_
     int sample_rate = driver->sample_rate();
     auto voice = std::make_unique<audio::Voice>(sample_rate);
     
-    // Use Sawtooth for rich harmonics
-    voice->oscillator().setWaveType(audio::WaveType::Saw);
+    // Use Sawtooth for rich harmonics if it's a wavetable oscillator
+    if (auto* wavetable = dynamic_cast<audio::WavetableOscillatorProcessor*>(&voice->oscillator())) {
+        wavetable->setWaveType(audio::WaveType::Saw);
+    }
     
     // Configure filter
     filter->set_cutoff(5000.0f);

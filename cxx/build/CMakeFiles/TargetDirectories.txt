@@ -10,7 +10,7 @@
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/engine_tests.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/Phase10Tests.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/TimingValidation.dir
-/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/BachOrgan.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/Functional_BachMidi.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/test.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/edit_cache.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/rebuild_cache.dir

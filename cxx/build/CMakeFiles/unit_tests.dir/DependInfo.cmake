@@ -8,7 +8,6 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_bach_midi.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_bach_midi.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_bach_midi.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_clock_logic.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_envelope_stages.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o.d"
   "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_logger.cpp" "CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o" "gcc" "CMakeFiles/unit_tests.dir/tests/unit/test_logger.cpp.o.d"

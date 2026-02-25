@@ -135,7 +135,6 @@ if(BUILD_TESTING)
         tests/unit/test_clock_logic.cpp
         tests/unit/test_voice_stress.cpp
         tests/unit/test_envelope_stages.cpp
-        tests/unit/test_bach_midi.cpp
     )
     target_include_directories(unit_tests PRIVATE tests/unit tests)
     target_link_libraries(unit_tests PRIVATE audio_engine gtest_main)
@@ -158,6 +157,13 @@ if(BUILD_TESTING)
         target_link_libraries(${name} PRIVATE audio_engine)
     endfunction()
 
+    function(add_functional_gtest name source)
+        add_executable(${name} tests/functional/${source})
+        target_include_directories(${name} PRIVATE tests)
+        target_link_libraries(${name} PRIVATE audio_engine gtest_main)
+        add_test(NAME ${name} COMMAND ${name})
+    endfunction()
+
     add_functional_test(audio_check audio_check.cpp)
     add_functional_test(metronome_test metronome_test.cpp)
     add_functional_test(filter_tests filter_tests.cpp)
@@ -166,7 +172,8 @@ if(BUILD_TESTING)
     add_functional_test(engine_tests engine_tests.cpp)
     add_functional_test(Phase10Tests Phase10Tests.cpp)
     add_functional_test(TimingValidation TimingValidation.cpp)
-    add_functional_test(BachOrgan BachOrgan.cpp)
+    
+    add_functional_gtest(Functional_BachMidi Functional_BachMidi.cpp)
 
     add_test(NAME Functional_Phase10 COMMAND Phase10Tests)
     add_test(NAME Functional_Timing COMMAND TimingValidation)

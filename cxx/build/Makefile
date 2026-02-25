@@ -328,17 +328,17 @@ TimingValidation/fast:
 .PHONY : TimingValidation/fast
 
 #=============================================================================
-# Target rules for targets named BachOrgan
+# Target rules for targets named Functional_BachMidi
 
 # Build rule for target.
-BachOrgan: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 BachOrgan
-.PHONY : BachOrgan
+Functional_BachMidi: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Functional_BachMidi
+.PHONY : Functional_BachMidi
 
 # fast build rule for target.
-BachOrgan/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/BachOrgan.dir/build.make CMakeFiles/BachOrgan.dir/build
-.PHONY : BachOrgan/fast
+Functional_BachMidi/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_BachMidi.dir/build.make CMakeFiles/Functional_BachMidi.dir/build
+.PHONY : Functional_BachMidi/fast
 
 #=============================================================================
 # Target rules for targets named gmock
@@ -527,29 +527,29 @@ src/hal/coreaudio/CoreAudioDriver.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/hal/coreaudio/CoreAudioDriver.cpp.s
 .PHONY : src/hal/coreaudio/CoreAudioDriver.cpp.s
 
-tests/functional/BachOrgan.o: tests/functional/BachOrgan.cpp.o
-.PHONY : tests/functional/BachOrgan.o
+tests/functional/Functional_BachMidi.o: tests/functional/Functional_BachMidi.cpp.o
+.PHONY : tests/functional/Functional_BachMidi.o
 
 # target to build an object file
-tests/functional/BachOrgan.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/BachOrgan.dir/build.make CMakeFiles/BachOrgan.dir/tests/functional/BachOrgan.cpp.o
-.PHONY : tests/functional/BachOrgan.cpp.o
+tests/functional/Functional_BachMidi.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_BachMidi.dir/build.make CMakeFiles/Functional_BachMidi.dir/tests/functional/Functional_BachMidi.cpp.o
+.PHONY : tests/functional/Functional_BachMidi.cpp.o
 
-tests/functional/BachOrgan.i: tests/functional/BachOrgan.cpp.i
-.PHONY : tests/functional/BachOrgan.i
+tests/functional/Functional_BachMidi.i: tests/functional/Functional_BachMidi.cpp.i
+.PHONY : tests/functional/Functional_BachMidi.i
 
 # target to preprocess a source file
-tests/functional/BachOrgan.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/BachOrgan.dir/build.make CMakeFiles/BachOrgan.dir/tests/functional/BachOrgan.cpp.i
-.PHONY : tests/functional/BachOrgan.cpp.i
+tests/functional/Functional_BachMidi.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_BachMidi.dir/build.make CMakeFiles/Functional_BachMidi.dir/tests/functional/Functional_BachMidi.cpp.i
+.PHONY : tests/functional/Functional_BachMidi.cpp.i
 
-tests/functional/BachOrgan.s: tests/functional/BachOrgan.cpp.s
-.PHONY : tests/functional/BachOrgan.s
+tests/functional/Functional_BachMidi.s: tests/functional/Functional_BachMidi.cpp.s
+.PHONY : tests/functional/Functional_BachMidi.s
 
 # target to generate assembly for a file
-tests/functional/BachOrgan.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/BachOrgan.dir/build.make CMakeFiles/BachOrgan.dir/tests/functional/BachOrgan.cpp.s
-.PHONY : tests/functional/BachOrgan.cpp.s
+tests/functional/Functional_BachMidi.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_BachMidi.dir/build.make CMakeFiles/Functional_BachMidi.dir/tests/functional/Functional_BachMidi.cpp.s
+.PHONY : tests/functional/Functional_BachMidi.cpp.s
 
 tests/functional/Phase10Tests.o: tests/functional/Phase10Tests.cpp.o
 .PHONY : tests/functional/Phase10Tests.o
@@ -767,30 +767,6 @@ tests/integration/test_bridge.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/tests/integration/test_bridge.cpp.s
 .PHONY : tests/integration/test_bridge.cpp.s
 
-tests/unit/test_bach_midi.o: tests/unit/test_bach_midi.cpp.o
-.PHONY : tests/unit/test_bach_midi.o
-
-# target to build an object file
-tests/unit/test_bach_midi.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_bach_midi.cpp.o
-.PHONY : tests/unit/test_bach_midi.cpp.o
-
-tests/unit/test_bach_midi.i: tests/unit/test_bach_midi.cpp.i
-.PHONY : tests/unit/test_bach_midi.i
-
-# target to preprocess a source file
-tests/unit/test_bach_midi.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_bach_midi.cpp.i
-.PHONY : tests/unit/test_bach_midi.cpp.i
-
-tests/unit/test_bach_midi.s: tests/unit/test_bach_midi.cpp.s
-.PHONY : tests/unit/test_bach_midi.s
-
-# target to generate assembly for a file
-tests/unit/test_bach_midi.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_bach_midi.cpp.s
-.PHONY : tests/unit/test_bach_midi.cpp.s
-
 tests/unit/test_clock_logic.o: tests/unit/test_clock_logic.cpp.o
 .PHONY : tests/unit/test_clock_logic.o
 
@@ -924,7 +900,7 @@ help:
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... test"
-	@echo "... BachOrgan"
+	@echo "... Functional_BachMidi"
 	@echo "... Phase10Tests"
 	@echo "... TimingValidation"
 	@echo "... audio_check"
@@ -956,9 +932,9 @@ help:
 	@echo "... src/hal/coreaudio/CoreAudioDriver.o"
 	@echo "... src/hal/coreaudio/CoreAudioDriver.i"
 	@echo "... src/hal/coreaudio/CoreAudioDriver.s"
-	@echo "... tests/functional/BachOrgan.o"
-	@echo "... tests/functional/BachOrgan.i"
-	@echo "... tests/functional/BachOrgan.s"
+	@echo "... tests/functional/Functional_BachMidi.o"
+	@echo "... tests/functional/Functional_BachMidi.i"
+	@echo "... tests/functional/Functional_BachMidi.s"
 	@echo "... tests/functional/Phase10Tests.o"
 	@echo "... tests/functional/Phase10Tests.i"
 	@echo "... tests/functional/Phase10Tests.s"
@@ -986,9 +962,6 @@ help:
 	@echo "... tests/integration/test_bridge.o"
 	@echo "... tests/integration/test_bridge.i"
 	@echo "... tests/integration/test_bridge.s"
-	@echo "... tests/unit/test_bach_midi.o"
-	@echo "... tests/unit/test_bach_midi.i"
-	@echo "... tests/unit/test_bach_midi.s"
 	@echo "... tests/unit/test_clock_logic.o"
 	@echo "... tests/unit/test_clock_logic.i"
 	@echo "... tests/unit/test_clock_logic.s"
