@@ -1000,6 +1000,7 @@ CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o: /Users/nickthompson/sr
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioGraph.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/BufferPool.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Logger.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiEvent.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MusicalClock.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/TuningSystem.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Voice.hpp \
@@ -2035,7 +2036,8 @@ CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o: /Users/nickthompson/src/cpp/au
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/FilterProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/MoogLadderProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/WavetableOscillatorProcessor.hpp
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SquareOscillatorProcessor.hpp
 
 CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceManager.cpp \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/Availability.h \
@@ -4354,6 +4356,8 @@ CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o: /Users/nick
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/DelayLine.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/TuningSystem.hpp:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiEvent.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Logger.hpp:
 

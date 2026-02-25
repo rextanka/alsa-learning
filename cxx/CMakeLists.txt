@@ -61,6 +61,7 @@ set(ENGINE_SOURCES
     src/bridge/AudioBridge.cpp
     src/core/Voice.cpp
     src/core/VoiceManager.cpp
+    src/core/MidiParser.cpp
 )
 
 if(APPLE)
@@ -134,6 +135,7 @@ if(BUILD_TESTING)
         tests/unit/test_clock_logic.cpp
         tests/unit/test_voice_stress.cpp
         tests/unit/test_envelope_stages.cpp
+        tests/unit/test_bach_midi.cpp
     )
     target_include_directories(unit_tests PRIVATE tests/unit tests)
     target_link_libraries(unit_tests PRIVATE audio_engine gtest_main)

@@ -1,11 +1,13 @@
 /**
  * @file Voice.cpp
- * @brief Implementation of the Voice class.
+ * @brief Implementation of the Voice class for the British Church Organ timbre.
  */
 
 #include "Voice.hpp"
+#include "oscillator/SquareOscillatorProcessor.hpp"
 #include "filter/MoogLadderProcessor.hpp"
 #include <vector>
+#include <cmath>
 
 namespace audio {
 
@@ -13,11 +15,20 @@ Voice::Voice(int sample_rate)
     : sample_rate_(sample_rate)
     , pan_(0.0f) // Center
 {
-    oscillator_ = std::make_unique<WavetableOscillatorProcessor>(static_cast<double>(sample_rate));
+    // 1. Oscillator: 50% Pulse (Square Wave) for pipe organ aesthetic
+    oscillator_ = std::make_unique<SquareOscillatorProcessor>(static_cast<double>(sample_rate));
+    
+    // 2. ADSR: British Church Organ settings
     envelope_ = std::make_unique<AdsrEnvelopeProcessor>(sample_rate);
-    // Default to Moog filter
+    envelope_->set_attack_time(0.015f);  // 15ms Attack: Air pressure building
+    envelope_->set_decay_time(0.001f);   // Organs don't decay (min 1ms)
+    envelope_->set_sustain_level(1.0f);  // Full volume
+    envelope_->set_release_time(0.050f); // 50ms Release: Valve closure & initial reflection
+
+    // 3. Filter: Moog ladder with moderate resonance for "chiff"
     filter_ = std::make_unique<MoogLadderProcessor>(sample_rate);
-    filter_->set_cutoff(20000.0f); // Default open
+    filter_->set_cutoff(4000.0f); // Moderate open for pipe character
+    filter_->set_resonance(0.2f); // Slight resonance to accentuate fundamental
 
     graph_ = std::make_unique<AudioGraph>();
     rebuild_graph();
@@ -38,13 +49,14 @@ void Voice::rebuild_graph() {
     if (filter_) {
         graph_->add_node(filter_.get());
     }
-    // Envelope is applied manually for now to control the VCA logic
-    // but could also be a node if it processed the signal.
 }
 
 void Voice::note_on(double frequency) {
-    oscillator_->setFrequency(frequency);
+    oscillator_->set_frequency(frequency);
     envelope_->gate_on();
+    
+    // Optional: Reset filter for consistent "chiff" if we were using a filter envelope
+    if (filter_) filter_->reset();
 }
 
 void Voice::note_off() {

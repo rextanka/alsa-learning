@@ -1,4 +1,6 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/unit_tests.dir/tests/unit/test_bach_midi.cpp.o"
+  "CMakeFiles/unit_tests.dir/tests/unit/test_bach_midi.cpp.o.d"
   "CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o"
   "CMakeFiles/unit_tests.dir/tests/unit/test_clock_logic.cpp.o.d"
   "CMakeFiles/unit_tests.dir/tests/unit/test_envelope_stages.cpp.o"

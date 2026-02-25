@@ -406,6 +406,33 @@ src/bridge/AudioBridge.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/bridge/AudioBridge.cpp.s
 .PHONY : src/bridge/AudioBridge.cpp.s
 
+src/core/MidiParser.o: src/core/MidiParser.cpp.o
+.PHONY : src/core/MidiParser.o
+
+# target to build an object file
+src/core/MidiParser.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/MidiParser.cpp.o
+.PHONY : src/core/MidiParser.cpp.o
+
+src/core/MidiParser.i: src/core/MidiParser.cpp.i
+.PHONY : src/core/MidiParser.i
+
+# target to preprocess a source file
+src/core/MidiParser.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/MidiParser.cpp.i
+.PHONY : src/core/MidiParser.cpp.i
+
+src/core/MidiParser.s: src/core/MidiParser.cpp.s
+.PHONY : src/core/MidiParser.s
+
+# target to generate assembly for a file
+src/core/MidiParser.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/MidiParser.cpp.s
+.PHONY : src/core/MidiParser.cpp.s
+
 src/core/Voice.o: src/core/Voice.cpp.o
 .PHONY : src/core/Voice.o
 
@@ -703,6 +730,30 @@ tests/integration/test_bridge.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/tests/integration/test_bridge.cpp.s
 .PHONY : tests/integration/test_bridge.cpp.s
 
+tests/unit/test_bach_midi.o: tests/unit/test_bach_midi.cpp.o
+.PHONY : tests/unit/test_bach_midi.o
+
+# target to build an object file
+tests/unit/test_bach_midi.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_bach_midi.cpp.o
+.PHONY : tests/unit/test_bach_midi.cpp.o
+
+tests/unit/test_bach_midi.i: tests/unit/test_bach_midi.cpp.i
+.PHONY : tests/unit/test_bach_midi.i
+
+# target to preprocess a source file
+tests/unit/test_bach_midi.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_bach_midi.cpp.i
+.PHONY : tests/unit/test_bach_midi.cpp.i
+
+tests/unit/test_bach_midi.s: tests/unit/test_bach_midi.cpp.s
+.PHONY : tests/unit/test_bach_midi.s
+
+# target to generate assembly for a file
+tests/unit/test_bach_midi.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/unit/test_bach_midi.cpp.s
+.PHONY : tests/unit/test_bach_midi.cpp.s
+
 tests/unit/test_clock_logic.o: tests/unit/test_clock_logic.cpp.o
 .PHONY : tests/unit/test_clock_logic.o
 
@@ -855,6 +906,9 @@ help:
 	@echo "... src/bridge/AudioBridge.o"
 	@echo "... src/bridge/AudioBridge.i"
 	@echo "... src/bridge/AudioBridge.s"
+	@echo "... src/core/MidiParser.o"
+	@echo "... src/core/MidiParser.i"
+	@echo "... src/core/MidiParser.s"
 	@echo "... src/core/Voice.o"
 	@echo "... src/core/Voice.i"
 	@echo "... src/core/Voice.s"
@@ -891,6 +945,9 @@ help:
 	@echo "... tests/integration/test_bridge.o"
 	@echo "... tests/integration/test_bridge.i"
 	@echo "... tests/integration/test_bridge.s"
+	@echo "... tests/unit/test_bach_midi.o"
+	@echo "... tests/unit/test_bach_midi.i"
+	@echo "... tests/unit/test_bach_midi.s"
 	@echo "... tests/unit/test_clock_logic.o"
 	@echo "... tests/unit/test_clock_logic.i"
 	@echo "... tests/unit/test_clock_logic.s"
