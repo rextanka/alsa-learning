@@ -30,14 +30,24 @@ protected:
         });
 
         // Initialize Modular Patch for British Church Organ
-        // Base Cutoff is 4000Hz. Chiff: Env -> Cutoff (+0.585 octaves ≈ 6000Hz peak)
+        // 1. Chiff: Env -> Cutoff (+0.585 octaves ≈ 50% frequency jump from 4000Hz to 6000Hz peak)
         for (auto& slot : voiceManager->get_voices()) {
             if (slot.voice) {
                 slot.voice->matrix().set_connection(ModulationSource::Envelope, ModulationTarget::Cutoff, 0.585f);
+                
+                // 2. 90/10 Articulation (Gate-to-Amplitude)
+                // Configure ADSR for classic organ feel
+                auto* adsr = dynamic_cast<audio::AdsrEnvelopeProcessor*>(&slot.voice->envelope());
+                if (adsr) {
+                    adsr->set_attack_time(0.005f);
+                    adsr->set_decay_time(0.1f);
+                    adsr->set_sustain_level(0.7f);
+                    adsr->set_release_time(0.050f);
+                }
             }
         }
         
-        std::cout << "[BachTest] Modular 'Chiff' Patch Initialized (+0.585 octaves)." << std::endl;
+        std::cout << "[BachTest] Modular British Organ Patch Initialized (+0.585 oct Chiff, 90/10 ADSR)." << std::endl;
     }
 
     void TearDown() override {
