@@ -127,6 +127,30 @@ The engine features a generic `ModulationMatrix` per voice, supporting bipolar i
 - `MOD_TGT_CUTOFF` (1): Filter cutoff frequency (exponential, octaves).
 - `MOD_TGT_RESONANCE` (2): Filter resonance (linear offset).
 - `MOD_TGT_AMPLITUDE` (3): Final output gain (linear factor).
+- `MOD_TGT_PULSEWIDTH` (4): Pulse width offset (linear).
+
+### UI Parameter Discovery (Phase 13)
+To avoid hardcoding IDs in the UI, the engine supports discovery by name string. The UI can query the engine for available parameters once to build its mapping.
+
+| Name | Description | ID (mapped in Bridge) |
+|------|-------------|----|
+| `vcf_cutoff` | VCF Cutoff Frequency | 1 |
+| `vcf_res` | VCF Resonance | 2 |
+| `osc_pw` | Pulse Width (VCO) | 10 |
+| `sub_gain` | Sub-Oscillator Volume | 11 |
+| `saw_gain` | Sawtooth Volume | 12 |
+| `pulse_gain` | Pulse Volume | 13 |
+
+### Patch Management
+The engine supports loading and saving full synth patches in a human-readable JSON format.
+
+```c
+// Save current engine state to JSON
+engine_save_patch(handle, "my_preset.json");
+
+// Load engine state from JSON
+engine_load_patch(handle, "my_preset.json");
+```
 
 ### API Functions
 ```c

@@ -40,9 +40,12 @@ public:
      * @return double Sample value [-0.5, 0.5] (matches SquareOscillator scale)
      */
     double generate_sample(double parent_phase) {
-        // Alignment Nuance: Flip phase to balance headroom
-        // If parent phase < 0.5, sub is negative; if > 0.5, sub is positive.
-        // For f/2 (OneDown), we flip state every time parent wraps.
+        // For OneDown (f/2), we flip state every time parent wraps
+        // For TwoDown (f/4), we flip state every two wraps
+        
+        // Simple logic: 
+        // f/2: positive when phase is in [0, 0.5] of a double-length cycle
+        // We can track this by keeping a bit that flips on parent wrap.
         
         if (parent_phase < last_parent_phase_) {
             // Parent wrapped
@@ -53,13 +56,10 @@ public:
         bool is_positive = false;
         if (octave_ == Octave::OneDown) {
             // flips every wrap: wrap_counter % 2
-            // Phase alignment: offset by 0.5 of the parent to "push" when parent "pulls"
             is_positive = (wrap_counter_ % 2 == 0);
-            if (parent_phase >= 0.5) is_positive = !is_positive;
         } else {
             // flips every 2 wraps: wrap_counter % 4
             is_positive = (wrap_counter_ % 4 < 2);
-            if (parent_phase >= 0.5) is_positive = !is_positive;
         }
 
         return is_positive ? 0.5 : -0.5;
@@ -71,7 +71,10 @@ public:
     }
 
 protected:
+    // Mono pull is not directly used for SubOsc as it needs parent phase per sample.
+    // However, we implement it for interface completeness.
     void do_pull(std::span<float> output, const VoiceContext* /* context */ = nullptr) override {
+        // This shouldn't be called directly without a phase source.
         std::fill(output.begin(), output.end(), 0.0f);
     }
 

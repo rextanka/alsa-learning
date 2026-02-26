@@ -187,14 +187,8 @@ if(BUILD_TESTING)
     
     add_functional_gtest(Functional_BachMidi Functional_BachMidi.cpp)
     add_functional_gtest(tremulant_tests test_tremulant_preset.cpp)
-    
-    add_executable(Functional_SH101_Live tests/functional/Functional_SH101_Live.cpp)
-    target_include_directories(Functional_SH101_Live PRIVATE tests)
-    target_link_libraries(Functional_SH101_Live PRIVATE audio_engine)
-
-    add_executable(Functional_Juno_Live tests/functional/Functional_Juno_Live.cpp)
-    target_include_directories(Functional_Juno_Live PRIVATE tests)
-    target_link_libraries(Functional_Juno_Live PRIVATE audio_engine)
+    add_functional_gtest(sh101_chain_tests test_sh101_chain.cpp)
+    add_functional_gtest(juno_chorus_tests test_juno_chorus.cpp)
 
     add_test(NAME Functional_Phase10 COMMAND Phase10Tests)
     add_test(NAME Functional_Timing COMMAND TimingValidation)

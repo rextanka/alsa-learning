@@ -5,8 +5,6 @@
 
 #include "Voice.hpp"
 #include "oscillator/PulseOscillatorProcessor.hpp"
-#include "oscillator/SubOscillator.hpp"
-#include "routing/SourceMixer.hpp"
 #include "filter/MoogLadderProcessor.hpp"
 #include <vector>
 #include <cmath>
@@ -49,11 +47,7 @@ Voice::Voice(int sample_rate)
     rebuild_graph();
 
     // Default "Chiff" Modulation: Envelope -> Cutoff (+0.5 octaves)
-    // 4000Hz base + 1.0 octave = 8000Hz (at full envelope)
-    // The previous hardcoded was 4000 + (gain * 2000), which is linear.
-    // Exponential equivalent: 4000 * 2^(0.58) ≈ 6000. 
-    // Let's use 0.5 octaves for a musical chiff.
-    matrix_.set_connection(ModulationSource::Envelope, ModulationTarget::Cutoff, 0.585f); // log2(6000/4000) approx
+    matrix_.set_connection(ModulationSource::Envelope, ModulationTarget::Cutoff, 0.585f);
     
     current_source_values_.fill(0.0f);
 }
@@ -85,8 +79,7 @@ void Voice::set_parameter(int param, float value) {
 
 void Voice::rebuild_graph() {
     graph_->clear();
-    // In our new architecture, we pull oscillator and sub-oscillator manually
-    // but we add them to the graph for metadata/lifecycle management.
+    // Revert to stable fixed graph for this phase
     graph_->add_node(oscillator_.get());
     if (filter_) {
         graph_->add_node(filter_.get());
@@ -118,7 +111,7 @@ void Voice::reset() {
 }
 
 void Voice::apply_modulation() {
-    // 1. Collect modulation source values (block-rate)
+    // Collect modulation source values
     float env_val = 0.0f;
     static float tmp_env[1];
     envelope_->pull(std::span<float>(tmp_env, 1));
@@ -132,27 +125,23 @@ void Voice::apply_modulation() {
     current_source_values_[static_cast<size_t>(ModulationSource::Envelope)] = env_val;
     current_source_values_[static_cast<size_t>(ModulationSource::LFO)] = lfo_val;
 
-    // 2. Apply Pitch Modulation (Exponential)
+    // Apply Pitch Modulation
     float pitch_mod = matrix_.sum_for_target(ModulationTarget::Pitch, current_source_values_);
-    double final_freq = base_frequency_ * std::pow(2.0, static_cast<double>(pitch_mod));
-    oscillator_->set_frequency(final_freq);
+    oscillator_->set_frequency(base_frequency_ * std::pow(2.0, static_cast<double>(pitch_mod)));
 
-    // 3. Apply Cutoff Modulation (Exponential)
+    // Apply Cutoff Modulation
     if (filter_) {
         float cutoff_mod = matrix_.sum_for_target(ModulationTarget::Cutoff, current_source_values_);
-        float final_cutoff = base_cutoff_ * std::pow(2.0f, cutoff_mod);
-        filter_->set_cutoff(std::clamp(final_cutoff, 20.0f, 20000.0f));
-
-        // Resonance Modulation (Linear)
+        filter_->set_cutoff(base_cutoff_ * std::pow(2.0f, cutoff_mod));
         float res_mod = matrix_.sum_for_target(ModulationTarget::Resonance, current_source_values_);
         filter_->set_resonance(std::clamp(base_resonance_ + res_mod, 0.0f, 0.99f));
     }
 
-    // 4. Amplitude Modulation (Linear/Factor)
+    // Apply Amplitude Modulation
     float amp_mod = matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_);
     base_amplitude_ = std::clamp(1.0f + amp_mod, 0.0f, 2.0f);
 
-    // 5. Pulse Width Modulation (Linear)
+    // Apply PWM
     float pw_mod = matrix_.sum_for_target(ModulationTarget::PulseWidth, current_source_values_);
     if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
         pulse_osc->set_pulse_width_modulation(pw_mod);
@@ -164,63 +153,18 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
         std::fill(output.begin(), output.end(), 0.0f);
         return;
     }
-
     apply_modulation();
+    graph_->pull(output, context);
 
-    auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get());
-    size_t frames = std::min(output.size(), MAX_BLOCK_SIZE);
-
-    for (size_t i = 0; i < frames; ++i) {
-        float main_out = 0.0f;
-        float sub_out = 0.0f;
-
-        // Advance oscillators sample by sample
-        float tmp[1];
-        std::span<float> single_frame(tmp, 1);
-        oscillator_->pull(single_frame, context);
-        main_out = tmp[0];
-
-        if (pulse_osc) {
-            sub_out = static_cast<float>(sub_oscillator_->generate_sample(pulse_osc->get_phase()));
-        }
-
-        std::array<float, SourceMixer::NUM_CHANNELS> inputs = {0.0f};
-        inputs[1] = main_out; // Channel 1: Pulse/Square
-        inputs[2] = sub_out;  // Channel 2: Sub
-
-        output[i] = source_mixer_->mix(inputs);
-    }
-
-    // Apply VCA
-    float env_gain = current_source_values_[static_cast<size_t>(ModulationSource::Envelope)];
-    float final_gain = env_gain * base_amplitude_;
-    for (size_t i = 0; i < frames; ++i) {
-        output[i] *= final_gain;
-    }
-
-    // Filter
-    if (filter_) {
-        filter_->pull(output, context);
+    float final_gain = base_amplitude_;
+    for (auto& sample : output) {
+        sample *= final_gain;
     }
 }
 
 void Voice::do_pull(AudioBuffer& output, const VoiceContext* context) {
     apply_modulation();
-
     graph_->pull(output, context);
-
-    float env_gain = current_source_values_[static_cast<size_t>(ModulationSource::Envelope)];
-    float final_gain = env_gain * base_amplitude_;
-
-    // Constant power panning
-    float pan_rad = (pan_ + 1.0f) * (M_PI / 4.0f);
-    float gain_l = std::cos(pan_rad) * final_gain;
-    float gain_r = std::sin(pan_rad) * final_gain;
-
-    for (size_t i = 0; i < output.frames(); ++i) {
-        output.left[i] *= gain_l;
-        output.right[i] *= gain_r;
-    }
 }
 
 int Voice::set_internal_param(const std::string& name, float value) {

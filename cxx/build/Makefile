@@ -354,30 +354,30 @@ tremulant_tests/fast:
 .PHONY : tremulant_tests/fast
 
 #=============================================================================
-# Target rules for targets named Functional_SH101_Live
+# Target rules for targets named sh101_chain_tests
 
 # Build rule for target.
-Functional_SH101_Live: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Functional_SH101_Live
-.PHONY : Functional_SH101_Live
+sh101_chain_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 sh101_chain_tests
+.PHONY : sh101_chain_tests
 
 # fast build rule for target.
-Functional_SH101_Live/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_SH101_Live.dir/build.make CMakeFiles/Functional_SH101_Live.dir/build
-.PHONY : Functional_SH101_Live/fast
+sh101_chain_tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sh101_chain_tests.dir/build.make CMakeFiles/sh101_chain_tests.dir/build
+.PHONY : sh101_chain_tests/fast
 
 #=============================================================================
-# Target rules for targets named Functional_Juno_Live
+# Target rules for targets named juno_chorus_tests
 
 # Build rule for target.
-Functional_Juno_Live: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Functional_Juno_Live
-.PHONY : Functional_Juno_Live
+juno_chorus_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 juno_chorus_tests
+.PHONY : juno_chorus_tests
 
 # fast build rule for target.
-Functional_Juno_Live/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_Juno_Live.dir/build.make CMakeFiles/Functional_Juno_Live.dir/build
-.PHONY : Functional_Juno_Live/fast
+juno_chorus_tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/juno_chorus_tests.dir/build.make CMakeFiles/juno_chorus_tests.dir/build
+.PHONY : juno_chorus_tests/fast
 
 #=============================================================================
 # Target rules for targets named gmock
@@ -857,6 +857,54 @@ tests/functional/stereo_poly_test.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/tests/functional/stereo_poly_test.cpp.s
 .PHONY : tests/functional/stereo_poly_test.cpp.s
 
+tests/functional/test_juno_chorus.o: tests/functional/test_juno_chorus.cpp.o
+.PHONY : tests/functional/test_juno_chorus.o
+
+# target to build an object file
+tests/functional/test_juno_chorus.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/juno_chorus_tests.dir/build.make CMakeFiles/juno_chorus_tests.dir/tests/functional/test_juno_chorus.cpp.o
+.PHONY : tests/functional/test_juno_chorus.cpp.o
+
+tests/functional/test_juno_chorus.i: tests/functional/test_juno_chorus.cpp.i
+.PHONY : tests/functional/test_juno_chorus.i
+
+# target to preprocess a source file
+tests/functional/test_juno_chorus.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/juno_chorus_tests.dir/build.make CMakeFiles/juno_chorus_tests.dir/tests/functional/test_juno_chorus.cpp.i
+.PHONY : tests/functional/test_juno_chorus.cpp.i
+
+tests/functional/test_juno_chorus.s: tests/functional/test_juno_chorus.cpp.s
+.PHONY : tests/functional/test_juno_chorus.s
+
+# target to generate assembly for a file
+tests/functional/test_juno_chorus.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/juno_chorus_tests.dir/build.make CMakeFiles/juno_chorus_tests.dir/tests/functional/test_juno_chorus.cpp.s
+.PHONY : tests/functional/test_juno_chorus.cpp.s
+
+tests/functional/test_sh101_chain.o: tests/functional/test_sh101_chain.cpp.o
+.PHONY : tests/functional/test_sh101_chain.o
+
+# target to build an object file
+tests/functional/test_sh101_chain.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sh101_chain_tests.dir/build.make CMakeFiles/sh101_chain_tests.dir/tests/functional/test_sh101_chain.cpp.o
+.PHONY : tests/functional/test_sh101_chain.cpp.o
+
+tests/functional/test_sh101_chain.i: tests/functional/test_sh101_chain.cpp.i
+.PHONY : tests/functional/test_sh101_chain.i
+
+# target to preprocess a source file
+tests/functional/test_sh101_chain.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sh101_chain_tests.dir/build.make CMakeFiles/sh101_chain_tests.dir/tests/functional/test_sh101_chain.cpp.i
+.PHONY : tests/functional/test_sh101_chain.cpp.i
+
+tests/functional/test_sh101_chain.s: tests/functional/test_sh101_chain.cpp.s
+.PHONY : tests/functional/test_sh101_chain.s
+
+# target to generate assembly for a file
+tests/functional/test_sh101_chain.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sh101_chain_tests.dir/build.make CMakeFiles/sh101_chain_tests.dir/tests/functional/test_sh101_chain.cpp.s
+.PHONY : tests/functional/test_sh101_chain.cpp.s
+
 tests/functional/test_tremulant_preset.o: tests/functional/test_tremulant_preset.cpp.o
 .PHONY : tests/functional/test_tremulant_preset.o
 
@@ -1077,8 +1125,10 @@ help:
 	@echo "... gtest"
 	@echo "... gtest_main"
 	@echo "... integration_tests"
+	@echo "... juno_chorus_tests"
 	@echo "... metronome_test"
 	@echo "... processor_check"
+	@echo "... sh101_chain_tests"
 	@echo "... stereo_poly_test"
 	@echo "... tremulant_tests"
 	@echo "... unit_tests"
@@ -1133,6 +1183,12 @@ help:
 	@echo "... tests/functional/stereo_poly_test.o"
 	@echo "... tests/functional/stereo_poly_test.i"
 	@echo "... tests/functional/stereo_poly_test.s"
+	@echo "... tests/functional/test_juno_chorus.o"
+	@echo "... tests/functional/test_juno_chorus.i"
+	@echo "... tests/functional/test_juno_chorus.s"
+	@echo "... tests/functional/test_sh101_chain.o"
+	@echo "... tests/functional/test_sh101_chain.i"
+	@echo "... tests/functional/test_sh101_chain.s"
 	@echo "... tests/functional/test_tremulant_preset.o"
 	@echo "... tests/functional/test_tremulant_preset.i"
 	@echo "... tests/functional/test_tremulant_preset.s"

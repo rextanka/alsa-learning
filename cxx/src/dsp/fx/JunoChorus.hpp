@@ -43,7 +43,6 @@ public:
     }
 
     void set_mode(Mode mode) {
-        // Nuance: Click-free switch by preserving phase (inherited from current logic)
         mode_ = mode;
         switch (mode) {
             case Mode::I:    lfo_rate_ = 0.4; lfo_depth_ = 0.002; break; // 2ms depth
@@ -51,10 +50,6 @@ public:
             case Mode::I_II: lfo_rate_ = 1.0; lfo_depth_ = 0.003; break;
             default:         lfo_rate_ = 0.0; lfo_depth_ = 0.0; break;
         }
-    }
-
-    void set_lfo_rate(double rate) {
-        lfo_rate_ = rate;
     }
 
     void reset() override {
@@ -91,17 +86,20 @@ protected:
         }
     }
 
+    // Mono fallback
     void do_pull(std::span<float> output, const VoiceContext* /* context */ = nullptr) override {
-        // Minimal mono downmix
-        for (auto& sample : output) {
-            float in = sample;
-            
-            double mod = std::sin(2.0 * M_PI * lfo_phase_);
-            lfo_phase_ += lfo_rate_ / sample_rate_;
-            if (lfo_phase_ >= 1.0) lfo_phase_ -= 1.0;
+        // Juno Chorus is inherently stereo, but we can do a mono mixdown if needed
+        AudioBuffer temp;
+        std::vector<float> l(output.size()), r(output.size());
+        temp.left = l;
+        temp.right = r;
+        std::copy(output.begin(), output.end(), temp.left.begin());
+        std::copy(output.begin(), output.end(), temp.right.begin());
 
-            delay_l_.set_delay_time(static_cast<float>(0.0035 + mod * lfo_depth_));
-            sample = delay_l_.process_sample(in);
+        do_pull(temp);
+
+        for (size_t i = 0; i < output.size(); ++i) {
+            output[i] = (temp.left[i] + temp.right[i]) * 0.5f;
         }
     }
 

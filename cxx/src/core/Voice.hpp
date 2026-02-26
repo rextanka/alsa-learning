@@ -29,6 +29,9 @@ public:
 
     void note_on(double frequency);
     void note_off();
+
+    SourceMixer& source_mixer() { return *source_mixer_; }
+    SubOscillator& sub_oscillator() { return *sub_oscillator_; }
     bool is_active() const;
     void reset() override;
 
@@ -65,10 +68,14 @@ protected:
     static constexpr size_t MAX_BLOCK_SIZE = 1024;
 
 private:
+    static constexpr size_t MAX_BLOCK_SIZE = 1024;
+
     void rebuild_graph();
     void apply_modulation();
 
     std::unique_ptr<OscillatorProcessor> oscillator_;
+    std::unique_ptr<SubOscillator> sub_oscillator_;
+    std::unique_ptr<SourceMixer> source_mixer_;
     std::unique_ptr<AdsrEnvelopeProcessor> envelope_;
     std::unique_ptr<FilterProcessor> filter_;
     std::unique_ptr<LfoProcessor> lfo_;

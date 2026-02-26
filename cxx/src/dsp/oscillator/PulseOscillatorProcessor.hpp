@@ -17,6 +17,7 @@ class PulseOscillatorProcessor : public SquareOscillatorProcessor {
 public:
     explicit PulseOscillatorProcessor(int sample_rate)
         : SquareOscillatorProcessor(sample_rate)
+        , base_pulse_width_(0.5)
     {
         base_pulse_width_ = 0.5;
     }
@@ -35,7 +36,7 @@ public:
     double get_phase() const { return phase_; }
 
 protected:
-    double base_pulse_width_ = 0.5;
+    double base_pulse_width_;
     double pwm_delta_ = 0.0;
 
     double generate_sample() override {
