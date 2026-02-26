@@ -71,6 +71,7 @@ typedef void* EngineHandle;
 #define MOD_TGT_CUTOFF    1
 #define MOD_TGT_RESONANCE 2
 #define MOD_TGT_AMPLITUDE 3
+#define MOD_TGT_PULSEWIDTH 4
 
 // Special IDs
 #define ALL_VOICES -1
@@ -127,6 +128,10 @@ AUDIO_API int engine_set_delay_enabled(EngineHandle handle, int enabled);
 // Modulation Matrix Control
 AUDIO_API int engine_set_modulation(EngineHandle handle, int source, int target, float intensity);
 AUDIO_API int engine_clear_modulations(EngineHandle handle);
+
+// Patch Management
+AUDIO_API int engine_save_patch(EngineHandle handle, const char* path);
+AUDIO_API int engine_load_patch(EngineHandle handle, const char* path);
 
 // Host & Device API
 AUDIO_API int host_get_device_count();

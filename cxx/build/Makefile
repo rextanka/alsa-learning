@@ -354,6 +354,32 @@ tremulant_tests/fast:
 .PHONY : tremulant_tests/fast
 
 #=============================================================================
+# Target rules for targets named Functional_SH101_Live
+
+# Build rule for target.
+Functional_SH101_Live: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Functional_SH101_Live
+.PHONY : Functional_SH101_Live
+
+# fast build rule for target.
+Functional_SH101_Live/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_SH101_Live.dir/build.make CMakeFiles/Functional_SH101_Live.dir/build
+.PHONY : Functional_SH101_Live/fast
+
+#=============================================================================
+# Target rules for targets named Functional_Juno_Live
+
+# Build rule for target.
+Functional_Juno_Live: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Functional_Juno_Live
+.PHONY : Functional_Juno_Live
+
+# fast build rule for target.
+Functional_Juno_Live/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_Juno_Live.dir/build.make CMakeFiles/Functional_Juno_Live.dir/build
+.PHONY : Functional_Juno_Live/fast
+
+#=============================================================================
 # Target rules for targets named gmock
 
 # Build rule for target.
@@ -459,6 +485,33 @@ src/core/MidiParser.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/MidiParser.cpp.s
 .PHONY : src/core/MidiParser.cpp.s
 
+src/core/PatchStore.o: src/core/PatchStore.cpp.o
+.PHONY : src/core/PatchStore.o
+
+# target to build an object file
+src/core/PatchStore.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/PatchStore.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/PatchStore.cpp.o
+.PHONY : src/core/PatchStore.cpp.o
+
+src/core/PatchStore.i: src/core/PatchStore.cpp.i
+.PHONY : src/core/PatchStore.i
+
+# target to preprocess a source file
+src/core/PatchStore.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/PatchStore.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/PatchStore.cpp.i
+.PHONY : src/core/PatchStore.cpp.i
+
+src/core/PatchStore.s: src/core/PatchStore.cpp.s
+.PHONY : src/core/PatchStore.s
+
+# target to generate assembly for a file
+src/core/PatchStore.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/PatchStore.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/PatchStore.cpp.s
+.PHONY : src/core/PatchStore.cpp.s
+
 src/core/Voice.o: src/core/Voice.cpp.o
 .PHONY : src/core/Voice.o
 
@@ -563,6 +616,54 @@ tests/functional/Functional_BachMidi.s: tests/functional/Functional_BachMidi.cpp
 tests/functional/Functional_BachMidi.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_BachMidi.dir/build.make CMakeFiles/Functional_BachMidi.dir/tests/functional/Functional_BachMidi.cpp.s
 .PHONY : tests/functional/Functional_BachMidi.cpp.s
+
+tests/functional/Functional_Juno_Live.o: tests/functional/Functional_Juno_Live.cpp.o
+.PHONY : tests/functional/Functional_Juno_Live.o
+
+# target to build an object file
+tests/functional/Functional_Juno_Live.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_Juno_Live.dir/build.make CMakeFiles/Functional_Juno_Live.dir/tests/functional/Functional_Juno_Live.cpp.o
+.PHONY : tests/functional/Functional_Juno_Live.cpp.o
+
+tests/functional/Functional_Juno_Live.i: tests/functional/Functional_Juno_Live.cpp.i
+.PHONY : tests/functional/Functional_Juno_Live.i
+
+# target to preprocess a source file
+tests/functional/Functional_Juno_Live.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_Juno_Live.dir/build.make CMakeFiles/Functional_Juno_Live.dir/tests/functional/Functional_Juno_Live.cpp.i
+.PHONY : tests/functional/Functional_Juno_Live.cpp.i
+
+tests/functional/Functional_Juno_Live.s: tests/functional/Functional_Juno_Live.cpp.s
+.PHONY : tests/functional/Functional_Juno_Live.s
+
+# target to generate assembly for a file
+tests/functional/Functional_Juno_Live.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_Juno_Live.dir/build.make CMakeFiles/Functional_Juno_Live.dir/tests/functional/Functional_Juno_Live.cpp.s
+.PHONY : tests/functional/Functional_Juno_Live.cpp.s
+
+tests/functional/Functional_SH101_Live.o: tests/functional/Functional_SH101_Live.cpp.o
+.PHONY : tests/functional/Functional_SH101_Live.o
+
+# target to build an object file
+tests/functional/Functional_SH101_Live.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_SH101_Live.dir/build.make CMakeFiles/Functional_SH101_Live.dir/tests/functional/Functional_SH101_Live.cpp.o
+.PHONY : tests/functional/Functional_SH101_Live.cpp.o
+
+tests/functional/Functional_SH101_Live.i: tests/functional/Functional_SH101_Live.cpp.i
+.PHONY : tests/functional/Functional_SH101_Live.i
+
+# target to preprocess a source file
+tests/functional/Functional_SH101_Live.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_SH101_Live.dir/build.make CMakeFiles/Functional_SH101_Live.dir/tests/functional/Functional_SH101_Live.cpp.i
+.PHONY : tests/functional/Functional_SH101_Live.cpp.i
+
+tests/functional/Functional_SH101_Live.s: tests/functional/Functional_SH101_Live.cpp.s
+.PHONY : tests/functional/Functional_SH101_Live.s
+
+# target to generate assembly for a file
+tests/functional/Functional_SH101_Live.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_SH101_Live.dir/build.make CMakeFiles/Functional_SH101_Live.dir/tests/functional/Functional_SH101_Live.cpp.s
+.PHONY : tests/functional/Functional_SH101_Live.cpp.s
 
 tests/functional/Phase10Tests.o: tests/functional/Phase10Tests.cpp.o
 .PHONY : tests/functional/Phase10Tests.o
@@ -962,6 +1063,8 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... test"
 	@echo "... Functional_BachMidi"
+	@echo "... Functional_Juno_Live"
+	@echo "... Functional_SH101_Live"
 	@echo "... Phase10Tests"
 	@echo "... TimingValidation"
 	@echo "... audio_check"
@@ -985,6 +1088,9 @@ help:
 	@echo "... src/core/MidiParser.o"
 	@echo "... src/core/MidiParser.i"
 	@echo "... src/core/MidiParser.s"
+	@echo "... src/core/PatchStore.o"
+	@echo "... src/core/PatchStore.i"
+	@echo "... src/core/PatchStore.s"
 	@echo "... src/core/Voice.o"
 	@echo "... src/core/Voice.i"
 	@echo "... src/core/Voice.s"
@@ -997,6 +1103,12 @@ help:
 	@echo "... tests/functional/Functional_BachMidi.o"
 	@echo "... tests/functional/Functional_BachMidi.i"
 	@echo "... tests/functional/Functional_BachMidi.s"
+	@echo "... tests/functional/Functional_Juno_Live.o"
+	@echo "... tests/functional/Functional_Juno_Live.i"
+	@echo "... tests/functional/Functional_Juno_Live.s"
+	@echo "... tests/functional/Functional_SH101_Live.o"
+	@echo "... tests/functional/Functional_SH101_Live.i"
+	@echo "... tests/functional/Functional_SH101_Live.s"
 	@echo "... tests/functional/Phase10Tests.o"
 	@echo "... tests/functional/Phase10Tests.i"
 	@echo "... tests/functional/Phase10Tests.s"

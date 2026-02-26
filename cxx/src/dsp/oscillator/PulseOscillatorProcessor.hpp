@@ -17,16 +17,26 @@ class PulseOscillatorProcessor : public SquareOscillatorProcessor {
 public:
     explicit PulseOscillatorProcessor(int sample_rate)
         : SquareOscillatorProcessor(sample_rate)
-        , pulse_width_(0.5)
     {
+        base_pulse_width_ = 0.5;
     }
 
     void set_pulse_width(float width) {
-        pulse_width_ = std::clamp(static_cast<double>(width), 0.01, 0.99);
+        base_pulse_width_ = std::clamp(static_cast<double>(width), 0.01, 0.99);
     }
 
+    void set_pulse_width_modulation(float delta) {
+        pwm_delta_ = delta;
+    }
+
+    /**
+     * @brief Get current phase for sub-oscillator tracking.
+     */
+    double get_phase() const { return phase_; }
+
 protected:
-    double pulse_width_;
+    double base_pulse_width_ = 0.5;
+    double pwm_delta_ = 0.0;
 
     double generate_sample() override {
         // Update phase accumulator
@@ -38,11 +48,12 @@ protected:
 
         // Generate pulse wave with PolyBLEP correction
         const double dt = current_freq_ / sample_rate_;
-        double naive = (phase_ < pulse_width_) ? 0.5 : -0.5;
+        double current_pw = std::clamp(base_pulse_width_ + pwm_delta_, 0.01, 0.99);
+        double naive = (phase_ < current_pw) ? 0.5 : -0.5;
         
-        // Apply correction at transitions (0.0 and pulse_width_)
+        // Apply correction at transitions (0.0 and current_pw)
         naive += poly_blep(phase_, dt);
-        naive -= poly_blep(std::fmod(phase_ + (1.0 - pulse_width_), 1.0), dt);
+        naive -= poly_blep(std::fmod(phase_ + (1.0 - current_pw), 1.0), dt);
         
         return naive;
     }

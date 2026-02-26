@@ -4,7 +4,9 @@
  */
 
 #include "Voice.hpp"
-#include "oscillator/SquareOscillatorProcessor.hpp"
+#include "oscillator/PulseOscillatorProcessor.hpp"
+#include "oscillator/SubOscillator.hpp"
+#include "routing/SourceMixer.hpp"
 #include "filter/MoogLadderProcessor.hpp"
 #include <vector>
 #include <cmath>
@@ -19,8 +21,12 @@ Voice::Voice(int sample_rate)
     , sample_rate_(sample_rate)
     , pan_(0.0f)
 {
-    // 1. Oscillator: 50% Pulse (Square Wave)
-    oscillator_ = std::make_unique<SquareOscillatorProcessor>(static_cast<double>(sample_rate));
+    // 1. Oscillator: Pulse Oscillator (SH-101/Juno Style)
+    oscillator_ = std::make_unique<PulseOscillatorProcessor>(sample_rate);
+    sub_oscillator_ = std::make_unique<SubOscillator>();
+    source_mixer_ = std::make_unique<SourceMixer>();
+    source_mixer_->set_gain(1, 1.0f); // Default main pulse gain
+    source_mixer_->set_gain(2, 0.5f); // Default sub-osc gain
     
     // 2. ADSR: British Church Organ settings
     envelope_ = std::make_unique<AdsrEnvelopeProcessor>(sample_rate);
@@ -79,10 +85,13 @@ void Voice::set_parameter(int param, float value) {
 
 void Voice::rebuild_graph() {
     graph_->clear();
+    // In our new architecture, we pull oscillator and sub-oscillator manually
+    // but we add them to the graph for metadata/lifecycle management.
     graph_->add_node(oscillator_.get());
     if (filter_) {
         graph_->add_node(filter_.get());
     }
+    graph_->add_node(envelope_.get());
 }
 
 void Voice::note_on(double frequency) {
@@ -110,9 +119,6 @@ void Voice::reset() {
 
 void Voice::apply_modulation() {
     // 1. Collect modulation source values (block-rate)
-    // For now we use the first sample of the block or a separate pull
-    // Envelopes and LFOs are pulled here to get their current value for the block.
-    
     float env_val = 0.0f;
     static float tmp_env[1];
     envelope_->pull(std::span<float>(tmp_env, 1));
@@ -125,7 +131,6 @@ void Voice::apply_modulation() {
 
     current_source_values_[static_cast<size_t>(ModulationSource::Envelope)] = env_val;
     current_source_values_[static_cast<size_t>(ModulationSource::LFO)] = lfo_val;
-    // Velocity/Aftertouch can be added via VoiceContext
 
     // 2. Apply Pitch Modulation (Exponential)
     float pitch_mod = matrix_.sum_for_target(ModulationTarget::Pitch, current_source_values_);
@@ -146,24 +151,56 @@ void Voice::apply_modulation() {
     // 4. Amplitude Modulation (Linear/Factor)
     float amp_mod = matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_);
     base_amplitude_ = std::clamp(1.0f + amp_mod, 0.0f, 2.0f);
+
+    // 5. Pulse Width Modulation (Linear)
+    float pw_mod = matrix_.sum_for_target(ModulationTarget::PulseWidth, current_source_values_);
+    if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
+        pulse_osc->set_pulse_width_modulation(pw_mod);
+    }
 }
 
 void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
-    // Apply modular modulation for this block
+    if (!envelope_->is_active()) {
+        std::fill(output.begin(), output.end(), 0.0f);
+        return;
+    }
+
     apply_modulation();
 
-    // Process the graph (Oscillator -> Filter)
-    graph_->pull(output, context);
+    auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get());
+    size_t frames = std::min(output.size(), MAX_BLOCK_SIZE);
 
-    // Apply VCA (Final gain = Base Amplitude * Env)
-    // Note: envelope was already pulled in apply_modulation to get block value,
-    // but for sample-accurate VCA we pull it again or use the cached block value.
-    // To keep it simple and consistent with previous "chiff" implementation:
+    for (size_t i = 0; i < frames; ++i) {
+        float main_out = 0.0f;
+        float sub_out = 0.0f;
+
+        // Advance oscillators sample by sample
+        float tmp[1];
+        std::span<float> single_frame(tmp, 1);
+        oscillator_->pull(single_frame, context);
+        main_out = tmp[0];
+
+        if (pulse_osc) {
+            sub_out = static_cast<float>(sub_oscillator_->generate_sample(pulse_osc->get_phase()));
+        }
+
+        std::array<float, SourceMixer::NUM_CHANNELS> inputs = {0.0f};
+        inputs[1] = main_out; // Channel 1: Pulse/Square
+        inputs[2] = sub_out;  // Channel 2: Sub
+
+        output[i] = source_mixer_->mix(inputs);
+    }
+
+    // Apply VCA
     float env_gain = current_source_values_[static_cast<size_t>(ModulationSource::Envelope)];
     float final_gain = env_gain * base_amplitude_;
+    for (size_t i = 0; i < frames; ++i) {
+        output[i] *= final_gain;
+    }
 
-    for (auto& sample : output) {
-        sample *= final_gain;
+    // Filter
+    if (filter_) {
+        filter_->pull(output, context);
     }
 }
 

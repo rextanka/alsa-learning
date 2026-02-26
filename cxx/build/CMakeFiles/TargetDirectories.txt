@@ -12,6 +12,8 @@
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/TimingValidation.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/Functional_BachMidi.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/tremulant_tests.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/Functional_SH101_Live.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/Functional_Juno_Live.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/test.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/edit_cache.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/rebuild_cache.dir
@@ -44,3 +46,10 @@
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-build/googletest/CMakeFiles/install.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-build/googletest/CMakeFiles/install/local.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/googletest-build/googletest/CMakeFiles/install/strip.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/json-build/CMakeFiles/test.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/json-build/CMakeFiles/edit_cache.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/json-build/CMakeFiles/rebuild_cache.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/json-build/CMakeFiles/list_install_components.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/json-build/CMakeFiles/install.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/json-build/CMakeFiles/install/local.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/json-build/CMakeFiles/install/strip.dir

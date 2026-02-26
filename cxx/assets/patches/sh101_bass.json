@@ -1,0 +1,26 @@
+{
+    "version": 1,
+    "name": "SH-101 Bass Pluck",
+    "parameters": {
+        "pulse_gain": 0.8,
+        "sub_gain": 0.6,
+        "vcf_cutoff": 400.0,
+        "vcf_res": 0.4,
+        "attack": 0.005,
+        "decay": 0.15,
+        "sustain": 0.1,
+        "release": 0.1
+    },
+    "mod_matrix": [
+        {
+            "source": 0,
+            "target": 1,
+            "intensity": 1.5
+        },
+        {
+            "source": 1,
+            "target": 4,
+            "intensity": 0.1
+        }
+    ]
+}

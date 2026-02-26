@@ -11,6 +11,8 @@
 #include "envelope/AdsrEnvelopeProcessor.hpp"
 #include "filter/FilterProcessor.hpp"
 #include "oscillator/LfoProcessor.hpp"
+#include "oscillator/SubOscillator.hpp"
+#include "routing/SourceMixer.hpp"
 #include "AudioGraph.hpp"
 #include "ModulationMatrix.hpp"
 #include <memory>
@@ -47,9 +49,15 @@ public:
     void set_pan(float pan);
     float pan() const { return pan_; }
 
+    SourceMixer& source_mixer() { return *source_mixer_; }
+    SubOscillator& sub_oscillator() { return *sub_oscillator_; }
+
 protected:
     void do_pull(std::span<float> output, const VoiceContext* context = nullptr) override;
     void do_pull(AudioBuffer& output, const VoiceContext* context = nullptr) override;
+
+    // Buffer for source mixing
+    static constexpr size_t MAX_BLOCK_SIZE = 1024;
 
 private:
     void rebuild_graph();
@@ -61,6 +69,9 @@ private:
     std::unique_ptr<LfoProcessor> lfo_;
     std::unique_ptr<AudioGraph> graph_;
     
+    std::unique_ptr<SubOscillator> sub_oscillator_;
+    std::unique_ptr<SourceMixer> source_mixer_;
+
     ModulationMatrix matrix_;
     
     // Base parameters (anchors for modulation)

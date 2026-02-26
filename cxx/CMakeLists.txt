@@ -62,6 +62,7 @@ set(ENGINE_SOURCES
     src/core/Voice.cpp
     src/core/VoiceManager.cpp
     src/core/MidiParser.cpp
+    src/core/PatchStore.cpp
 )
 
 if(APPLE)
@@ -86,8 +87,10 @@ target_compile_options(audio_engine PRIVATE
 )
 
 if(PLATFORM_LIBS)
-    target_link_libraries(audio_engine ${PLATFORM_LIBS})
+    target_link_libraries(audio_engine PRIVATE ${PLATFORM_LIBS})
 endif()
+
+target_link_libraries(audio_engine PUBLIC nlohmann_json::nlohmann_json)
 
 # --- Core Audio Engine Library (Shared) ---
 add_library(audio_engine_shared SHARED ${ENGINE_SOURCES})
@@ -106,8 +109,10 @@ target_compile_options(audio_engine_shared PRIVATE
 )
 
 if(PLATFORM_LIBS)
-    target_link_libraries(audio_engine_shared ${PLATFORM_LIBS})
+    target_link_libraries(audio_engine_shared PRIVATE ${PLATFORM_LIBS})
 endif()
+
+target_link_libraries(audio_engine_shared PUBLIC nlohmann_json::nlohmann_json)
 
 # Ensure the shared library is named consistently across platforms
 set_target_properties(audio_engine_shared PROPERTIES OUTPUT_NAME "audio_engine")
@@ -122,9 +127,15 @@ if(BUILD_TESTING)
       googletest
       URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz
     )
+
+    FetchContent_Declare(
+      json
+      URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+    )
+
     # For Windows: prevent overriding the parent project's compiler/linker settings
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(googletest)
+    FetchContent_MakeAvailable(googletest json)
 
     enable_testing()
 
@@ -176,6 +187,14 @@ if(BUILD_TESTING)
     
     add_functional_gtest(Functional_BachMidi Functional_BachMidi.cpp)
     add_functional_gtest(tremulant_tests test_tremulant_preset.cpp)
+    
+    add_executable(Functional_SH101_Live tests/functional/Functional_SH101_Live.cpp)
+    target_include_directories(Functional_SH101_Live PRIVATE tests)
+    target_link_libraries(Functional_SH101_Live PRIVATE audio_engine)
+
+    add_executable(Functional_Juno_Live tests/functional/Functional_Juno_Live.cpp)
+    target_include_directories(Functional_Juno_Live PRIVATE tests)
+    target_link_libraries(Functional_Juno_Live PRIVATE audio_engine)
 
     add_test(NAME Functional_Phase10 COMMAND Phase10Tests)
     add_test(NAME Functional_Timing COMMAND TimingValidation)

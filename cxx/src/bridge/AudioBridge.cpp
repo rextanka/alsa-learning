@@ -26,6 +26,7 @@
 #include "MusicalClock.hpp"
 #include "TuningSystem.hpp"
 #include "Logger.hpp"
+#include "PatchStore.hpp"
 #include <memory>
 #include <span>
 #include <cstring>
@@ -58,6 +59,7 @@ struct EngineHandleImpl {
     std::unique_ptr<hal::AudioDriver> driver;
     audio::MusicalClock clock;
     audio::TwelveToneEqual tuning;
+    std::unordered_map<std::string, int> param_name_to_id;
     int sample_rate;
     int next_processor_id = 100; // Start at 100 to avoid confusion with voice indices
 
@@ -75,6 +77,14 @@ struct EngineHandleImpl {
         driver->set_stereo_callback([this](audio::AudioBuffer& buffer) {
             voice_manager->pull(buffer);
         });
+
+        // Initialize parameter mapping for fast UI reflection
+        param_name_to_id["osc_pw"] = 10;
+        param_name_to_id["sub_gain"] = 11;
+        param_name_to_id["saw_gain"] = 12;
+        param_name_to_id["pulse_gain"] = 13;
+        param_name_to_id["vcf_cutoff"] = 1;
+        param_name_to_id["vcf_res"] = 2;
     }
 };
 
@@ -459,6 +469,47 @@ int engine_clear_modulations(EngineHandle handle) {
         }
     }
     return 0;
+}
+
+int engine_save_patch(EngineHandle handle, const char* path) {
+    if (!handle || !path) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    audio::PatchData patch;
+    patch.name = "SH-101 Bass";
+    
+    // Extract parameters from first active voice as representative
+    for (auto& slot : impl->voice_manager->get_voices()) {
+        if (slot.voice) {
+            // This is a simplified snapshot for Phase 13
+            patch.parameters["vcf_cutoff"] = 1000.0f; // Mock for now
+            break;
+        }
+    }
+
+    return audio::PatchStore::save_to_file(patch, path) ? 0 : -1;
+}
+
+int engine_load_patch(EngineHandle handle, const char* path) {
+    if (!handle || !path) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    audio::PatchData patch;
+    if (audio::PatchStore::load_from_file(patch, path)) {
+        // Apply parameters to all voices
+        for (auto& slot : impl->voice_manager->get_voices()) {
+            if (slot.voice) {
+                for (auto const& [name, val] : patch.parameters) {
+                    set_param(slot.voice.get(), name.c_str(), val);
+                }
+                // Apply mod matrix
+                slot.voice->matrix().clear_all();
+                for (auto const& conn : patch.mod_matrix) {
+                    slot.voice->matrix().set_connection(conn.source, conn.target, conn.intensity);
+                }
+            }
+        }
+        return 0;
+    }
+    return -1;
 }
 
 int host_get_device_count() {
