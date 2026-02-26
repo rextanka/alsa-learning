@@ -31,8 +31,16 @@
 #include <span>
 #include <cstring>
 
+// --- Handle Implementation Header (Shared) ---
+enum class HandleType {
+    Engine,
+    Oscillator,
+    Envelope
+};
+
 // Internal handle structure (hidden from C API)
 struct OscillatorHandleImpl {
+    HandleType type = HandleType::Oscillator;
     std::unique_ptr<audio::Processor> processor;
     int sample_rate;
     
@@ -44,6 +52,7 @@ struct OscillatorHandleImpl {
 };
 
 struct EnvelopeHandleImpl {
+    HandleType type = HandleType::Envelope;
     std::unique_ptr<audio::EnvelopeProcessor> processor;
     int sample_rate;
 
@@ -55,6 +64,7 @@ struct EnvelopeHandleImpl {
 };
 
 struct EngineHandleImpl {
+    HandleType type = HandleType::Engine;
     std::unique_ptr<audio::VoiceManager> voice_manager;
     std::unique_ptr<hal::AudioDriver> driver;
     audio::MusicalClock clock;
@@ -498,7 +508,7 @@ int engine_load_patch(EngineHandle handle, const char* path) {
         for (auto& slot : impl->voice_manager->get_voices()) {
             if (slot.voice) {
                 for (auto const& [name, val] : patch.parameters) {
-                    set_param(slot.voice.get(), name.c_str(), val);
+                    slot.voice->set_internal_param(name, val);
                 }
                 // Apply mod matrix
                 slot.voice->matrix().clear_all();
@@ -548,34 +558,31 @@ int host_get_device_sample_rate(int index) {
 int set_param(void* handle, const char* name, float value) {
     if (!handle || !name) return -1;
     try {
-        // Envelopes
-        auto* env_impl = static_cast<EnvelopeHandleImpl*>(handle);
-        auto* adsr = dynamic_cast<audio::AdsrEnvelopeProcessor*>(env_impl->processor.get());
-        if (adsr) {
-            if (std::strcmp(name, "attack") == 0) { adsr->set_attack_time(value); return 0; }
-            if (std::strcmp(name, "decay") == 0) { adsr->set_decay_time(value); return 0; }
-            if (std::strcmp(name, "sustain") == 0) { adsr->set_sustain_level(value); return 0; }
-            if (std::strcmp(name, "release") == 0) { adsr->set_release_time(value); return 0; }
-        }
-        auto* ad = dynamic_cast<audio::ADEnvelopeProcessor*>(env_impl->processor.get());
-        if (ad) {
-            if (std::strcmp(name, "attack") == 0) { ad->set_attack_time(value); return 0; }
-            if (std::strcmp(name, "decay") == 0) { ad->set_decay_time(value); return 0; }
+        // Safe type check using a shared header field (type)
+        HandleType type = *static_cast<HandleType*>(handle);
+
+        if (type == HandleType::Engine) {
+            auto* impl = static_cast<EngineHandleImpl*>(handle);
+            int result = 0;
+            for (auto& slot : impl->voice_manager->get_voices()) {
+                if (slot.voice) {
+                    if (slot.voice->set_internal_param(name, value) != 0) result = -1;
+                }
+            }
+            return result;
         }
 
-        // Generic processors (Filters, Delay)
-        auto* proc = static_cast<audio::Processor*>(handle);
-        auto* filter = dynamic_cast<audio::FilterProcessor*>(proc);
-        if (filter) {
-            if (std::strcmp(name, "cutoff") == 0) { filter->set_cutoff(value); return 0; }
-            if (std::strcmp(name, "resonance") == 0) { filter->set_resonance(value); return 0; }
+        if (type == HandleType::Envelope) {
+            auto* env_impl = static_cast<EnvelopeHandleImpl*>(handle);
+            auto* adsr = dynamic_cast<audio::AdsrEnvelopeProcessor*>(env_impl->processor.get());
+            if (adsr) {
+                if (std::strcmp(name, "attack") == 0) { adsr->set_attack_time(value); return 0; }
+                if (std::strcmp(name, "decay") == 0) { adsr->set_decay_time(value); return 0; }
+                if (std::strcmp(name, "sustain") == 0) { adsr->set_sustain_level(value); return 0; }
+                if (std::strcmp(name, "release") == 0) { adsr->set_release_time(value); return 0; }
+            }
         }
-        auto* delay = dynamic_cast<audio::DelayLine*>(proc);
-        if (delay) {
-            if (std::strcmp(name, "time") == 0) { delay->set_delay_time(value); return 0; }
-            if (std::strcmp(name, "feedback") == 0) { delay->set_feedback(value); return 0; }
-            if (std::strcmp(name, "mix") == 0) { delay->set_mix(value); return 0; }
-        }
+
         return -1;
     } catch (...) { return -1; }
 }

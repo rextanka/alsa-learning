@@ -1297,8 +1297,10 @@ CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o: /Users/nickthompson/sr
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SawtoothOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SineOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SquareOscillatorProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SubOscillator.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/TriangleOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/WavetableOscillatorProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing/SourceMixer.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal/AudioDriver.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal/coreaudio/CoreAudioDriver.hpp
 
@@ -5327,7 +5329,9 @@ CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o: /Users/nickthompson/src
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/FilterProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/LfoProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SubOscillator.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing/SourceMixer.hpp
 
 CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal/coreaudio/CoreAudioDriver.cpp \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AudioToolbox.framework/Headers/AUAudioUnit.h \
@@ -6453,17 +6457,17 @@ CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o: /Users/nick
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceManager.cpp:
 
-/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing/SourceMixer.hpp:
-
-/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SubOscillator.hpp:
-
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiParser.cpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal/AudioDriver.hpp:
 
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing/SourceMixer.hpp:
+
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/WavetableOscillatorProcessor.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/TriangleOscillatorProcessor.hpp:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SubOscillator.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SquareOscillatorProcessor.hpp:
 

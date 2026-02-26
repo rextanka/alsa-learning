@@ -223,4 +223,23 @@ void Voice::do_pull(AudioBuffer& output, const VoiceContext* context) {
     }
 }
 
+int Voice::set_internal_param(const std::string& name, float value) {
+    if (name == "attack") { envelope_->set_attack_time(value); return 0; }
+    if (name == "decay") { envelope_->set_decay_time(value); return 0; }
+    if (name == "sustain") { envelope_->set_sustain_level(value); return 0; }
+    if (name == "release") { envelope_->set_release_time(value); return 0; }
+    
+    if (name == "vcf_cutoff") { base_cutoff_ = value; return 0; }
+    if (name == "vcf_res") { base_resonance_ = value; return 0; }
+    
+    if (name == "pulse_gain") { source_mixer_->set_gain(1, value); return 0; }
+    if (name == "sub_gain") { source_mixer_->set_gain(2, value); return 0; }
+    
+    if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
+        if (name == "osc_pw") { pulse_osc->set_pulse_width(value); return 0; }
+    }
+
+    return -1;
+}
+
 } // namespace audio

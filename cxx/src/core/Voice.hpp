@@ -52,6 +52,11 @@ public:
     SourceMixer& source_mixer() { return *source_mixer_; }
     SubOscillator& sub_oscillator() { return *sub_oscillator_; }
 
+    /**
+     * @brief Internal parameter control for Voice components.
+     */
+    int set_internal_param(const std::string& name, float value);
+
 protected:
     void do_pull(std::span<float> output, const VoiceContext* context = nullptr) override;
     void do_pull(AudioBuffer& output, const VoiceContext* context = nullptr) override;
