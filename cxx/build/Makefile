@@ -354,6 +354,32 @@ tremulant_tests/fast:
 .PHONY : tremulant_tests/fast
 
 #=============================================================================
+# Target rules for targets named sh101_chain_tests
+
+# Build rule for target.
+sh101_chain_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 sh101_chain_tests
+.PHONY : sh101_chain_tests
+
+# fast build rule for target.
+sh101_chain_tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sh101_chain_tests.dir/build.make CMakeFiles/sh101_chain_tests.dir/build
+.PHONY : sh101_chain_tests/fast
+
+#=============================================================================
+# Target rules for targets named juno_chorus_tests
+
+# Build rule for target.
+juno_chorus_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 juno_chorus_tests
+.PHONY : juno_chorus_tests
+
+# fast build rule for target.
+juno_chorus_tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/juno_chorus_tests.dir/build.make CMakeFiles/juno_chorus_tests.dir/build
+.PHONY : juno_chorus_tests/fast
+
+#=============================================================================
 # Target rules for targets named gmock
 
 # Build rule for target.
@@ -458,6 +484,33 @@ src/core/MidiParser.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/MidiParser.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/MidiParser.cpp.s
 .PHONY : src/core/MidiParser.cpp.s
+
+src/core/PatchStore.o: src/core/PatchStore.cpp.o
+.PHONY : src/core/PatchStore.o
+
+# target to build an object file
+src/core/PatchStore.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/PatchStore.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/PatchStore.cpp.o
+.PHONY : src/core/PatchStore.cpp.o
+
+src/core/PatchStore.i: src/core/PatchStore.cpp.i
+.PHONY : src/core/PatchStore.i
+
+# target to preprocess a source file
+src/core/PatchStore.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/PatchStore.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/PatchStore.cpp.i
+.PHONY : src/core/PatchStore.cpp.i
+
+src/core/PatchStore.s: src/core/PatchStore.cpp.s
+.PHONY : src/core/PatchStore.s
+
+# target to generate assembly for a file
+src/core/PatchStore.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine.dir/build.make CMakeFiles/audio_engine.dir/src/core/PatchStore.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_engine_shared.dir/build.make CMakeFiles/audio_engine_shared.dir/src/core/PatchStore.cpp.s
+.PHONY : src/core/PatchStore.cpp.s
 
 src/core/Voice.o: src/core/Voice.cpp.o
 .PHONY : src/core/Voice.o
@@ -756,6 +809,54 @@ tests/functional/stereo_poly_test.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/tests/functional/stereo_poly_test.cpp.s
 .PHONY : tests/functional/stereo_poly_test.cpp.s
 
+tests/functional/test_juno_chorus.o: tests/functional/test_juno_chorus.cpp.o
+.PHONY : tests/functional/test_juno_chorus.o
+
+# target to build an object file
+tests/functional/test_juno_chorus.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/juno_chorus_tests.dir/build.make CMakeFiles/juno_chorus_tests.dir/tests/functional/test_juno_chorus.cpp.o
+.PHONY : tests/functional/test_juno_chorus.cpp.o
+
+tests/functional/test_juno_chorus.i: tests/functional/test_juno_chorus.cpp.i
+.PHONY : tests/functional/test_juno_chorus.i
+
+# target to preprocess a source file
+tests/functional/test_juno_chorus.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/juno_chorus_tests.dir/build.make CMakeFiles/juno_chorus_tests.dir/tests/functional/test_juno_chorus.cpp.i
+.PHONY : tests/functional/test_juno_chorus.cpp.i
+
+tests/functional/test_juno_chorus.s: tests/functional/test_juno_chorus.cpp.s
+.PHONY : tests/functional/test_juno_chorus.s
+
+# target to generate assembly for a file
+tests/functional/test_juno_chorus.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/juno_chorus_tests.dir/build.make CMakeFiles/juno_chorus_tests.dir/tests/functional/test_juno_chorus.cpp.s
+.PHONY : tests/functional/test_juno_chorus.cpp.s
+
+tests/functional/test_sh101_chain.o: tests/functional/test_sh101_chain.cpp.o
+.PHONY : tests/functional/test_sh101_chain.o
+
+# target to build an object file
+tests/functional/test_sh101_chain.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sh101_chain_tests.dir/build.make CMakeFiles/sh101_chain_tests.dir/tests/functional/test_sh101_chain.cpp.o
+.PHONY : tests/functional/test_sh101_chain.cpp.o
+
+tests/functional/test_sh101_chain.i: tests/functional/test_sh101_chain.cpp.i
+.PHONY : tests/functional/test_sh101_chain.i
+
+# target to preprocess a source file
+tests/functional/test_sh101_chain.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sh101_chain_tests.dir/build.make CMakeFiles/sh101_chain_tests.dir/tests/functional/test_sh101_chain.cpp.i
+.PHONY : tests/functional/test_sh101_chain.cpp.i
+
+tests/functional/test_sh101_chain.s: tests/functional/test_sh101_chain.cpp.s
+.PHONY : tests/functional/test_sh101_chain.s
+
+# target to generate assembly for a file
+tests/functional/test_sh101_chain.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sh101_chain_tests.dir/build.make CMakeFiles/sh101_chain_tests.dir/tests/functional/test_sh101_chain.cpp.s
+.PHONY : tests/functional/test_sh101_chain.cpp.s
+
 tests/functional/test_tremulant_preset.o: tests/functional/test_tremulant_preset.cpp.o
 .PHONY : tests/functional/test_tremulant_preset.o
 
@@ -974,8 +1075,10 @@ help:
 	@echo "... gtest"
 	@echo "... gtest_main"
 	@echo "... integration_tests"
+	@echo "... juno_chorus_tests"
 	@echo "... metronome_test"
 	@echo "... processor_check"
+	@echo "... sh101_chain_tests"
 	@echo "... stereo_poly_test"
 	@echo "... tremulant_tests"
 	@echo "... unit_tests"
@@ -985,6 +1088,9 @@ help:
 	@echo "... src/core/MidiParser.o"
 	@echo "... src/core/MidiParser.i"
 	@echo "... src/core/MidiParser.s"
+	@echo "... src/core/PatchStore.o"
+	@echo "... src/core/PatchStore.i"
+	@echo "... src/core/PatchStore.s"
 	@echo "... src/core/Voice.o"
 	@echo "... src/core/Voice.i"
 	@echo "... src/core/Voice.s"
@@ -1021,6 +1127,12 @@ help:
 	@echo "... tests/functional/stereo_poly_test.o"
 	@echo "... tests/functional/stereo_poly_test.i"
 	@echo "... tests/functional/stereo_poly_test.s"
+	@echo "... tests/functional/test_juno_chorus.o"
+	@echo "... tests/functional/test_juno_chorus.i"
+	@echo "... tests/functional/test_juno_chorus.s"
+	@echo "... tests/functional/test_sh101_chain.o"
+	@echo "... tests/functional/test_sh101_chain.i"
+	@echo "... tests/functional/test_sh101_chain.s"
 	@echo "... tests/functional/test_tremulant_preset.o"
 	@echo "... tests/functional/test_tremulant_preset.i"
 	@echo "... tests/functional/test_tremulant_preset.s"

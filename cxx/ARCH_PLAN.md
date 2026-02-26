@@ -114,8 +114,8 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
 | Phase | Description | Status |
 |-------|-------------|--------|
 | 1-11  | Core DSP, Factory, Polyphony, Musical Clock, Dual-Layer Testing | 100% Complete |
-| 12    | **MIDI Integration**: Creation of `MidiHAL` and `MidiParser` feeding into `VoiceManager`. | Planned |
-| 13    | **The Stereo Mixer & Bus**: Summing mono sources with panning to stereo output. | 100% Complete |
+| 12    | **MIDI Integration**: Creation of `MidiHAL` and `MidiParser` feeding into `VoiceManager`. | 100% Complete |
+| 13    | **Golden Era Expansion**: SH-101 & Juno-60 building blocks (Sub-Osc, Source Mixer, Chorus, JSON Persistence). | In Progress |
 | 14    | **Spatial & Stereo FX**: Reverb, Chorus, Flanger, and Delay. | Planned |
 | 15    | **Host Interrogation & Enumeration**: Safely query device list and hardware sample rates via UTF-8 C-Bridge. | Planned |
 | 16    | **Non-Intrusive Logger**: RT-safe lock-free logging. | 100% Complete |
@@ -137,6 +137,7 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
 - **Nord-style Modular Routing**: Supporting "Audio-as-Control" where audio signals can be used as modulation sources across the graph.
 - **Exponential Parameter Scaling**: Pitch and Filter Cutoff modulation follow a logarithmic/octave-based response: $f_{final} = f_{base} \cdot 2^{mod}$, where $mod$ is the sum of modulation offsets in octaves.
 - **Base + Offset Accumulation**: Processors maintain a "Base" value (anchor). Each block, the `ModulationMatrix` sums all offsets (bipolar) and applies them exponentially to the base.
+- **Soft-Saturated Mixing (Phase 13)**: To emulate analog growl and headroom, the Source Mixer uses a `tanh` soft-saturation curve on the summed output. This prevents harsh digital clipping and provides harmonic richness when multiple oscillators are pushed into the filter.
 
 ---
 
