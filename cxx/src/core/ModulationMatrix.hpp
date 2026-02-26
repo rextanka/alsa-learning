@@ -21,6 +21,7 @@ enum class ModulationTarget : uint8_t {
     Cutoff,         // Octave-based filter cutoff shift
     Resonance,      // Linear resonance offset
     Amplitude,      // Linear gain factor
+    PulseWidth,     // Linear pulse width offset
     Count
 };
 

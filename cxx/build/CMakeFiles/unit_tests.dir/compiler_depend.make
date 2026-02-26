@@ -6288,8 +6288,12 @@ CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o: /Users/nickthompso
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/FilterProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/LfoProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SubOscillator.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing/SourceMixer.hpp
 
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing/SourceMixer.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/LfoProcessor.hpp:
 
@@ -6312,6 +6316,8 @@ CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o: /Users/nickthompso
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__thread/thread.h:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__thread/this_thread.h:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SubOscillator.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/tests/unit/test_logger.cpp:
 

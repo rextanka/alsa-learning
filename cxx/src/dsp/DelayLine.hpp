@@ -44,6 +44,34 @@ public:
         mix_ = std::clamp(mix, 0.0f, 1.0f);
     }
 
+    /**
+     * @brief Process a single sample through the delay line.
+     * 
+     * @param input Input sample.
+     * @return float Processed sample (mixed wet/dry).
+     */
+    float process_sample(float input) {
+        const float delay_samples = delay_time_ * sample_rate_;
+        const size_t buf_size = buffer_.size();
+
+        // Read from delay line with linear interpolation
+        float read_pos = static_cast<float>(write_pos_) - delay_samples;
+        while (read_pos < 0) read_pos += buf_size;
+
+        size_t i0 = static_cast<size_t>(read_pos) % buf_size;
+        size_t i1 = (i0 + 1) % buf_size;
+        float frac = read_pos - static_cast<float>(static_cast<size_t>(read_pos));
+
+        float delayed_sample = buffer_[i0] + frac * (buffer_[i1] - buffer_[i0]);
+
+        // Write back to delay line with feedback
+        buffer_[write_pos_] = input + (delayed_sample * feedback_);
+        write_pos_ = (write_pos_ + 1) % buf_size;
+
+        // Mix wet/dry
+        return (input * (1.0f - mix_)) + (delayed_sample * mix_);
+    }
+
     void reset() override {
         std::fill(buffer_.begin(), buffer_.end(), 0.0f);
         write_pos_ = 0;

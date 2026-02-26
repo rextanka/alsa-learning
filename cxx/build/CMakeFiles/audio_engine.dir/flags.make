@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = -DAUDIO_ENABLE_PROFILING=1
 
-CXX_INCLUDES = -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/include -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks
+CXX_INCLUDES = -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/include -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal -I/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/_deps/json-src/include -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks
 
 CXX_FLAGSarm64 = -std=c++20 -arch arm64 -Wall -Wextra -Wpedantic -fvisibility=default
 

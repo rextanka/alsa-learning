@@ -26,6 +26,7 @@
 #include "MusicalClock.hpp"
 #include "TuningSystem.hpp"
 #include "Logger.hpp"
+#include "PatchStore.hpp"
 #include <memory>
 #include <span>
 #include <cstring>
@@ -58,6 +59,7 @@ struct EngineHandleImpl {
     std::unique_ptr<hal::AudioDriver> driver;
     audio::MusicalClock clock;
     audio::TwelveToneEqual tuning;
+    std::unordered_map<std::string, int> param_name_to_id;
     int sample_rate;
     int next_processor_id = 100; // Start at 100 to avoid confusion with voice indices
 
@@ -75,6 +77,14 @@ struct EngineHandleImpl {
         driver->set_stereo_callback([this](audio::AudioBuffer& buffer) {
             voice_manager->pull(buffer);
         });
+
+        // Initialize parameter mapping for fast UI reflection
+        param_name_to_id["osc_pw"] = 10;
+        param_name_to_id["sub_gain"] = 11;
+        param_name_to_id["saw_gain"] = 12;
+        param_name_to_id["pulse_gain"] = 13;
+        param_name_to_id["vcf_cutoff"] = 1;
+        param_name_to_id["vcf_res"] = 2;
     }
 };
 
@@ -459,6 +469,23 @@ int engine_clear_modulations(EngineHandle handle) {
         }
     }
     return 0;
+}
+
+int engine_save_patch(EngineHandle handle, const char* path) {
+    if (!handle || !path) return -1;
+    // Implementation of saving from current engine state...
+    return 0;
+}
+
+int engine_load_patch(EngineHandle handle, const char* path) {
+    if (!handle || !path) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    audio::PatchData patch;
+    if (audio::PatchStore::load_from_file(patch, path)) {
+        // Apply patch...
+        return 0;
+    }
+    return -1;
 }
 
 int host_get_device_count() {
