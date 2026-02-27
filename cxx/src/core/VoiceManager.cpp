@@ -130,6 +130,24 @@ void VoiceManager::note_off(int note) {
     }
 }
 
+void VoiceManager::set_parameter_by_name(const std::string& name, float value) {
+    // Map names to Phase 13 parameter IDs (temporary mapping until full ParameterManager)
+    int param_id = -1;
+    if (name == "vcf_cutoff") param_id = 1;
+    else if (name == "vcf_res") param_id = 2;
+    else if (name == "osc_pw") param_id = 10;
+    else if (name == "sub_gain") param_id = 11;
+    else if (name == "saw_gain") param_id = 12;
+    else if (name == "pulse_gain") param_id = 13;
+    else if (name == "noise_gain") param_id = 14;
+
+    if (param_id != -1) {
+        for (auto& slot : voices_) {
+            slot.voice->set_parameter(param_id, value);
+        }
+    }
+}
+
 void VoiceManager::handleMidiEvent(const MidiEvent& event) {
     if (event.isNoteOn()) {
         note_on(event.data1, event.data2 / 127.0f);

@@ -72,6 +72,18 @@ void Voice::set_parameter(int param, float value) {
         case 2: // RESONANCE
             base_resonance_ = std::clamp(value, 0.0f, 1.0f);
             break;
+        case 11: // SUB_GAIN
+            source_mixer_->set_gain(2, value);
+            break;
+        case 12: // SAW_GAIN
+            source_mixer_->set_gain(0, value);
+            break;
+        case 13: // PULSE_GAIN
+            source_mixer_->set_gain(1, value);
+            break;
+        case 14: // NOISE_GAIN
+            source_mixer_->set_gain(3, value);
+            break;
         default:
             break;
     }
@@ -79,8 +91,10 @@ void Voice::set_parameter(int param, float value) {
 
 void Voice::rebuild_graph() {
     graph_->clear();
-    // Revert to stable fixed graph for this phase
-    graph_->add_node(oscillator_.get());
+    // In Phase 13, we use the SourceMixer to combine oscillators
+    // PulseOscillator and SubOscillator are pullable processors.
+    // However, they are currently managed manually in do_pull to feed the SourceMixer.
+    // The graph nodes from here on are the serial chain AFTER the mixer.
     if (filter_) {
         graph_->add_node(filter_.get());
     }
@@ -154,6 +168,28 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
         return;
     }
     apply_modulation();
+
+    // Pull from oscillators
+    auto block = graph_->borrow_buffer();
+    std::span<float> pulse_span(block->left.data(), output.size());
+    std::span<float> sub_span(block->right.data(), output.size());
+
+    oscillator_->pull(pulse_span, context);
+    sub_oscillator_->pull(sub_span, context);
+
+    // Mix them into output using SourceMixer (tanh)
+    // Headroom Scaling: 0.707 to maintain headroom before tanh
+    for (size_t i = 0; i < output.size(); ++i) {
+        std::array<float, SourceMixer::NUM_CHANNELS> inputs{};
+        inputs[0] = 0.0f; // Saw (not yet implemented as separate node)
+        inputs[1] = pulse_span[i] * 0.707f;
+        inputs[2] = sub_span[i] * 0.707f;
+        inputs[3] = 0.0f; // Noise
+        inputs[4] = 0.0f;
+        output[i] = source_mixer_->mix(inputs);
+    }
+
+    // Pass through the rest of the graph (Filter -> Envelope)
     graph_->pull(output, context);
 
     float final_gain = base_amplitude_;

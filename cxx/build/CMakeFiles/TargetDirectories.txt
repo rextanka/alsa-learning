@@ -14,6 +14,7 @@
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/tremulant_tests.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/sh101_chain_tests.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/juno_chorus_tests.dir
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/Functional_SH101_Live.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/test.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/edit_cache.dir
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles/rebuild_cache.dir

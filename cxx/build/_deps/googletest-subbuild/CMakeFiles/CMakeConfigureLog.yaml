@@ -21,6 +21,7 @@ events:
       - "uname"
     candidate_directories:
       - "/Library/Frameworks/Python.framework/Versions/3.14/bin/"
+      - "/Users/nickthompson/.swiftly/bin/"
       - "/opt/homebrew/bin/"
       - "/opt/homebrew/sbin/"
       - "/opt/gcc-arm/bin/"
@@ -36,10 +37,10 @@ events:
       - "/Library/Apple/usr/bin/"
       - "/Users/nickthompson/.dotnet/tools/"
       - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
-      - "/Users/nickthompson/.swiftly/bin/"
       - "/Users/nickthompson/Library/Application Support/JetBrains/Toolbox/scripts/"
     searched_directories:
       - "/Library/Frameworks/Python.framework/Versions/3.14/bin/uname"
+      - "/Users/nickthompson/.swiftly/bin/uname"
       - "/opt/homebrew/bin/uname"
       - "/opt/homebrew/sbin/uname"
       - "/opt/gcc-arm/bin/uname"
@@ -48,6 +49,7 @@ events:
     search_context:
       ENV{PATH}:
         - "/Library/Frameworks/Python.framework/Versions/3.14/bin"
+        - "/Users/nickthompson/.swiftly/bin"
         - "/opt/homebrew/bin"
         - "/opt/homebrew/sbin"
         - "/opt/gcc-arm/bin/"
@@ -63,8 +65,6 @@ events:
         - "/Library/Apple/usr/bin"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-        - "/Library/Frameworks/Python.framework/Versions/3.14/bin"
-        - "/Users/nickthompson/.swiftly/bin"
         - "/Users/nickthompson/Library/Application Support/JetBrains/Toolbox/scripts"
   -
     kind: "message-v1"
@@ -94,6 +94,7 @@ events:
       - "install_name_tool"
     candidate_directories:
       - "/Library/Frameworks/Python.framework/Versions/3.14/bin/"
+      - "/Users/nickthompson/.swiftly/bin/"
       - "/opt/homebrew/bin/"
       - "/opt/homebrew/sbin/"
       - "/opt/gcc-arm/bin/"
@@ -109,10 +110,10 @@ events:
       - "/Library/Apple/usr/bin/"
       - "/Users/nickthompson/.dotnet/tools/"
       - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
-      - "/Users/nickthompson/.swiftly/bin/"
       - "/Users/nickthompson/Library/Application Support/JetBrains/Toolbox/scripts/"
     searched_directories:
       - "/Library/Frameworks/Python.framework/Versions/3.14/bin/install_name_tool"
+      - "/Users/nickthompson/.swiftly/bin/install_name_tool"
       - "/opt/homebrew/bin/install_name_tool"
       - "/opt/homebrew/sbin/install_name_tool"
       - "/opt/gcc-arm/bin/install_name_tool"
@@ -121,6 +122,7 @@ events:
     search_context:
       ENV{PATH}:
         - "/Library/Frameworks/Python.framework/Versions/3.14/bin"
+        - "/Users/nickthompson/.swiftly/bin"
         - "/opt/homebrew/bin"
         - "/opt/homebrew/sbin"
         - "/opt/gcc-arm/bin/"
@@ -136,8 +138,6 @@ events:
         - "/Library/Apple/usr/bin"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-        - "/Library/Frameworks/Python.framework/Versions/3.14/bin"
-        - "/Users/nickthompson/.swiftly/bin"
         - "/Users/nickthompson/Library/Application Support/JetBrains/Toolbox/scripts"
       CMAKE_INSTALL_PREFIX: "/usr/local"
 ...

@@ -32,7 +32,7 @@ struct PatchData {
         ModulationTarget target;
         float intensity;
     };
-    std::vector<Connection> mod_matrix;
+    std::vector<Connection> modulations;
 
     // JSON conversion
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(PatchData, version, name, parameters)
@@ -66,8 +66,8 @@ public:
      */
     static std::string serialize(const PatchData& patch) {
         json j = patch;
-        // Manually add mod_matrix due to custom enum serialization
-        j["mod_matrix"] = patch.mod_matrix;
+        // Manually add modulations due to custom enum serialization
+        j["modulations"] = patch.modulations;
         return j.dump(4);
     }
 
@@ -78,8 +78,8 @@ public:
         try {
             json j = json::parse(data);
             patch = j.get<PatchData>();
-            if (j.contains("mod_matrix")) {
-                patch.mod_matrix = j.at("mod_matrix").get<std::vector<PatchData::Connection>>();
+            if (j.contains("modulations")) {
+                patch.modulations = j.at("modulations").get<std::vector<PatchData::Connection>>();
             }
             return true;
         } catch (...) {

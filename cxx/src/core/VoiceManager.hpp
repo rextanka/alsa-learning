@@ -59,6 +59,11 @@ public:
     void note_off(int note);
 
     /**
+     * @brief Set a parameter by name across all voices.
+     */
+    void set_parameter_by_name(const std::string& name, float value);
+
+    /**
      * @brief Handle a MIDI event.
      */
     void handleMidiEvent(const MidiEvent& event);
