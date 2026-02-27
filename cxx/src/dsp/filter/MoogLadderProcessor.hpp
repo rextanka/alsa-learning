@@ -25,7 +25,7 @@ class MoogLadderProcessor : public FilterProcessor {
 public:
     explicit MoogLadderProcessor(int sample_rate)
         : sample_rate_(sample_rate)
-        , cutoff_(1000.0f)
+        , cutoff_(20000.0f) // DEFAULT SAFETY: Fully open
         , res_(0.0f)
     {
         for (int i = 0; i < 4; ++i) stage_[i] = 0.0f;
