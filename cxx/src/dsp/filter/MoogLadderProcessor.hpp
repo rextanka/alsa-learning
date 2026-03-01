@@ -25,7 +25,7 @@ class MoogLadderProcessor : public FilterProcessor {
 public:
     explicit MoogLadderProcessor(int sample_rate)
         : sample_rate_(sample_rate)
-        , cutoff_(1000.0f)
+        , cutoff_(20000.0f) // DEFAULT SAFETY: Fully open
         , res_(0.0f)
     {
         for (int i = 0; i < 4; ++i) stage_[i] = 0.0f;
@@ -50,6 +50,14 @@ protected:
     void do_pull(std::span<float> output, const VoiceContext* /* voice_context */ = nullptr) override {
         for (auto& sample : output) {
             process_sample(sample);
+        }
+        
+        // Safety Cutoff Logging (instrumentation)
+        static int log_throttle = 0;
+        if (log_throttle++ % 100 == 0) {
+             char buf[128];
+             std::snprintf(buf, sizeof(buf), "[Filter Audit] Cutoff: %.1f Hz, g: %.4f", cutoff_, g_);
+             audio::AudioLogger::instance().log_message("Filter", buf);
         }
     }
 

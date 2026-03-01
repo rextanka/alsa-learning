@@ -31,30 +31,46 @@
 #include <span>
 #include <cstring>
 
+// Handle type discrimination for tag-based safety
+enum class HandleType {
+    Oscillator,
+    Envelope,
+    Engine,
+    GenericProcessor
+};
+
+struct HandleBase {
+    HandleType type;
+    explicit HandleBase(HandleType t) : type(t) {}
+    virtual ~HandleBase() = default;
+};
+
 // Internal handle structure (hidden from C API)
-struct OscillatorHandleImpl {
+struct OscillatorHandleImpl : public HandleBase {
     std::unique_ptr<audio::Processor> processor;
     int sample_rate;
     
     OscillatorHandleImpl(std::unique_ptr<audio::Processor> proc, int sr)
-        : processor(std::move(proc))
+        : HandleBase(HandleType::Oscillator)
+        , processor(std::move(proc))
         , sample_rate(sr)
     {
     }
 };
 
-struct EnvelopeHandleImpl {
+struct EnvelopeHandleImpl : public HandleBase {
     std::unique_ptr<audio::EnvelopeProcessor> processor;
     int sample_rate;
 
     EnvelopeHandleImpl(std::unique_ptr<audio::EnvelopeProcessor> proc, int sr)
-        : processor(std::move(proc))
+        : HandleBase(HandleType::Envelope)
+        , processor(std::move(proc))
         , sample_rate(sr)
     {
     }
 };
 
-struct EngineHandleImpl {
+struct EngineHandleImpl : public HandleBase {
     std::unique_ptr<audio::VoiceManager> voice_manager;
     std::unique_ptr<hal::AudioDriver> driver;
     audio::MusicalClock clock;
@@ -64,7 +80,8 @@ struct EngineHandleImpl {
     int next_processor_id = 100; // Start at 100 to avoid confusion with voice indices
 
     EngineHandleImpl(int sr)
-        : voice_manager(std::make_unique<audio::VoiceManager>(sr))
+        : HandleBase(HandleType::Engine)
+        , voice_manager(std::make_unique<audio::VoiceManager>(sr))
         , clock(static_cast<double>(sr))
         , sample_rate(sr)
     {
@@ -482,7 +499,24 @@ int engine_load_patch(EngineHandle handle, const char* path) {
     auto* impl = static_cast<EngineHandleImpl*>(handle);
     audio::PatchData patch;
     if (audio::PatchStore::load_from_file(patch, path)) {
-        // Apply patch...
+        // Apply parameters
+        for (auto const& [name, value] : patch.parameters) {
+            impl->voice_manager->set_parameter_by_name(name, value);
+        }
+
+        // Apply ADSR specific (if in parameters)
+        float a = patch.parameters.count("attack") ? patch.parameters.at("attack") : 0.01f;
+        float d = patch.parameters.count("decay") ? patch.parameters.at("decay") : 0.1f;
+        float s = patch.parameters.count("sustain") ? patch.parameters.at("sustain") : 0.5f;
+        float r = patch.parameters.count("release") ? patch.parameters.at("release") : 0.1f;
+        engine_set_adsr(handle, a, d, s, r);
+
+        // Apply modulations
+        engine_clear_modulations(handle);
+        for (auto const& conn : patch.modulations) {
+            engine_set_modulation(handle, static_cast<int>(conn.source), static_cast<int>(conn.target), conn.intensity);
+        }
+        
         return 0;
     }
     return -1;
@@ -524,34 +558,39 @@ int host_get_device_sample_rate(int index) {
 int set_param(void* handle, const char* name, float value) {
     if (!handle || !name) return -1;
     try {
-        // Envelopes
-        auto* env_impl = static_cast<EnvelopeHandleImpl*>(handle);
-        auto* adsr = dynamic_cast<audio::AdsrEnvelopeProcessor*>(env_impl->processor.get());
-        if (adsr) {
-            if (std::strcmp(name, "attack") == 0) { adsr->set_attack_time(value); return 0; }
-            if (std::strcmp(name, "decay") == 0) { adsr->set_decay_time(value); return 0; }
-            if (std::strcmp(name, "sustain") == 0) { adsr->set_sustain_level(value); return 0; }
-            if (std::strcmp(name, "release") == 0) { adsr->set_release_time(value); return 0; }
-        }
-        auto* ad = dynamic_cast<audio::ADEnvelopeProcessor*>(env_impl->processor.get());
-        if (ad) {
-            if (std::strcmp(name, "attack") == 0) { ad->set_attack_time(value); return 0; }
-            if (std::strcmp(name, "decay") == 0) { ad->set_decay_time(value); return 0; }
+        auto* base = static_cast<HandleBase*>(handle);
+        
+        if (base->type == HandleType::Engine) {
+            auto* engine = static_cast<EngineHandleImpl*>(handle);
+            engine->voice_manager->set_parameter_by_name(name, value);
+            return 0;
         }
 
-        // Generic processors (Filters, Delay)
-        auto* proc = static_cast<audio::Processor*>(handle);
-        auto* filter = dynamic_cast<audio::FilterProcessor*>(proc);
-        if (filter) {
-            if (std::strcmp(name, "cutoff") == 0) { filter->set_cutoff(value); return 0; }
-            if (std::strcmp(name, "resonance") == 0) { filter->set_resonance(value); return 0; }
+        if (base->type == HandleType::Envelope) {
+            auto* env_impl = static_cast<EnvelopeHandleImpl*>(handle);
+            auto* adsr = dynamic_cast<audio::AdsrEnvelopeProcessor*>(env_impl->processor.get());
+            if (adsr) {
+                if (std::strcmp(name, "attack") == 0) { adsr->set_attack_time(value); return 0; }
+                if (std::strcmp(name, "decay") == 0) { adsr->set_decay_time(value); return 0; }
+                if (std::strcmp(name, "sustain") == 0) { adsr->set_sustain_level(value); return 0; }
+                if (std::strcmp(name, "release") == 0) { adsr->set_release_time(value); return 0; }
+            }
+            auto* ad = dynamic_cast<audio::ADEnvelopeProcessor*>(env_impl->processor.get());
+            if (ad) {
+                if (std::strcmp(name, "attack") == 0) { ad->set_attack_time(value); return 0; }
+                if (std::strcmp(name, "decay") == 0) { ad->set_decay_time(value); return 0; }
+            }
         }
-        auto* delay = dynamic_cast<audio::DelayLine*>(proc);
-        if (delay) {
-            if (std::strcmp(name, "time") == 0) { delay->set_delay_time(value); return 0; }
-            if (std::strcmp(name, "feedback") == 0) { delay->set_feedback(value); return 0; }
-            if (std::strcmp(name, "mix") == 0) { delay->set_mix(value); return 0; }
+
+        if (base->type == HandleType::Oscillator) {
+             auto* osc_impl = static_cast<OscillatorHandleImpl*>(handle);
+             // Handled frequency etc via specific functions but could add more here
         }
+
+        // Generic processors (if we decide to wrap them in HandleBase too)
+        // For now, if it's not one of our known handles, we might still be dealing with a raw Processor* 
+        // from some legacy tests, but we should transition them.
+        
         return -1;
     } catch (...) { return -1; }
 }

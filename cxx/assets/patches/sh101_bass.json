@@ -1,0 +1,27 @@
+{
+    "version": 1,
+    "name": "sh101_bass",
+    "parameters": {
+        "pulse_gain": 0.8,
+        "sub_gain": 0.6,
+        "noise_gain": 0.1,
+        "vcf_cutoff": 450.0,
+        "vcf_res": 0.6,
+        "attack": 0.005,
+        "decay": 0.15,
+        "sustain": 0.4,
+        "release": 0.1
+    },
+    "modulations": [
+        {
+            "source": 4,
+            "target": 1,
+            "intensity": 0.1
+        },
+        {
+            "source": 3,
+            "target": 2,
+            "intensity": 1.5
+        }
+    ]
+}

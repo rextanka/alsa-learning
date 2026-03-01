@@ -12,11 +12,25 @@
 #include "../../src/core/VoiceManager.hpp"
 #include "../../src/hal/AudioDriver.hpp"
 
-struct InternalEngine {
+enum class HandleType {
+    Oscillator,
+    Envelope,
+    Engine,
+    GenericProcessor
+};
+
+struct HandleBase {
+    HandleType type;
+    explicit HandleBase(HandleType t) : type(t) {}
+    virtual ~HandleBase() = default;
+};
+
+struct InternalEngine : public HandleBase {
     std::unique_ptr<audio::VoiceManager> voice_manager;
     std::unique_ptr<hal::AudioDriver> driver;
     audio::MusicalClock clock;
     audio::TwelveToneEqual tuning;
+    std::unordered_map<std::string, int> param_name_to_id;
     int sample_rate;
 };
 
