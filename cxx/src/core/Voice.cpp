@@ -107,10 +107,22 @@ void Voice::rebuild_graph() {
 
 void Voice::note_on(double frequency) {
     base_frequency_ = frequency;
-    oscillator_->set_frequency(frequency);
-    envelope_->gate_on();
+    // Ensure all processors are reset to clear stuck DC or phase
+    oscillator_->reset();
+    sub_oscillator_->reset();
+    envelope_->reset();
     lfo_->reset();
     if (filter_) filter_->reset();
+
+    // Set frequency after reset to ensure current_freq is correct
+    oscillator_->set_frequency(frequency);
+    
+    // Hardwire VCA if missing
+    if (matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_) <= 0.001f) {
+         matrix_.set_connection(ModulationSource::Envelope, ModulationTarget::Amplitude, 1.0f);
+    }
+    
+    envelope_->gate_on();
 }
 
 void Voice::note_off() {
@@ -131,33 +143,41 @@ void Voice::reset() {
 void Voice::apply_modulation() {
     // Collect modulation source values
     float env_val = 0.0f;
-    static float tmp_env[1];
-    envelope_->pull(std::span<float>(tmp_env, 1));
-    env_val = tmp_env[0];
+    float tmp_env_buf[1];
+    envelope_->pull(std::span<float>(tmp_env_buf, 1));
+    env_val = tmp_env_buf[0];
 
     float lfo_val = 0.0f;
-    static float tmp_lfo[1];
-    lfo_->pull(std::span<float>(tmp_lfo, 1));
-    lfo_val = tmp_lfo[0];
+    float tmp_lfo_buf[1];
+    lfo_->pull(std::span<float>(tmp_lfo_buf, 1));
+    lfo_val = tmp_lfo_buf[0];
 
     current_source_values_[static_cast<size_t>(ModulationSource::Envelope)] = env_val;
     current_source_values_[static_cast<size_t>(ModulationSource::LFO)] = lfo_val;
 
     // Apply Pitch Modulation
     float pitch_mod = matrix_.sum_for_target(ModulationTarget::Pitch, current_source_values_);
-    oscillator_->set_frequency(base_frequency_ * std::pow(2.0, static_cast<double>(pitch_mod)));
+    double mod_freq = base_frequency_ * std::pow(2.0, static_cast<double>(pitch_mod));
+    
+    // Safety check for frequency floor
+    if (mod_freq < 20.0) mod_freq = base_frequency_;
+
+    oscillator_->set_frequency(mod_freq);
 
     // Apply Cutoff Modulation
     if (filter_) {
         float cutoff_mod = matrix_.sum_for_target(ModulationTarget::Cutoff, current_source_values_);
-        filter_->set_cutoff(base_cutoff_ * std::pow(2.0f, cutoff_mod));
+        float mod_cutoff = base_cutoff_ * std::pow(2.0f, cutoff_mod);
+        if (mod_cutoff < 20.0f) mod_cutoff = 20.0f;
+        filter_->set_cutoff(mod_cutoff);
+        
         float res_mod = matrix_.sum_for_target(ModulationTarget::Resonance, current_source_values_);
         filter_->set_resonance(std::clamp(base_resonance_ + res_mod, 0.0f, 0.99f));
     }
 
     // Apply Amplitude Modulation
     float amp_mod = matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_);
-    base_amplitude_ = std::clamp(1.0f + amp_mod, 0.0f, 2.0f);
+    base_amplitude_ = std::clamp(amp_mod, 0.0f, 1.0f); // Amplitude modulation is primary gain
 
     // Apply PWM
     float pw_mod = matrix_.sum_for_target(ModulationTarget::PulseWidth, current_source_values_);
@@ -177,35 +197,29 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
     auto block = graph_->borrow_buffer();
     std::span<float> pulse_span(block->left.data(), output.size());
     std::span<float> sub_span(block->right.data(), output.size());
-
-    oscillator_->pull(pulse_span, context);
     
     // Sub-oscillator Restoration: Track PulseOscillator phase for lock
     auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get());
     if (pulse_osc) {
-        // We need to generate samples for sub-oscillator one by one to track phase
-        // since do_pull for SubOscillator is a stub.
-        double parent_phase = pulse_osc->get_phase();
-        // Approximate phase progression for the block
-        // In a perfect world, we'd pull from pulse_osc sample by sample too.
-        // For now, let's generate sub samples based on the end phase of the pulse block.
-        // Actually, let's just use the current phase for the whole block as a start.
+        // We need to pull from oscillators sample-by-sample for correct phase tracking
+        float tmp_pulse[1];
         for(size_t i=0; i<output.size(); ++i) {
-            sub_span[i] = static_cast<float>(sub_oscillator_->generate_sample(parent_phase));
-            // Note: This is an approximation. Ideally we pull sample by sample.
+            oscillator_->pull(std::span<float>(tmp_pulse, 1), context);
+            pulse_span[i] = tmp_pulse[0];
+            sub_span[i] = static_cast<float>(sub_oscillator_->generate_sample(pulse_osc->get_phase()));
         }
     } else {
+        oscillator_->pull(pulse_span, context);
         sub_oscillator_->pull(sub_span, context);
     }
 
     // Mix them into output using SourceMixer (tanh)
-    // Headroom Scaling: 0.707 to maintain headroom before tanh
     for (size_t i = 0; i < output.size(); ++i) {
         std::array<float, SourceMixer::NUM_CHANNELS> inputs{};
-        inputs[0] = 0.0f; // Saw (not yet implemented as separate node)
-        inputs[1] = pulse_span[i] * 0.707f;
-        inputs[2] = sub_span[i] * 0.707f;
-        inputs[3] = 0.0f; // Noise
+        inputs[0] = 0.0f; 
+        inputs[1] = pulse_span[i]; // No scaling, direct for audit
+        inputs[2] = sub_span[i];
+        inputs[3] = 0.0f; 
         inputs[4] = 0.0f;
         output[i] = source_mixer_->mix(inputs);
     }
@@ -214,19 +228,8 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
     graph_->pull(output, context);
 
     // VCA restoration: Apply Amplitude modulation from matrix to the final sample
-    // This happens after SourceMixer and Filter but before effects (if any)
     float vca_intensity = matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_);
     
-    // [Voice Audit] Logging instrumentation
-    if (vca_intensity > 0.01f || envelope_->is_active()) {
-        char buf[128];
-        std::snprintf(buf, sizeof(buf), "[Voice Audit] Gate: %d, Env: %.3f, VCA: %.3f", 
-                     envelope_->is_active() ? 1 : 0, 
-                     current_source_values_[static_cast<size_t>(ModulationSource::Envelope)],
-                     vca_intensity);
-        audio::AudioLogger::instance().log_message("Voice", buf);
-    }
-
     for (auto& sample : output) {
         sample *= vca_intensity;
     }

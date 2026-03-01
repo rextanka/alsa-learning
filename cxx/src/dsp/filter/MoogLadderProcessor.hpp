@@ -51,6 +51,14 @@ protected:
         for (auto& sample : output) {
             process_sample(sample);
         }
+        
+        // Safety Cutoff Logging (instrumentation)
+        static int log_throttle = 0;
+        if (log_throttle++ % 100 == 0) {
+             char buf[128];
+             std::snprintf(buf, sizeof(buf), "[Filter Audit] Cutoff: %.1f Hz, g: %.4f", cutoff_, g_);
+             audio::AudioLogger::instance().log_message("Filter", buf);
+        }
     }
 
     void do_pull(AudioBuffer& output, const VoiceContext* /* voice_context */ = nullptr) override {

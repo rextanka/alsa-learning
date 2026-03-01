@@ -40,7 +40,9 @@ protected:
 
     double generate_sample() override {
         // Update phase accumulator
-        phase_ += current_freq_ / sample_rate_;
+        if (sample_rate_ > 0) {
+            phase_ += current_freq_ / sample_rate_;
+        }
         
         // Wrap phase to [0.0, 1.0)
         if (phase_ >= 1.0) phase_ -= 1.0;

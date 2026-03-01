@@ -16,6 +16,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 #include "../Processor.hpp"
+#include "Logger.hpp"
 
 namespace audio {
 
@@ -88,8 +89,11 @@ public:
      * @brief Reset oscillator state.
      */
     void reset() override {
-        current_freq_ = 0.0;
-        target_freq_ = 0.0;
+        // PRESERVE current_freq_ to avoid stalling phase increment at 0.0
+        if (current_freq_ == 0.0) {
+            current_freq_ = 440.0;
+            target_freq_ = 440.0;
+        }
         freq_step_ = 0.0;
         transitioning_ = false;
         reset_oscillator_state();
