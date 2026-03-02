@@ -146,14 +146,24 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
 - **Wavetable**: Single `WavetableOscillatorProcessor` class; shape selected at create.
 - **10ms MMA Latency Target**: Optimize buffer sizes and processing for consistent real-time response.
 - **Nord-style Modular Routing**: Supporting "Audio-as-Control" where audio signals can be used as modulation sources across the graph.
-- **Flexible Voice Topology (Instrument Templates)**: To support diverse synthesizer architectures (SH-101, Juno-60, MS-20, etc.) without fixed-function classes, the `Voice` is defined as a **Dynamic Node Container**:
-    - **Signal Path (The Patch)**: Instead of hardcoded members, a `Voice` maintains a `std::vector<std::unique_ptr<Processor>> signal_chain_`. The `pull()` order defines the serial or parallel routing.
-    - **Static Signal Path Rule**: To ensure RT-safety, the `signal_chain_` is "baked" during initialization/patching (outside the audio thread). Real-time re-patching (changing the vector size or order) is forbidden during the audio callback.
-    - **Node Ownership & Execution**: The first node in the chain must be a **Generator** (SourceMixer or Oscillator) which clears the buffer. Subsequent nodes (Filters, Envelopes) are **Processors** that modify the buffer in-place.
-    - **Source Mixer Node**: A standard `Processor` node that sums multiple generators (Pulse, Saw, Sub, Noise) before the filter stage. It applies `tanh` soft-saturation to emulate analog headroom.
-    - **Buffer Reuse Strategy**: Use `borrow_buffer()` logic to provide temporary spans for parallel oscillators before they are summed in the `SourceMixer`.
-    - **Factory-Based Configuration**: Specific instruments are created via `VoiceFactory::createSH101()` etc., which pre-configure the node chain and default modulation routings.
-    - **Parameter Mapping Layer**: A mapping layer translates global Parameter IDs (e.g., "Cutoff") to the correct internal node and parameter based on the active template.
+    - **Flexible Voice Topology (Dynamic Configuration API)**: To support diverse synthesizer architectures (SH-101, MS-20, TB-303, etc.) without fixed-function classes, the `Voice` is defined as a **Dynamic Node Container**. This API enables shifting from a hardcoded synthesizer to a programmable DSP engine.
+        - **The Great Deletion (Abolishing Hardcoded Members)**: The `Voice` class shall no longer contain hardcoded processor members (e.g., `pulse_osc_`, `moog_filter_`). All DSP logic resides within the `signal_chain_`.
+        - **Dynamic Signal Chain**: A `Voice` maintains a `std::vector<std::unique_ptr<Processor>> signal_chain_` as its execution backbone. The `do_pull()` method iterates through this vector, executing nodes in sequence.
+        - **API-First Construction**: The `Voice` exposes an API (e.g., `add_processor(std::unique_ptr<Processor> p, std::string tag)`) that allows tests, factory methods, and UI controllers to build complex signal chains at runtime.
+        - **The "Generator-First" Rule (Topological Validation)**:
+            - **Rule**: Every `signal_chain_` must begin with a **Generator** node (Oscillator or SourceMixer).
+            - **Reason**: The first node is responsible for clearing the buffer (initialization); subsequent nodes are Processors that perform in-place modification.
+            - **Validation**: `add_processor` or a final `bake()` step must verify that `signal_chain_[0]` is a Generator.
+        - **Node Tagging & Discovery**:
+            - **Tagging**: Each node in the chain can be assigned a unique string tag (e.g., "Filter_HP", "SubOsc").
+            - **Discovery**: The `Voice` implements a discovery method. When a user sends a parameter update (e.g., "Cutoff"), the `Voice` uses the tag or processor type to find the target node(s) in its current chain.
+        - **RT-Safety Guardrail**: Structural changes to the `signal_chain_` (adding/removing nodes) must only occur when the voice is **Idle** or via a thread-safe command queue. The `std::vector` must never be re-allocated while the audio thread is calling `pull()`.
+        - **Lifecycle Delegation**:
+            - **Contract**: The `Voice` is considered active if any `EnvelopeProcessor` node in its chain is in a non-idle state.
+            - **Implementation**: `Voice::is_active()` delegates to its internal dynamic nodes, fulfilling the Voice-Manager Contract for polyphonic stealing without external synchronization risks.
+        - **Strategic Versatility**: This API allows the construction of complex dual-filter architectures (MS-20 style) or minimal single-oscillator chains (SH-101 style) without changing a single line of `Voice` class code.
+        - **Buffer Reuse Strategy**: Use `borrow_buffer()` logic to provide temporary spans for parallel oscillators before they are summed in the `SourceMixer`.
+        - **Factory-Based Configuration**: Specific instruments are created via `VoiceFactory::createSH101()` etc., which pre-configure the node chain, assign tags, and establish default modulation routings.
 - **Exponential Parameter Scaling**: Pitch and Filter Cutoff modulation follow a logarithmic/octave-based response: $f_{final} = f_{base} \cdot 2^{mod}$, where $mod$ is the sum of modulation offsets in octaves.
 - **Base + Offset Accumulation**: Processors maintain a "Base" value (anchor). Each block, the `ModulationMatrix` sums all offsets (bipolar) and applies them exponentially to the base.
 - **Soft-Saturated Mixing (Phase 13)**: To emulate analog growl and headroom, the Source Mixer uses a `tanh` soft-saturation curve on the summed output. This prevents harsh digital clipping and provides harmonic richness when multiple oscillators are pushed into the filter.
