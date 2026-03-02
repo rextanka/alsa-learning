@@ -55,7 +55,6 @@ public:
 
 protected:
     void do_pull(std::span<float> output, const VoiceContext* context = nullptr) override;
-    void do_pull(AudioBuffer& output, const VoiceContext* context = nullptr) override;
 
 private:
     static constexpr size_t MAX_BLOCK_SIZE = 1024;

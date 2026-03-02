@@ -1,6 +1,6 @@
 /**
  * @file Voice.cpp
- * @brief Implementation of the Voice class with Modular Modulation Matrix.
+ * @brief Implementation of the Voice class with Strictly Mono Signal Path.
  */
 
 #include "Voice.hpp"
@@ -8,6 +8,7 @@
 #include "filter/MoogLadderProcessor.hpp"
 #include <vector>
 #include <cmath>
+#include <iostream>
 
 namespace audio {
 
@@ -111,10 +112,7 @@ void Voice::set_parameter(int param, float value) {
 
 void Voice::rebuild_graph() {
     graph_->clear();
-    // In Phase 13, we use the SourceMixer to combine oscillators
-    // PulseOscillator and SubOscillator are pullable processors.
-    // However, they are currently managed manually in do_pull to feed the SourceMixer.
-    // The graph nodes from here on are the serial chain AFTER the mixer.
+    // Linear Mono Chain after the mixer
     if (filter_) {
         graph_->add_node(filter_.get());
     }
@@ -207,59 +205,52 @@ void Voice::apply_modulation() {
 }
 
 void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
-    // 1. SIGNAL PATH STRIP-BACK: Bypass ModulationMatrix & AudioGraph
-    // apply_modulation(); // BYPASS
+    // 1. UPDATE MODULATION
+    apply_modulation();
 
-    // 2. BLOCK-LEVEL PULLS: Ensure phase continuity across the block
+    // 2. RENDER OSCILLATORS (Interleaved mix)
+    // Borrow a buffer from the pool for independent sources
     auto block = graph_->borrow_buffer();
-    std::span<float> pulse_span(block->left.data(), output.size());
-    std::span<float> saw_span(block->right.data(), output.size());
-
-    oscillator_->set_frequency(base_frequency_);
+    std::span<float> saw_span(block->left.data(), output.size());
+    
+    // Ensure independent oscillators are set correctly
     saw_oscillator_->set_frequency(base_frequency_);
-
-    oscillator_->pull(pulse_span, context);
     saw_oscillator_->pull(saw_span, context);
 
-    // 3. MIXING LOOP: Use SourceMixer gains and handle Sub-Osc phase locking
     auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get());
-    
+    auto* sub_osc = dynamic_cast<SubOscillator*>(sub_oscillator_.get());
+
+    pulse_osc->set_frequency(base_frequency_);
+
+    float saw_gain = source_mixer_->get_gain(0);
     float pulse_gain = source_mixer_->get_gain(1);
     float sub_gain = source_mixer_->get_gain(2);
-    float saw_gain = source_mixer_->get_gain(0);
 
+    // Render interleaved oscillator mix into output span
     for (size_t i = 0; i < output.size(); ++i) {
-        std::array<float, SourceMixer::NUM_CHANNELS> inputs{};
-        
-        // SAW (Channel 0)
-        inputs[0] = saw_span[i] * saw_gain;
-        
-        // PULSE (Channel 1)
-        inputs[1] = pulse_span[i] * pulse_gain;
-        
-        // SUB (Channel 2) - Independently pulled for now to verify oscillator health
-        float sub_sample[1];
-        sub_oscillator_->pull(std::span<float>(sub_sample, 1), context);
-        inputs[2] = sub_sample[0] * sub_gain;
-        
-        output[i] = source_mixer_->mix(inputs);
+        float p_sample = static_cast<float>(pulse_osc->tick());
+        float s_sample = static_cast<float>(sub_osc->generate_sample(pulse_osc->get_phase()));
+        output[i] = (saw_span[i] * saw_gain + p_sample * pulse_gain + s_sample * sub_gain);
     }
 
-    // 4. MANUAL GATE: Use is_active() for simple on/off gating
-    float gate = is_active() ? 1.0f : 0.0f;
-    for (auto& sample : output) {
-        sample *= gate;
+    // 3. PROCESS THROUGH MODIFIERS (Manual Serial Processing)
+    // Filter and Envelope process in-place on the oscillator mix
+    if (filter_) {
+        filter_->pull(output, context);
+    }
+    envelope_->pull(output, context);
+
+    // Audit Trace: Confirm signal is produced AFTER all processing
+    float peak = 0.0f;
+    for (float s : output) {
+        float abs_s = std::abs(s);
+        if (abs_s > peak) peak = abs_s;
     }
 
-    // Diagnostic Trace
-    if (log_counter_++ % 128 == 0) {
-        AudioLogger::instance().log_event("STRIP_BACK_GATE", gate);
+    if (peak > 0.0001f && (log_counter_++ % 256 == 0)) {
+        // Keep a very sparse trace for production stability verification
+        std::cout << "[VOICE] Signal Active, Peak: " << peak << std::endl;
     }
-}
-
-void Voice::do_pull(AudioBuffer& output, const VoiceContext* context) {
-    apply_modulation();
-    graph_->pull(output, context);
 }
 
 } // namespace audio

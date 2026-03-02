@@ -4311,6 +4311,7 @@ CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o: /Users/nickthompson/src/cpp/au
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/LfoProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/PulseOscillatorProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SawtoothOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SquareOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SubOscillator.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing/SourceMixer.hpp
@@ -5330,6 +5331,7 @@ CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o: /Users/nickthompson/src
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/LfoProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SawtoothOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SubOscillator.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing/SourceMixer.hpp
 

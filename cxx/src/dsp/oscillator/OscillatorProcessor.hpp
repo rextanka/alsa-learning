@@ -107,6 +107,26 @@ public:
         update_rotation_steps();
     }
 
+    /**
+     * @brief Internal method for per-sample generation used in phase-locking.
+     */
+    double tick() {
+        update_frequency_ramp();
+        return generate_sample();
+    }
+
+    /**
+     * @brief Pure virtual: reset waveform-specific state.
+     */
+    virtual void reset_oscillator_state() = 0;
+
+    /**
+     * @brief Update rotation steps (for sine oscillators).
+     * 
+     * Default implementation does nothing. Override in sine oscillator.
+     */
+    virtual void update_rotation_steps() {}
+
 protected:
     int sample_rate_;
     double current_freq_;
@@ -153,18 +173,6 @@ protected:
      * @return Sample value in range [-1.0, 1.0]
      */
     virtual double generate_sample() = 0;
-
-    /**
-     * @brief Pure virtual: reset waveform-specific state.
-     */
-    virtual void reset_oscillator_state() = 0;
-
-    /**
-     * @brief Update rotation steps (for sine oscillators).
-     * 
-     * Default implementation does nothing. Override in sine oscillator.
-     */
-    virtual void update_rotation_steps() {}
 
     /**
      * @brief Pull Model: Generate block of samples (Mono).

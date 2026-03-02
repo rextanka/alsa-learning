@@ -454,6 +454,27 @@ int engine_note_off_name(EngineHandle handle, const char* note_name) {
     }
 }
 
+void engine_print_graph(EngineHandle handle) {
+    if (!handle) return;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    for (auto& slot : impl->voice_manager->get_voices()) {
+        if (slot.voice) {
+            slot.voice->borrow_buffer(); // Just to access graph implicitly via Voice
+            // But we need explicit access to the graph report. 
+            // Let's assume we can get it from the voice if we expose it.
+        }
+    }
+    // For now, let's just print a placeholder or implement it for the first voice
+    auto& voices = impl->voice_manager->get_voices();
+    if (!voices.empty() && voices[0].voice) {
+        // We need a way to reach the graph from the Voice for the report.
+        // Actually, let's just use the first voice's graph if we can reach it.
+        // For simplicity in this bridge call, I'll add a temporary method to Voice if needed, 
+        // or just reach into it if it's public/friend.
+    }
+    std::cout << "Engine Graph Print Requested (implementation in progress)" << std::endl;
+}
+
 void engine_flush_logs(EngineHandle /* handle */) {
     audio::AudioLogger::instance().set_log_to_console(true);
     audio::AudioLogger::instance().flush();

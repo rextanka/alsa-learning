@@ -250,6 +250,45 @@ metronome_test/fast:
 .PHONY : metronome_test/fast
 
 #=============================================================================
+# Target rules for targets named oscillator_integrity_test
+
+# Build rule for target.
+oscillator_integrity_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 oscillator_integrity_test
+.PHONY : oscillator_integrity_test
+
+# fast build rule for target.
+oscillator_integrity_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_integrity_test.dir/build.make CMakeFiles/oscillator_integrity_test.dir/build
+.PHONY : oscillator_integrity_test/fast
+
+#=============================================================================
+# Target rules for targets named oscillator_baseline_test
+
+# Build rule for target.
+oscillator_baseline_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 oscillator_baseline_test
+.PHONY : oscillator_baseline_test
+
+# fast build rule for target.
+oscillator_baseline_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_baseline_test.dir/build.make CMakeFiles/oscillator_baseline_test.dir/build
+.PHONY : oscillator_baseline_test/fast
+
+#=============================================================================
+# Target rules for targets named graph_audit_test
+
+# Build rule for target.
+graph_audit_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 graph_audit_test
+.PHONY : graph_audit_test
+
+# fast build rule for target.
+graph_audit_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/graph_audit_test.dir/build.make CMakeFiles/graph_audit_test.dir/build
+.PHONY : graph_audit_test/fast
+
+#=============================================================================
 # Target rules for targets named filter_tests
 
 # Build rule for target.
@@ -774,6 +813,30 @@ tests/functional/filter_tests.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/tests/functional/filter_tests.cpp.s
 .PHONY : tests/functional/filter_tests.cpp.s
 
+tests/functional/graph_audit_test.o: tests/functional/graph_audit_test.cpp.o
+.PHONY : tests/functional/graph_audit_test.o
+
+# target to build an object file
+tests/functional/graph_audit_test.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/graph_audit_test.dir/build.make CMakeFiles/graph_audit_test.dir/tests/functional/graph_audit_test.cpp.o
+.PHONY : tests/functional/graph_audit_test.cpp.o
+
+tests/functional/graph_audit_test.i: tests/functional/graph_audit_test.cpp.i
+.PHONY : tests/functional/graph_audit_test.i
+
+# target to preprocess a source file
+tests/functional/graph_audit_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/graph_audit_test.dir/build.make CMakeFiles/graph_audit_test.dir/tests/functional/graph_audit_test.cpp.i
+.PHONY : tests/functional/graph_audit_test.cpp.i
+
+tests/functional/graph_audit_test.s: tests/functional/graph_audit_test.cpp.s
+.PHONY : tests/functional/graph_audit_test.s
+
+# target to generate assembly for a file
+tests/functional/graph_audit_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/graph_audit_test.dir/build.make CMakeFiles/graph_audit_test.dir/tests/functional/graph_audit_test.cpp.s
+.PHONY : tests/functional/graph_audit_test.cpp.s
+
 tests/functional/metronome_test.o: tests/functional/metronome_test.cpp.o
 .PHONY : tests/functional/metronome_test.o
 
@@ -797,6 +860,54 @@ tests/functional/metronome_test.s: tests/functional/metronome_test.cpp.s
 tests/functional/metronome_test.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/tests/functional/metronome_test.cpp.s
 .PHONY : tests/functional/metronome_test.cpp.s
+
+tests/functional/oscillator_baseline_test.o: tests/functional/oscillator_baseline_test.cpp.o
+.PHONY : tests/functional/oscillator_baseline_test.o
+
+# target to build an object file
+tests/functional/oscillator_baseline_test.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_baseline_test.dir/build.make CMakeFiles/oscillator_baseline_test.dir/tests/functional/oscillator_baseline_test.cpp.o
+.PHONY : tests/functional/oscillator_baseline_test.cpp.o
+
+tests/functional/oscillator_baseline_test.i: tests/functional/oscillator_baseline_test.cpp.i
+.PHONY : tests/functional/oscillator_baseline_test.i
+
+# target to preprocess a source file
+tests/functional/oscillator_baseline_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_baseline_test.dir/build.make CMakeFiles/oscillator_baseline_test.dir/tests/functional/oscillator_baseline_test.cpp.i
+.PHONY : tests/functional/oscillator_baseline_test.cpp.i
+
+tests/functional/oscillator_baseline_test.s: tests/functional/oscillator_baseline_test.cpp.s
+.PHONY : tests/functional/oscillator_baseline_test.s
+
+# target to generate assembly for a file
+tests/functional/oscillator_baseline_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_baseline_test.dir/build.make CMakeFiles/oscillator_baseline_test.dir/tests/functional/oscillator_baseline_test.cpp.s
+.PHONY : tests/functional/oscillator_baseline_test.cpp.s
+
+tests/functional/oscillator_integrity_test.o: tests/functional/oscillator_integrity_test.cpp.o
+.PHONY : tests/functional/oscillator_integrity_test.o
+
+# target to build an object file
+tests/functional/oscillator_integrity_test.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_integrity_test.dir/build.make CMakeFiles/oscillator_integrity_test.dir/tests/functional/oscillator_integrity_test.cpp.o
+.PHONY : tests/functional/oscillator_integrity_test.cpp.o
+
+tests/functional/oscillator_integrity_test.i: tests/functional/oscillator_integrity_test.cpp.i
+.PHONY : tests/functional/oscillator_integrity_test.i
+
+# target to preprocess a source file
+tests/functional/oscillator_integrity_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_integrity_test.dir/build.make CMakeFiles/oscillator_integrity_test.dir/tests/functional/oscillator_integrity_test.cpp.i
+.PHONY : tests/functional/oscillator_integrity_test.cpp.i
+
+tests/functional/oscillator_integrity_test.s: tests/functional/oscillator_integrity_test.cpp.s
+.PHONY : tests/functional/oscillator_integrity_test.s
+
+# target to generate assembly for a file
+tests/functional/oscillator_integrity_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_integrity_test.dir/build.make CMakeFiles/oscillator_integrity_test.dir/tests/functional/oscillator_integrity_test.cpp.s
+.PHONY : tests/functional/oscillator_integrity_test.cpp.s
 
 tests/functional/processor_check.o: tests/functional/processor_check.cpp.o
 .PHONY : tests/functional/processor_check.o
@@ -1110,11 +1221,14 @@ help:
 	@echo "... filter_tests"
 	@echo "... gmock"
 	@echo "... gmock_main"
+	@echo "... graph_audit_test"
 	@echo "... gtest"
 	@echo "... gtest_main"
 	@echo "... integration_tests"
 	@echo "... juno_chorus_tests"
 	@echo "... metronome_test"
+	@echo "... oscillator_baseline_test"
+	@echo "... oscillator_integrity_test"
 	@echo "... processor_check"
 	@echo "... sh101_chain_tests"
 	@echo "... stereo_poly_test"
@@ -1159,9 +1273,18 @@ help:
 	@echo "... tests/functional/filter_tests.o"
 	@echo "... tests/functional/filter_tests.i"
 	@echo "... tests/functional/filter_tests.s"
+	@echo "... tests/functional/graph_audit_test.o"
+	@echo "... tests/functional/graph_audit_test.i"
+	@echo "... tests/functional/graph_audit_test.s"
 	@echo "... tests/functional/metronome_test.o"
 	@echo "... tests/functional/metronome_test.i"
 	@echo "... tests/functional/metronome_test.s"
+	@echo "... tests/functional/oscillator_baseline_test.o"
+	@echo "... tests/functional/oscillator_baseline_test.i"
+	@echo "... tests/functional/oscillator_baseline_test.s"
+	@echo "... tests/functional/oscillator_integrity_test.o"
+	@echo "... tests/functional/oscillator_integrity_test.i"
+	@echo "... tests/functional/oscillator_integrity_test.s"
 	@echo "... tests/functional/processor_check.o"
 	@echo "... tests/functional/processor_check.i"
 	@echo "... tests/functional/processor_check.s"
