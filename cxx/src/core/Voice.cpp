@@ -207,17 +207,25 @@ void Voice::apply_modulation() {
 }
 
 void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
-    // 1. BLOCK-LEVEL PULL FOR INDEPENDENT SOURCES
-    auto block = graph_->borrow_buffer();
-    std::span<float> saw_span(block->left.data(), output.size());
+    // UNIFIED SIGNAL PATH
+    AudioBuffer temp_buf;
+    temp_buf.left = output;
+    temp_buf.right = output; // For mono spans, we use the same output for both or ignore right
+    do_pull(temp_buf, context);
+}
 
-    // Ensure frequency is set before pulling
-    saw_oscillator_->set_frequency(base_frequency_);
+void Voice::do_pull(AudioBuffer& output, const VoiceContext* context) {
+    // 1. UPDATE MODULATION
+    apply_modulation();
+
+    // 2. RENDER OSCILLATORS (Interleaved mix)
+    auto block = graph_->borrow_buffer();
+    std::span<float> saw_span(block->left.data(), output.frames());
     
-    // Pull independent oscillators as blocks
+    // Ensure independent oscillators are set correctly
+    saw_oscillator_->set_frequency(base_frequency_);
     saw_oscillator_->pull(saw_span, context);
 
-    // 2. INTERLEAVED SAMPLE LOOP FOR PHASE-LOCKED SOURCES
     auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get());
     auto* sub_osc = dynamic_cast<SubOscillator*>(sub_oscillator_.get());
 
@@ -227,31 +235,22 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
     float pulse_gain = source_mixer_->get_gain(1);
     float sub_gain = source_mixer_->get_gain(2);
 
-    // Pull envelope value for smooth gating
-    float env_buf[1];
-    envelope_->pull(std::span<float>(env_buf, 1), context);
-    float current_env = env_buf[0];
-
-    for (size_t i = 0; i < output.size(); ++i) {
-        // Pulse increments phase and returns sample
+    // Mixed signal into output buffer first
+    for (size_t i = 0; i < output.frames(); ++i) {
         float p_sample = static_cast<float>(pulse_osc->tick());
-        
-        // Sub-osc locks to pulse phase
         float s_sample = static_cast<float>(sub_osc->generate_sample(pulse_osc->get_phase()));
-        
-        // Summing the active sources (Saw, Pulse, Sub)
-        output[i] = (saw_span[i] * saw_gain + p_sample * pulse_gain + s_sample * sub_gain) * current_env;
+        output.left[i] = (saw_span[i] * saw_gain + p_sample * pulse_gain + s_sample * sub_gain);
+        output.right[i] = output.left[i];
     }
+
+    // 3. PROCESS THROUGH GRAPH (Filter -> Envelope)
+    // Use pull_serial to process the output buffer in-place
+    graph_->pull_serial(output, context);
 
     // Diagnostic Trace
     if (log_counter_++ % 128 == 0) {
-        AudioLogger::instance().log_event("REPAIR_ENV", current_env);
+        AudioLogger::instance().log_event("RENDER_PULL", output.left[0]);
     }
-}
-
-void Voice::do_pull(AudioBuffer& output, const VoiceContext* context) {
-    apply_modulation();
-    graph_->pull(output, context);
 }
 
 } // namespace audio
