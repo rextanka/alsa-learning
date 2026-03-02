@@ -9,69 +9,43 @@
 #include <memory>
 #include <chrono>
 #include "TestHelper.hpp"
-#include "oscillator/PulseOscillatorProcessor.hpp"
-#include "oscillator/SubOscillator.hpp"
-
-using namespace audio;
+#include "oscillator/SineOscillatorProcessor.hpp"
 
 int main() {
-    std::cout << "--- Starting Oscillator Baseline Validation ---" << std::endl;
+    std::cout << "--- Starting Oscillator Baseline Validation (48kHz) ---" << std::endl;
 
     test::init_test_environment();
+    // CoreAudioDriver enforces 48000Hz internally
     auto driver = test::create_driver();
     if (!driver) return 1;
 
-    int sample_rate = driver->sample_rate();
+    std::cout << "Driver sample rate: " << driver->sample_rate() << " Hz" << std::endl;
     
-    // 1. Instantiate Oscillators directly
-    auto pulse_osc = std::make_unique<PulseOscillatorProcessor>(sample_rate);
-    auto sub_osc = std::make_unique<SubOscillator>();
+    // 1. Instantiate the actual engine oscillator
+    auto sine_osc = std::make_unique<audio::SineOscillatorProcessor>(48000);
+    sine_osc->set_frequency(440.0);
 
-    // Set stable frequencies
-    pulse_osc->set_frequency(440.0); // A4
-    pulse_osc->set_pulse_width(0.5f); // Square wave
-
-    // 2. Setup Driver Callback to cycle through oscillators
-    int test_phase = 0; // 0: Pulse, 1: Sub, 2: Mixed
-    auto start_time = std::chrono::steady_clock::now();
-
+    // 2. Setup Driver Callback to verify our Oscillator Processor
     driver->set_callback([&](std::span<float> output) {
-        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
-            std::chrono::steady_clock::now() - start_time).count();
+        // Stage 2: Verify our Oscillator Processor
+        sine_osc->pull(output, nullptr);
         
-        // Cycle every 3 seconds
-        test_phase = (elapsed / 3) % 3;
-
-        // Temporary block buffer
-        std::vector<float> pulse_buffer(output.size());
-        
-        // PULL: Use block-based pull to ensure phase continuity across the buffer
-        pulse_osc->pull(pulse_buffer, nullptr);
-
-        for (size_t i = 0; i < output.size(); ++i) {
-            float pulse_sample = pulse_buffer[i];
-            // Locked Sub-oscillator tracking
-            float sub_sample = static_cast<float>(sub_osc->generate_sample(pulse_osc->get_phase()));
-
-            if (test_phase == 0) {
-                output[i] = 0.2f * pulse_sample; // Pulse Only
-            } else if (test_phase == 1) {
-                output[i] = 0.2f * sub_sample;   // Sub Only
-            } else {
-                output[i] = 0.15f * (pulse_sample + sub_sample); // Mixed
-            }
+        // Quick Audit: Monitor for silence or clipping
+        static int audit_counter = 0;
+        if (audit_counter++ % 100 == 0) {
+            float peak = 0.0f;
+            for (float s : output) if (std::abs(s) > peak) peak = std::abs(s);
+            std::cout << "[OSC AUDIT] Peak: " << peak << std::endl;
         }
     });
 
     if (!driver->start()) return 1;
 
-    std::cout << "0-3s: Pulse Only (A4 Square)" << std::endl;
-    std::cout << "3-6s: Sub Only (A3/A2)" << std::endl;
-    std::cout << "6-9s: Mixed" << std::endl;
+    std::cout << "Playing SineOscillatorProcessor (440Hz) for 5 seconds..." << std::endl;
     
-    test::wait_while_running(9);
+    test::wait_while_running(5);
 
     test::cleanup_test_environment(driver.get());
-    std::cout << "--- Baseline Test Done ---" << std::endl;
+    std::cout << "--- Baseline Verification Done ---" << std::endl;
     return 0;
 }

@@ -55,16 +55,17 @@ CoreAudioDriver::CoreAudioDriver(int sample_rate, int block_size)
         std::cout << "CoreAudioDriver: Host sample rate detected as " << sample_rate_ << " Hz" << std::endl;
     }
 
-    // 4. Set the stream format (PCM Float32, Stereo, Interleaved)
-    AudioStreamBasicDescription streamFormat;
-    streamFormat.mSampleRate = static_cast<double>(sample_rate_);
+    // 4. Set the stream format (PCM Float32, Stereo, Non-Interleaved)
+    // Enforce 48kHz and strictly follow requested format
+    AudioStreamBasicDescription streamFormat = {0};
+    streamFormat.mSampleRate = 48000.0;
     streamFormat.mFormatID = kAudioFormatLinearPCM;
-    streamFormat.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked | kAudioFormatFlagIsNonInterleaved;
-    streamFormat.mFramesPerPacket = 1;
-    streamFormat.mChannelsPerFrame = 2; // Stereo
+    streamFormat.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsNonInterleaved | kAudioFormatFlagIsPacked;
     streamFormat.mBitsPerChannel = 32;
-    streamFormat.mBytesPerPacket = 4;
+    streamFormat.mChannelsPerFrame = 2;
+    streamFormat.mFramesPerPacket = 1;
     streamFormat.mBytesPerFrame = 4;
+    streamFormat.mBytesPerPacket = 4;
 
     status = AudioUnitSetProperty(
         audio_unit_,

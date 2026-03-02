@@ -63,6 +63,24 @@ public:
     }
 
     /**
+     * @brief Print a report of the graph's nodes to standard output.
+     */
+    void report() const {
+        std::cout << "\n--- AUDIO GRAPH REPORT ---" << std::endl;
+        if (nodes_.empty()) {
+            std::cout << "Graph is EMPTY." << std::endl;
+        } else {
+            for (size_t i = 0; i < nodes_.size(); ++i) {
+                std::cout << "[Slot " << i << "]: " << typeid(*nodes_[i]).name();
+                if (i == 0) std::cout << " -> Output (Internal)";
+                else std::cout << " -> Slot " << (i - 1) << " (In-place)";
+                std::cout << std::endl;
+            }
+        }
+        std::cout << "--------------------------\n" << std::endl;
+    }
+
+    /**
      * @brief Process an existing buffer through all nodes in the graph (Mono).
      */
     void pull_serial(std::span<float> buffer, const VoiceContext* context = nullptr) {

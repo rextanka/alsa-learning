@@ -1,6 +1,6 @@
 /**
  * @file Voice.cpp
- * @brief Implementation of the Voice class with Modular Modulation Matrix.
+ * @brief Implementation of the Voice class with Strictly Mono Signal Path.
  */
 
 #include "Voice.hpp"
@@ -8,6 +8,7 @@
 #include "filter/MoogLadderProcessor.hpp"
 #include <vector>
 #include <cmath>
+#include <iostream>
 
 namespace audio {
 
@@ -111,10 +112,7 @@ void Voice::set_parameter(int param, float value) {
 
 void Voice::rebuild_graph() {
     graph_->clear();
-    // In Phase 13, we use the SourceMixer to combine oscillators
-    // PulseOscillator and SubOscillator are pullable processors.
-    // However, they are currently managed manually in do_pull to feed the SourceMixer.
-    // The graph nodes from here on are the serial chain AFTER the mixer.
+    // Linear Mono Chain after the mixer
     if (filter_) {
         graph_->add_node(filter_.get());
     }
@@ -207,20 +205,13 @@ void Voice::apply_modulation() {
 }
 
 void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
-    // UNIFIED SIGNAL PATH
-    AudioBuffer temp_buf;
-    temp_buf.left = output;
-    temp_buf.right = output; // For mono spans, we use the same output for both or ignore right
-    do_pull(temp_buf, context);
-}
-
-void Voice::do_pull(AudioBuffer& output, const VoiceContext* context) {
     // 1. UPDATE MODULATION
     apply_modulation();
 
     // 2. RENDER OSCILLATORS (Interleaved mix)
+    // Borrow a buffer from the pool for independent sources
     auto block = graph_->borrow_buffer();
-    std::span<float> saw_span(block->left.data(), output.frames());
+    std::span<float> saw_span(block->left.data(), output.size());
     
     // Ensure independent oscillators are set correctly
     saw_oscillator_->set_frequency(base_frequency_);
@@ -235,21 +226,30 @@ void Voice::do_pull(AudioBuffer& output, const VoiceContext* context) {
     float pulse_gain = source_mixer_->get_gain(1);
     float sub_gain = source_mixer_->get_gain(2);
 
-    // Mixed signal into output buffer first
-    for (size_t i = 0; i < output.frames(); ++i) {
+    // Render interleaved oscillator mix into output span
+    for (size_t i = 0; i < output.size(); ++i) {
         float p_sample = static_cast<float>(pulse_osc->tick());
         float s_sample = static_cast<float>(sub_osc->generate_sample(pulse_osc->get_phase()));
-        output.left[i] = (saw_span[i] * saw_gain + p_sample * pulse_gain + s_sample * sub_gain);
-        output.right[i] = output.left[i];
+        output[i] = (saw_span[i] * saw_gain + p_sample * pulse_gain + s_sample * sub_gain);
     }
 
-    // 3. PROCESS THROUGH GRAPH (Filter -> Envelope)
-    // Use pull_serial to process the output buffer in-place
-    graph_->pull_serial(output, context);
+    // 3. PROCESS THROUGH MODIFIERS (Manual Serial Processing)
+    // Filter and Envelope process in-place on the oscillator mix
+    if (filter_) {
+        filter_->pull(output, context);
+    }
+    envelope_->pull(output, context);
 
-    // Diagnostic Trace
-    if (log_counter_++ % 128 == 0) {
-        AudioLogger::instance().log_event("RENDER_PULL", output.left[0]);
+    // Audit Trace: Confirm signal is produced AFTER all processing
+    float peak = 0.0f;
+    for (float s : output) {
+        float abs_s = std::abs(s);
+        if (abs_s > peak) peak = abs_s;
+    }
+
+    if (peak > 0.0001f && (log_counter_++ % 256 == 0)) {
+        // Keep a very sparse trace for production stability verification
+        std::cout << "[VOICE] Signal Active, Peak: " << peak << std::endl;
     }
 }
 

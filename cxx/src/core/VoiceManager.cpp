@@ -217,7 +217,8 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
         }
     }
 
-    // 2. Sum active voices
+    // 2. Sum active voices (Strictly Mono Pull)
+    // Borrow a block from the pool to use as a temporary voice buffer
     auto block = voices_[0].voice->borrow_buffer();
     std::span<float> voice_span(block->left.data(), output.size());
 
@@ -225,6 +226,7 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
         auto& slot = voices_[i];
         if (slot.active) {
             if (slot.voice->is_active()) {
+                std::fill(voice_span.begin(), voice_span.end(), 0.0f);
                 slot.voice->pull(voice_span, context);
                 for (size_t j = 0; j < output.size(); ++j) {
                     output[j] += voice_span[j];
@@ -250,49 +252,16 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
 }
 
 void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
-    output.clear();
-
+    // 1. PULL MONO AUDIO
     auto block = voices_[0].voice->borrow_buffer();
+    std::span<float> mono_span(block->right.data(), output.frames());
     
-    AudioBuffer voice_buf;
-    voice_buf.left = std::span<float>(block->left.data(), output.frames());
-    voice_buf.right = std::span<float>(block->right.data(), output.frames());
+    do_pull(mono_span, context);
 
-    for (int i = 0; i < MAX_VOICES; ++i) {
-        auto& slot = voices_[i];
-        if (slot.active) {
-            if (slot.voice->is_active()) {
-                voice_buf.clear();
-                slot.voice->pull(voice_buf, context);
-                
-                for (size_t j = 0; j < output.frames(); ++j) {
-                    output.left[j] += voice_buf.left[j];
-                    output.right[j] += voice_buf.right[j];
-                }
-            } else {
-                slot.active = false;
-                if (slot.current_note != -1) {
-                    if (note_to_voice_map_[slot.current_note & 0x7F] == i) {
-                        note_to_voice_map_[slot.current_note & 0x7F] = -1;
-                    }
-                }
-                slot.current_note = -1;
-            }
-        }
-    }
-    
-    // Master Safety Gain (0.15) and Simple Soft Clipping
+    // 2. FAN OUT TO STEREO
     for (size_t j = 0; j < output.frames(); ++j) {
-        output.left[j] *= 0.15f;
-        output.right[j] *= 0.15f;
-        
-        // Left Soft Clip
-        if (output.left[j] > 0.95f) output.left[j] = 0.95f + 0.05f * std::tanh((output.left[j] - 0.95f) / 0.05f);
-        else if (output.left[j] < -0.95f) output.left[j] = -0.95f + 0.05f * std::tanh((output.left[j] + 0.95f) / 0.05f);
-        
-        // Right Soft Clip
-        if (output.right[j] > 0.95f) output.right[j] = 0.95f + 0.05f * std::tanh((output.right[j] - 0.95f) / 0.05f);
-        else if (output.right[j] < -0.95f) output.right[j] = -0.95f + 0.05f * std::tanh((output.right[j] + 0.95f) / 0.05f);
+        output.left[j] = mono_span[j];
+        output.right[j] = mono_span[j];
     }
 }
 
