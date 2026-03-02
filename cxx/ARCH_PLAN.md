@@ -31,7 +31,7 @@ Create a portable, lightweight **'Musical Toolbox'** for creative exploration an
     - **Sources**: Oscillators, Wavetables, File Players.
     - **Processors**: Filters, Envelopes, FX (Reverb, Delay).
     - **Sinks**: Audio Output (HAL), Non-Intrusive Loggers, Visualizers.
-- **Mono-until-Stereo**: Keep signal paths mono for CPU efficiency until spatial effects or stereo-specific processing (panners/reverb) are required.
+- **Mono-until-Stereo**: Keep signal paths mono for CPU efficiency until spatial effects or stereo-specific processing (panners/reverb) are required. All internal Voice components (VCO, VCF, VCA) must operate on a single mono `std::span<float>`.
 - **MPE & Microtonality**: Per-voice independence with a modular `TuningSystem` for cross-platform musical flexibility.
 - **Centralized Zipper-Free Control**: A dedicated `ParameterManager` handles all ramping and smoothing "magic."
 - **HAL-Only Interaction**: High-level DSP logic and tests interact ONLY with the `hal::AudioDriver` base class. Platform parity is maintained by swapping the HAL implementation (ALSA vs. CoreAudio) while keeping core C++ logic identical.
@@ -50,8 +50,13 @@ Create a portable, lightweight **'Musical Toolbox'** for creative exploration an
 │              VoiceManager (Polyphony)                   │
 │         ┌──────────────┐  ┌──────────────┐              │
 │         │    Voice 1   │  │    Voice N   │              │
-│         │  Graph      │  │  Graph       │              │
+│         │  Mono Graph  │  │  Mono Graph  │              │
 │         └──────────────┘  └──────────────┘              │
+│                       │                                 │
+│         ┌─────────────▼──────────────┐                  │
+│         │    Mono → Stereo Mixer     │                  │
+│         │  (Panning & Voice Spread)  │                  │
+│         └────────────────────────────┘                  │
 └──────────────────────┬──────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────┐
@@ -138,6 +143,9 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
 - **Exponential Parameter Scaling**: Pitch and Filter Cutoff modulation follow a logarithmic/octave-based response: $f_{final} = f_{base} \cdot 2^{mod}$, where $mod$ is the sum of modulation offsets in octaves.
 - **Base + Offset Accumulation**: Processors maintain a "Base" value (anchor). Each block, the `ModulationMatrix` sums all offsets (bipolar) and applies them exponentially to the base.
 - **Soft-Saturated Mixing (Phase 13)**: To emulate analog growl and headroom, the Source Mixer uses a `tanh` soft-saturation curve on the summed output. This prevents harsh digital clipping and provides harmonic richness when multiple oscillators are pushed into the filter.
+- **Classic Polyphonic Signal Flow (Phase 13.5)**:
+    - **The Mono Voice Primitive**: Each voice remains a strictly mono "black box" that handles its own internal modulation (LFO, Envelopes, CV). The terminal node (VCA) provides a mono signal to the mixer.
+    - **The Mono → Stereo Mixer**: The first point in the graph where stereo `AudioBuffer` is used. It aggregates mono voice outputs, applies constant-power panning ($L = \cos(\theta)$, $R = \sin(\theta)$), and manages polyphonic spread (e.g., alternating voices across the stereo field).
 - **Pull Protocol**:
     - **Node Classification**:
         - **Generators (Sources)**: e.g., `SineOscillatorProcessor`. These nodes assign values to the buffer, clearing any previous data. Logic: `buffer[i] = new_sample;`

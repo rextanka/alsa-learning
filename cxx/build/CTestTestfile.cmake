@@ -8,6 +8,8 @@ add_test([=[unit_tests]=] "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/b
 set_tests_properties([=[unit_tests]=] PROPERTIES  LABELS "unit" _BACKTRACE_TRIPLES "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/CMakeLists.txt;153;add_test;/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/CMakeLists.txt;0;")
 add_test([=[integration_tests]=] "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/bin/integration_tests")
 set_tests_properties([=[integration_tests]=] PROPERTIES  _BACKTRACE_TRIPLES "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/CMakeLists.txt;163;add_test;/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/CMakeLists.txt;0;")
+add_test([=[stereo_poly_test]=] "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/bin/stereo_poly_test")
+set_tests_properties([=[stereo_poly_test]=] PROPERTIES  _BACKTRACE_TRIPLES "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/CMakeLists.txt;176;add_test;/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/CMakeLists.txt;185;add_functional_gtest;/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/CMakeLists.txt;0;")
 add_test([=[Functional_BachMidi]=] "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/bin/Functional_BachMidi")
 set_tests_properties([=[Functional_BachMidi]=] PROPERTIES  _BACKTRACE_TRIPLES "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/CMakeLists.txt;176;add_test;/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/CMakeLists.txt;191;add_functional_gtest;/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/CMakeLists.txt;0;")
 add_test([=[tremulant_tests]=] "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/bin/tremulant_tests")
