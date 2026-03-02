@@ -1029,6 +1029,30 @@ tests/functional/test_tremulant_preset.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/tremulant_tests.dir/build.make CMakeFiles/tremulant_tests.dir/tests/functional/test_tremulant_preset.cpp.s
 .PHONY : tests/functional/test_tremulant_preset.cpp.s
 
+tests/functional/test_voice.o: tests/functional/test_voice.cpp.o
+.PHONY : tests/functional/test_voice.o
+
+# target to build an object file
+tests/functional/test_voice.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/functional/test_voice.cpp.o
+.PHONY : tests/functional/test_voice.cpp.o
+
+tests/functional/test_voice.i: tests/functional/test_voice.cpp.i
+.PHONY : tests/functional/test_voice.i
+
+# target to preprocess a source file
+tests/functional/test_voice.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/functional/test_voice.cpp.i
+.PHONY : tests/functional/test_voice.cpp.i
+
+tests/functional/test_voice.s: tests/functional/test_voice.cpp.s
+.PHONY : tests/functional/test_voice.s
+
+# target to generate assembly for a file
+tests/functional/test_voice.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/functional/test_voice.cpp.s
+.PHONY : tests/functional/test_voice.cpp.s
+
 tests/integration/test_bridge.o: tests/integration/test_bridge.cpp.o
 .PHONY : tests/integration/test_bridge.o
 
@@ -1300,6 +1324,9 @@ help:
 	@echo "... tests/functional/test_tremulant_preset.o"
 	@echo "... tests/functional/test_tremulant_preset.i"
 	@echo "... tests/functional/test_tremulant_preset.s"
+	@echo "... tests/functional/test_voice.o"
+	@echo "... tests/functional/test_voice.i"
+	@echo "... tests/functional/test_voice.s"
 	@echo "... tests/integration/test_bridge.o"
 	@echo "... tests/integration/test_bridge.i"
 	@echo "... tests/integration/test_bridge.s"

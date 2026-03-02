@@ -119,6 +119,11 @@ public:
     virtual void reset() = 0;
 
     /**
+     * @brief Set a parameter by ID.
+     */
+    virtual void set_parameter(int /*param_id*/, float /*value*/) {}
+
+    /**
      * @brief Get performance metrics.
      * 
      * Returns zero values when AUDIO_ENABLE_PROFILING is not defined.

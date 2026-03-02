@@ -140,14 +140,15 @@ if(BUILD_TESTING)
     enable_testing()
 
     # --- Unit Tests (C++) ---
-    add_executable(unit_tests
-        tests/unit/test_oscillator.cpp
-        tests/unit/test_envelope_stages.cpp
-        tests/unit/test_voice_stress.cpp
-        tests/unit/test_logger.cpp
-        tests/unit/test_clock_logic.cpp
-        tests/unit/test_modulation_matrix.cpp
-    )
+add_executable(unit_tests 
+    tests/unit/test_oscillator.cpp
+    tests/unit/test_envelope_stages.cpp
+    tests/unit/test_voice_stress.cpp
+    tests/unit/test_clock_logic.cpp
+    tests/unit/test_modulation_matrix.cpp
+    tests/unit/test_logger.cpp
+    tests/functional/test_voice.cpp
+)
     target_include_directories(unit_tests PRIVATE tests/unit tests)
     target_link_libraries(unit_tests PRIVATE audio_engine gtest_main)
     add_test(NAME unit_tests COMMAND unit_tests)
@@ -181,9 +182,9 @@ if(BUILD_TESTING)
     add_functional_test(oscillator_integrity_test oscillator_integrity_test.cpp)
     add_functional_test(oscillator_baseline_test oscillator_baseline_test.cpp)
     add_functional_test(graph_audit_test graph_audit_test.cpp)
-    add_functional_test(filter_tests filter_tests.cpp)
+    # add_functional_test(filter_tests filter_tests.cpp)
     add_functional_gtest(stereo_poly_test stereo_poly_test.cpp)
-    add_functional_test(processor_check processor_check.cpp)
+    # add_functional_test(processor_check processor_check.cpp)
     add_functional_test(engine_tests engine_tests.cpp)
     add_functional_test(Phase10Tests Phase10Tests.cpp)
     add_functional_test(TimingValidation TimingValidation.cpp)

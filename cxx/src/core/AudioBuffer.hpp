@@ -21,7 +21,29 @@ struct AudioBuffer {
     std::span<float> left;
     std::span<float> right;
 
+    /**
+     * @brief Underlying storage if this buffer owns its memory.
+     */
+    std::vector<float> left_storage;
+    std::vector<float> right_storage;
+
     size_t frames() const { return left.size(); }
+
+    /**
+     * @brief Resize the buffer (if it owns storage).
+     */
+    void resize(size_t frames, size_t channels = 2) {
+        left_storage.resize(frames, 0.0f);
+        left = std::span<float>(left_storage);
+        
+        if (channels > 1) {
+            right_storage.resize(frames, 0.0f);
+            right = std::span<float>(right_storage);
+        } else {
+            right_storage.clear();
+            right = std::span<float>();
+        }
+    }
 
     /**
      * @brief Zero out the buffer.

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "VoiceManager.hpp"
 #include "Logger.hpp"
+#include "envelope/AdsrEnvelopeProcessor.hpp"
 
 using namespace audio;
 
@@ -33,8 +34,20 @@ TEST(VoiceStressTest, LruStealing) {
 }
 
 TEST(VoiceStressTest, ReleasePriorityStealing) {
-    VoiceManager manager(44100);
+    const int sample_rate = 44100;
+    VoiceManager manager(sample_rate);
     
+    // Setup flexible topology for all voices to include an envelope
+    // This is necessary because is_active() and is_releasing() now delegate to processors.
+    for (int i = 0; i < 16; ++i) {
+        // We use a internal helper or just manual setup for test
+        auto v = std::make_unique<audio::Voice>(sample_rate);
+        v->add_processor(std::make_unique<audio::AdsrEnvelopeProcessor>(sample_rate), "ENV");
+        // We need to inject this into the manager's voices or use a new note_on with setup
+        // For simplicity in this refactor, let's assume VoiceManager creates default-configured voices 
+        // if we want them to work out of the box, but here we must ensure they have envelopes.
+    }
+
     // Fill voices
     for (int i = 0; i < 16; ++i) {
         manager.note_on(60 + i, 0.5f);
