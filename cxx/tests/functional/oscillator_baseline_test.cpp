@@ -37,7 +37,7 @@ int main() {
     auto start_time = std::chrono::steady_clock::now();
     bool last_gate = false;
 
-    driver->set_callback([&, start_time, last_gate](std::span<float> output) mutable {
+    driver->set_stereo_callback([&, start_time, last_gate](audio::AudioBuffer& buffer) mutable {
         // Calculate gate status based on 2-second cycle (1s ON, 1s OFF)
         auto now = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
@@ -52,17 +52,22 @@ int main() {
             last_gate = current_gate;
         }
 
-        // Pull from Generator (Oscillator)
-        sine_osc->pull(output, nullptr);
+        // Pull from Generator (Oscillator) into Left channel
+        sine_osc->pull(buffer.left, nullptr);
         
         // Pull from Processor (Envelope) - multiplies in-place
-        envelope->pull(output, nullptr);
+        envelope->pull(buffer.left, nullptr);
+
+        // Copy to Right channel
+        for (size_t i = 0; i < buffer.frames(); ++i) {
+            buffer.right[i] = buffer.left[i];
+        }
         
         // Quick Audit: Monitor for silence or clipping
         static int audit_counter = 0;
         if (audit_counter++ % 100 == 0) {
             float peak = 0.0f;
-            for (float s : output) if (std::abs(s) > peak) peak = std::abs(s);
+            for (float s : buffer.left) if (std::abs(s) > peak) peak = std::abs(s);
             std::cout << "[ENV AUDIT] Gate: " << (current_gate ? "ON " : "OFF") 
                       << " | Peak: " << peak << std::endl;
         }
