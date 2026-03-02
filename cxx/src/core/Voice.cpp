@@ -207,53 +207,44 @@ void Voice::apply_modulation() {
 }
 
 void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
-    // 1. SIGNAL PATH STRIP-BACK: Bypass ModulationMatrix & AudioGraph
-    // apply_modulation(); // BYPASS
-
-    // 2. BLOCK-LEVEL PULLS: Ensure phase continuity across the block
+    // 1. BLOCK-LEVEL PULL FOR INDEPENDENT SOURCES
     auto block = graph_->borrow_buffer();
-    std::span<float> pulse_span(block->left.data(), output.size());
-    std::span<float> saw_span(block->right.data(), output.size());
+    std::span<float> saw_span(block->left.data(), output.size());
 
-    oscillator_->set_frequency(base_frequency_);
-    saw_oscillator_->set_frequency(base_frequency_);
-
-    oscillator_->pull(pulse_span, context);
+    // Pull independent oscillators as blocks
     saw_oscillator_->pull(saw_span, context);
 
-    // 3. MIXING LOOP: Use SourceMixer gains and handle Sub-Osc phase locking
+    // 2. INTERLEAVED SAMPLE LOOP FOR PHASE-LOCKED SOURCES
     auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get());
-    
+    auto* sub_osc = dynamic_cast<SubOscillator*>(sub_oscillator_.get());
+
+    float saw_gain = source_mixer_->get_gain(0);
     float pulse_gain = source_mixer_->get_gain(1);
     float sub_gain = source_mixer_->get_gain(2);
-    float saw_gain = source_mixer_->get_gain(0);
+
+    // Pull envelope value for smooth gating
+    float env_buf[1];
+    envelope_->pull(std::span<float>(env_buf, 1), context);
+    float current_env = env_buf[0];
 
     for (size_t i = 0; i < output.size(); ++i) {
+        // Pulse increments phase and returns sample
+        float p_sample = static_cast<float>(pulse_osc->tick());
+        
+        // Sub-osc locks to pulse phase
+        float s_sample = static_cast<float>(sub_osc->generate_sample(pulse_osc->get_phase()));
+        
         std::array<float, SourceMixer::NUM_CHANNELS> inputs{};
-        
-        // SAW (Channel 0)
         inputs[0] = saw_span[i] * saw_gain;
+        inputs[1] = p_sample * pulse_gain;
+        inputs[2] = s_sample * sub_gain;
         
-        // PULSE (Channel 1)
-        inputs[1] = pulse_span[i] * pulse_gain;
-        
-        // SUB (Channel 2) - Independently pulled for now to verify oscillator health
-        float sub_sample[1];
-        sub_oscillator_->pull(std::span<float>(sub_sample, 1), context);
-        inputs[2] = sub_sample[0] * sub_gain;
-        
-        output[i] = source_mixer_->mix(inputs);
-    }
-
-    // 4. MANUAL GATE: Use is_active() for simple on/off gating
-    float gate = is_active() ? 1.0f : 0.0f;
-    for (auto& sample : output) {
-        sample *= gate;
+        output[i] = source_mixer_->mix(inputs) * current_env;
     }
 
     // Diagnostic Trace
     if (log_counter_++ % 128 == 0) {
-        AudioLogger::instance().log_event("STRIP_BACK_GATE", gate);
+        AudioLogger::instance().log_event("REPAIR_ENV", current_env);
     }
 }
 
