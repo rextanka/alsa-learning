@@ -142,6 +142,7 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
 - **Nord-style Modular Routing**: Supporting "Audio-as-Control" where audio signals can be used as modulation sources across the graph.
 - **Flexible Voice Topology (Instrument Templates)**: To support diverse synthesizer architectures (SH-101, Juno-60, MS-20, etc.) without fixed-function classes, the `Voice` is defined as a **Dynamic Node Container**:
     - **Signal Path (The Patch)**: Instead of hardcoded members, a `Voice` maintains a `std::vector<std::unique_ptr<Processor>> signal_chain_`. The `pull()` order defines the serial or parallel routing.
+    - **Static Signal Path Rule**: To ensure RT-safety, the `signal_chain_` is "baked" during initialization/patching (outside the audio thread). Real-time re-patching (changing the vector size or order) is forbidden during the audio callback.
     - **Node Ownership & Execution**: The first node in the chain must be a **Generator** (SourceMixer or Oscillator) which clears the buffer. Subsequent nodes (Filters, Envelopes) are **Processors** that modify the buffer in-place.
     - **Source Mixer Node**: A standard `Processor` node that sums multiple generators (Pulse, Saw, Sub, Noise) before the filter stage. It applies `tanh` soft-saturation to emulate analog headroom.
     - **Buffer Reuse Strategy**: Use `borrow_buffer()` logic to provide temporary spans for parallel oscillators before they are summed in the `SourceMixer`.
@@ -178,6 +179,7 @@ For reliable polyphony and voice stealing, every `Voice` must adhere to the foll
 ## Audio-Rate Modulation Matrix
 
 - **Modulation as Audio**: All modulation signals (LFOs, Envelopes) are pulled at the same 48000Hz rate as the audio oscillators to ensure "zipper-free" parameter changes and FM/Filter-FM capabilities.
+- **Span-Based Modulation**: To achieve true "zipper-free" performance, modulation nodes should provide a full span of modulation data per block. Processors use these spans to smoothly ramp internal parameters (e.g., Cutoff, Pitch) rather than updating once per block.
 - **Target Update**: Modulation targets (Cutoff, Pitch) are recalculated per-block or per-sample using the exponential formula $f_{final} = f_{base} \cdot 2^{mod}$.
 
 ## Modular Modulation Matrix
