@@ -36,7 +36,7 @@ VoiceManager::VoiceManager(int sample_rate)
         
         // --- Legacy Parameter Mapping Bridge ---
         
-        // Filter mappings (VCF tag expected in future patches)
+        // Filter mappings
         slot.voice->register_parameter(1, "VCF", 1); // Cutoff
         slot.voice->register_parameter(2, "VCF", 2); // Resonance
         slot.voice->register_parameter(3, "VCF", 3); // Env Amount
