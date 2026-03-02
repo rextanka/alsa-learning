@@ -26,9 +26,17 @@ VoiceManager::VoiceManager(int sample_rate)
     mod_buffer_.resize(512); // Default block size
 }
 
+void VoiceManager::set_voice_spread(float spread) {
+    voice_spread_ = std::clamp(spread, 0.0f, 1.0f);
+}
+
 void VoiceManager::note_on(int note, float velocity, double frequency) {
     double freq = (frequency > 0.0) ? frequency : note_to_freq(note);
 
+    // Calculate automatic panning based on note position and spread
+    // We'll alternate voices left/right based on index for "Poly Spread"
+    // but also allow a base offset if needed.
+    
     // 1. Check if the note is already playing (re-trigger)
     int existing_voice_idx = note_to_voice_map_[note & 0x7F];
     if (existing_voice_idx != -1) {
@@ -55,7 +63,13 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
         slot.active = true;
         slot.last_note_on_time = next_timestamp();
         note_to_voice_map_[note & 0x7F] = idle_idx;
-        std::cout << "[VoiceMap] Note " << note << " -> Voice " << idle_idx << std::endl;
+        
+        // Calculate polyphonic spread: alternate voices across the stereo field
+        // Voice 0, 2, 4... -> Leftish, Voice 1, 3, 5... -> Rightish
+        float pan_pos = (idle_idx % 2 == 0) ? -1.0f : 1.0f;
+        slot.voice->set_pan(pan_pos * voice_spread_);
+        
+        std::cout << "[VoiceMap] Note " << note << " -> Voice " << idle_idx << " (Pan: " << slot.voice->pan() << ")" << std::endl;
         slot.voice->note_on(freq);
         return;
     }
@@ -252,16 +266,80 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
 }
 
 void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
-    // 1. PULL MONO AUDIO
-    auto block = voices_[0].voice->borrow_buffer();
-    std::span<float> mono_span(block->right.data(), output.frames());
-    
-    do_pull(mono_span, context);
+    // 1. Clear stereo output
+    output.clear();
 
-    // 2. FAN OUT TO STEREO
+    if (mod_buffer_.size() < output.frames()) {
+        mod_buffer_.resize(output.frames());
+    }
+
+    // 2. Process global modulation links
+    for (const auto& conn : connections_) {
+        auto it = mod_sources_.find(conn.source_id);
+        if (it != mod_sources_.end()) {
+            std::span<float> mod_span(mod_buffer_.data(), output.frames());
+            it->second->pull(mod_span, context);
+            
+            float mod_value = mod_span[0]; // Block-rate
+            float applied_val = mod_value * conn.intensity;
+
+            if (conn.target_id == -1) { // ALL_VOICES
+                for (int i = 0; i < MAX_VOICES; ++i) {
+                    voices_[i].voice->set_parameter(conn.param, applied_val);
+                }
+            }
+        }
+    }
+
+    // 3. Render and Sum Voices with Constant-Power Panning
+    auto block = voices_[0].voice->borrow_buffer();
+    std::span<float> voice_span(block->left.data(), output.frames());
+
+    for (int i = 0; i < MAX_VOICES; ++i) {
+        auto& slot = voices_[i];
+        if (slot.active) {
+            if (slot.voice->is_active()) {
+                // Pull mono signal from voice
+                std::fill(voice_span.begin(), voice_span.end(), 0.0f);
+                slot.voice->pull(voice_span, context);
+
+                // Apply Panning Law: Constant Power
+                // theta = (pan + 1) * PI / 4
+                // L = cos(theta), R = sin(theta)
+                float pan = slot.voice->pan();
+                float theta = (pan + 1.0f) * (M_PI / 4.0f);
+                float gainL = std::cos(theta);
+                float gainR = std::sin(theta);
+
+                for (size_t j = 0; j < output.frames(); ++j) {
+                    output.left[j] += voice_span[j] * gainL;
+                    output.right[j] += voice_span[j] * gainR;
+                }
+            } else {
+                slot.active = false;
+                if (slot.current_note != -1) {
+                    if (note_to_voice_map_[slot.current_note & 0x7F] == i) {
+                        note_to_voice_map_[slot.current_note & 0x7F] = -1;
+                    }
+                }
+                slot.current_note = -1;
+            }
+        }
+    }
+    
+    // 4. Master Safety Gain (0.15) and Simple Soft Clipping
     for (size_t j = 0; j < output.frames(); ++j) {
-        output.left[j] = mono_span[j];
-        output.right[j] = mono_span[j];
+        float outL = output.left[j] * 0.15f;
+        float outR = output.right[j] * 0.15f;
+
+        auto soft_clip = [](float s) {
+            if (s > 0.95f) return 0.95f + 0.05f * std::tanh((s - 0.95f) / 0.05f);
+            if (s < -0.95f) return -0.95f + 0.05f * std::tanh((s + 0.95f) / 0.05f);
+            return s;
+        };
+
+        output.left[j] = soft_clip(outL);
+        output.right[j] = soft_clip(outR);
     }
 }
 

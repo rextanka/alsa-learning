@@ -79,6 +79,13 @@ public:
     void reset() override;
 
     /**
+     * @brief Set the polyphonic spread amount (0.0 to 1.0).
+     * 0.0 = All voices centered.
+     * 1.0 = Voices fully panned across the stereo field.
+     */
+    void set_voice_spread(float spread);
+
+    /**
      * @brief Clear all modulation connections for a specific processor ID.
      */
     void clear_connections(int id);
@@ -144,6 +151,7 @@ private:
     std::vector<Connection> connections_;
     std::unordered_map<int, std::shared_ptr<Processor>> mod_sources_;
     std::vector<float> mod_buffer_;
+    float voice_spread_ = 0.5f; // Default 50% spread
 
 public:
     const std::array<VoiceSlot, MAX_VOICES>& get_voices() const { return voices_; }

@@ -38,8 +38,12 @@ void test_filter(hal::AudioDriver* driver, const std::string& name, std::unique_
     // Disable default chiff for clean sweep
     voice->matrix().clear_all();
 
-    driver->set_callback([&voice](std::span<float> output) {
-        voice->pull(output);
+    driver->set_stereo_callback([&voice](audio::AudioBuffer& output) {
+        // Voice is mono, so we pull into left and copy to right
+        voice->pull(output.left);
+        for (size_t i = 0; i < output.frames(); ++i) {
+            output.right[i] = output.left[i];
+        }
     });
     
     if (!driver->start()) return;

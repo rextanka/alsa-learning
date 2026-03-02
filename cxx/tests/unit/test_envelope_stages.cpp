@@ -19,6 +19,9 @@ TEST(EnvelopeTest, ZeroCrossing) {
     std::vector<float> buffer(1024);
     std::span<float> span(buffer);
     
+    // Fill buffer with 1.0 to test VCA behavior (multiplication)
+    std::fill(buffer.begin(), buffer.end(), 1.0f);
+    
     // Process a bunch of samples
     env.pull(span);
     EXPECT_GT(buffer[0], 0.0f);
