@@ -90,10 +90,12 @@ struct EngineHandleImpl : public HandleBase {
 #else
         driver = std::make_unique<hal::AlsaDriver>(sr, 512);
 #endif
-        // Link the driver to the voice manager
-        driver->set_stereo_callback([this](audio::AudioBuffer& buffer) {
-            voice_manager->pull(buffer);
-        });
+    // Link the driver to the voice manager
+    driver->set_stereo_callback([this](audio::AudioBuffer& buffer) {
+        // Advanced clock by frames
+        clock.advance(static_cast<int32_t>(buffer.frames()));
+        voice_manager->pull(buffer);
+    });
 
         // Initialize parameter mapping for fast UI reflection
         param_name_to_id["osc_pw"] = 10;
@@ -450,6 +452,11 @@ int engine_note_off_name(EngineHandle handle, const char* note_name) {
     } catch (...) {
         return -1;
     }
+}
+
+void engine_flush_logs(EngineHandle /* handle */) {
+    audio::AudioLogger::instance().set_log_to_console(true);
+    audio::AudioLogger::instance().flush();
 }
 
 int engine_set_filter_type(EngineHandle handle, int /* type */) {

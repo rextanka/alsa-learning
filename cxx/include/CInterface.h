@@ -122,6 +122,7 @@ AUDIO_API int engine_set_meter(EngineHandle handle, int beats_per_bar);
 AUDIO_API int engine_get_musical_time(EngineHandle handle, int* bar, int* beat, int* tick);
 AUDIO_API int engine_note_on_name(EngineHandle handle, const char* note_name, float velocity);
 AUDIO_API int engine_note_off_name(EngineHandle handle, const char* note_name);
+AUDIO_API void engine_flush_logs(EngineHandle handle);
 AUDIO_API int engine_set_filter_type(EngineHandle handle, int type);
 AUDIO_API int engine_set_delay_enabled(EngineHandle handle, int enabled);
 

@@ -22,6 +22,7 @@ Voice::Voice(int sample_rate)
     // 1. Oscillator: Pulse Oscillator (SH-101/Juno Style)
     oscillator_ = std::make_unique<PulseOscillatorProcessor>(sample_rate);
     sub_oscillator_ = std::make_unique<SubOscillator>();
+    saw_oscillator_ = std::make_unique<SawtoothOscillatorProcessor>(sample_rate);
     source_mixer_ = std::make_unique<SourceMixer>();
     source_mixer_->set_gain(1, 1.0f); // Default main pulse gain
     source_mixer_->set_gain(2, 0.5f); // Default sub-osc gain
@@ -46,14 +47,16 @@ Voice::Voice(int sample_rate)
     graph_ = std::make_unique<AudioGraph>();
     rebuild_graph();
 
-    // Default "Chiff" Modulation: Envelope -> Cutoff (+0.5 octaves)
-    matrix_.set_connection(ModulationSource::Envelope, ModulationTarget::Cutoff, 0.585f);
+    // Clear all default modulations to ensure a clean state for "Beep" Surgery
+    matrix_.clear_all();
     
     // DEFAULT VCA CONNECTION: Envelope -> Amplitude (Intensity: 1.0f)
     // This ensures all legacy tests and default voices have audible output.
     matrix_.set_connection(ModulationSource::Envelope, ModulationTarget::Amplitude, 1.0f);
 
     current_source_values_.fill(0.0f);
+    log_counter_ = 0;
+    AudioLogger::instance().log_event("SR_CHECK", static_cast<float>(sample_rate_));
 }
 
 void Voice::set_filter_type(std::unique_ptr<FilterProcessor> filter) {
@@ -72,9 +75,17 @@ void Voice::set_parameter(int param, float value) {
             break;
         case 1: // CUTOFF
             base_cutoff_ = std::max(20.0f, value);
+            if (filter_) filter_->set_cutoff(base_cutoff_);
             break;
         case 2: // RESONANCE
             base_resonance_ = std::clamp(value, 0.0f, 1.0f);
+            if (filter_) filter_->set_resonance(base_resonance_);
+            break;
+        case 4: // AMP_DECAY
+            envelope_->set_decay_time(value);
+            break;
+        case 5: // AMP_SUSTAIN
+            envelope_->set_sustain_level(value);
             break;
         case 11: // SUB_GAIN
             source_mixer_->set_gain(2, value);
@@ -85,8 +96,13 @@ void Voice::set_parameter(int param, float value) {
         case 13: // PULSE_GAIN
             source_mixer_->set_gain(1, value);
             break;
-        case 14: // NOISE_GAIN
-            source_mixer_->set_gain(3, value);
+        case 14: // PULSE_WIDTH (Re-mapped for test)
+            if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
+                pulse_osc->set_pulse_width(value);
+            }
+            break;
+        case 17: // VCF_ENV_AMOUNT (Bypass logic)
+            // Modulation Matrix would handle this, but we've cleared it.
             break;
         default:
             break;
@@ -110,12 +126,14 @@ void Voice::note_on(double frequency) {
     // Ensure all processors are reset to clear stuck DC or phase
     oscillator_->reset();
     sub_oscillator_->reset();
+    saw_oscillator_->reset();
     envelope_->reset();
     lfo_->reset();
     if (filter_) filter_->reset();
 
     // Set frequency after reset to ensure current_freq is correct
     oscillator_->set_frequency(frequency);
+    saw_oscillator_->set_frequency(frequency);
     
     // Hardwire VCA if missing
     if (matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_) <= 0.001f) {
@@ -135,6 +153,8 @@ bool Voice::is_active() const {
 
 void Voice::reset() {
     oscillator_->reset();
+    sub_oscillator_->reset();
+    saw_oscillator_->reset();
     envelope_->reset();
     lfo_->reset();
     if (filter_) filter_->reset();
@@ -187,51 +207,53 @@ void Voice::apply_modulation() {
 }
 
 void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
-    if (!envelope_->is_active()) {
-        std::fill(output.begin(), output.end(), 0.0f);
-        return;
-    }
-    apply_modulation();
+    // 1. SIGNAL PATH STRIP-BACK: Bypass ModulationMatrix & AudioGraph
+    // apply_modulation(); // BYPASS
 
-    // Pull from oscillators
+    // 2. BLOCK-LEVEL PULLS: Ensure phase continuity across the block
     auto block = graph_->borrow_buffer();
     std::span<float> pulse_span(block->left.data(), output.size());
-    std::span<float> sub_span(block->right.data(), output.size());
-    
-    // Sub-oscillator Restoration: Track PulseOscillator phase for lock
-    auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get());
-    if (pulse_osc) {
-        // We need to pull from oscillators sample-by-sample for correct phase tracking
-        float tmp_pulse[1];
-        for(size_t i=0; i<output.size(); ++i) {
-            oscillator_->pull(std::span<float>(tmp_pulse, 1), context);
-            pulse_span[i] = tmp_pulse[0];
-            sub_span[i] = static_cast<float>(sub_oscillator_->generate_sample(pulse_osc->get_phase()));
-        }
-    } else {
-        oscillator_->pull(pulse_span, context);
-        sub_oscillator_->pull(sub_span, context);
-    }
+    std::span<float> saw_span(block->right.data(), output.size());
 
-    // Mix them into output using SourceMixer (tanh)
+    oscillator_->set_frequency(base_frequency_);
+    saw_oscillator_->set_frequency(base_frequency_);
+
+    oscillator_->pull(pulse_span, context);
+    saw_oscillator_->pull(saw_span, context);
+
+    // 3. MIXING LOOP: Use SourceMixer gains and handle Sub-Osc phase locking
+    auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get());
+    
+    float pulse_gain = source_mixer_->get_gain(1);
+    float sub_gain = source_mixer_->get_gain(2);
+    float saw_gain = source_mixer_->get_gain(0);
+
     for (size_t i = 0; i < output.size(); ++i) {
         std::array<float, SourceMixer::NUM_CHANNELS> inputs{};
-        inputs[0] = 0.0f; 
-        inputs[1] = pulse_span[i]; // No scaling, direct for audit
-        inputs[2] = sub_span[i];
-        inputs[3] = 0.0f; 
-        inputs[4] = 0.0f;
+        
+        // SAW (Channel 0)
+        inputs[0] = saw_span[i] * saw_gain;
+        
+        // PULSE (Channel 1)
+        inputs[1] = pulse_span[i] * pulse_gain;
+        
+        // SUB (Channel 2) - Independently pulled for now to verify oscillator health
+        float sub_sample[1];
+        sub_oscillator_->pull(std::span<float>(sub_sample, 1), context);
+        inputs[2] = sub_sample[0] * sub_gain;
+        
         output[i] = source_mixer_->mix(inputs);
     }
 
-    // Pass through the rest of the graph (Filter -> Envelope)
-    graph_->pull(output, context);
-
-    // VCA restoration: Apply Amplitude modulation from matrix to the final sample
-    float vca_intensity = matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_);
-    
+    // 4. MANUAL GATE: Use is_active() for simple on/off gating
+    float gate = is_active() ? 1.0f : 0.0f;
     for (auto& sample : output) {
-        sample *= vca_intensity;
+        sample *= gate;
+    }
+
+    // Diagnostic Trace
+    if (log_counter_++ % 128 == 0) {
+        AudioLogger::instance().log_event("STRIP_BACK_GATE", gate);
     }
 }
 

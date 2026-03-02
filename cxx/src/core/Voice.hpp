@@ -8,6 +8,7 @@
 
 #include "Processor.hpp"
 #include "oscillator/OscillatorProcessor.hpp"
+#include "oscillator/SawtoothOscillatorProcessor.hpp"
 #include "envelope/AdsrEnvelopeProcessor.hpp"
 #include "filter/FilterProcessor.hpp"
 #include "oscillator/LfoProcessor.hpp"
@@ -64,6 +65,7 @@ private:
 
     std::unique_ptr<OscillatorProcessor> oscillator_;
     std::unique_ptr<SubOscillator> sub_oscillator_;
+    std::unique_ptr<SawtoothOscillatorProcessor> saw_oscillator_;
     std::unique_ptr<SourceMixer> source_mixer_;
     std::unique_ptr<AdsrEnvelopeProcessor> envelope_;
     std::unique_ptr<FilterProcessor> filter_;
@@ -83,6 +85,8 @@ private:
 
     // Temporary buffers for modulation sources
     std::array<float, static_cast<size_t>(ModulationSource::Count)> current_source_values_;
+
+    uint32_t log_counter_;
 };
 
 } // namespace audio

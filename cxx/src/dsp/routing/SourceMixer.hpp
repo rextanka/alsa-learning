@@ -45,6 +45,16 @@ public:
     }
 
     /**
+     * @brief Get gain for a specific channel.
+     */
+    float get_gain(size_t channel) const {
+        if (channel < NUM_CHANNELS) {
+            return gains_[channel];
+        }
+        return 0.0f;
+    }
+
+    /**
      * @brief Process a single sample set.
      * @param inputs Array of input samples
      * @return float Mixed and saturated output
