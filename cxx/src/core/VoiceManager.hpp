@@ -64,6 +64,11 @@ public:
     void set_parameter_by_name(const std::string& name, float value);
 
     /**
+     * @brief Set a parameter across all voices by ID.
+     */
+    void set_parameter(int param_id, float value);
+
+    /**
      * @brief Handle a MIDI event.
      */
     void handleMidiEvent(const MidiEvent& event);

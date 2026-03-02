@@ -59,6 +59,17 @@ void Voice::set_parameter(int param_id, float value) {
         Processor* p = get_processor_by_tag(it->second.tag);
         if (p) {
             p->set_parameter(it->second.internal_id, value);
+        } else {
+            char buf[128];
+            std::snprintf(buf, sizeof(buf), "Param %d mapped to tag '%s' but node not found", param_id, it->second.tag.c_str());
+            AudioLogger::instance().log_message("VOICE", buf);
+        }
+    } else {
+        // Only log common non-mapped parameters to avoid flooding if it's expected
+        if (param_id > 0) { // Skip ID 0 (Pitch) if it's handled via note_on
+            char buf[64];
+            std::snprintf(buf, sizeof(buf), "Unmapped Parameter ID: %d", param_id);
+            AudioLogger::instance().log_message("VOICE", buf);
         }
     }
 }

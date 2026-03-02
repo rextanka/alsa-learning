@@ -29,15 +29,28 @@ VoiceManager::VoiceManager(int sample_rate)
         // and an oscillator to be heard. 
         // We'll use AdsrEnvelopeProcessor and SawtoothOscillatorProcessor as defaults for legacy compatibility.
         slot.voice->add_processor(std::make_unique<SawtoothOscillatorProcessor>(sample_rate), "VCO");
-        slot.voice->add_processor(std::make_unique<AdsrEnvelopeProcessor>(sample_rate), "VCA");
         
-        // Map legacy parameters
-        slot.voice->register_parameter(1, "VCF", 1); // Cutoff
-        slot.voice->register_parameter(2, "VCF", 2); // Resonance
-        slot.voice->register_parameter(4, "VCA", 4); // Attack
-        slot.voice->register_parameter(5, "VCA", 5); // Decay
-        slot.voice->register_parameter(6, "VCA", 6); // Sustain
-        slot.voice->register_parameter(7, "VCA", 7); // Release
+        auto adsr = std::make_unique<AdsrEnvelopeProcessor>(sample_rate);
+        adsr->set_sustain_level(1.0f); // Ensure audible by default
+        slot.voice->add_processor(std::move(adsr), "VCA");
+        
+        // Legacy Parameter Mapping Bridge (Matches oscillator_integrity_test.cpp and others)
+        slot.voice->register_parameter(1, "VCF", 1); // Cutoff (VCF)
+        slot.voice->register_parameter(2, "VCF", 2); // Resonance (VCF)
+        
+        // VCA / ADSR Mapping
+        slot.voice->register_parameter(4, "VCA", 1); // Attack  (Internal ADSR 1)
+        slot.voice->register_parameter(5, "VCA", 2); // Decay   (Internal ADSR 2)
+        slot.voice->register_parameter(6, "VCA", 3); // Sustain (Internal ADSR 3)
+        slot.voice->register_parameter(7, "VCA", 4); // Release (Internal ADSR 4)
+
+        // Oscillator / VCO Mapping (Saw, Pulse, Sub Gains)
+        // Note: SawtoothOscillatorProcessor uses ID 0 for Frequency.
+        // If we want to support Pulse/Sub gains we'll eventually need a SourceMixer node.
+        // For now, mapping these to VCO to avoid "dead label" warnings.
+        slot.voice->register_parameter(11, "VCO", 11); 
+        slot.voice->register_parameter(12, "VCO", 12);
+        slot.voice->register_parameter(13, "VCO", 13);
 
         slot.current_note = -1;
         slot.active = false;
@@ -156,12 +169,29 @@ void VoiceManager::note_off(int note) {
 }
 
 void VoiceManager::set_parameter_by_name(const std::string& name, float value) {
-    // Legacy mapping support or forward to parameter mapping system
+    // Map names to legacy Phase 13 parameter IDs
+    int param_id = -1;
+    if (name == "vcf_cutoff") param_id = 1;
+    else if (name == "vcf_res") param_id = 2;
+    else if (name == "amp_attack") param_id = 4;
+    else if (name == "amp_decay") param_id = 5;
+    else if (name == "amp_sustain") param_id = 6;
+    else if (name == "amp_release") param_id = 7;
+    else if (name == "osc_pw") param_id = 10;
+    else if (name == "saw_gain") param_id = 11;
+    else if (name == "pulse_gain") param_id = 12;
+    else if (name == "sub_gain") param_id = 13;
+
+    if (param_id != -1) {
+        set_parameter(param_id, value);
+    }
+}
+
+void VoiceManager::set_parameter(int param_id, float value) {
     for (auto& slot : voices_) {
-        // We use a convention where we try to find common tags
-        if (name == "vcf_cutoff") slot.voice->set_parameter(1, value);
-        else if (name == "vcf_res") slot.voice->set_parameter(2, value);
-        else if (name == "osc_pw") slot.voice->set_parameter(10, value);
+        if (slot.voice) {
+            slot.voice->set_parameter(param_id, value);
+        }
     }
 }
 
@@ -265,10 +295,23 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
     }
     
     // Master Safety Gain (0.15) and Simple Soft Clipping
+    float peak = 0.0f;
     for (auto& sample : output) {
         sample *= 0.15f;
         if (sample > 0.95f) sample = 0.95f + 0.05f * std::tanh((sample - 0.95f) / 0.05f);
         else if (sample < -0.95f) sample = -0.95f + 0.05f * std::tanh((sample + 0.95f) / 0.05f);
+        
+        float abs_s = std::abs(sample);
+        if (abs_s > peak) peak = abs_s;
+    }
+
+    if (peak > 0.0001f) {
+        static int log_throttle = 0;
+        if (log_throttle++ % 100 == 0) {
+            char buf[64];
+            std::snprintf(buf, sizeof(buf), "Master Peak: %.4f", peak);
+            AudioLogger::instance().log_message("VMAN", buf);
+        }
     }
 }
 
