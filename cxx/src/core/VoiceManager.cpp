@@ -1,14 +1,21 @@
 /**
  * @file VoiceManager.cpp
- * @brief Implementation of the VoiceManager class with advanced management.
+ * @brief Implementation of the VoiceManager class with Flexible Topology support.
  */
 
 #include "VoiceManager.hpp"
 #include "Logger.hpp"
+#include "envelope/EnvelopeProcessor.hpp"
+#include "envelope/AdsrEnvelopeProcessor.hpp"
+#include "oscillator/SawtoothOscillatorProcessor.hpp"
 #include <cmath>
 #include <algorithm>
 #include <limits>
 #include <iostream>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace audio {
 
@@ -18,6 +25,34 @@ VoiceManager::VoiceManager(int sample_rate)
 {
     for (auto& slot : voices_) {
         slot.voice = std::make_unique<Voice>(sample_rate);
+        
+        // 1. VCO: Sawtooth by default
+        slot.voice->add_processor(std::make_unique<SawtoothOscillatorProcessor>(sample_rate), "VCO");
+        
+        // 2. VCA: ADSR (Audible by default)
+        auto adsr = std::make_unique<AdsrEnvelopeProcessor>(sample_rate);
+        adsr->set_sustain_level(1.0f);
+        slot.voice->add_processor(std::move(adsr), "VCA");
+        
+        // --- Legacy Parameter Mapping Bridge ---
+        
+        // Filter mappings (VCF tag expected in future patches)
+        slot.voice->register_parameter(1, "VCF", 1); // Cutoff
+        slot.voice->register_parameter(2, "VCF", 2); // Resonance
+        slot.voice->register_parameter(3, "VCF", 3); // Env Amount
+        
+        // Envelope stage mappings (VCA tag)
+        slot.voice->register_parameter(4, "VCA", 1); // Attack
+        slot.voice->register_parameter(5, "VCA", 2); // Decay
+        slot.voice->register_parameter(6, "VCA", 3); // Sustain
+        slot.voice->register_parameter(7, "VCA", 4); // Release
+        
+        // Oscillator mappings (VCO tag)
+        slot.voice->register_parameter(11, "VCO", 11); // Saw Gain
+        slot.voice->register_parameter(12, "VCO", 12); // Pulse Gain
+        slot.voice->register_parameter(13, "VCO", 13); // Sub Gain
+        slot.voice->register_parameter(14, "VCO", 14); // Pulse Width
+        
         slot.current_note = -1;
         slot.active = false;
         slot.last_note_on_time = 0;
@@ -30,20 +65,16 @@ void VoiceManager::set_voice_spread(float spread) {
     voice_spread_ = std::clamp(spread, 0.0f, 1.0f);
 }
 
-void VoiceManager::note_on(int note, float velocity, double frequency) {
+void VoiceManager::note_on(int note, float velocity, double frequency, bool is_virtual_setup) {
     double freq = (frequency > 0.0) ? frequency : note_to_freq(note);
 
-    // Calculate automatic panning based on note position and spread
-    // We'll alternate voices left/right based on index for "Poly Spread"
-    // but also allow a base offset if needed.
-    
     // 1. Check if the note is already playing (re-trigger)
     int existing_voice_idx = note_to_voice_map_[note & 0x7F];
     if (existing_voice_idx != -1) {
         auto& slot = voices_[existing_voice_idx];
         if (slot.active && slot.current_note == note) {
             slot.last_note_on_time = next_timestamp();
-            slot.voice->note_on(freq);
+            if (!is_virtual_setup) slot.voice->note_on(freq);
             return;
         }
     }
@@ -64,13 +95,10 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
         slot.last_note_on_time = next_timestamp();
         note_to_voice_map_[note & 0x7F] = idle_idx;
         
-        // Calculate polyphonic spread: alternate voices across the stereo field
-        // Voice 0, 2, 4... -> Leftish, Voice 1, 3, 5... -> Rightish
         float pan_pos = (idle_idx % 2 == 0) ? -1.0f : 1.0f;
         slot.voice->set_pan(pan_pos * voice_spread_);
         
-        std::cout << "[VoiceMap] Note " << note << " -> Voice " << idle_idx << " (Pan: " << slot.voice->pan() << ")" << std::endl;
-        slot.voice->note_on(freq);
+        if (!is_virtual_setup) slot.voice->note_on(freq);
         return;
     }
 
@@ -79,7 +107,7 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
     
     // Priority 1: Find Releasing Voice
     for (int i = 0; i < MAX_VOICES; ++i) {
-        if (voices_[i].voice->envelope().is_releasing()) {
+        if (voices_[i].voice->is_releasing()) {
             candidate_idx = i;
             break;
         }
@@ -100,7 +128,6 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
         auto& candidate = voices_[candidate_idx];
         AudioLogger::instance().log_event("VoiceSteal", static_cast<float>(candidate.current_note));
         
-        // Soft Stealing: Quick reset before re-assigning
         candidate.voice->reset(); 
 
         if (candidate.current_note != -1) {
@@ -111,9 +138,8 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
         candidate.active = true;
         candidate.last_note_on_time = next_timestamp();
         note_to_voice_map_[note & 0x7F] = candidate_idx;
-        std::cout << "[VoiceMap] Stealing Note " << note << " -> Voice " << candidate_idx << std::endl;
         candidate.voice->set_pan(0.0f);
-        candidate.voice->note_on(freq);
+        if (!is_virtual_setup) candidate.voice->note_on(freq);
     }
 }
 
@@ -137,7 +163,6 @@ void VoiceManager::note_off(int note) {
     if (voice_idx != -1) {
         auto& slot = voices_[voice_idx];
         if (slot.active && slot.current_note == note) {
-            std::cout << "[VoiceMap] Release Note " << note << " (Voice " << voice_idx << ")" << std::endl;
             slot.voice->note_off();
             note_to_voice_map_[note & 0x7F] = -1;
         }
@@ -145,18 +170,29 @@ void VoiceManager::note_off(int note) {
 }
 
 void VoiceManager::set_parameter_by_name(const std::string& name, float value) {
-    // Map names to Phase 13 parameter IDs (temporary mapping until full ParameterManager)
+    // Map names to legacy Phase 13 parameter IDs
     int param_id = -1;
     if (name == "vcf_cutoff") param_id = 1;
     else if (name == "vcf_res") param_id = 2;
+    else if (name == "vcf_env_amount") param_id = 3;
+    else if (name == "amp_attack") param_id = 4;
+    else if (name == "amp_decay") param_id = 5;
+    else if (name == "amp_sustain") param_id = 6;
+    else if (name == "amp_release") param_id = 7;
     else if (name == "osc_pw") param_id = 10;
-    else if (name == "sub_gain") param_id = 11;
-    else if (name == "saw_gain") param_id = 12;
-    else if (name == "pulse_gain") param_id = 13;
-    else if (name == "noise_gain") param_id = 14;
+    else if (name == "saw_gain") param_id = 11;
+    else if (name == "pulse_gain") param_id = 12;
+    else if (name == "sub_gain") param_id = 13;
+    else if (name == "pulse_width") param_id = 14;
 
     if (param_id != -1) {
-        for (auto& slot : voices_) {
+        set_parameter(param_id, value);
+    }
+}
+
+void VoiceManager::set_parameter(int param_id, float value) {
+    for (auto& slot : voices_) {
+        if (slot.voice) {
             slot.voice->set_parameter(param_id, value);
         }
     }
@@ -231,19 +267,23 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
         }
     }
 
-    // 2. Sum active voices (Strictly Mono Pull)
-    // Borrow a block from the pool to use as a temporary voice buffer
-    auto block = voices_[0].voice->borrow_buffer();
-    std::span<float> voice_span(block->left.data(), output.size());
+    // 2. Sum active voices
+    // We use scratch buffer 0 from the first voice as a temporary summing buffer
+    auto voice_span = voices_[0].voice->get_scratch_buffer(0);
+    if (voice_span.size() < output.size()) {
+        // Fallback or error
+        return;
+    }
+    std::span<float> work_span = voice_span.subspan(0, output.size());
 
     for (int i = 0; i < MAX_VOICES; ++i) {
         auto& slot = voices_[i];
         if (slot.active) {
             if (slot.voice->is_active()) {
-                std::fill(voice_span.begin(), voice_span.end(), 0.0f);
-                slot.voice->pull(voice_span, context);
+                std::fill(work_span.begin(), work_span.end(), 0.0f);
+                slot.voice->pull(work_span, context);
                 for (size_t j = 0; j < output.size(); ++j) {
-                    output[j] += voice_span[j];
+                    output[j] += work_span[j];
                 }
             } else {
                 slot.active = false;
@@ -258,15 +298,27 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
     }
     
     // Master Safety Gain (0.15) and Simple Soft Clipping
+    float peak = 0.0f;
     for (auto& sample : output) {
         sample *= 0.15f;
         if (sample > 0.95f) sample = 0.95f + 0.05f * std::tanh((sample - 0.95f) / 0.05f);
         else if (sample < -0.95f) sample = -0.95f + 0.05f * std::tanh((sample + 0.95f) / 0.05f);
+        
+        float abs_s = std::abs(sample);
+        if (abs_s > peak) peak = abs_s;
+    }
+
+    if (peak > 0.0001f) {
+        static int log_throttle = 0;
+        if (log_throttle++ % 100 == 0) {
+            char buf[64];
+            std::snprintf(buf, sizeof(buf), "Master Peak: %.4f", peak);
+            AudioLogger::instance().log_message("VMAN", buf);
+        }
     }
 }
 
 void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
-    // 1. Clear stereo output
     output.clear();
 
     if (mod_buffer_.size() < output.frames()) {
@@ -280,7 +332,7 @@ void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
             std::span<float> mod_span(mod_buffer_.data(), output.frames());
             it->second->pull(mod_span, context);
             
-            float mod_value = mod_span[0]; // Block-rate
+            float mod_value = mod_span[0];
             float applied_val = mod_value * conn.intensity;
 
             if (conn.target_id == -1) { // ALL_VOICES
@@ -292,28 +344,25 @@ void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
     }
 
     // 3. Render and Sum Voices with Constant-Power Panning
-    auto block = voices_[0].voice->borrow_buffer();
-    std::span<float> voice_span(block->left.data(), output.frames());
+    auto voice_span = voices_[0].voice->get_scratch_buffer(0);
+    if (voice_span.size() < output.frames()) return;
+    std::span<float> work_span = voice_span.subspan(0, output.frames());
 
     for (int i = 0; i < MAX_VOICES; ++i) {
         auto& slot = voices_[i];
         if (slot.active) {
             if (slot.voice->is_active()) {
-                // Pull mono signal from voice
-                std::fill(voice_span.begin(), voice_span.end(), 0.0f);
-                slot.voice->pull(voice_span, context);
+                std::fill(work_span.begin(), work_span.end(), 0.0f);
+                slot.voice->pull(work_span, context);
 
-                // Apply Panning Law: Constant Power
-                // theta = (pan + 1) * PI / 4
-                // L = cos(theta), R = sin(theta)
                 float pan = slot.voice->pan();
-                float theta = (pan + 1.0f) * (M_PI / 4.0f);
+                float theta = (pan + 1.0f) * (static_cast<float>(M_PI) / 4.0f);
                 float gainL = std::cos(theta);
                 float gainR = std::sin(theta);
 
                 for (size_t j = 0; j < output.frames(); ++j) {
-                    output.left[j] += voice_span[j] * gainL;
-                    output.right[j] += voice_span[j] * gainR;
+                    output.left[j] += work_span[j] * gainL;
+                    output.right[j] += work_span[j] * gainR;
                 }
             } else {
                 slot.active = false;

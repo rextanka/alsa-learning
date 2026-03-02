@@ -1,91 +1,129 @@
 /**
  * @file Voice.hpp
- * @brief Represents a single synthesizer voice.
+ * @brief Represents a single synthesizer voice with a flexible topology.
  */
 
 #ifndef AUDIO_VOICE_HPP
 #define AUDIO_VOICE_HPP
 
 #include "Processor.hpp"
-#include "oscillator/OscillatorProcessor.hpp"
-#include "oscillator/SawtoothOscillatorProcessor.hpp"
-#include "envelope/AdsrEnvelopeProcessor.hpp"
-#include "filter/FilterProcessor.hpp"
-#include "oscillator/LfoProcessor.hpp"
-#include "oscillator/SubOscillator.hpp"
-#include "routing/SourceMixer.hpp"
-#include "AudioGraph.hpp"
+#include "AudioBuffer.hpp"
 #include "ModulationMatrix.hpp"
 #include <memory>
+#include <vector>
+#include <string>
+#include <unordered_map>
 #include <array>
 
 namespace audio {
 
 /**
- * @brief A single synth voice.
+ * @brief A single synth voice with a dynamic signal chain.
  */
 class Voice : public Processor {
 public:
     explicit Voice(int sample_rate);
 
+    /**
+     * @brief Trigger the voice with a specific frequency.
+     */
     void note_on(double frequency);
+    
+    /**
+     * @brief Release the voice.
+     */
     void note_off();
 
-    SourceMixer& source_mixer() { return *source_mixer_; }
-    SubOscillator& sub_oscillator() { return *sub_oscillator_; }
-    bool is_active() const;
-    void reset() override;
-
-    OscillatorProcessor& oscillator() { return *oscillator_; }
-    EnvelopeProcessor& envelope() { return *envelope_; }
-    FilterProcessor* filter() { return filter_.get(); }
-    LfoProcessor& lfo() { return *lfo_; }
-    ModulationMatrix& matrix() { return matrix_; }
-
-    void set_filter_type(std::unique_ptr<FilterProcessor> filter);
-    BufferPool::BufferPtr borrow_buffer() { return graph_->borrow_buffer(); }
+    /**
+     * @brief Check if any envelope is in the release stage.
+     */
+    bool is_releasing() const;
+    
+    /**
+     * @brief Immediately silence the voice.
+     */
+    void kill();
 
     /**
-     * @brief Set a modulation parameter.
+     * @brief Check if the voice is still active (e.g., envelopes are still releasing).
      */
-    void set_parameter(int param, float value);
+    bool is_active() const;
+    
+    /**
+     * @brief Reset all internal processors.
+     */
+    void reset() override;
 
-    void set_pan(float pan);
+    /**
+     * @brief Add a processor to the signal chain.
+     * @param p The processor to add.
+     * @param tag Optional unique tag for node discovery.
+     */
+    void add_processor(std::unique_ptr<Processor> p, std::string tag = "");
+
+    /**
+     * @brief Get a processor by its unique tag.
+     */
+    Processor* get_processor_by_tag(const std::string& tag);
+
+    /**
+     * @brief Register a mapping from a global parameter ID to a specific node and parameter.
+     */
+    void register_parameter(int param_id, const std::string& tag, int internal_param_id);
+
+    void clear_processors() { signal_chain_.clear(); tag_map_.clear(); }
+
+    /**
+     * @brief Set a parameter value by ID.
+     */
+    void set_parameter(int param_id, float value) override;
+
+    /**
+     * @brief Set the stereo pan position.
+     */
+    void set_pan(float pan) { pan_ = pan; }
+    
+    /**
+     * @brief Get the stereo pan position.
+     */
     float pan() const { return pan_; }
 
+    /**
+     * @brief Borrow a scratch buffer for parallel processing.
+     * @param index The index of the scratch buffer (0-3).
+     */
+    std::span<float> get_scratch_buffer(size_t index);
+
+    ModulationMatrix& matrix() { return matrix_; }
+
 protected:
+    /**
+     * @brief Pull audio data from the flexible signal chain.
+     */
     void do_pull(std::span<float> output, const VoiceContext* context = nullptr) override;
 
 private:
     static constexpr size_t MAX_BLOCK_SIZE = 1024;
+    static constexpr size_t SCRATCH_BUFFER_COUNT = 4;
 
-    void rebuild_graph();
-    void apply_modulation();
+    std::vector<std::unique_ptr<Processor>> signal_chain_;
+    std::unordered_map<std::string, Processor*> tag_map_;
+    
+    struct ParameterRoute {
+        std::string tag;
+        int internal_id;
+    };
+    std::unordered_map<int, ParameterRoute> parameter_map_;
 
-    std::unique_ptr<OscillatorProcessor> oscillator_;
-    std::unique_ptr<SubOscillator> sub_oscillator_;
-    std::unique_ptr<SawtoothOscillatorProcessor> saw_oscillator_;
-    std::unique_ptr<SourceMixer> source_mixer_;
-    std::unique_ptr<AdsrEnvelopeProcessor> envelope_;
-    std::unique_ptr<FilterProcessor> filter_;
-    std::unique_ptr<LfoProcessor> lfo_;
-    std::unique_ptr<AudioGraph> graph_;
+    std::array<AudioBuffer, SCRATCH_BUFFER_COUNT> scratch_buffers_;
     
     ModulationMatrix matrix_;
     
-    // Base parameters (anchors for modulation)
-    double base_frequency_;
-    float base_cutoff_;
-    float base_resonance_;
-    float base_amplitude_;
-
     int sample_rate_;
     float pan_; // -1.0 to 1.0
 
-    // Temporary buffers for modulation sources
-    std::array<float, static_cast<size_t>(ModulationSource::Count)> current_source_values_;
-
-    uint32_t log_counter_;
+    // Temporary storage for active frequency
+    double current_frequency_;
 };
 
 } // namespace audio

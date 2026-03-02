@@ -295,9 +295,9 @@ CMakeFiles/audio_engine_shared.dir/clean:
 # Target rules for target CMakeFiles/unit_tests.dir
 
 # All Build rule for target.
-CMakeFiles/unit_tests.dir/all: CMakeFiles/audio_engine.dir/all
 CMakeFiles/unit_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 CMakeFiles/unit_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all
+CMakeFiles/unit_tests.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=57,58,59,60,61,62,63 "Built target unit_tests"
@@ -329,9 +329,9 @@ CMakeFiles/unit_tests.dir/clean:
 # Target rules for target CMakeFiles/integration_tests.dir
 
 # All Build rule for target.
-CMakeFiles/integration_tests.dir/all: CMakeFiles/audio_engine.dir/all
 CMakeFiles/integration_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 CMakeFiles/integration_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all
+CMakeFiles/integration_tests.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=39,40 "Built target integration_tests"
@@ -555,9 +555,9 @@ CMakeFiles/filter_tests.dir/clean:
 # Target rules for target CMakeFiles/stereo_poly_test.dir
 
 # All Build rule for target.
-CMakeFiles/stereo_poly_test.dir/all: CMakeFiles/audio_engine.dir/all
 CMakeFiles/stereo_poly_test.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 CMakeFiles/stereo_poly_test.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all
+CMakeFiles/stereo_poly_test.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/stereo_poly_test.dir/build.make CMakeFiles/stereo_poly_test.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=53,54 "Built target stereo_poly_test"
@@ -717,9 +717,9 @@ CMakeFiles/TimingValidation.dir/clean:
 # Target rules for target CMakeFiles/Functional_BachMidi.dir
 
 # All Build rule for target.
-CMakeFiles/Functional_BachMidi.dir/all: CMakeFiles/audio_engine.dir/all
 CMakeFiles/Functional_BachMidi.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 CMakeFiles/Functional_BachMidi.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all
+CMakeFiles/Functional_BachMidi.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_BachMidi.dir/build.make CMakeFiles/Functional_BachMidi.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Functional_BachMidi.dir/build.make CMakeFiles/Functional_BachMidi.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=1,2 "Built target Functional_BachMidi"
@@ -751,9 +751,9 @@ CMakeFiles/Functional_BachMidi.dir/clean:
 # Target rules for target CMakeFiles/tremulant_tests.dir
 
 # All Build rule for target.
-CMakeFiles/tremulant_tests.dir/all: CMakeFiles/audio_engine.dir/all
 CMakeFiles/tremulant_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 CMakeFiles/tremulant_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all
+CMakeFiles/tremulant_tests.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/tremulant_tests.dir/build.make CMakeFiles/tremulant_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/tremulant_tests.dir/build.make CMakeFiles/tremulant_tests.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=55,56 "Built target tremulant_tests"
@@ -785,9 +785,9 @@ CMakeFiles/tremulant_tests.dir/clean:
 # Target rules for target CMakeFiles/sh101_chain_tests.dir
 
 # All Build rule for target.
-CMakeFiles/sh101_chain_tests.dir/all: CMakeFiles/audio_engine.dir/all
 CMakeFiles/sh101_chain_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 CMakeFiles/sh101_chain_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all
+CMakeFiles/sh101_chain_tests.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sh101_chain_tests.dir/build.make CMakeFiles/sh101_chain_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sh101_chain_tests.dir/build.make CMakeFiles/sh101_chain_tests.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=51,52 "Built target sh101_chain_tests"
@@ -819,9 +819,9 @@ CMakeFiles/sh101_chain_tests.dir/clean:
 # Target rules for target CMakeFiles/juno_chorus_tests.dir
 
 # All Build rule for target.
-CMakeFiles/juno_chorus_tests.dir/all: CMakeFiles/audio_engine.dir/all
 CMakeFiles/juno_chorus_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 CMakeFiles/juno_chorus_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all
+CMakeFiles/juno_chorus_tests.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/juno_chorus_tests.dir/build.make CMakeFiles/juno_chorus_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/juno_chorus_tests.dir/build.make CMakeFiles/juno_chorus_tests.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=41,42 "Built target juno_chorus_tests"

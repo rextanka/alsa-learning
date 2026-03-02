@@ -39,7 +39,7 @@ public:
      * @param velocity Note velocity (0.0 to 1.0).
      * @param frequency Optional frequency (if <= 0, calculated from MIDI note).
      */
-    void note_on(int note, float velocity, double frequency = 0.0);
+    void note_on(int note, float velocity, double frequency = 0.0, bool is_virtual_setup = false);
 
     /**
      * @brief Trigger a note on with specific panning.
@@ -62,6 +62,11 @@ public:
      * @brief Set a parameter by name across all voices.
      */
     void set_parameter_by_name(const std::string& name, float value);
+
+    /**
+     * @brief Set a parameter across all voices by ID.
+     */
+    void set_parameter(int param_id, float value) override;
 
     /**
      * @brief Handle a MIDI event.
@@ -113,6 +118,15 @@ protected:
      * @brief Pull audio from all active voices and sum them (Stereo).
      */
     void do_pull(AudioBuffer& output, const VoiceContext* context = nullptr) override;
+
+public:
+    /**
+     * @brief Get a voice by index.
+     */
+    Voice* get_voice(int index) {
+        if (index >= 0 && index < MAX_VOICES) return voices_[index].voice.get();
+        return nullptr;
+    }
 
 private:
     /**

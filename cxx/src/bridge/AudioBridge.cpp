@@ -352,11 +352,12 @@ int engine_set_adsr(EngineHandle handle, float attack, float decay, float sustai
     if (!handle) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
     for (auto& slot : impl->voice_manager->get_voices()) {
-        if (auto* adsr = dynamic_cast<audio::AdsrEnvelopeProcessor*>(&slot.voice->envelope())) {
-            adsr->set_attack_time(attack);
-            adsr->set_decay_time(decay);
-            adsr->set_sustain_level(sustain);
-            adsr->set_release_time(release);
+        if (slot.voice) {
+            // Use generic parameter setting via tag or convention
+            slot.voice->set_parameter(4, attack);
+            slot.voice->set_parameter(5, decay);
+            slot.voice->set_parameter(6, sustain);
+            slot.voice->set_parameter(7, release);
         }
     }
     return 0;
@@ -457,22 +458,16 @@ int engine_note_off_name(EngineHandle handle, const char* note_name) {
 void engine_print_graph(EngineHandle handle) {
     if (!handle) return;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
-    for (auto& slot : impl->voice_manager->get_voices()) {
-        if (slot.voice) {
-            slot.voice->borrow_buffer(); // Just to access graph implicitly via Voice
-            // But we need explicit access to the graph report. 
-            // Let's assume we can get it from the voice if we expose it.
-        }
-    }
-    // For now, let's just print a placeholder or implement it for the first voice
+    
+    std::cout << "--- Engine Graph ---" << std::endl;
     auto& voices = impl->voice_manager->get_voices();
     if (!voices.empty() && voices[0].voice) {
-        // We need a way to reach the graph from the Voice for the report.
-        // Actually, let's just use the first voice's graph if we can reach it.
-        // For simplicity in this bridge call, I'll add a temporary method to Voice if needed, 
-        // or just reach into it if it's public/friend.
+        // In flexible topology, we just list the processors in the chain
+        std::cout << "Flexible Chain Nodes:" << std::endl;
+        // This is a placeholder since we don't have a name/type string in Processor yet,
+        // but we can at least show it's active.
+        std::cout << "Active Chain (Flexible Topology enabled)" << std::endl;
     }
-    std::cout << "Engine Graph Print Requested (implementation in progress)" << std::endl;
 }
 
 void engine_flush_logs(EngineHandle /* handle */) {

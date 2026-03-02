@@ -1267,8 +1267,6 @@ CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o: /Users/nickthompson/sr
   _deps/json-src/include/nlohmann/thirdparty/hedley/hedley_undef.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/include/CInterface.h \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioBuffer.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioGraph.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/BufferPool.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Logger.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiEvent.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiParser.hpp \
@@ -1297,10 +1295,8 @@ CMakeFiles/audio_engine.dir/src/bridge/AudioBridge.cpp.o: /Users/nickthompson/sr
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SawtoothOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SineOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SquareOscillatorProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SubOscillator.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/TriangleOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/WavetableOscillatorProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing/SourceMixer.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal/AudioDriver.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal/coreaudio/CoreAudioDriver.hpp
 
@@ -4292,8 +4288,6 @@ CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o: /Users/nickthompson/src/cpp/au
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stddef.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdint.h \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioBuffer.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioGraph.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/BufferPool.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Logger.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/ModulationMatrix.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Voice.hpp \
@@ -4302,19 +4296,7 @@ CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o: /Users/nickthompson/src/cpp/au
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/PerformanceProfiler.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope/AdsrEnvelopeProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope/EnvelopeProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/FilterProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/MoogLadderProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/LfoProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/PulseOscillatorProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SawtoothOscillatorProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SquareOscillatorProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SubOscillator.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing/SourceMixer.hpp
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope/EnvelopeProcessor.hpp
 
 CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceManager.cpp \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/Availability.h \
@@ -5311,8 +5293,6 @@ CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o: /Users/nickthompson/src
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stddef.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdint.h \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioBuffer.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioGraph.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/BufferPool.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/Logger.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiEvent.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiParser.hpp \
@@ -5327,13 +5307,8 @@ CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o: /Users/nickthompson/src
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope/AdsrEnvelopeProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope/EnvelopeProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/FilterProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/LfoProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SawtoothOscillatorProcessor.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SubOscillator.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing/SourceMixer.hpp
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SawtoothOscillatorProcessor.hpp
 
 CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal/coreaudio/CoreAudioDriver.cpp \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AudioToolbox.framework/Headers/AUAudioUnit.h \
@@ -6463,13 +6438,9 @@ CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o: /Users/nick
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal/AudioDriver.hpp:
 
-/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing/SourceMixer.hpp:
-
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/WavetableOscillatorProcessor.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/TriangleOscillatorProcessor.hpp:
-
-/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SubOscillator.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SquareOscillatorProcessor.hpp:
 
@@ -7281,8 +7252,6 @@ _deps/json-src/include/nlohmann/detail/input/input_adapters.hpp:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__type_traits/alignment_of.h:
 
-/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/AudioGraph.hpp:
-
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/wctype.h:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_static_assert.h:
@@ -7733,8 +7702,6 @@ _deps/json-src/include/nlohmann/detail/abi_macros.hpp:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__debug_utils/sanitizers.h:
 
-/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/PulseOscillatorProcessor.hpp:
-
 _deps/json-src/include/nlohmann/detail/string_concat.hpp:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/stddef.h:
@@ -8004,8 +7971,6 @@ _deps/json-src/include/nlohmann/detail/string_concat.hpp:
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/ranges_for_each.h:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__atomic/kill_dependency.h:
-
-/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/BufferPool.hpp:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/format:
 
