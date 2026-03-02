@@ -84,7 +84,7 @@ public:
 protected:
     void do_pull(std::span<float> output, const VoiceContext* /* voice_context */ = nullptr) override {
         for (auto& sample : output) {
-            sample = process_sample();
+            sample *= process_sample();
         }
     }
 
