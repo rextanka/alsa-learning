@@ -24,9 +24,11 @@ int main() {
     engine_set_modulation(engine, MOD_SRC_ENVELOPE, MOD_TGT_AMPLITUDE, 1.0f);
     
     // Forced Synthesis Overrides (using ID or Label via set_param)
-    set_param(engine, "amp_attack", 0.01f);
-    set_param(engine, "amp_decay", 1.0f);     // Force 1s decay to prove stability
-    set_param(engine, "amp_sustain", 0.8f);   // 80% volume hold
+    // Short Metronome Click (0.25s)
+    set_param(engine, "amp_attack", 0.005f);
+    set_param(engine, "amp_decay", 0.15f);
+    set_param(engine, "amp_sustain", 0.0f);
+    set_param(engine, "amp_release", 0.05f);
     
     set_param(engine, "vcf_cutoff", 5000.0f); // Wide open
     set_param(engine, "vcf_env_amount", 0.0f); // Kill the kick sweep
