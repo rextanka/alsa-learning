@@ -7,6 +7,7 @@
 #define AUDIO_MOOG_LADDER_PROCESSOR_HPP
 
 #include "FilterProcessor.hpp"
+#include "Logger.hpp"
 #include <cmath>
 #include <algorithm>
 

@@ -7347,7 +7347,16 @@ CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o: /Users/nickthompso
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceManager.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/InputSource.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/PerformanceProfiler.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope/AdsrEnvelopeProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope/EnvelopeProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/FilterProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/MoogLadderProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SawtoothOscillatorProcessor.hpp
 
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/MidiParser.hpp:

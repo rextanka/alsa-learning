@@ -71,6 +71,8 @@ public:
      */
     void register_parameter(int param_id, const std::string& tag, int internal_param_id);
 
+    void clear_processors() { signal_chain_.clear(); tag_map_.clear(); }
+
     /**
      * @brief Set a parameter value by ID.
      */

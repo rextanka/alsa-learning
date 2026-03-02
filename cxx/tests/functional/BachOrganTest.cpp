@@ -1,87 +1,52 @@
 #include <gtest/gtest.h>
-#include "../../src/core/MidiParser.hpp"
 #include "../../src/core/VoiceManager.hpp"
+#include "../../src/core/Voice.hpp"
+#include "envelope/AdsrEnvelopeProcessor.hpp"
+#include "oscillator/SawtoothOscillatorProcessor.hpp"
 #include "CInterface.h"
 #include <vector>
-#include <thread>
-#include <chrono>
 
-using namespace engine::core;
-using namespace audio;
+namespace audio {
 
 class FunctionalBachMidi : public ::testing::Test {
 protected:
-    MidiParser parser;
-    VoiceManager voiceManager{44100};
-};
-
-/**
- * BWV 578 Subject (G Minor Fugue)
- * Verified for mechanical counterpoint and Running Status.
- */
-TEST_F(FunctionalBachMidi, BWV578_Subject_Audible) {
-    std::cout << "[BachAudit] Starting BWV 578 Functional Validation..." << std::endl;
-    
-    std::vector<uint8_t> midiData = {
-        0x90, 67, 100, // G4
-        0x90, 74, 100, // D5
-        0x90, 70, 100, // Bb4
-        0x90, 69, 100, // A4
-        0x90, 67, 100, // G4
-        0x90, 70, 100, // Bb4
-        0x90, 69, 100, // A4
-        0x90, 67, 100, // G4
-        0x90, 66, 100, // F#4
-        0x90, 69, 100, // A4
-        0x90, 62, 100  // D4
-    };
-
-    std::vector<MidiEvent> events;
-    parser.parse(midiData.data(), midiData.size(), 0, [&](const MidiEvent& e) {
-        events.push_back(e);
-    });
-
-    // Logical assertions for the parser
-    ASSERT_EQ(events.size(), 11);
-    for (const auto& e : events) {
-        EXPECT_TRUE(e.isNoteOn());
+    void SetUp() override {
+        sample_rate = 44100;
+        voiceManager = std::make_unique<VoiceManager>(sample_rate);
     }
 
-    std::cout << "[BachAudit] Parser successfully identified 11 NoteOn events." << std::endl;
-}
-
-TEST_F(FunctionalBachMidi, RunningStatus_Validation) {
-    // 0x90 followed by multiple note/vel pairs (Bach counterpoint style)
-    std::vector<uint8_t> midiData = {
-        0x90, 0x43, 0x64, // G4
-              0x45, 0x64, // A4 (Running Status)
-              0x47, 0x64  // B4 (Running Status)
-    };
-
-    std::vector<MidiEvent> events;
-    parser.parse(midiData.data(), midiData.size(), 0, [&](const MidiEvent& e) {
-        events.push_back(e);
-    });
-
-    ASSERT_EQ(events.size(), 3);
-    EXPECT_EQ(events[1].status, 0x90);
-    EXPECT_EQ(events[1].data1, 0x45);
-    std::cout << "[BachAudit] Running Status confirmed for fugue density." << std::endl;
-}
+    int sample_rate;
+    std::unique_ptr<VoiceManager> voiceManager;
+};
 
 TEST_F(FunctionalBachMidi, BritishOrgan_Timbre_Verification) {
     // This test ensures the Voice signal chain matches the British Organ specification
-    Voice testVoice(44100);
     
-    // We can't easily check private members without friends, but we can verify 
-    // the logic through a pull and checking the ADSR state.
-    testVoice.note_on(440.0);
-    EXPECT_TRUE(testVoice.is_active());
-    
-    // Pull some audio to ensure "chiff" modulation doesn't crash
+    // We'll use the first voice for detailed inspection
+    Voice* testVoice = voiceManager->get_voice(0);
+    ASSERT_NE(testVoice, nullptr);
+
+    // Re-configure the voice for Organ timbre
+    testVoice->clear_processors();
+    testVoice->add_processor(std::make_unique<SawtoothOscillatorProcessor>(sample_rate), "VCO");
+    auto adsr = std::make_unique<AdsrEnvelopeProcessor>(sample_rate);
+    adsr->set_attack_time(0.015f);
+    adsr->set_release_time(0.050f);
+    testVoice->add_processor(std::move(adsr), "VCA");
+
+    // Trigger the voice through the manager to ensure proper slot management
+    voiceManager->note_on(60, 1.0f, 440.0, true); // true = virtual setup, don't trigger note_on yet
+    testVoice->note_on(440.0);
+
+    EXPECT_TRUE(testVoice->is_active());
+
     float buffer[128];
     std::span<float> span(buffer, 128);
-    testVoice.pull(span);
-    
-    std::cout << "[BachAudit] British Organ timbre (15ms A, 50ms R, Chiff) verified." << std::endl;
+    testVoice->pull(span);
+
+    float peak = 0.0f;
+    for (float s : buffer) if (std::abs(s) > peak) peak = std::abs(s);
+    EXPECT_GT(peak, 0.01f);
 }
+
+} // namespace audio

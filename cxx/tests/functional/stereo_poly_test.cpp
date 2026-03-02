@@ -85,7 +85,9 @@ TEST_F(StereoPolyTest, StereoSpreadTest) {
     manager->pull(poly_output);
     
     manager->note_off(60);
-    for(int i=0; i<10; ++i) manager->pull(poly_output);
+    // In flexible topology, we need to ensure the voice actually finishes releasing
+    // to match the expectation that only Voice 1 is audible.
+    for(int i=0; i<50; ++i) manager->pull(poly_output);
     
     float v1_peak_l = 0.0f;
     float v1_peak_r = 0.0f;

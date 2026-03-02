@@ -114,6 +114,15 @@ protected:
      */
     void do_pull(AudioBuffer& output, const VoiceContext* context = nullptr) override;
 
+public:
+    /**
+     * @brief Get a voice by index.
+     */
+    Voice* get_voice(int index) {
+        if (index >= 0 && index < MAX_VOICES) return voices_[index].voice.get();
+        return nullptr;
+    }
+
 private:
     /**
      * @brief Convert MIDI note to frequency.

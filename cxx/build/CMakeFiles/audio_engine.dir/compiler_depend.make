@@ -5302,7 +5302,13 @@ CMakeFiles/audio_engine.dir/src/core/VoiceManager.cpp.o: /Users/nickthompson/src
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/core/VoiceManager.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/InputSource.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/PerformanceProfiler.hpp \
-  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope/AdsrEnvelopeProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope/EnvelopeProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SawtoothOscillatorProcessor.hpp
 
 CMakeFiles/audio_engine.dir/src/hal/coreaudio/CoreAudioDriver.cpp.o: /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/hal/coreaudio/CoreAudioDriver.cpp \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AudioToolbox.framework/Headers/AUAudioUnit.h \
