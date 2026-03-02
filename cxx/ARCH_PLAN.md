@@ -82,25 +82,31 @@ cxx/
 │   ├── bridge/
 │   │   └── AudioBridge.cpp    # C-to-C++ implementation (Bridge)
 │   ├── core/
-│   │   ├── Engine.hpp         # High-level engine (planned)
-│   │   ├── VoiceManager.hpp   # Polyphony & Voice Stealing
-│   │   ├── Voice.hpp          # Per-voice graph container
-│   │   ├── MusicalClock.hpp   # Sample-accurate timing logic
+│   │   ├── AudioBuffer.hpp    # Multi-channel buffer handling
+│   │   ├── AudioGraph.hpp     # Dynamic routing graph
 │   │   ├── Logger.hpp         # RT-Safe Non-Intrusive Logging
-│   │   └── AudioBuffer.hpp    # Multi-channel buffer handling
+│   │   ├── MidiParser.hpp     # MIDI event handling
+│   │   ├── ModulationMatrix.hpp # Bipolar signal routing
+│   │   ├── MusicalClock.hpp   # Sample-accurate timing logic
+│   │   ├── PatchStore.hpp     # JSON patch management
+│   │   ├── Voice.hpp          # Per-voice graph container
+│   │   └── VoiceManager.hpp   # Polyphony & Voice Stealing
 │   ├── dsp/
 │   │   ├── Processor.hpp      # Base processor class (NVI Pattern)
 │   │   ├── InputSource.hpp    # Pull interface
-│   │   ├── oscillator/        # Sine, Saw, Pulse, Wavetable
-│   │   ├── envelope/          # ADSR, AD
-│   │   └── filter/            # Moog, Diode Ladder
+│   │   ├── envelope/          # ADSR, AD, Envelope base
+│   │   ├── filter/            # Moog, Diode Ladder
+│   │   ├── fx/                # Juno Chorus, Delay
+│   │   ├── oscillator/        # Sine, Saw, Pulse, Sub, LFO
+│   │   └── routing/           # SourceMixer, SummingMixer
 │   └── hal/
 │       ├── AudioDriver.hpp    # Cross-platform HAL interface
 │       ├── alsa/              # Linux/Fedora implementation
 │       └── coreaudio/         # macOS implementation
 └── tests/
-    ├── unit/                  # GTest-based C++ logic tests
-    └── integration/           # Bridge and Hardware validation tests
+    ├── functional/            # Scenario-based engine tests
+    ├── integration/           # Bridge and Hardware validation tests
+    └── unit/                  # GTest-based component tests
 ```
 
 ---
