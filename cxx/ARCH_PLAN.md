@@ -140,6 +140,13 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
 - **Wavetable**: Single `WavetableOscillatorProcessor` class; shape selected at create.
 - **10ms MMA Latency Target**: Optimize buffer sizes and processing for consistent real-time response.
 - **Nord-style Modular Routing**: Supporting "Audio-as-Control" where audio signals can be used as modulation sources across the graph.
+- **Flexible Voice Topology (Instrument Templates)**: To support diverse synthesizer architectures (SH-101, Juno-60, MS-20, etc.) without fixed-function classes, the `Voice` is defined as a **Dynamic Node Container**:
+    - **Signal Path (The Patch)**: Instead of hardcoded members, a `Voice` maintains a `std::vector<std::unique_ptr<Processor>> signal_chain_`. The `pull()` order defines the serial or parallel routing.
+    - **Node Ownership & Execution**: The first node in the chain must be a **Generator** (SourceMixer or Oscillator) which clears the buffer. Subsequent nodes (Filters, Envelopes) are **Processors** that modify the buffer in-place.
+    - **Source Mixer Node**: A standard `Processor` node that sums multiple generators (Pulse, Saw, Sub, Noise) before the filter stage. It applies `tanh` soft-saturation to emulate analog headroom.
+    - **Buffer Reuse Strategy**: Use `borrow_buffer()` logic to provide temporary spans for parallel oscillators before they are summed in the `SourceMixer`.
+    - **Factory-Based Configuration**: Specific instruments are created via `VoiceFactory::createSH101()` etc., which pre-configure the node chain and default modulation routings.
+    - **Parameter Mapping Layer**: A mapping layer translates global Parameter IDs (e.g., "Cutoff") to the correct internal node and parameter based on the active template.
 - **Exponential Parameter Scaling**: Pitch and Filter Cutoff modulation follow a logarithmic/octave-based response: $f_{final} = f_{base} \cdot 2^{mod}$, where $mod$ is the sum of modulation offsets in octaves.
 - **Base + Offset Accumulation**: Processors maintain a "Base" value (anchor). Each block, the `ModulationMatrix` sums all offsets (bipolar) and applies them exponentially to the base.
 - **Soft-Saturated Mixing (Phase 13)**: To emulate analog growl and headroom, the Source Mixer uses a `tanh` soft-saturation curve on the summed output. This prevents harsh digital clipping and provides harmonic richness when multiple oscillators are pushed into the filter.
@@ -155,6 +162,23 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
         - **Requirement**: No node shall assume a default sample rate; accurate timing for ADSR ramps and oscillator frequencies depends on this alignment.
 
 ---
+
+## The Voice-Manager Contract
+
+For reliable polyphony and voice stealing, every `Voice` must adhere to the following contract:
+
+- **is_active() Check**: A voice is considered "active" as long as its VCA envelope is in any stage other than IDLE or its output amplitude is above a noise floor threshold. The `VoiceManager` relies on this state to decide when a voice can be reassigned.
+- **Lifecycle States**:
+    - **Gate ON**: Triggers envelopes and resets oscillators (if sync is enabled).
+    - **Gate OFF**: Transitions envelopes to the Release stage.
+    - **Kill/Steal**: Forces an immediate (but smoothed) fade-out to reassign the voice hardware to a new note.
+
+---
+
+## Audio-Rate Modulation Matrix
+
+- **Modulation as Audio**: All modulation signals (LFOs, Envelopes) are pulled at the same 48000Hz rate as the audio oscillators to ensure "zipper-free" parameter changes and FM/Filter-FM capabilities.
+- **Target Update**: Modulation targets (Cutoff, Pitch) are recalculated per-block or per-sample using the exponential formula $f_{final} = f_{base} \cdot 2^{mod}$.
 
 ## Modular Modulation Matrix
 
