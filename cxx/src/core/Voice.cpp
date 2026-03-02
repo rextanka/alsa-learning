@@ -211,12 +211,17 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
     auto block = graph_->borrow_buffer();
     std::span<float> saw_span(block->left.data(), output.size());
 
+    // Ensure frequency is set before pulling
+    saw_oscillator_->set_frequency(base_frequency_);
+    
     // Pull independent oscillators as blocks
     saw_oscillator_->pull(saw_span, context);
 
     // 2. INTERLEAVED SAMPLE LOOP FOR PHASE-LOCKED SOURCES
     auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get());
     auto* sub_osc = dynamic_cast<SubOscillator*>(sub_oscillator_.get());
+
+    pulse_osc->set_frequency(base_frequency_);
 
     float saw_gain = source_mixer_->get_gain(0);
     float pulse_gain = source_mixer_->get_gain(1);
@@ -234,12 +239,8 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
         // Sub-osc locks to pulse phase
         float s_sample = static_cast<float>(sub_osc->generate_sample(pulse_osc->get_phase()));
         
-        std::array<float, SourceMixer::NUM_CHANNELS> inputs{};
-        inputs[0] = saw_span[i] * saw_gain;
-        inputs[1] = p_sample * pulse_gain;
-        inputs[2] = s_sample * sub_gain;
-        
-        output[i] = source_mixer_->mix(inputs) * current_env;
+        // Summing the active sources (Saw, Pulse, Sub)
+        output[i] = (saw_span[i] * saw_gain + p_sample * pulse_gain + s_sample * sub_gain) * current_env;
     }
 
     // Diagnostic Trace
