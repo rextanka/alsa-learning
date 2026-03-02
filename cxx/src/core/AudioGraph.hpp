@@ -62,6 +62,24 @@ public:
         feedback_nodes_.push_back(node);
     }
 
+    /**
+     * @brief Process an existing buffer through all nodes in the graph (Mono).
+     */
+    void pull_serial(std::span<float> buffer, const VoiceContext* context = nullptr) {
+        for (auto* node : nodes_) {
+            node->pull(buffer, context);
+        }
+    }
+
+    /**
+     * @brief Process an existing buffer through all nodes in the graph (Stereo).
+     */
+    void pull_serial(AudioBuffer& buffer, const VoiceContext* context = nullptr) {
+        for (auto* node : nodes_) {
+            node->pull(buffer, context);
+        }
+    }
+
 protected:
     /**
      * @brief Pull through the graph (Mono).

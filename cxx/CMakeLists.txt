@@ -178,6 +178,8 @@ if(BUILD_TESTING)
 
     add_functional_test(audio_check audio_check.cpp)
     add_functional_test(metronome_test metronome_test.cpp)
+    add_functional_test(oscillator_integrity_test oscillator_integrity_test.cpp)
+    add_functional_test(oscillator_baseline_test oscillator_baseline_test.cpp)
     add_functional_test(filter_tests filter_tests.cpp)
     add_functional_test(stereo_poly_test stereo_poly_test.cpp)
     add_functional_test(processor_check processor_check.cpp)
