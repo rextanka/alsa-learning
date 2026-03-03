@@ -162,6 +162,14 @@ void VoiceManager::set_parameter(int param_id, float value) {
     }
 }
 
+void VoiceManager::set_filter_type(int type) {
+    for (auto& slot : voices_) {
+        if (slot.voice) {
+            slot.voice->set_filter_type(type);
+        }
+    }
+}
+
 void VoiceManager::handleMidiEvent(const MidiEvent& event) {
     if (event.isNoteOn()) {
         note_on(event.data1, event.data2 / 127.0f);

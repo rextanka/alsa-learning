@@ -43,6 +43,7 @@ public:
     ModulationMatrix& matrix() { return matrix_; }
 
     void set_filter_type(std::unique_ptr<FilterProcessor> filter);
+    void set_filter_type(int type); // 0: Moog, 1: Diode
     BufferPool::BufferPtr borrow_buffer() { return graph_->borrow_buffer(); }
 
     /**

@@ -6,6 +6,7 @@
 #include "Voice.hpp"
 #include "oscillator/PulseOscillatorProcessor.hpp"
 #include "filter/MoogLadderProcessor.hpp"
+#include "filter/DiodeLadderProcessor.hpp"
 #include <vector>
 #include <cmath>
 #include <iostream>
@@ -68,6 +69,20 @@ Voice::Voice(int sample_rate)
 
 void Voice::set_filter_type(std::unique_ptr<FilterProcessor> filter) {
     filter_ = std::move(filter);
+    rebuild_graph();
+}
+
+void Voice::set_filter_type(int type) {
+    if (type == 0) {
+        filter_ = std::make_unique<MoogLadderProcessor>(sample_rate_);
+    } else if (type == 1) {
+        filter_ = std::make_unique<DiodeLadderProcessor>(sample_rate_);
+    }
+    
+    if (filter_) {
+        filter_->set_cutoff(base_cutoff_);
+        filter_->set_resonance(base_resonance_);
+    }
     rebuild_graph();
 }
 

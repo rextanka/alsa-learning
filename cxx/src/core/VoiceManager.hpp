@@ -69,6 +69,11 @@ public:
     void set_parameter(int param_id, float value);
 
     /**
+     * @brief Set filter type across all voices.
+     */
+    void set_filter_type(int type);
+
+    /**
      * @brief Handle a MIDI event.
      */
     void handleMidiEvent(const MidiEvent& event);
