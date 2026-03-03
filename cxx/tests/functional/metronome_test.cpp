@@ -15,6 +15,7 @@
  * 2. Note triggers occur exactly on the beat.
  * 3. The tone changes for Beat 1 (Accent).
  * 4. Parameters are correctly accepted by the engine.
+ * 5. Tones are sustained for 0.25s.
  */
 int main() {
     std::cout << "--- Starting Metronome Timing Test (48kHz Razer) ---" << std::endl;
@@ -29,15 +30,15 @@ int main() {
         return 1;
     }
 
-    // Configure for a sharp metronome click
-    // Verify that every parameter set returns 0 (success)
-    std::cout << "[METRONOME] Configuring parameters..." << std::endl;
+    // Configure for a smooth 0.25s metronome tone
+    std::cout << "[METRONOME] Configuring parameters for 0.25s tones..." << std::endl;
     assert(engine_set_modulation(engine, MOD_SRC_ENVELOPE, MOD_TGT_AMPLITUDE, 1.0f) == 0);
-    assert(set_param(engine, "amp_attack", 0.001f) == 0);
-    assert(set_param(engine, "amp_decay", 0.050f) == 0);
-    assert(set_param(engine, "amp_sustain", 0.0f) == 0);
-    assert(set_param(engine, "amp_release", 0.020f) == 0);
-    assert(set_param(engine, "vcf_cutoff", 8000.0f) == 0);
+    assert(set_param(engine, "amp_attack", 0.010f) == 0);
+    assert(set_param(engine, "amp_decay", 0.100f) == 0);
+    assert(set_param(engine, "amp_sustain", 0.8f) == 0);
+    assert(set_param(engine, "amp_release", 0.050f) == 0);
+    assert(set_param(engine, "vcf_cutoff", 4000.0f) == 0);
+    assert(set_param(engine, "vcf_res", 0.2f) == 0);
     std::cout << "[METRONOME] Parameters verified and set." << std::endl;
 
     if (engine_set_bpm(engine, 120.0) != 0) {
@@ -50,7 +51,7 @@ int main() {
         return 1;
     }
 
-    std::cout << "Metronome active at 120 BPM. Listening for 8 beats..." << std::endl;
+    std::cout << "Metronome active at 120 BPM. Listening for 8 beats (0.25s tones)..." << std::endl;
 
     int last_beat = -1;
     int beat_count = 0;
@@ -67,18 +68,18 @@ int main() {
         if (beat != last_beat) {
             std::cout << "[METRONOME] Bar: " << bar << " Beat: " << beat << " (SR: " << sample_rate << ")" << std::endl;
             
-            // Trigger click
+            // Trigger 0.25s tone
             if (beat == 1) {
                 engine_note_on_name(engine, "C5", 1.0f); // High accent
             } else {
-                engine_note_on_name(engine, "C4", 0.7f); // Standard click
+                engine_note_on_name(engine, "A4", 0.7f); // Standard tone
             }
             
-            // Auto-off after a short duration handled by ADSR decay=0.05s
+            // Sustain for 250ms (0.25s)
             std::thread([engine, beat]() {
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                std::this_thread::sleep_for(std::chrono::milliseconds(250));
                 if (beat == 1) engine_note_off_name(engine, "C5");
-                else engine_note_off_name(engine, "C4");
+                else engine_note_off_name(engine, "A4");
             }).detach();
 
             last_beat = beat;
