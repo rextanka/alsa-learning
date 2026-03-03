@@ -237,9 +237,9 @@ To bridge the gap between the C-compatible public API and the internal Flexible 
 | 6 | `amp_sustain` | `VCA` | 3 | VCA Envelope Sustain |
 | 7 | `amp_release` | `VCA` | 4 | VCA Envelope Release |
 | 10 | `osc_pw` | `VCO` | 14 | Pulse Width (Legacy Alias) |
-| 11 | `saw_gain` | `VCO` | 11 | Sawtooth level |
-| 12 | `pulse_gain` | `VCO` | 12 | Pulse level |
-| 13 | `sub_gain` | `VCO` | 13 | Sub-oscillator level |
+| 11 | `sub_gain` | `VCO` | 11 | Sub-oscillator level |
+| 12 | `saw_gain` | `VCO` | 12 | Sawtooth level |
+| 13 | `pulse_gain` | `VCO` | 13 | Pulse level |
 | 14 | `pulse_width` | `VCO` | 14 | Pulse Width (Native) |
 
 ### Implementation Rules

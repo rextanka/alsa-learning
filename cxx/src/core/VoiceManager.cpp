@@ -22,6 +22,11 @@ VoiceManager::VoiceManager(int sample_rate)
 {
     for (auto& slot : voices_) {
         slot.voice = std::make_unique<Voice>(sample_rate);
+        
+        // DEFAULT VCA CONNECTION: Envelope -> Amplitude (Intensity: 1.0f)
+        // This ensures audible output by default.
+        slot.voice->matrix().set_connection(ModulationSource::Envelope, ModulationTarget::Amplitude, 1.0f);
+        
         slot.current_note = -1;
         slot.active = false;
         slot.last_note_on_time = 0;
@@ -74,10 +79,6 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
     // 3. Voice Stealing: Priority (Idle > Releasing > Oldest Active)
     int candidate_idx = -1;
     
-    // Priority 1: Find Releasing Voice
-    // Note: In this version of Voice, is_active() covers all non-idle states.
-    // We'll just skip to oldest active if no "truly idle" found above.
-
     // Priority 2: Steal Oldest Active Voice
     uint64_t oldest_time = std::numeric_limits<uint64_t>::max();
     for (int i = 0; i < MAX_VOICES; ++i) {
@@ -133,19 +134,19 @@ void VoiceManager::note_off(int note) {
 }
 
 void VoiceManager::set_parameter_by_name(const std::string& name, float value) {
-    // Map names to Phase 13 parameter IDs
+    // Map names to Phase 13 Global IDs
     int param_id = -1;
     if (name == "vcf_cutoff") param_id = 1;
     else if (name == "vcf_res") param_id = 2;
-    else if (name == "vcf_env_amount") param_id = 17;
-    else if (name == "amp_attack") param_id = 4; // Warning: 4 is Decay in current Voice.cpp
-    else if (name == "amp_decay") param_id = 4; 
-    else if (name == "amp_sustain") param_id = 5;
-    else if (name == "amp_release") param_id = 6;
-    else if (name == "osc_pw") param_id = 14;
+    else if (name == "vcf_env_amount") param_id = 3;
+    else if (name == "amp_attack") param_id = 4;
+    else if (name == "amp_decay") param_id = 5;
+    else if (name == "amp_sustain") param_id = 6;
+    else if (name == "amp_release") param_id = 7;
+    else if (name == "osc_pw") param_id = 10;
+    else if (name == "sub_gain") param_id = 11;
     else if (name == "saw_gain") param_id = 12;
     else if (name == "pulse_gain") param_id = 13;
-    else if (name == "sub_gain") param_id = 11;
     else if (name == "pulse_width") param_id = 14;
 
     if (param_id != -1) {

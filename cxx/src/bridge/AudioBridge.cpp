@@ -106,9 +106,9 @@ struct EngineHandleImpl : public HandleBase {
         param_name_to_id["amp_sustain"] = 6;
         param_name_to_id["amp_release"] = 7;
         param_name_to_id["osc_pw"] = 10;
-        param_name_to_id["saw_gain"] = 11;
-        param_name_to_id["pulse_gain"] = 12;
-        param_name_to_id["sub_gain"] = 13;
+        param_name_to_id["sub_gain"] = 11;
+        param_name_to_id["saw_gain"] = 12;
+        param_name_to_id["pulse_gain"] = 13;
         param_name_to_id["pulse_width"] = 14;
     }
 };
