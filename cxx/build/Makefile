@@ -250,6 +250,19 @@ metronome_test/fast:
 .PHONY : metronome_test/fast
 
 #=============================================================================
+# Target rules for targets named four_beeps_adsr
+
+# Build rule for target.
+four_beeps_adsr: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 four_beeps_adsr
+.PHONY : four_beeps_adsr
+
+# fast build rule for target.
+four_beeps_adsr/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/four_beeps_adsr.dir/build.make CMakeFiles/four_beeps_adsr.dir/build
+.PHONY : four_beeps_adsr/fast
+
+#=============================================================================
 # Target rules for targets named oscillator_integrity_test
 
 # Build rule for target.
@@ -813,6 +826,30 @@ tests/functional/filter_tests.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/tests/functional/filter_tests.cpp.s
 .PHONY : tests/functional/filter_tests.cpp.s
 
+tests/functional/four_beeps_adsr.o: tests/functional/four_beeps_adsr.cpp.o
+.PHONY : tests/functional/four_beeps_adsr.o
+
+# target to build an object file
+tests/functional/four_beeps_adsr.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/four_beeps_adsr.dir/build.make CMakeFiles/four_beeps_adsr.dir/tests/functional/four_beeps_adsr.cpp.o
+.PHONY : tests/functional/four_beeps_adsr.cpp.o
+
+tests/functional/four_beeps_adsr.i: tests/functional/four_beeps_adsr.cpp.i
+.PHONY : tests/functional/four_beeps_adsr.i
+
+# target to preprocess a source file
+tests/functional/four_beeps_adsr.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/four_beeps_adsr.dir/build.make CMakeFiles/four_beeps_adsr.dir/tests/functional/four_beeps_adsr.cpp.i
+.PHONY : tests/functional/four_beeps_adsr.cpp.i
+
+tests/functional/four_beeps_adsr.s: tests/functional/four_beeps_adsr.cpp.s
+.PHONY : tests/functional/four_beeps_adsr.s
+
+# target to generate assembly for a file
+tests/functional/four_beeps_adsr.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/four_beeps_adsr.dir/build.make CMakeFiles/four_beeps_adsr.dir/tests/functional/four_beeps_adsr.cpp.s
+.PHONY : tests/functional/four_beeps_adsr.cpp.s
+
 tests/functional/graph_audit_test.o: tests/functional/graph_audit_test.cpp.o
 .PHONY : tests/functional/graph_audit_test.o
 
@@ -1219,6 +1256,7 @@ help:
 	@echo "... audio_engine_shared"
 	@echo "... engine_tests"
 	@echo "... filter_tests"
+	@echo "... four_beeps_adsr"
 	@echo "... gmock"
 	@echo "... gmock_main"
 	@echo "... graph_audit_test"
@@ -1273,6 +1311,9 @@ help:
 	@echo "... tests/functional/filter_tests.o"
 	@echo "... tests/functional/filter_tests.i"
 	@echo "... tests/functional/filter_tests.s"
+	@echo "... tests/functional/four_beeps_adsr.o"
+	@echo "... tests/functional/four_beeps_adsr.i"
+	@echo "... tests/functional/four_beeps_adsr.s"
 	@echo "... tests/functional/graph_audit_test.o"
 	@echo "... tests/functional/graph_audit_test.i"
 	@echo "... tests/functional/graph_audit_test.s"

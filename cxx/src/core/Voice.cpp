@@ -48,7 +48,7 @@ Voice::Voice(int sample_rate)
     graph_ = std::make_unique<AudioGraph>();
     rebuild_graph();
 
-    // Clear all default modulations to ensure a clean state for "Beep" Surgery
+    // Clear all default modulations to ensure a clean state
     matrix_.clear_all();
     
     // DEFAULT VCA CONNECTION: Envelope -> Amplitude (Intensity: 1.0f)
@@ -74,6 +74,9 @@ void Voice::set_parameter(int param, float value) {
         case 0: // PITCH
             base_frequency_ = static_cast<double>(value);
             break;
+        case 8: // AMP_BASE
+            base_amplitude_ = std::clamp(value, 0.0f, 1.0f);
+            break;
         case 1: // CUTOFF
             base_cutoff_ = std::max(20.0f, value);
             if (filter_) filter_->set_cutoff(base_cutoff_);
@@ -82,19 +85,18 @@ void Voice::set_parameter(int param, float value) {
             base_resonance_ = std::clamp(value, 0.0f, 1.0f);
             if (filter_) filter_->set_resonance(base_resonance_);
             break;
-        case 3: // VCF_ENV_AMOUNT (Tag VCF, Internal ID 3)
-            // For now, if we don't have a modular connection, we just store it
+        case 3: // VCF_ENV_AMOUNT
             break;
-        case 4: // AMP_ATTACK (Tag VCA, Internal ID 1)
+        case 4: // AMP_ATTACK
             envelope_->set_attack_time(value);
             break;
-        case 5: // AMP_DECAY (Tag VCA, Internal ID 2)
+        case 5: // AMP_DECAY
             envelope_->set_decay_time(value);
             break;
-        case 6: // AMP_SUSTAIN (Tag VCA, Internal ID 3)
+        case 6: // AMP_SUSTAIN
             envelope_->set_sustain_level(value);
             break;
-        case 7: // AMP_RELEASE (Tag VCA, Internal ID 4)
+        case 7: // AMP_RELEASE
             envelope_->set_release_time(value);
             break;
         case 11: // SUB_GAIN
@@ -106,12 +108,12 @@ void Voice::set_parameter(int param, float value) {
         case 13: // PULSE_GAIN
             source_mixer_->set_gain(1, value);
             break;
-        case 14: // PULSE_WIDTH (Native)
+        case 14: // PULSE_WIDTH
             if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
                 pulse_osc->set_pulse_width(value);
             }
             break;
-        case 10: // PULSE_WIDTH (Legacy Alias)
+        case 10: // PULSE_WIDTH (Alias)
             set_parameter(14, value);
             break;
         default:
@@ -130,7 +132,7 @@ void Voice::rebuild_graph() {
 
 void Voice::note_on(double frequency) {
     base_frequency_ = frequency;
-    // Ensure all processors are reset to clear stuck DC or phase
+    // Ensure all processors are reset
     oscillator_->reset();
     sub_oscillator_->reset();
     saw_oscillator_->reset();
@@ -138,14 +140,9 @@ void Voice::note_on(double frequency) {
     lfo_->reset();
     if (filter_) filter_->reset();
 
-    // Set frequency after reset to ensure current_freq is correct
+    // Set frequency
     oscillator_->set_frequency(frequency);
     saw_oscillator_->set_frequency(frequency);
-    
-    // Hardwire VCA if missing
-    if (matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_) <= 0.001f) {
-         matrix_.set_connection(ModulationSource::Envelope, ModulationTarget::Amplitude, 1.0f);
-    }
     
     envelope_->gate_on();
 }
@@ -171,12 +168,14 @@ void Voice::apply_modulation() {
     // Collect modulation source values
     float env_val = 0.0f;
     float tmp_env_buf[1];
-    envelope_->pull(std::span<float>(tmp_env_buf, 1));
+    std::span<float> tmp_env_span(tmp_env_buf, 1);
+    envelope_->pull(tmp_env_span);
     env_val = tmp_env_buf[0];
 
     float lfo_val = 0.0f;
     float tmp_lfo_buf[1];
-    lfo_->pull(std::span<float>(tmp_lfo_buf, 1));
+    std::span<float> tmp_lfo_span(tmp_lfo_buf, 1);
+    lfo_->pull(tmp_lfo_span);
     lfo_val = tmp_lfo_buf[0];
 
     current_source_values_[static_cast<size_t>(ModulationSource::Envelope)] = env_val;
@@ -185,10 +184,7 @@ void Voice::apply_modulation() {
     // Apply Pitch Modulation
     float pitch_mod = matrix_.sum_for_target(ModulationTarget::Pitch, current_source_values_);
     double mod_freq = base_frequency_ * std::pow(2.0, static_cast<double>(pitch_mod));
-    
-    // Safety check for frequency floor
     if (mod_freq < 20.0) mod_freq = base_frequency_;
-
     oscillator_->set_frequency(mod_freq);
 
     // Apply Cutoff Modulation
@@ -204,7 +200,7 @@ void Voice::apply_modulation() {
 
     // Apply Amplitude Modulation
     float amp_mod = matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_);
-    base_amplitude_ = std::clamp(amp_mod, 0.0f, 1.0f); // Amplitude modulation is primary gain
+    base_amplitude_ = std::clamp(amp_mod, 0.0f, 1.0f);
 
     // Apply PWM
     float pw_mod = matrix_.sum_for_target(ModulationTarget::PulseWidth, current_source_values_);
@@ -214,50 +210,40 @@ void Voice::apply_modulation() {
 }
 
 void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
-    // 1. UPDATE MODULATION
     apply_modulation();
 
-    // 2. RENDER OSCILLATORS (Interleaved mix)
-    // Borrow a buffer from the pool for independent sources
     auto block = graph_->borrow_buffer();
     std::span<float> saw_span(block->left.data(), output.size());
     
-    // Ensure independent oscillators are set correctly
     saw_oscillator_->set_frequency(base_frequency_);
     saw_oscillator_->pull(saw_span, context);
 
     auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get());
     auto* sub_osc = dynamic_cast<SubOscillator*>(sub_oscillator_.get());
-
     pulse_osc->set_frequency(base_frequency_);
 
     float saw_gain = source_mixer_->get_gain(0);
     float pulse_gain = source_mixer_->get_gain(1);
     float sub_gain = source_mixer_->get_gain(2);
 
-    // Render interleaved oscillator mix into output span
     for (size_t i = 0; i < output.size(); ++i) {
         float p_sample = static_cast<float>(pulse_osc->tick());
         float s_sample = static_cast<float>(sub_osc->generate_sample(pulse_osc->get_phase()));
-        output[i] = (saw_span[i] * saw_gain + p_sample * pulse_gain + s_sample * sub_gain);
+        output[i] = (saw_span[i] * saw_gain + p_sample * pulse_gain + s_sample * sub_gain) * base_amplitude_;
     }
 
-    // 3. PROCESS THROUGH MODIFIERS (Manual Serial Processing)
-    // Filter and Envelope process in-place on the oscillator mix
     if (filter_) {
         filter_->pull(output, context);
     }
+    // AdsrEnvelopeProcessor uses multiplication in pull()
     envelope_->pull(output, context);
 
-    // Audit Trace: Confirm signal is produced AFTER all processing
     float peak = 0.0f;
     for (float s : output) {
         float abs_s = std::abs(s);
         if (abs_s > peak) peak = abs_s;
     }
-
     if (peak > 0.0001f && (log_counter_++ % 256 == 0)) {
-        // Keep a very sparse trace for production stability verification
         std::cout << "[VOICE] Signal Active, Peak: " << peak << std::endl;
     }
 }
