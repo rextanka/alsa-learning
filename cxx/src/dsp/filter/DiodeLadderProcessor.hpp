@@ -61,21 +61,32 @@ protected:
 private:
     inline void process_sample(float& sample) {
         float input = sample;
-        float feedback = stage_[3] * res_ * 17.0f;
-        input -= std::tanh(feedback);
+        
+        // TB-303 Feedback: The 17.0f multiplier is too high for this topology
+        // Reducing to a more stable value and using tanh to clamp feedback
+        float feedback = std::tanh(stage_[3] * res_ * 4.0f);
+        input -= feedback;
 
         float s0 = stage_[0], s1 = stage_[1], s2 = stage_[2], s3 = stage_[3];
         
-        stage_[0] += g_ * (input - s0 - 0.5f * (s1));
-        stage_[1] += g_ * (stage_[0] - s1 - 0.5f * (s2));
-        stage_[2] += g_ * (stage_[1] - s2 - 0.5f * (s3));
-        stage_[3] += g_ * (stage_[2] - s3);
+        // Non-linear stage updates
+        stage_[0] += g_ * (std::tanh(input) - std::tanh(s0));
+        stage_[1] += g_ * (std::tanh(stage_[0]) - std::tanh(s1));
+        stage_[2] += g_ * (std::tanh(stage_[1]) - std::tanh(s2));
+        stage_[3] += g_ * (std::tanh(stage_[2]) - std::tanh(s3));
 
         sample = stage_[3];
+
+        if (std::isnan(sample) || std::isinf(sample)) {
+            reset();
+            sample = 0.0f;
+        }
     }
 
     void update_coefficients() {
-        g_ = static_cast<float>(2.0 * M_PI * cutoff_ / sample_rate_);
+        // Correcting the g coefficient for the TB-303 style coupled poles
+        float f = static_cast<float>(cutoff_ / sample_rate_);
+        g_ = std::tan(static_cast<float>(M_PI) * f); 
         g_ = std::clamp(g_, 0.0f, 1.0f);
     }
 

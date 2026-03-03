@@ -4305,6 +4305,7 @@ CMakeFiles/audio_engine.dir/src/core/Voice.cpp.o: /Users/nickthompson/src/cpp/au
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope/AdsrEnvelopeProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/envelope/EnvelopeProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/DiodeLadderProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/FilterProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/filter/MoogLadderProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/Processor.hpp \

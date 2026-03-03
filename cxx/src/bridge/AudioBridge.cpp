@@ -489,6 +489,10 @@ void engine_flush_logs(EngineHandle /* handle */) {
 int engine_set_filter_type(EngineHandle handle, int type) {
     if (!handle) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
+    
+    // LOG: Confirm swap
+    std::cout << "BRIDGE: Switching Filter Type to ID " << type << std::endl;
+    
     impl->voice_manager->set_filter_type(type);
     return 0;
 }

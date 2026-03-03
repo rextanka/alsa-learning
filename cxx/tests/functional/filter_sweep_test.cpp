@@ -23,7 +23,6 @@ int main() {
     // Set Up Signal Chain
     set_param(engine, "osc_wave", 3.0f); // OSC_SAWTOOTH
     set_param(engine, "amp_sustain", 1.0f);
-    set_param(engine, "vcf_res", 0.75f); // High resonance for audible sweep
 
     if (engine_start(engine) != 0) {
         std::cerr << "Failed to start engine" << std::endl;
@@ -35,9 +34,14 @@ int main() {
     std::cout << "[TEST] Triggering A2 drone (Sawtooth)..." << std::endl;
     engine_note_on(engine, 45, 1.0f); // A2 is MIDI 45
 
-    auto run_sweep = [&](const char* name, int type) {
+    auto run_sweep = [&](const char* name, int type, float res) {
         std::cout << "\n--- Starting Sweep: " << name << " ---" << std::endl;
+        std::cout << "DEBUG: Confirming Processor Type... " << std::endl;
         engine_set_filter_type(engine, type);
+        
+        // SYNC: Ensure starting parameters are set AFTER switching
+        set_param(engine, "vcf_cutoff", 8000.0f);
+        set_param(engine, "vcf_res", res);
         
         const int steps = 100;
         const float start_freq = 8000.0f;
@@ -53,7 +57,8 @@ int main() {
             set_param(engine, "vcf_cutoff", cutoff);
             
             if (i % 10 == 0) {
-                std::cout << "  [Sweep] " << name << " Cutoff: " << cutoff << " Hz" << std::endl;
+                // Peek peak to verify signal presence
+                // Note: Peak logging is handled internally by Voice::do_pull
             }
             
             std::this_thread::sleep_for(std::chrono::milliseconds(step_ms));
@@ -61,11 +66,11 @@ int main() {
         std::cout << "--- Sweep " << name << " Completed ---" << std::endl;
     };
 
-    // 1. Run Moog Sweep
-    run_sweep("Moog Ladder", 0);
+    // 1. Run Moog Sweep (Classic Peak)
+    run_sweep("Moog Ladder", 0, 0.85f);
 
-    // 2. Run Diode Sweep
-    run_sweep("Diode Ladder", 1);
+    // 2. Run Diode Sweep (Squelchy Peak)
+    run_sweep("Diode Ladder", 1, 0.5f);
 
     std::cout << "\n[TEST] Releasing note..." << std::endl;
     engine_note_off(engine, 45);
