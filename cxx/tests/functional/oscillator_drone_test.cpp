@@ -65,6 +65,20 @@ int main() {
     play_drone(engine, WAVE_SAW, "SAW", sample_rate);
     play_drone(engine, WAVE_TRIANGLE, "TRIANGLE", sample_rate);
 
+    std::cout << "Testing raw oscillator output at 48kHz by bypassing the envelope decay." << std::endl;
+    std::cout << "[DRONE] Playing C4 for 2 seconds..." << std::endl;
+    set_param(engine, "amp_attack", 0.0f);
+    set_param(engine, "amp_decay", 0.1f);
+    set_param(engine, "amp_sustain", 1.0f);
+    set_param(engine, "amp_release", 0.1f);
+    engine_note_on_name(engine, "C4", 0.8f);
+    
+    // Simulate 2 seconds of real-time wait for hardware output
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    
+    engine_note_off_name(engine, "C4");
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
     engine_stop(engine);
     engine_destroy(engine);
 
