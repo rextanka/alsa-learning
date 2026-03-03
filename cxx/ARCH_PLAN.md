@@ -214,5 +214,40 @@ The `ModulationMatrix` is a RT-safe central hub within each `Voice` that manages
 
 ---
 
+## V. Parameter Export and Client Interface
+
+To bridge the gap between the C-compatible public API and the internal Flexible Topology, the engine implements a **Tag-based Parameter Mapping protocol**.
+
+### The Mapping Contract
+- **Discovery Strategy**: Client labels (strings) are mapped to **Global Parameter IDs**.
+- **Resolution**: The `VoiceManager` and `Voice` resolve these Global IDs using a lookup table that maps to a `{Node Tag, Internal Node ID}` pair.
+- **Node Tags**: Standardized tags ensure consistent targeting across different voice topologies.
+  - `"VCO"`: Primary Oscillators (Sine, Saw, Pulse, Sub).
+  - `"VCF"`: Filter section.
+  - `"VCA"`: Amplifier and main amplitude envelope.
+
+### Global Parameter Registry (Legacy & Flexible Sync)
+| Global ID | String Label | Target Tag | Internal ID | Description |
+|-----------|--------------|------------|-------------|-------------|
+| 1 | `vcf_cutoff` | `VCF` | 1 | Filter cutoff frequency |
+| 2 | `vcf_res` | `VCF` | 2 | Filter resonance |
+| 3 | `vcf_env_amount` | `VCF` | 3 | Envelope to Filter modulation depth |
+| 4 | `amp_attack` | `VCA` | 4 | VCA Envelope Attack |
+| 5 | `amp_decay` | `VCA` | 5 | VCA Envelope Decay |
+| 6 | `amp_sustain` | `VCA` | 6 | VCA Envelope Sustain |
+| 7 | `amp_release` | `VCA` | 7 | VCA Envelope Release |
+| 10 | `osc_pw` | `VCO` | 14 | Pulse Width (Legacy Alias) |
+| 11 | `sub_gain` | `VCO` | 11 | Sub-oscillator level |
+| 12 | `saw_gain` | `VCO` | 12 | Sawtooth level |
+| 13 | `pulse_gain` | `VCO` | 13 | Pulse level |
+| 14 | `pulse_width` | `VCO` | 14 | Pulse Width (Native) |
+
+### Implementation Rules
+1. **Bridge Duty**: The `AudioBridge` (EngineHandleImpl) MUST maintain a `param_name_to_id` map matching the "String Label" column.
+2. **Voice Duty**: The `Voice` constructor MUST use `register_parameter(GlobalID, Tag, InternalID)` to link the bridge to the signal chain.
+3. **RT-Safety**: All mapping lookups occur outside the audio thread or via lock-free atomic caches.
+
+---
+
 ## References
 - Project rules: repo root `.clinerules` (Git workflow, NVI, C++20).

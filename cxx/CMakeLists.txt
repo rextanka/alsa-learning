@@ -178,6 +178,7 @@ if(BUILD_TESTING)
 
     add_functional_test(audio_check audio_check.cpp)
     add_functional_test(metronome_test metronome_test.cpp)
+    add_functional_test(four_beeps_adsr four_beeps_adsr.cpp)
     add_functional_test(oscillator_integrity_test oscillator_integrity_test.cpp)
     add_functional_test(oscillator_baseline_test oscillator_baseline_test.cpp)
     add_functional_test(graph_audit_test graph_audit_test.cpp)

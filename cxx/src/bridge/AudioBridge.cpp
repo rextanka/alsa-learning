@@ -98,12 +98,18 @@ struct EngineHandleImpl : public HandleBase {
     });
 
         // Initialize parameter mapping for fast UI reflection
+        param_name_to_id["vcf_cutoff"] = 1;
+        param_name_to_id["vcf_res"] = 2;
+        param_name_to_id["vcf_env_amount"] = 3;
+        param_name_to_id["amp_attack"] = 4;
+        param_name_to_id["amp_decay"] = 5;
+        param_name_to_id["amp_sustain"] = 6;
+        param_name_to_id["amp_release"] = 7;
         param_name_to_id["osc_pw"] = 10;
         param_name_to_id["sub_gain"] = 11;
         param_name_to_id["saw_gain"] = 12;
         param_name_to_id["pulse_gain"] = 13;
-        param_name_to_id["vcf_cutoff"] = 1;
-        param_name_to_id["vcf_res"] = 2;
+        param_name_to_id["pulse_width"] = 14;
     }
 };
 
@@ -590,6 +596,12 @@ int set_param(void* handle, const char* name, float value) {
         
         if (base->type == HandleType::Engine) {
             auto* engine = static_cast<EngineHandleImpl*>(handle);
+            if (engine->param_name_to_id.count(name)) {
+                int id = engine->param_name_to_id[name];
+                engine->voice_manager->set_parameter(id, value);
+                return 0;
+            }
+            // Fallback for names not in the fast map
             engine->voice_manager->set_parameter_by_name(name, value);
             return 0;
         }

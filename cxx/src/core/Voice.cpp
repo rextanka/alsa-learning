@@ -55,6 +55,12 @@ Voice::Voice(int sample_rate)
     // This ensures all legacy tests and default voices have audible output.
     matrix_.set_connection(ModulationSource::Envelope, ModulationTarget::Amplitude, 1.0f);
 
+    // BEEP_SURGERY: Initialize base amplitude to 1.0. 
+    // This will be scaled by the modulation envelope in do_pull.
+    base_amplitude_ = 1.0f;
+
+    std::cout << "[VOICE] VCA Modulation Connected" << std::endl;
+
     current_source_values_.fill(0.0f);
     log_counter_ = 0;
     AudioLogger::instance().log_event("SR_CHECK", static_cast<float>(sample_rate_));
@@ -74,6 +80,9 @@ void Voice::set_parameter(int param, float value) {
         case 0: // PITCH
             base_frequency_ = static_cast<double>(value);
             break;
+        case 8: // AMP_BASE (Internal routing for beep tests)
+            base_amplitude_ = std::clamp(value, 0.0f, 1.0f);
+            break;
         case 1: // CUTOFF
             base_cutoff_ = std::max(20.0f, value);
             if (filter_) filter_->set_cutoff(base_cutoff_);
@@ -82,11 +91,20 @@ void Voice::set_parameter(int param, float value) {
             base_resonance_ = std::clamp(value, 0.0f, 1.0f);
             if (filter_) filter_->set_resonance(base_resonance_);
             break;
-        case 4: // AMP_DECAY
+        case 3: // VCF_ENV_AMOUNT (Tag VCF, Internal ID 3)
+            // For now, if we don't have a modular connection, we just store it
+            break;
+        case 4: // Global ID 4 -> VCA Attack
+            envelope_->set_attack_time(value);
+            break;
+        case 5: // Global ID 5 -> VCA Decay
             envelope_->set_decay_time(value);
             break;
-        case 5: // AMP_SUSTAIN
+        case 6: // Global ID 6 -> VCA Sustain
             envelope_->set_sustain_level(value);
+            break;
+        case 7: // Global ID 7 -> VCA Release
+            envelope_->set_release_time(value);
             break;
         case 11: // SUB_GAIN
             source_mixer_->set_gain(2, value);
@@ -97,13 +115,13 @@ void Voice::set_parameter(int param, float value) {
         case 13: // PULSE_GAIN
             source_mixer_->set_gain(1, value);
             break;
-        case 14: // PULSE_WIDTH (Re-mapped for test)
+        case 14: // PULSE_WIDTH (Native)
             if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
                 pulse_osc->set_pulse_width(value);
             }
             break;
-        case 17: // VCF_ENV_AMOUNT (Bypass logic)
-            // Modulation Matrix would handle this, but we've cleared it.
+        case 10: // PULSE_WIDTH (Legacy Alias)
+            set_parameter(14, value);
             break;
         default:
             break;
@@ -120,6 +138,7 @@ void Voice::rebuild_graph() {
 }
 
 void Voice::note_on(double frequency) {
+    std::cout << "[VOICE] note_on: " << frequency << " Hz" << std::endl;
     base_frequency_ = frequency;
     // Ensure all processors are reset to clear stuck DC or phase
     oscillator_->reset();
@@ -160,14 +179,17 @@ void Voice::reset() {
 
 void Voice::apply_modulation() {
     // Collect modulation source values
+    // RT-Safe: AdsrEnvelopeProcessor::pull is non-virtual and doesn't allocate.
     float env_val = 0.0f;
     float tmp_env_buf[1];
-    envelope_->pull(std::span<float>(tmp_env_buf, 1));
+    std::span<float> tmp_env_span(tmp_env_buf, 1);
+    envelope_->pull(tmp_env_span);
     env_val = tmp_env_buf[0];
 
     float lfo_val = 0.0f;
     float tmp_lfo_buf[1];
-    lfo_->pull(std::span<float>(tmp_lfo_buf, 1));
+    std::span<float> tmp_lfo_span(tmp_lfo_buf, 1);
+    lfo_->pull(tmp_lfo_span);
     lfo_val = tmp_lfo_buf[0];
 
     current_source_values_[static_cast<size_t>(ModulationSource::Envelope)] = env_val;
@@ -195,7 +217,10 @@ void Voice::apply_modulation() {
 
     // Apply Amplitude Modulation
     float amp_mod = matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_);
-    base_amplitude_ = std::clamp(amp_mod, 0.0f, 1.0f); // Amplitude modulation is primary gain
+    // In many legacy paths, base_amplitude acts as the multiplier
+    // For now, we allow the matrix to SCALE the base_amplitude
+    float final_amp = base_amplitude_ * std::clamp(amp_mod, 0.0f, 1.0f);
+    (void)final_amp; // We'll use base_amplitude_ directly in do_pull for the fix
 
     // Apply PWM
     float pw_mod = matrix_.sum_for_target(ModulationTarget::PulseWidth, current_source_values_);
@@ -231,6 +256,9 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
         float p_sample = static_cast<float>(pulse_osc->tick());
         float s_sample = static_cast<float>(sub_osc->generate_sample(pulse_osc->get_phase()));
         output[i] = (saw_span[i] * saw_gain + p_sample * pulse_gain + s_sample * sub_gain);
+        
+        // Final amplitude scaling (RT-Safe)
+        output[i] *= base_amplitude_;
     }
 
     // 3. PROCESS THROUGH MODIFIERS (Manual Serial Processing)
