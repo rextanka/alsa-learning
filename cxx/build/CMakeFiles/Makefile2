@@ -73,10 +73,10 @@ all: CMakeFiles/four_beeps_adsr.dir/all
 all: CMakeFiles/oscillator_integrity_test.dir/all
 all: CMakeFiles/oscillator_baseline_test.dir/all
 all: CMakeFiles/graph_audit_test.dir/all
-all: CMakeFiles/filter_tests.dir/all
+all: CMakeFiles/filter_sweep_test.dir/all
 all: CMakeFiles/stereo_poly_test.dir/all
 all: CMakeFiles/processor_check.dir/all
-all: CMakeFiles/engine_tests.dir/all
+all: CMakeFiles/oscillator_drone_test.dir/all
 all: CMakeFiles/Phase10Tests.dir/all
 all: CMakeFiles/TimingValidation.dir/all
 all: CMakeFiles/Functional_BachMidi.dir/all
@@ -99,10 +99,10 @@ codegen: CMakeFiles/four_beeps_adsr.dir/codegen
 codegen: CMakeFiles/oscillator_integrity_test.dir/codegen
 codegen: CMakeFiles/oscillator_baseline_test.dir/codegen
 codegen: CMakeFiles/graph_audit_test.dir/codegen
-codegen: CMakeFiles/filter_tests.dir/codegen
+codegen: CMakeFiles/filter_sweep_test.dir/codegen
 codegen: CMakeFiles/stereo_poly_test.dir/codegen
 codegen: CMakeFiles/processor_check.dir/codegen
-codegen: CMakeFiles/engine_tests.dir/codegen
+codegen: CMakeFiles/oscillator_drone_test.dir/codegen
 codegen: CMakeFiles/Phase10Tests.dir/codegen
 codegen: CMakeFiles/TimingValidation.dir/codegen
 codegen: CMakeFiles/Functional_BachMidi.dir/codegen
@@ -130,10 +130,10 @@ clean: CMakeFiles/four_beeps_adsr.dir/clean
 clean: CMakeFiles/oscillator_integrity_test.dir/clean
 clean: CMakeFiles/oscillator_baseline_test.dir/clean
 clean: CMakeFiles/graph_audit_test.dir/clean
-clean: CMakeFiles/filter_tests.dir/clean
+clean: CMakeFiles/filter_sweep_test.dir/clean
 clean: CMakeFiles/stereo_poly_test.dir/clean
 clean: CMakeFiles/processor_check.dir/clean
-clean: CMakeFiles/engine_tests.dir/clean
+clean: CMakeFiles/oscillator_drone_test.dir/clean
 clean: CMakeFiles/Phase10Tests.dir/clean
 clean: CMakeFiles/TimingValidation.dir/clean
 clean: CMakeFiles/Functional_BachMidi.dir/clean
@@ -337,7 +337,7 @@ CMakeFiles/integration_tests.dir/all: _deps/googletest-build/googletest/CMakeFil
 CMakeFiles/integration_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=41,42 "Built target integration_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=39,40 "Built target integration_tests"
 .PHONY : CMakeFiles/integration_tests.dir/all
 
 # Build rule for subdir invocation for target.
@@ -354,7 +354,7 @@ integration_tests: CMakeFiles/integration_tests.dir/rule
 # codegen rule for target.
 CMakeFiles/integration_tests.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/integration_tests.dir/build.make CMakeFiles/integration_tests.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=41,42 "Finished codegen for target integration_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=39,40 "Finished codegen for target integration_tests"
 .PHONY : CMakeFiles/integration_tests.dir/codegen
 
 # clean rule for target.
@@ -401,7 +401,7 @@ CMakeFiles/audio_check.dir/clean:
 CMakeFiles/metronome_test.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=45,46 "Built target metronome_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=43,44 "Built target metronome_test"
 .PHONY : CMakeFiles/metronome_test.dir/all
 
 # Build rule for subdir invocation for target.
@@ -418,7 +418,7 @@ metronome_test: CMakeFiles/metronome_test.dir/rule
 # codegen rule for target.
 CMakeFiles/metronome_test.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/metronome_test.dir/build.make CMakeFiles/metronome_test.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=45,46 "Finished codegen for target metronome_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=43,44 "Finished codegen for target metronome_test"
 .PHONY : CMakeFiles/metronome_test.dir/codegen
 
 # clean rule for target.
@@ -433,7 +433,7 @@ CMakeFiles/metronome_test.dir/clean:
 CMakeFiles/four_beeps_adsr.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/four_beeps_adsr.dir/build.make CMakeFiles/four_beeps_adsr.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/four_beeps_adsr.dir/build.make CMakeFiles/four_beeps_adsr.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=29,30 "Built target four_beeps_adsr"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=27,28 "Built target four_beeps_adsr"
 .PHONY : CMakeFiles/four_beeps_adsr.dir/all
 
 # Build rule for subdir invocation for target.
@@ -450,7 +450,7 @@ four_beeps_adsr: CMakeFiles/four_beeps_adsr.dir/rule
 # codegen rule for target.
 CMakeFiles/four_beeps_adsr.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/four_beeps_adsr.dir/build.make CMakeFiles/four_beeps_adsr.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=29,30 "Finished codegen for target four_beeps_adsr"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=27,28 "Finished codegen for target four_beeps_adsr"
 .PHONY : CMakeFiles/four_beeps_adsr.dir/codegen
 
 # clean rule for target.
@@ -497,7 +497,7 @@ CMakeFiles/oscillator_integrity_test.dir/clean:
 CMakeFiles/oscillator_baseline_test.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_baseline_test.dir/build.make CMakeFiles/oscillator_baseline_test.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_baseline_test.dir/build.make CMakeFiles/oscillator_baseline_test.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=47,48 "Built target oscillator_baseline_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=45,46 "Built target oscillator_baseline_test"
 .PHONY : CMakeFiles/oscillator_baseline_test.dir/all
 
 # Build rule for subdir invocation for target.
@@ -514,7 +514,7 @@ oscillator_baseline_test: CMakeFiles/oscillator_baseline_test.dir/rule
 # codegen rule for target.
 CMakeFiles/oscillator_baseline_test.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_baseline_test.dir/build.make CMakeFiles/oscillator_baseline_test.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=47,48 "Finished codegen for target oscillator_baseline_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=45,46 "Finished codegen for target oscillator_baseline_test"
 .PHONY : CMakeFiles/oscillator_baseline_test.dir/codegen
 
 # clean rule for target.
@@ -529,7 +529,7 @@ CMakeFiles/oscillator_baseline_test.dir/clean:
 CMakeFiles/graph_audit_test.dir/all: CMakeFiles/audio_engine.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/graph_audit_test.dir/build.make CMakeFiles/graph_audit_test.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/graph_audit_test.dir/build.make CMakeFiles/graph_audit_test.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=35,36 "Built target graph_audit_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=33,34 "Built target graph_audit_test"
 .PHONY : CMakeFiles/graph_audit_test.dir/all
 
 # Build rule for subdir invocation for target.
@@ -546,7 +546,7 @@ graph_audit_test: CMakeFiles/graph_audit_test.dir/rule
 # codegen rule for target.
 CMakeFiles/graph_audit_test.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/graph_audit_test.dir/build.make CMakeFiles/graph_audit_test.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=35,36 "Finished codegen for target graph_audit_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=33,34 "Finished codegen for target graph_audit_test"
 .PHONY : CMakeFiles/graph_audit_test.dir/codegen
 
 # clean rule for target.
@@ -555,36 +555,36 @@ CMakeFiles/graph_audit_test.dir/clean:
 .PHONY : CMakeFiles/graph_audit_test.dir/clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/filter_tests.dir
+# Target rules for target CMakeFiles/filter_sweep_test.dir
 
 # All Build rule for target.
-CMakeFiles/filter_tests.dir/all: CMakeFiles/audio_engine.dir/all
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=27,28 "Built target filter_tests"
-.PHONY : CMakeFiles/filter_tests.dir/all
+CMakeFiles/filter_sweep_test.dir/all: CMakeFiles/audio_engine.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_sweep_test.dir/build.make CMakeFiles/filter_sweep_test.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_sweep_test.dir/build.make CMakeFiles/filter_sweep_test.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=25,26 "Built target filter_sweep_test"
+.PHONY : CMakeFiles/filter_sweep_test.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/filter_tests.dir/rule: cmake_check_build_system
+CMakeFiles/filter_sweep_test.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles 9
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/filter_tests.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/filter_sweep_test.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles 0
-.PHONY : CMakeFiles/filter_tests.dir/rule
+.PHONY : CMakeFiles/filter_sweep_test.dir/rule
 
 # Convenience name for target.
-filter_tests: CMakeFiles/filter_tests.dir/rule
-.PHONY : filter_tests
+filter_sweep_test: CMakeFiles/filter_sweep_test.dir/rule
+.PHONY : filter_sweep_test
 
 # codegen rule for target.
-CMakeFiles/filter_tests.dir/codegen:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=27,28 "Finished codegen for target filter_tests"
-.PHONY : CMakeFiles/filter_tests.dir/codegen
+CMakeFiles/filter_sweep_test.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_sweep_test.dir/build.make CMakeFiles/filter_sweep_test.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=25,26 "Finished codegen for target filter_sweep_test"
+.PHONY : CMakeFiles/filter_sweep_test.dir/codegen
 
 # clean rule for target.
-CMakeFiles/filter_tests.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/clean
-.PHONY : CMakeFiles/filter_tests.dir/clean
+CMakeFiles/filter_sweep_test.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_sweep_test.dir/build.make CMakeFiles/filter_sweep_test.dir/clean
+.PHONY : CMakeFiles/filter_sweep_test.dir/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/stereo_poly_test.dir
@@ -653,36 +653,36 @@ CMakeFiles/processor_check.dir/clean:
 .PHONY : CMakeFiles/processor_check.dir/clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/engine_tests.dir
+# Target rules for target CMakeFiles/oscillator_drone_test.dir
 
 # All Build rule for target.
-CMakeFiles/engine_tests.dir/all: CMakeFiles/audio_engine.dir/all
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=25,26 "Built target engine_tests"
-.PHONY : CMakeFiles/engine_tests.dir/all
+CMakeFiles/oscillator_drone_test.dir/all: CMakeFiles/audio_engine.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_drone_test.dir/build.make CMakeFiles/oscillator_drone_test.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_drone_test.dir/build.make CMakeFiles/oscillator_drone_test.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=47,48 "Built target oscillator_drone_test"
+.PHONY : CMakeFiles/oscillator_drone_test.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/engine_tests.dir/rule: cmake_check_build_system
+CMakeFiles/oscillator_drone_test.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles 9
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/engine_tests.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/oscillator_drone_test.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles 0
-.PHONY : CMakeFiles/engine_tests.dir/rule
+.PHONY : CMakeFiles/oscillator_drone_test.dir/rule
 
 # Convenience name for target.
-engine_tests: CMakeFiles/engine_tests.dir/rule
-.PHONY : engine_tests
+oscillator_drone_test: CMakeFiles/oscillator_drone_test.dir/rule
+.PHONY : oscillator_drone_test
 
 # codegen rule for target.
-CMakeFiles/engine_tests.dir/codegen:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=25,26 "Finished codegen for target engine_tests"
-.PHONY : CMakeFiles/engine_tests.dir/codegen
+CMakeFiles/oscillator_drone_test.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_drone_test.dir/build.make CMakeFiles/oscillator_drone_test.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=47,48 "Finished codegen for target oscillator_drone_test"
+.PHONY : CMakeFiles/oscillator_drone_test.dir/codegen
 
 # clean rule for target.
-CMakeFiles/engine_tests.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/clean
-.PHONY : CMakeFiles/engine_tests.dir/clean
+CMakeFiles/oscillator_drone_test.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_drone_test.dir/build.make CMakeFiles/oscillator_drone_test.dir/clean
+.PHONY : CMakeFiles/oscillator_drone_test.dir/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/Phase10Tests.dir
@@ -859,7 +859,7 @@ CMakeFiles/juno_chorus_tests.dir/all: _deps/googletest-build/googletest/CMakeFil
 CMakeFiles/juno_chorus_tests.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/juno_chorus_tests.dir/build.make CMakeFiles/juno_chorus_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/juno_chorus_tests.dir/build.make CMakeFiles/juno_chorus_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=43,44 "Built target juno_chorus_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=41,42 "Built target juno_chorus_tests"
 .PHONY : CMakeFiles/juno_chorus_tests.dir/all
 
 # Build rule for subdir invocation for target.
@@ -876,7 +876,7 @@ juno_chorus_tests: CMakeFiles/juno_chorus_tests.dir/rule
 # codegen rule for target.
 CMakeFiles/juno_chorus_tests.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/juno_chorus_tests.dir/build.make CMakeFiles/juno_chorus_tests.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=43,44 "Finished codegen for target juno_chorus_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=41,42 "Finished codegen for target juno_chorus_tests"
 .PHONY : CMakeFiles/juno_chorus_tests.dir/codegen
 
 # clean rule for target.
@@ -923,7 +923,7 @@ CMakeFiles/Functional_SH101_Live.dir/clean:
 _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/depend
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=31,32 "Built target gmock"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=29,30 "Built target gmock"
 .PHONY : _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/all
 
 # Build rule for subdir invocation for target.
@@ -940,7 +940,7 @@ gmock: _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/rule
 # codegen rule for target.
 _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=31,32 "Finished codegen for target gmock"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=29,30 "Finished codegen for target gmock"
 .PHONY : _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/codegen
 
 # clean rule for target.
@@ -956,7 +956,7 @@ _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/all: _deps/googletes
 _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/depend
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=33,34 "Built target gmock_main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=31,32 "Built target gmock_main"
 .PHONY : _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/all
 
 # Build rule for subdir invocation for target.
@@ -973,7 +973,7 @@ gmock_main: _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/rule
 # codegen rule for target.
 _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/build.make _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=33,34 "Finished codegen for target gmock_main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=31,32 "Finished codegen for target gmock_main"
 .PHONY : _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/codegen
 
 # clean rule for target.
@@ -988,7 +988,7 @@ _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/clean:
 _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all:
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest.dir/depend
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=37,38 "Built target gtest"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=35,36 "Built target gtest"
 .PHONY : _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 
 # Build rule for subdir invocation for target.
@@ -1005,7 +1005,7 @@ gtest: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/rule
 # codegen rule for target.
 _deps/googletest-build/googletest/CMakeFiles/gtest.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=37,38 "Finished codegen for target gtest"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=35,36 "Finished codegen for target gtest"
 .PHONY : _deps/googletest-build/googletest/CMakeFiles/gtest.dir/codegen
 
 # clean rule for target.
@@ -1020,7 +1020,7 @@ _deps/googletest-build/googletest/CMakeFiles/gtest.dir/clean:
 _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all: _deps/googletest-build/googletest/CMakeFiles/gtest.dir/all
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/depend
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=39,40 "Built target gtest_main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=37,38 "Built target gtest_main"
 .PHONY : _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/all
 
 # Build rule for subdir invocation for target.
@@ -1037,7 +1037,7 @@ gtest_main: _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/rule
 # codegen rule for target.
 _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/build.make _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=39,40 "Finished codegen for target gtest_main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/build/CMakeFiles --progress-num=37,38 "Finished codegen for target gtest_main"
 .PHONY : _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/codegen
 
 # clean rule for target.

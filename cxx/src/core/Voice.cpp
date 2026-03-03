@@ -6,6 +6,7 @@
 #include "Voice.hpp"
 #include "oscillator/PulseOscillatorProcessor.hpp"
 #include "filter/MoogLadderProcessor.hpp"
+#include "filter/DiodeLadderProcessor.hpp"
 #include <vector>
 #include <cmath>
 #include <iostream>
@@ -35,10 +36,8 @@ Voice::Voice(int sample_rate)
     envelope_->set_sustain_level(1.0f);
     envelope_->set_release_time(0.050f);
 
-    // 3. Filter: Moog ladder
-    filter_ = std::make_unique<MoogLadderProcessor>(sample_rate);
-    filter_->set_cutoff(base_cutoff_);
-    filter_->set_resonance(base_resonance_);
+    // 3. Filter: Starts as nullptr (Flexible Topology)
+    filter_ = nullptr;
 
     // 4. LFO: For Vibrato/Tremolo
     lfo_ = std::make_unique<LfoProcessor>(sample_rate);
@@ -68,6 +67,26 @@ Voice::Voice(int sample_rate)
 
 void Voice::set_filter_type(std::unique_ptr<FilterProcessor> filter) {
     filter_ = std::move(filter);
+    rebuild_graph();
+}
+
+void Voice::set_filter_type(int type) {
+    std::unique_ptr<FilterProcessor> new_filter;
+    if (type == 0) {
+        new_filter = std::make_unique<MoogLadderProcessor>(sample_rate_);
+    } else if (type == 1) {
+        new_filter = std::make_unique<DiodeLadderProcessor>(sample_rate_);
+    }
+    
+    if (new_filter) {
+        // PRE-INIT: Set cutoff/res BEFORE attaching to chain to avoid silence
+        new_filter->set_cutoff(base_cutoff_);
+        new_filter->set_resonance(base_resonance_);
+        filter_ = std::move(new_filter);
+    } else {
+        filter_ = nullptr;
+    }
+    
     rebuild_graph();
 }
 
@@ -225,7 +244,7 @@ void Voice::apply_modulation() {
     // Apply PWM
     float pw_mod = matrix_.sum_for_target(ModulationTarget::PulseWidth, current_source_values_);
     if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
-        pulse_osc->set_pulse_width_modulation(pw_mod);
+        pulse_osc->set_pulse_width(pw_mod);
     }
 }
 

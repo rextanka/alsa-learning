@@ -302,17 +302,17 @@ graph_audit_test/fast:
 .PHONY : graph_audit_test/fast
 
 #=============================================================================
-# Target rules for targets named filter_tests
+# Target rules for targets named filter_sweep_test
 
 # Build rule for target.
-filter_tests: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 filter_tests
-.PHONY : filter_tests
+filter_sweep_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 filter_sweep_test
+.PHONY : filter_sweep_test
 
 # fast build rule for target.
-filter_tests/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/build
-.PHONY : filter_tests/fast
+filter_sweep_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_sweep_test.dir/build.make CMakeFiles/filter_sweep_test.dir/build
+.PHONY : filter_sweep_test/fast
 
 #=============================================================================
 # Target rules for targets named stereo_poly_test
@@ -341,17 +341,17 @@ processor_check/fast:
 .PHONY : processor_check/fast
 
 #=============================================================================
-# Target rules for targets named engine_tests
+# Target rules for targets named oscillator_drone_test
 
 # Build rule for target.
-engine_tests: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 engine_tests
-.PHONY : engine_tests
+oscillator_drone_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 oscillator_drone_test
+.PHONY : oscillator_drone_test
 
 # fast build rule for target.
-engine_tests/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/build
-.PHONY : engine_tests/fast
+oscillator_drone_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_drone_test.dir/build.make CMakeFiles/oscillator_drone_test.dir/build
+.PHONY : oscillator_drone_test/fast
 
 #=============================================================================
 # Target rules for targets named Phase10Tests
@@ -778,53 +778,29 @@ tests/functional/audio_check.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_check.dir/build.make CMakeFiles/audio_check.dir/tests/functional/audio_check.cpp.s
 .PHONY : tests/functional/audio_check.cpp.s
 
-tests/functional/engine_tests.o: tests/functional/engine_tests.cpp.o
-.PHONY : tests/functional/engine_tests.o
+tests/functional/filter_sweep_test.o: tests/functional/filter_sweep_test.cpp.o
+.PHONY : tests/functional/filter_sweep_test.o
 
 # target to build an object file
-tests/functional/engine_tests.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/tests/functional/engine_tests.cpp.o
-.PHONY : tests/functional/engine_tests.cpp.o
+tests/functional/filter_sweep_test.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_sweep_test.dir/build.make CMakeFiles/filter_sweep_test.dir/tests/functional/filter_sweep_test.cpp.o
+.PHONY : tests/functional/filter_sweep_test.cpp.o
 
-tests/functional/engine_tests.i: tests/functional/engine_tests.cpp.i
-.PHONY : tests/functional/engine_tests.i
-
-# target to preprocess a source file
-tests/functional/engine_tests.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/tests/functional/engine_tests.cpp.i
-.PHONY : tests/functional/engine_tests.cpp.i
-
-tests/functional/engine_tests.s: tests/functional/engine_tests.cpp.s
-.PHONY : tests/functional/engine_tests.s
-
-# target to generate assembly for a file
-tests/functional/engine_tests.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/engine_tests.dir/build.make CMakeFiles/engine_tests.dir/tests/functional/engine_tests.cpp.s
-.PHONY : tests/functional/engine_tests.cpp.s
-
-tests/functional/filter_tests.o: tests/functional/filter_tests.cpp.o
-.PHONY : tests/functional/filter_tests.o
-
-# target to build an object file
-tests/functional/filter_tests.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/tests/functional/filter_tests.cpp.o
-.PHONY : tests/functional/filter_tests.cpp.o
-
-tests/functional/filter_tests.i: tests/functional/filter_tests.cpp.i
-.PHONY : tests/functional/filter_tests.i
+tests/functional/filter_sweep_test.i: tests/functional/filter_sweep_test.cpp.i
+.PHONY : tests/functional/filter_sweep_test.i
 
 # target to preprocess a source file
-tests/functional/filter_tests.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/tests/functional/filter_tests.cpp.i
-.PHONY : tests/functional/filter_tests.cpp.i
+tests/functional/filter_sweep_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_sweep_test.dir/build.make CMakeFiles/filter_sweep_test.dir/tests/functional/filter_sweep_test.cpp.i
+.PHONY : tests/functional/filter_sweep_test.cpp.i
 
-tests/functional/filter_tests.s: tests/functional/filter_tests.cpp.s
-.PHONY : tests/functional/filter_tests.s
+tests/functional/filter_sweep_test.s: tests/functional/filter_sweep_test.cpp.s
+.PHONY : tests/functional/filter_sweep_test.s
 
 # target to generate assembly for a file
-tests/functional/filter_tests.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_tests.dir/build.make CMakeFiles/filter_tests.dir/tests/functional/filter_tests.cpp.s
-.PHONY : tests/functional/filter_tests.cpp.s
+tests/functional/filter_sweep_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/filter_sweep_test.dir/build.make CMakeFiles/filter_sweep_test.dir/tests/functional/filter_sweep_test.cpp.s
+.PHONY : tests/functional/filter_sweep_test.cpp.s
 
 tests/functional/four_beeps_adsr.o: tests/functional/four_beeps_adsr.cpp.o
 .PHONY : tests/functional/four_beeps_adsr.o
@@ -921,6 +897,30 @@ tests/functional/oscillator_baseline_test.s: tests/functional/oscillator_baselin
 tests/functional/oscillator_baseline_test.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_baseline_test.dir/build.make CMakeFiles/oscillator_baseline_test.dir/tests/functional/oscillator_baseline_test.cpp.s
 .PHONY : tests/functional/oscillator_baseline_test.cpp.s
+
+tests/functional/oscillator_drone_test.o: tests/functional/oscillator_drone_test.cpp.o
+.PHONY : tests/functional/oscillator_drone_test.o
+
+# target to build an object file
+tests/functional/oscillator_drone_test.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_drone_test.dir/build.make CMakeFiles/oscillator_drone_test.dir/tests/functional/oscillator_drone_test.cpp.o
+.PHONY : tests/functional/oscillator_drone_test.cpp.o
+
+tests/functional/oscillator_drone_test.i: tests/functional/oscillator_drone_test.cpp.i
+.PHONY : tests/functional/oscillator_drone_test.i
+
+# target to preprocess a source file
+tests/functional/oscillator_drone_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_drone_test.dir/build.make CMakeFiles/oscillator_drone_test.dir/tests/functional/oscillator_drone_test.cpp.i
+.PHONY : tests/functional/oscillator_drone_test.cpp.i
+
+tests/functional/oscillator_drone_test.s: tests/functional/oscillator_drone_test.cpp.s
+.PHONY : tests/functional/oscillator_drone_test.s
+
+# target to generate assembly for a file
+tests/functional/oscillator_drone_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_drone_test.dir/build.make CMakeFiles/oscillator_drone_test.dir/tests/functional/oscillator_drone_test.cpp.s
+.PHONY : tests/functional/oscillator_drone_test.cpp.s
 
 tests/functional/oscillator_integrity_test.o: tests/functional/oscillator_integrity_test.cpp.o
 .PHONY : tests/functional/oscillator_integrity_test.o
@@ -1254,8 +1254,7 @@ help:
 	@echo "... audio_check"
 	@echo "... audio_engine"
 	@echo "... audio_engine_shared"
-	@echo "... engine_tests"
-	@echo "... filter_tests"
+	@echo "... filter_sweep_test"
 	@echo "... four_beeps_adsr"
 	@echo "... gmock"
 	@echo "... gmock_main"
@@ -1266,6 +1265,7 @@ help:
 	@echo "... juno_chorus_tests"
 	@echo "... metronome_test"
 	@echo "... oscillator_baseline_test"
+	@echo "... oscillator_drone_test"
 	@echo "... oscillator_integrity_test"
 	@echo "... processor_check"
 	@echo "... sh101_chain_tests"
@@ -1305,12 +1305,9 @@ help:
 	@echo "... tests/functional/audio_check.o"
 	@echo "... tests/functional/audio_check.i"
 	@echo "... tests/functional/audio_check.s"
-	@echo "... tests/functional/engine_tests.o"
-	@echo "... tests/functional/engine_tests.i"
-	@echo "... tests/functional/engine_tests.s"
-	@echo "... tests/functional/filter_tests.o"
-	@echo "... tests/functional/filter_tests.i"
-	@echo "... tests/functional/filter_tests.s"
+	@echo "... tests/functional/filter_sweep_test.o"
+	@echo "... tests/functional/filter_sweep_test.i"
+	@echo "... tests/functional/filter_sweep_test.s"
 	@echo "... tests/functional/four_beeps_adsr.o"
 	@echo "... tests/functional/four_beeps_adsr.i"
 	@echo "... tests/functional/four_beeps_adsr.s"
@@ -1323,6 +1320,9 @@ help:
 	@echo "... tests/functional/oscillator_baseline_test.o"
 	@echo "... tests/functional/oscillator_baseline_test.i"
 	@echo "... tests/functional/oscillator_baseline_test.s"
+	@echo "... tests/functional/oscillator_drone_test.o"
+	@echo "... tests/functional/oscillator_drone_test.i"
+	@echo "... tests/functional/oscillator_drone_test.s"
 	@echo "... tests/functional/oscillator_integrity_test.o"
 	@echo "... tests/functional/oscillator_integrity_test.i"
 	@echo "... tests/functional/oscillator_integrity_test.s"
