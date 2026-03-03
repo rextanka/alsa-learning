@@ -82,11 +82,20 @@ void Voice::set_parameter(int param, float value) {
             base_resonance_ = std::clamp(value, 0.0f, 1.0f);
             if (filter_) filter_->set_resonance(base_resonance_);
             break;
-        case 4: // AMP_DECAY
+        case 3: // VCF_ENV_AMOUNT (Tag VCF, Internal ID 3)
+            // For now, if we don't have a modular connection, we just store it
+            break;
+        case 4: // AMP_ATTACK (Tag VCA, Internal ID 1)
+            envelope_->set_attack_time(value);
+            break;
+        case 5: // AMP_DECAY (Tag VCA, Internal ID 2)
             envelope_->set_decay_time(value);
             break;
-        case 5: // AMP_SUSTAIN
+        case 6: // AMP_SUSTAIN (Tag VCA, Internal ID 3)
             envelope_->set_sustain_level(value);
+            break;
+        case 7: // AMP_RELEASE (Tag VCA, Internal ID 4)
+            envelope_->set_release_time(value);
             break;
         case 11: // SUB_GAIN
             source_mixer_->set_gain(2, value);
@@ -97,13 +106,13 @@ void Voice::set_parameter(int param, float value) {
         case 13: // PULSE_GAIN
             source_mixer_->set_gain(1, value);
             break;
-        case 14: // PULSE_WIDTH (Re-mapped for test)
+        case 14: // PULSE_WIDTH (Native)
             if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
                 pulse_osc->set_pulse_width(value);
             }
             break;
-        case 17: // VCF_ENV_AMOUNT (Bypass logic)
-            // Modulation Matrix would handle this, but we've cleared it.
+        case 10: // PULSE_WIDTH (Legacy Alias)
+            set_parameter(14, value);
             break;
         default:
             break;
