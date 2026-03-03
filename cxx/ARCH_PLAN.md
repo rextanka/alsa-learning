@@ -232,10 +232,10 @@ To bridge the gap between the C-compatible public API and the internal Flexible 
 | 1 | `vcf_cutoff` | `VCF` | 1 | Filter cutoff frequency |
 | 2 | `vcf_res` | `VCF` | 2 | Filter resonance |
 | 3 | `vcf_env_amount` | `VCF` | 3 | Envelope to Filter modulation depth |
-| 4 | `amp_attack` | `VCA` | 1 | VCA Envelope Attack |
-| 5 | `amp_decay` | `VCA` | 2 | VCA Envelope Decay |
-| 6 | `amp_sustain` | `VCA` | 3 | VCA Envelope Sustain |
-| 7 | `amp_release` | `VCA` | 4 | VCA Envelope Release |
+| 4 | `amp_attack` | `VCA` | 4 | VCA Envelope Attack |
+| 5 | `amp_decay` | `VCA` | 5 | VCA Envelope Decay |
+| 6 | `amp_sustain` | `VCA` | 6 | VCA Envelope Sustain |
+| 7 | `amp_release` | `VCA` | 7 | VCA Envelope Release |
 | 10 | `osc_pw` | `VCO` | 14 | Pulse Width (Legacy Alias) |
 | 11 | `sub_gain` | `VCO` | 11 | Sub-oscillator level |
 | 12 | `saw_gain` | `VCO` | 12 | Sawtooth level |
