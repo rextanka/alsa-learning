@@ -186,6 +186,7 @@ if(BUILD_TESTING)
     add_functional_gtest(stereo_poly_test stereo_poly_test.cpp)
     add_functional_test(processor_check processor_check.cpp)
     add_functional_test(engine_tests engine_tests.cpp)
+    add_functional_test(oscillator_drone_test oscillator_drone_test.cpp)
     add_functional_test(Phase10Tests Phase10Tests.cpp)
     add_functional_test(TimingValidation TimingValidation.cpp)
     
