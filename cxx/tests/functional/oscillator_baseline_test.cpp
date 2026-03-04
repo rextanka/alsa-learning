@@ -1,85 +1,66 @@
 /**
  * @file oscillator_baseline_test.cpp
- * @brief Direct hardware-to-oscillator validation with ADSR envelope gating.
+ * @brief Direct hardware-to-oscillator validation with ADSR envelope gating using Bridge API.
  */
 
+#include "../TestHelper.hpp"
 #include <iostream>
-#include <vector>
-#include <cmath>
-#include <memory>
 #include <chrono>
-#include "TestHelper.hpp"
-#include "oscillator/SineOscillatorProcessor.hpp"
-#include "envelope/AdsrEnvelopeProcessor.hpp"
+#include <thread>
 
 int main() {
-    std::cout << "--- Starting Oscillator Baseline Validation (48kHz) ---" << std::endl;
+    int sample_rate = test::get_safe_sample_rate(0);
+
+    PRINT_TEST_HEADER(
+        "Oscillator & ADSR Baseline",
+        "Direct validation of Sine VCO + ADSR envelope via Bridge API.",
+        "Sine VCO -> VCA (ADSR) -> Bridge -> Output",
+        "Cycling A4 (1s ON, 1s OFF) with 50ms attack and 200ms release for 10s.",
+        sample_rate
+    );
 
     test::init_test_environment();
-    // CoreAudioDriver enforces 48000Hz internally
-    auto driver = test::create_driver();
-    if (!driver) return 1;
+    test::EngineWrapper engine(sample_rate);
 
-    std::cout << "Driver sample rate: " << driver->sample_rate() << " Hz" << std::endl;
+    // Configure ADSR
+    set_param(engine.get(), "amp_attack", 0.05f);
+    set_param(engine.get(), "amp_decay", 0.1f);
+    set_param(engine.get(), "amp_sustain", 0.7f);
+    set_param(engine.get(), "amp_release", 0.2f);
+
+    if (engine_start(engine.get()) != 0) {
+        std::cerr << "Failed to start engine" << std::endl;
+        return 1;
+    }
+
+    std::cout << "Starting 10-second cycling validation..." << std::endl;
     
-    // 1. Instantiate the actual engine oscillator (Explicit 48000Hz)
-    auto sine_osc = std::make_unique<audio::SineOscillatorProcessor>(48000);
-    sine_osc->set_frequency(440.0);
-
-    // 2. Instantiate the ADSR envelope (Explicit 48000Hz)
-    auto envelope = std::make_unique<audio::AdsrEnvelopeProcessor>(48000);
-    envelope->set_attack_time(0.05f);   // 50ms
-    envelope->set_decay_time(0.1f);     // 100ms
-    envelope->set_sustain_level(0.7f);   // 70%
-    envelope->set_release_time(0.2f);   // 200ms
-
-    // 3. Setup Driver Callback with 2-second cycling gate
     auto start_time = std::chrono::steady_clock::now();
     bool last_gate = false;
 
-    driver->set_stereo_callback([&, start_time, last_gate](audio::AudioBuffer& buffer) mutable {
-        // Calculate gate status based on 2-second cycle (1s ON, 1s OFF)
+    while (true) {
         auto now = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
-        bool current_gate = (elapsed % 2000) < 1000;
+        auto elapsed_total = std::chrono::duration_cast<std::chrono::seconds>(now - start_time).count();
+        if (elapsed_total >= 10) break;
+
+        auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
+        bool current_gate = (elapsed_ms % 2000) < 1000;
 
         if (current_gate != last_gate) {
             if (current_gate) {
-                envelope->gate_on();
+                std::cout << "[GATE ON] Triggering A4" << std::endl;
+                engine_note_on_name(engine.get(), "A4", 0.8f);
             } else {
-                envelope->gate_off();
+                std::cout << "[GATE OFF] Releasing A4" << std::endl;
+                engine_note_off_name(engine.get(), "A4");
             }
             last_gate = current_gate;
         }
 
-        // Pull from Generator (Oscillator) into Left channel
-        sine_osc->pull(buffer.left, nullptr);
-        
-        // Pull from Processor (Envelope) - multiplies in-place
-        envelope->pull(buffer.left, nullptr);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
 
-        // Copy to Right channel
-        for (size_t i = 0; i < buffer.frames(); ++i) {
-            buffer.right[i] = buffer.left[i];
-        }
-        
-        // Quick Audit: Monitor for silence or clipping
-        static int audit_counter = 0;
-        if (audit_counter++ % 100 == 0) {
-            float peak = 0.0f;
-            for (float s : buffer.left) if (std::abs(s) > peak) peak = std::abs(s);
-            std::cout << "[ENV AUDIT] Gate: " << (current_gate ? "ON " : "OFF") 
-                      << " | Peak: " << peak << std::endl;
-        }
-    });
-
-    if (!driver->start()) return 1;
-
-    std::cout << "Playing Sine + ADSR (440Hz, 2s Cycle) for 10 seconds..." << std::endl;
-    
-    test::wait_while_running(10);
-
-    test::cleanup_test_environment(driver.get());
-    std::cout << "--- Baseline Verification Done ---" << std::endl;
+    engine_stop(engine.get());
+    std::cout << "--- Baseline Verification Done. Engine destroyed via RAII. ---" << std::endl;
     return 0;
 }

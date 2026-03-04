@@ -6,7 +6,7 @@ This document serves as the "Rosetta Stone" for the engine's functional testing 
 
 ## 1. The Test Registry
 
-The functional tests are located in `cxx/tests/functional/` and are categorized based on their verification target.
+The functional tests are located in `cxx/tests/functional/` and are categorized based on their verification target. All tests follow the **HAL-Agnostic** and **Hardware-Aware** standard.
 
 ### Hardware / HAL Sanity Tests
 *Verify the platform-specific audio driver and environment (ALSA on Fedora, CoreAudio on macOS).*
@@ -24,7 +24,7 @@ The functional tests are located in `cxx/tests/functional/` and are categorized 
 |-----------|---------|-----------------|--------|
 | `filter_sweep_test.cpp` | Validates filter cutoff modulation and resonance behavior. | Audible filter sweep. | Compliance OK |
 | `oscillator_integrity_test.cpp` | Verifies solo/mute behavior of individual oscillators. | Discrete oscillator tones. | Compliance OK |
-| `graph_audit_test.cpp` | Bottom-up audit of the dynamic signal chain stages. | Step-by-step RMS verification.| **DRIFT DETECTED** (Uses hardcoded gain names) |
+| `graph_audit_test.cpp` | Bottom-up audit of the dynamic signal chain stages. | Step-by-step RMS verification.| Compliance OK |
 | `metronome_test.cpp` | Verifies sample-accurate clock and gated beep timing. | Periodic rhythmic beeps. | Compliance OK |
 | `four_beeps_adsr.cpp` | Validates VCA envelope stages across multiple notes. | 4 distinct ADSR-shaped tones. | Compliance OK |
 | `stereo_poly_test.cpp` | Verifies polyphonic voice stealing and stereo panning. | Moving polyphonic cluster. | Compliance OK |
@@ -55,70 +55,58 @@ All functional tests MUST use `set_param` with the following Global IDs and stri
 
 ## 3. Minimum Viable Sound Recipes
 
-Use these C++ snippets with `CInterface.h` to build valid test configurations.
+Use these C++ snippets with `CInterface.h` and `TestHelper.hpp` to build valid test configurations.
 
 ### Recipe 1: Raw Drone (Source -> Output)
 *Minimalist configuration to verify signal flow.*
 ```cpp
-EngineHandle engine = engine_create(48000);
-set_param(engine, "pulse_gain", 1.0f); // ID 13
-set_param(engine, "vcf_cutoff", 20000.0f); // Open Filter (ID 1)
-set_param(engine, "amp_sustain", 1.0f); // Hold VCA (ID 6)
-engine_note_on(engine, 60, 1.0f);
+int sample_rate = test::get_safe_sample_rate(0);
+PRINT_TEST_HEADER("Raw Drone", "Verify signal flow.", "VCO -> Output", "Audible tone", sample_rate);
+
+test::EngineWrapper engine(sample_rate);
+set_param(engine.get(), "pulse_gain", 1.0f); 
+set_param(engine.get(), "vcf_cutoff", 20000.0f);
+set_param(engine.get(), "amp_sustain", 1.0f);
+engine_note_on(engine.get(), 60, 1.0f);
 ```
 
 ### Recipe 2: Articulated Mono (Source -> VCA -> Output)
 *Verifies VCA envelope functionality.*
 ```cpp
-set_param(engine, "saw_gain", 0.8f);    // ID 12
-set_param(engine, "amp_attack", 0.05f); // ID 4
-set_param(engine, "amp_decay", 0.2f);   // ID 5
-set_param(engine, "amp_sustain", 0.5f); // ID 6
-set_param(engine, "amp_release", 0.1f); // ID 7
+set_param(engine, "saw_gain", 0.8f);    
+set_param(engine, "amp_attack", 0.05f); 
+set_param(engine, "amp_decay", 0.2f);   
+set_param(engine, "amp_sustain", 0.5f); 
+set_param(engine, "amp_release", 0.1f); 
 engine_note_on(engine, 48, 1.0f);
 // Wait...
 engine_note_off(engine, 48);
-```
-
-### Recipe 3: Classic Subtractive (Source -> VCA -> Filter -> Output)
-*The standard synthesizer path.*
-```cpp
-set_param(engine, "pulse_gain", 0.7f);
-set_param(engine, "vcf_cutoff", 500.0f); // Low Cutoff
-set_param(engine, "vcf_res", 0.8f);      // High Resonance
-set_param(engine, "vcf_env_amount", 2.0f); // 2 octaves sweep
-engine_note_on(engine, 36, 1.0f);
-```
-
-### Recipe 4: Modulated Path (LFO -> Target)
-*Verifies the Modulation Matrix and `engine_connect_mod`.*
-```cpp
-// Create an LFO (Internal ID 100+)
-int lfo_id = engine_create_processor(engine, PROC_LFO);
-// Connect LFO (source) to Filter (target) via Param Cutoff (ID 1)
-engine_connect_mod(engine, lfo_id, ALL_VOICES, PARAM_CUTOFF, 0.5f);
 ```
 
 ---
 
 ## 4. Configuration Guide
 
-To maintain the **10ms MMA Latency Target**, all functional tests should be configured as follows:
+To maintain the **10ms MMA Latency Target**, all functional tests follow this dynamic protocol:
 
-- **Global Sample Rate**: `48000Hz` (Mandatory for accurate DSP ramps).
-- **Buffer Size**: `512 samples`.
-  - Latency calculation: $512 / 48000 \approx 10.6ms$.
-- **Driver**: Use `AlsaDriver` on Linux and `CoreAudioDriver` on macOS via the `EngineHandle` abstraction.
+- **Dynamic Sample Rate**: Mandatory. Never hardcode sample rates.
+- **Protocol**: 
+    1. Query hardware using `host_get_device_sample_rate(0)`.
+    2. Use `test::get_safe_sample_rate()` fallback logic to handle "Device Busy" or "No Device" scenarios.
+    3. Initialize engine via `engine_create(sample_rate)`.
+- **Buffer Size**: Fixed at `512 samples`.
+  - Latency is calculated dynamically: $(512 / \text{sample\_rate}) * 1000$ ms.
+- **Platform-Agnostic HAL**: Tests must use `EngineHandle` and `CInterface.h`.
 
 ---
 
-## 5. Architectural Drift & Refactoring Notes
+## 5. Test Output Standards
 
-The following tests require refactoring to comply with the **Dynamic Node Container** vision:
+Every functional test must include a standardized header for human readability.
 
-1. **`graph_audit_test.cpp`**: 
-   - *Drift*: Uses explicit `pulse_gain`, `saw_gain`, and `sub_gain` names which assume a fixed `SourceMixer` structure.
-   - *Fix*: Transition to verifying node existence via the discovery API and setting parameters by Tag-based IDs.
-2. **`processor_check.cpp`**:
-   - *Drift*: Directly casts `Processor` to internal types.
-   - *Fix*: Use the Bridge API (`set_param`) exclusively.
+- **Intent Headers**: Use the `PRINT_TEST_HEADER` macro from `TestHelper.hpp`.
+- **Required Fields**:
+    - **Purpose**: A clear statement of the test's intent.
+    - **Signal Chain**: A description of the modular path being tested (e.g., VCO -> VCF -> VCA).
+    - **Expected Result**: What the user should hear or what the logs should verify.
+    - **Hardware Status**: Automatically outputs the detected sample rate and calculated latency.
