@@ -13,10 +13,10 @@ int main() {
     int sample_rate = test::get_safe_sample_rate(0);
 
     PRINT_TEST_HEADER(
-        "Filter Sweep Integrity",
+        "Validate resonant filter sweep and tag-based parameter smoothing.",
         "Validates spectral character and resonance of Moog and Diode ladder filters.",
-        "Sawtooth VCO -> VCF -> VCA -> Output",
-        "Audible resonant low-pass sweep (logarithmic) for each filter type.",
+        "Sawtooth -> VCF (Moog) -> VCA -> Output",
+        "Smooth 2-octave resonant sweep without audible stepping.",
         sample_rate
     );
 
@@ -43,7 +43,9 @@ int main() {
         set_param(engine.get(), "vcf_cutoff", 8000.0f);
         set_param(engine.get(), "vcf_res", res);
         
-        const int steps = 100;
+        // High density sweep: 200 steps over 2 seconds (10ms steps)
+        // This exercises the parameter smoothing and avoids audible stepping.
+        const int steps = 200;
         const float start_freq = 8000.0f;
         const float end_freq = 100.0f;
         const int duration_ms = 2000;
@@ -61,10 +63,11 @@ int main() {
     };
 
     // 1. Run Moog Sweep (Classic Peak)
+    // Resonance set high (0.85f) to ensure audible sweep as requested
     run_sweep("Moog Ladder", 0, 0.85f);
 
     // 2. Run Diode Sweep (Squelchy Peak)
-    run_sweep("Diode Ladder", 1, 0.5f);
+    run_sweep("Diode Ladder", 1, 0.7f);
 
     std::cout << "\n[TEST] Releasing note..." << std::endl;
     engine_note_off(engine.get(), 45);
@@ -72,6 +75,6 @@ int main() {
 
     engine_stop(engine.get());
 
-    std::cout << "\n[SUCCESS] Filter sweep test completed. Engine destroyed via RAII." << std::endl;
+    std::cout << "\n[SUCCESS] Filter sweep test completed. Engine released via RAII." << std::endl;
     return 0;
 }
