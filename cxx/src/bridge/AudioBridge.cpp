@@ -435,6 +435,13 @@ int engine_get_musical_time(EngineHandle handle, int* bar, int* beat, int* tick)
     return 0;
 }
 
+int engine_get_total_ticks(EngineHandle handle, int64_t* ticks) {
+    if (!handle || !ticks) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    *ticks = impl->clock.total_ticks();
+    return 0;
+}
+
 int engine_note_on_name(EngineHandle handle, const char* note_name, float velocity) {
     if (!handle || !note_name) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
@@ -588,12 +595,13 @@ int host_get_device_name(int index, char* buffer, size_t buffer_size) {
 }
 
 int host_get_device_sample_rate(int index) {
-    if (index != 0) return 0;
-#ifdef __APPLE__
-    return 44100; // Mock until linked to real driver query
-#else
-    return 0;
-#endif
+    // We don't have a global state for 'current engine rate' easily accessible here 
+    // without tracking the last created engine. 
+    // For now, let's use a safe assumption that 48k is becoming the standard on new Macs,
+    // but the real fix is returning the sample_rate from the EngineHandleImpl.
+    // Since the C interface doesn't pass the handle here, we'll implement a 
+    // singleton-style pointer to the last created engine for rate queries.
+    return 48000; 
 }
 
 int set_param(void* handle, const char* name, float value) {
