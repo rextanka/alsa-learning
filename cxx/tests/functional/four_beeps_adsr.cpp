@@ -13,9 +13,9 @@ int main() {
     int sample_rate = test::get_safe_sample_rate(0);
 
     PRINT_TEST_HEADER(
-        "Four Beeps ADSR Integrity",
-        "Validates VCA envelope stages across multiple notes.",
-        "Sawtooth VCO -> VCA (ADSR) -> Output",
+        "Validate ADSR envelope articulation and voice lifecycle.",
+        "Pulse Oscillator (50% PW) -> VCA (ADSR) -> Output.",
+        "Four distinct pulse beeps with audible attack/decay and no clicks.",
         "4 distinct ADSR-shaped tones (C4, B3, A3, G3), 1 second apart.",
         sample_rate
     );
@@ -23,14 +23,20 @@ int main() {
     test::init_test_environment();
     test::EngineWrapper engine(sample_rate);
 
-    // 1. Configure a 0.5s "Beep" Envelope
-    set_param(engine.get(), "sub_gain", 0.0f);
-    set_param(engine.get(), "saw_gain", 0.8f);
-    set_param(engine.get(), "pulse_gain", 0.0f);
+    // 1. Configure Recipe 2: Articulated Mono
+    // VCO Isolation: Pulse @ 0.5 width
+    set_param(engine.get(), "pulse_gain", 0.7f);
+    set_param(engine.get(), "pulse_width", 0.5f); // Square Wave
     
-    // Explicitly set base amplitude to 1.0
-    set_param(engine.get(), "amp_base", 1.0f); 
+    // Explicitly zero out other oscillators
+    set_param(engine.get(), "saw_gain", 0.0f);
+    set_param(engine.get(), "sub_gain", 0.0f);
+    
+    // VCF Open: Cutoff fully open, resonance zeroed
+    set_param(engine.get(), "vcf_cutoff", 20000.0f);
+    set_param(engine.get(), "vcf_res", 0.0f);
 
+    // VCA (ADSR) Configuration
     assert(engine_set_modulation(engine.get(), MOD_SRC_ENVELOPE, MOD_TGT_AMPLITUDE, 1.0f) == 0);
     assert(set_param(engine.get(), "amp_attack", 0.050f) == 0);  // 50ms fade in
     assert(set_param(engine.get(), "amp_decay", 0.100f) == 0);   // 100ms decay
@@ -54,7 +60,7 @@ int main() {
         // Hold for 0.5 seconds
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         
-        // Trigger Note Off
+        // Trigger Note Off (Triggers Release phase)
         engine_note_off_name(engine.get(), notes[i]);
         
         // Wait for the remainder of the 1-second interval
@@ -62,6 +68,9 @@ int main() {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
     }
+
+    // Wait slightly for the final release to complete
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
     engine_stop(engine.get());
     std::cout << "--- Test Completed. Engine destroyed via RAII. ---" << std::endl;
