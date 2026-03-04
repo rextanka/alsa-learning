@@ -32,18 +32,24 @@ run_scenario() {
     local ideal_interval=$(echo "scale=2; 60000 / $d_bpm" | bc)
 
     # Duration = (60 / BPM) * BeatsPerBar * Bars
+    # Duration = (60 / BPM) * BeatsPerBar * Bars
     local dur=$(echo "scale=2; (60 / $d_bpm) * $d_sig * $d_bars" | bc)
-    local wait_dur=$(echo "scale=0; ($dur + 1.5) / 1" | bc)
+    local wait_dur=$(echo "scale=0; ($dur + 3.5) / 1" | bc)
+
+    # Use defaults for positional arguments if empty to avoid gaps
+    local p_bpm=${bpm:-80}
+    local p_bars=${bars:-2}
+    local p_sig=${sig:-4}
 
     echo "===================================================="
     echo "SCENARIO: $label"
-    echo "COMMAND: $METRONOME_BIN $bpm $bars $sig --analyze"
+    echo "COMMAND: $METRONOME_BIN $p_bpm $p_bars $p_sig --analyze"
     echo "EXPECTATION: $expectation"
     echo "IDEAL INTERVAL: ${ideal_interval}ms"
     echo "===================================================="
     
     # Run in background and capture output with --analyze flag
-    $METRONOME_BIN $bpm $bars $sig --analyze > "$LOG_TMP" 2>&1 &
+    $METRONOME_BIN $p_bpm $p_bars $p_sig --analyze > "$LOG_TMP" 2>&1 &
     PID=$!
     
     sleep $wait_dur

@@ -435,6 +435,13 @@ int engine_get_musical_time(EngineHandle handle, int* bar, int* beat, int* tick)
     return 0;
 }
 
+int engine_get_total_ticks(EngineHandle handle, int64_t* ticks) {
+    if (!handle || !ticks) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    *ticks = impl->clock.total_ticks();
+    return 0;
+}
+
 int engine_note_on_name(EngineHandle handle, const char* note_name, float velocity) {
     if (!handle || !note_name) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
