@@ -11,9 +11,9 @@ int main() {
 
     PRINT_TEST_HEADER(
         "Audio Driver Check",
-        "Verifies basic audio callback and driver stability via Bridge API.",
-        "HAL -> Bridge -> Engine",
-        "Audible 440Hz tone for 2 seconds.",
+        "Verifies basic audio callback and driver stability",
+        "Sine Oscillator -> Output",
+        "Continuous sine tone",
         sample_rate
     );
 
