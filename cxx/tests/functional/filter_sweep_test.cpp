@@ -21,6 +21,10 @@ int main() {
     }
 
     // Set Up Signal Chain
+    set_param(engine, "saw_gain", 1.0f);   // Ensure saw is audible
+    set_param(engine, "pulse_gain", 0.0f); // Silence default pulse
+    set_param(engine, "sub_gain", 0.0f);   // Silence default sub
+    set_param(engine, "amp_attack", 0.01f); // Quick attack
     set_param(engine, "osc_wave", 3.0f); // OSC_SAWTOOTH
     set_param(engine, "amp_sustain", 1.0f);
 
