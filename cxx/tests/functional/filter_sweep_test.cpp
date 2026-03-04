@@ -25,6 +25,7 @@ int main() {
     set_param(engine, "pulse_gain", 0.0f); // Silence default pulse
     set_param(engine, "sub_gain", 0.0f);   // Silence default sub
     set_param(engine, "amp_attack", 0.01f); // Quick attack
+    set_param(engine, "osc_wave", 3.0f); // OSC_SAWTOOTH
     set_param(engine, "amp_sustain", 1.0f);
 
     if (engine_start(engine) != 0) {
@@ -48,7 +49,7 @@ int main() {
         
         const int steps = 100;
         const float start_freq = 8000.0f;
-        const float end_freq = 200.0f; // Keep fundamental audible (A2 ~110Hz)
+        const float end_freq = 100.0f;
         const int duration_ms = 2000;
         const int step_ms = duration_ms / steps;
 
@@ -79,7 +80,6 @@ int main() {
     engine_note_off(engine, 45);
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    engine_flush_logs(engine);
     engine_stop(engine);
     engine_destroy(engine);
 
