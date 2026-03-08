@@ -9,6 +9,8 @@
 #include "Processor.hpp"
 #include "oscillator/OscillatorProcessor.hpp"
 #include "oscillator/SawtoothOscillatorProcessor.hpp"
+#include "oscillator/SineOscillatorProcessor.hpp"
+#include "oscillator/TriangleOscillatorProcessor.hpp"
 #include "envelope/AdsrEnvelopeProcessor.hpp"
 #include "filter/FilterProcessor.hpp"
 #include "oscillator/LfoProcessor.hpp"
@@ -66,6 +68,8 @@ private:
     std::unique_ptr<OscillatorProcessor> oscillator_;
     std::unique_ptr<SubOscillator> sub_oscillator_;
     std::unique_ptr<SawtoothOscillatorProcessor> saw_oscillator_;
+    std::unique_ptr<SineOscillatorProcessor> sine_oscillator_;
+    std::unique_ptr<TriangleOscillatorProcessor> triangle_oscillator_;
     std::unique_ptr<SourceMixer> source_mixer_;
     std::unique_ptr<AdsrEnvelopeProcessor> envelope_;
     std::unique_ptr<FilterProcessor> filter_;

@@ -25,19 +25,22 @@ Voice::Voice(int sample_rate)
     oscillator_ = std::make_unique<PulseOscillatorProcessor>(sample_rate);
     sub_oscillator_ = std::make_unique<SubOscillator>();
     saw_oscillator_ = std::make_unique<SawtoothOscillatorProcessor>(sample_rate);
+    sine_oscillator_ = std::make_unique<SineOscillatorProcessor>(sample_rate);
+    triangle_oscillator_ = std::make_unique<TriangleOscillatorProcessor>(sample_rate);
     source_mixer_ = std::make_unique<SourceMixer>();
     source_mixer_->set_gain(1, 1.0f); // Default main pulse gain
     source_mixer_->set_gain(2, 0.5f); // Default sub-osc gain
     
-    // 2. ADSR: British Church Organ settings
+    // 2. ADSR: Default settings
     envelope_ = std::make_unique<AdsrEnvelopeProcessor>(sample_rate);
-    envelope_->set_attack_time(0.015f);
-    envelope_->set_decay_time(0.001f);
-    envelope_->set_sustain_level(1.0f);
-    envelope_->set_release_time(0.050f);
+    envelope_->set_attack_time(0.05f);
+    envelope_->set_decay_time(0.1f);
+    envelope_->set_sustain_level(0.7f);
+    envelope_->set_release_time(0.1f);
 
     // 3. Filter: Starts as nullptr (Flexible Topology)
     filter_ = nullptr;
+    base_cutoff_ = 20000.0f; // Ensure wide open by default
 
     // 4. LFO: For Vibrato/Tremolo
     lfo_ = std::make_unique<LfoProcessor>(sample_rate);
@@ -134,6 +137,12 @@ void Voice::set_parameter(int param, float value) {
         case 13: // PULSE_GAIN
             source_mixer_->set_gain(1, value);
             break;
+        case 15: // SINE_GAIN (New mapping for Tuner Tool)
+            source_mixer_->set_gain(3, value);
+            break;
+        case 16: // TRIANGLE_GAIN (New mapping for Tuner Tool)
+            source_mixer_->set_gain(4, value);
+            break;
         case 14: // PULSE_WIDTH (Native)
             if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
                 pulse_osc->set_pulse_width(value);
@@ -153,7 +162,9 @@ void Voice::rebuild_graph() {
     if (filter_) {
         graph_->add_node(filter_.get());
     }
-    graph_->add_node(envelope_.get());
+    // DO NOT add envelope to graph pulled by do_pull, 
+    // as Voice handles it manually to ensure VCA behavior.
+    graph_->add_node(source_mixer_.get()); // Ensure mixer is in graph for param sync
 }
 
 void Voice::note_on(double frequency) {
@@ -170,6 +181,8 @@ void Voice::note_on(double frequency) {
     // Set frequency after reset to ensure current_freq is correct
     oscillator_->set_frequency(frequency);
     saw_oscillator_->set_frequency(frequency);
+    sine_oscillator_->set_frequency(frequency);
+    triangle_oscillator_->set_frequency(frequency);
     
     // Hardwire VCA if missing
     if (matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_) <= 0.001f) {
@@ -191,6 +204,8 @@ void Voice::reset() {
     oscillator_->reset();
     sub_oscillator_->reset();
     saw_oscillator_->reset();
+    sine_oscillator_->reset();
+    triangle_oscillator_->reset();
     envelope_->reset();
     lfo_->reset();
     if (filter_) filter_->reset();
@@ -222,6 +237,9 @@ void Voice::apply_modulation() {
     if (mod_freq < 20.0) mod_freq = base_frequency_;
 
     oscillator_->set_frequency(mod_freq);
+    saw_oscillator_->set_frequency(mod_freq);
+    sine_oscillator_->set_frequency(mod_freq);
+    triangle_oscillator_->set_frequency(mod_freq);
 
     // Apply Cutoff Modulation
     if (filter_) {
@@ -269,12 +287,26 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
     float saw_gain = source_mixer_->get_gain(0);
     float pulse_gain = source_mixer_->get_gain(1);
     float sub_gain = source_mixer_->get_gain(2);
+    float sine_gain = source_mixer_->get_gain(3);
+    float triangle_gain = source_mixer_->get_gain(4);
 
     // Render interleaved oscillator mix into output span
     for (size_t i = 0; i < output.size(); ++i) {
         float p_sample = static_cast<float>(pulse_osc->tick());
         float s_sample = static_cast<float>(sub_osc->generate_sample(pulse_osc->get_phase()));
-        output[i] = (saw_span[i] * saw_gain + p_sample * pulse_gain + s_sample * sub_gain);
+        float sine_sample = static_cast<float>(sine_oscillator_->tick());
+        float tri_sample = static_cast<float>(triangle_oscillator_->tick());
+        
+        // Mix using SourceMixer logic
+        std::array<float, SourceMixer::NUM_CHANNELS> inputs;
+        inputs.fill(0.0f);
+        inputs[0] = saw_span[i];
+        inputs[1] = p_sample;
+        inputs[2] = s_sample;
+        inputs[3] = sine_sample;
+        inputs[4] = tri_sample;
+        
+        output[i] = source_mixer_->mix(inputs);
         
         // Final amplitude scaling (RT-Safe)
         output[i] *= base_amplitude_;
@@ -294,9 +326,9 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
         if (abs_s > peak) peak = abs_s;
     }
 
-    if (peak > 0.0001f && (log_counter_++ % 256 == 0)) {
-        // Keep a very sparse trace for production stability verification
-        std::cout << "[VOICE] Signal Active, Peak: " << peak << std::endl;
+    if (log_counter_++ % 256 == 0) {
+        // Sample-level check
+        // std::cout << "[VOICE] Samples: " << output[0] << ", " << output[1] << ", " << output[2] << ", " << output[3] << std::endl;
     }
 }
 

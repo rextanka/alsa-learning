@@ -110,6 +110,8 @@ struct EngineHandleImpl : public HandleBase {
         param_name_to_id["saw_gain"] = 12;
         param_name_to_id["pulse_gain"] = 13;
         param_name_to_id["pulse_width"] = 14;
+        param_name_to_id["sine_gain"] = 15;
+        param_name_to_id["triangle_gain"] = 16;
     }
 };
 

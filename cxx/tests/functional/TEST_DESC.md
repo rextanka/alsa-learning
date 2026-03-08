@@ -23,7 +23,7 @@ The functional tests are located in `cxx/tests/functional/` and are categorized 
 | Test File | Purpose | Expected Output | Status |
 |-----------|---------|-----------------|--------|
 | `filter_sweep_test.cpp` | Validates filter cutoff modulation and resonance behavior. | Audible filter sweep. | Compliance OK |
-| `oscillator_integrity_test.cpp` | Verifies solo/mute behavior of individual oscillators. | Discrete oscillator tones. | Compliance OK |
+| `guitar_tuner_verify.cpp` | Specialized CLI tool for pitch accuracy verification across 6 strings. | Qualitative Audit (Human + Tuner). | Qualitative |
 | `graph_audit_test.cpp` | Bottom-up audit of the dynamic signal chain stages. | Step-by-step RMS verification.| Compliance OK |
 | `metronome_test.cpp` | Verifies sample-accurate clock and gated beep timing. | Periodic rhythmic beeps. | Compliance OK |
 | `four_beeps_adsr.cpp` | Validates VCA envelope stages across multiple notes. | 4 distinct ADSR-shaped tones. | Compliance OK |
@@ -102,9 +102,19 @@ To maintain the **10ms MMA Latency Target**, all functional tests follow this dy
 
 ## 5. Test Output Standards
 
-Every functional test must include a standardized header for human readability.
+Every functional test in `cxx/tests/functional/` MUST include a standardized header block for human readability. This header must be generated at the start of the test execution using the `PRINT_TEST_HEADER` macro from `TestHelper.hpp`.
 
 - **Intent Headers**: Use the `PRINT_TEST_HEADER` macro from `TestHelper.hpp`.
+- **Header Format Requirement**:
+    ```
+    ================================================================
+    --- TEST: [Test Name] ---
+    Intent:   [Clear statement of intent]
+    Chain:    [Signal path description, e.g., VCO -> VCF -> VCA]
+    Expected: [Expected audible or logged result]
+    Hardware: [Detected Sample Rate] | ~[Calculated Latency]ms (512 samples)
+    ================================================================
+    ```
 - **Required Fields**:
     - **Purpose**: A clear statement of the test's intent.
     - **Signal Chain**: A description of the modular path being tested (e.g., VCO -> VCF -> VCA).
