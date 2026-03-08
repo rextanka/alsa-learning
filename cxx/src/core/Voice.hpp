@@ -91,6 +91,7 @@ private:
     std::array<float, static_cast<size_t>(ModulationSource::Count)> current_source_values_;
 
     uint32_t log_counter_;
+    bool active_;
 };
 
 } // namespace audio

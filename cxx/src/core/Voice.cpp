@@ -20,6 +20,7 @@ Voice::Voice(int sample_rate)
     , base_amplitude_(1.0f)
     , sample_rate_(sample_rate)
     , pan_(0.0f)
+    , active_(false)
 {
     // 1. Oscillator: Pulse Oscillator (SH-101/Juno Style)
     oscillator_ = std::make_unique<PulseOscillatorProcessor>(sample_rate);
@@ -98,6 +99,7 @@ void Voice::set_pan(float pan) {
 }
 
 void Voice::set_parameter(int param, float value) {
+    // Map string-based parameters (sent via AudioBridge) to internal components
     switch (param) {
         case 0: // PITCH
             base_frequency_ = static_cast<double>(value);
@@ -114,7 +116,6 @@ void Voice::set_parameter(int param, float value) {
             if (filter_) filter_->set_resonance(base_resonance_);
             break;
         case 3: // VCF_ENV_AMOUNT (Tag VCF, Internal ID 3)
-            // For now, if we don't have a modular connection, we just store it
             break;
         case 4: // Global ID 4 -> VCA Attack
             envelope_->set_attack_time(value);
@@ -165,15 +166,22 @@ void Voice::rebuild_graph() {
     // DO NOT add envelope to graph pulled by do_pull, 
     // as Voice handles it manually to ensure VCA behavior.
     graph_->add_node(source_mixer_.get()); // Ensure mixer is in graph for param sync
+    graph_->add_node(oscillator_.get());
+    graph_->add_node(sub_oscillator_.get());
+    graph_->add_node(saw_oscillator_.get());
+    graph_->add_node(sine_oscillator_.get());
+    graph_->add_node(triangle_oscillator_.get());
 }
 
 void Voice::note_on(double frequency) {
-    std::cout << "[VOICE] note_on: " << frequency << " Hz" << std::endl;
+    active_ = true;
     base_frequency_ = frequency;
     // Ensure all processors are reset to clear stuck DC or phase
     oscillator_->reset();
     sub_oscillator_->reset();
     saw_oscillator_->reset();
+    sine_oscillator_->reset();
+    triangle_oscillator_->reset();
     envelope_->reset();
     lfo_->reset();
     if (filter_) filter_->reset();
@@ -194,10 +202,11 @@ void Voice::note_on(double frequency) {
 
 void Voice::note_off() {
     envelope_->gate_off();
+    active_ = false;
 }
 
 bool Voice::is_active() const {
-    return envelope_->is_active();
+    return active_ || envelope_->is_active();
 }
 
 void Voice::reset() {
@@ -284,12 +293,6 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
 
     pulse_osc->set_frequency(base_frequency_);
 
-    float saw_gain = source_mixer_->get_gain(0);
-    float pulse_gain = source_mixer_->get_gain(1);
-    float sub_gain = source_mixer_->get_gain(2);
-    float sine_gain = source_mixer_->get_gain(3);
-    float triangle_gain = source_mixer_->get_gain(4);
-
     // Render interleaved oscillator mix into output span
     for (size_t i = 0; i < output.size(); ++i) {
         float p_sample = static_cast<float>(pulse_osc->tick());
@@ -326,10 +329,6 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
         if (abs_s > peak) peak = abs_s;
     }
 
-    if (log_counter_++ % 256 == 0) {
-        // Sample-level check
-        // std::cout << "[VOICE] Samples: " << output[0] << ", " << output[1] << ", " << output[2] << ", " << output[3] << std::endl;
-    }
 }
 
 } // namespace audio
