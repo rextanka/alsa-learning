@@ -146,6 +146,11 @@ All internal DSP buffers, delay lines, and analysis windows (including `AudioTap
 * **RT-Safety**: Removing division/modulo instructions from the inner audio loop reduces CPU jitter and ensures deterministic execution.
 * **Math Readiness**: This alignment is mandatory for future $O(N \log N)$ Fast Fourier Transform (FFT) optimizations and high-resolution spectral analysis.
 
+### Spectral Analysis Resolution
+To achieve sub-Hertz accuracy (±0.5% tolerance) at low frequencies (e.g., 110Hz), the engine utilizes **Zero-Padding** for spectral analysis.
+* **Standard**: 16,384 samples of windowed audio are padded to 32,768 before DCT-II processing.
+* **Justification**: This artificially increases bin density, providing the **Parabolic Interpolation** algorithm with the resolution required to overcome DC-offset bias and spectral leakage in the lower octaves.
+
 ### Implementation Standard
 When implementing circular buffers or taps:
 ```cpp
