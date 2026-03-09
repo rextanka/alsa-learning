@@ -65,7 +65,7 @@ protected:
 
     void update_rotation_steps() override {
         if (current_freq_ > 0.0 && sample_rate_ > 0) {
-            const double angle_per_sample = 2.0 * M_PI * current_freq_ / sample_rate_;
+            const double angle_per_sample = 2.0 * M_PI * current_freq_ / static_cast<double>(sample_rate_);
             cos_step_ = std::cos(angle_per_sample);
             sin_step_ = std::sin(angle_per_sample);
         }
@@ -73,6 +73,7 @@ protected:
 
     double generate_sample() override {
         // Update rotor (rotation around unit circle)
+        // High-precision rotor update
         const double next_x = x_ * cos_step_ - y_ * sin_step_;
         const double next_y = x_ * sin_step_ + y_ * cos_step_;
         x_ = next_x;

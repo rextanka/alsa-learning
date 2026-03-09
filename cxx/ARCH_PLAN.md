@@ -135,6 +135,24 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
 
 ---
 
+## Memory & Alignment
+
+To achieve the **10ms MMA Latency Target** and ensure **RT-Safety**, the engine enforces strict buffer alignment rules:
+
+### Power-of-Two Requirement
+All internal DSP buffers, delay lines, and analysis windows (including `AudioTap` and `DctProcessor`) **MUST** utilize a power-of-two size (e.g., 512, 1024, 8192, 16384, 32768).
+
+* **Performance Logic**: Power-of-two sizes allow the use of bitwise masking for index wrapping (`index & (size - 1)`) instead of the modulo operator (`index % size`).
+* **RT-Safety**: Removing division/modulo instructions from the inner audio loop reduces CPU jitter and ensures deterministic execution.
+* **Math Readiness**: This alignment is mandatory for future $O(N \log N)$ Fast Fourier Transform (FFT) optimizations and high-resolution spectral analysis.
+
+### Implementation Standard
+When implementing circular buffers or taps:
+```cpp
+// Correct RT-Safe wrapping
+m_write_index = (m_write_index + 1) & (m_buffer_size - 1);
+```
+
 ## Key Design Decisions
 
 - **Block size**: Configurable (not hardcoded); default 1024.

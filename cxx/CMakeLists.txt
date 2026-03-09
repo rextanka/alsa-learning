@@ -177,6 +177,7 @@ if(BUILD_TESTING)
     endfunction()
 
     add_functional_test(audio_check audio_check.cpp)
+    add_functional_test(automated_osc_integrity automated_osc_integrity.cpp)
     add_functional_test(metronome_test metronome_test.cpp)
     add_functional_test(four_beeps_adsr four_beeps_adsr.cpp)
     add_functional_test(guitar_tuner_verify guitar_tuner_verify.cpp)
@@ -197,6 +198,7 @@ if(BUILD_TESTING)
 
     add_test(NAME Functional_Phase10 COMMAND Phase10Tests)
     add_test(NAME Functional_Timing COMMAND TimingValidation)
+    add_test(NAME Functional_OscIntegrity COMMAND automated_osc_integrity)
 
     if(UNIX AND NOT APPLE)
         add_functional_test(AlsaCheck AlsaCheck.cpp)

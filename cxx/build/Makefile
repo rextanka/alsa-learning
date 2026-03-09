@@ -237,6 +237,19 @@ audio_check/fast:
 .PHONY : audio_check/fast
 
 #=============================================================================
+# Target rules for targets named automated_osc_integrity
+
+# Build rule for target.
+automated_osc_integrity: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 automated_osc_integrity
+.PHONY : automated_osc_integrity
+
+# fast build rule for target.
+automated_osc_integrity/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/automated_osc_integrity.dir/build.make CMakeFiles/automated_osc_integrity.dir/build
+.PHONY : automated_osc_integrity/fast
+
+#=============================================================================
 # Target rules for targets named metronome_test
 
 # Build rule for target.
@@ -778,6 +791,30 @@ tests/functional/audio_check.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/audio_check.dir/build.make CMakeFiles/audio_check.dir/tests/functional/audio_check.cpp.s
 .PHONY : tests/functional/audio_check.cpp.s
 
+tests/functional/automated_osc_integrity.o: tests/functional/automated_osc_integrity.cpp.o
+.PHONY : tests/functional/automated_osc_integrity.o
+
+# target to build an object file
+tests/functional/automated_osc_integrity.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/automated_osc_integrity.dir/build.make CMakeFiles/automated_osc_integrity.dir/tests/functional/automated_osc_integrity.cpp.o
+.PHONY : tests/functional/automated_osc_integrity.cpp.o
+
+tests/functional/automated_osc_integrity.i: tests/functional/automated_osc_integrity.cpp.i
+.PHONY : tests/functional/automated_osc_integrity.i
+
+# target to preprocess a source file
+tests/functional/automated_osc_integrity.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/automated_osc_integrity.dir/build.make CMakeFiles/automated_osc_integrity.dir/tests/functional/automated_osc_integrity.cpp.i
+.PHONY : tests/functional/automated_osc_integrity.cpp.i
+
+tests/functional/automated_osc_integrity.s: tests/functional/automated_osc_integrity.cpp.s
+.PHONY : tests/functional/automated_osc_integrity.s
+
+# target to generate assembly for a file
+tests/functional/automated_osc_integrity.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/automated_osc_integrity.dir/build.make CMakeFiles/automated_osc_integrity.dir/tests/functional/automated_osc_integrity.cpp.s
+.PHONY : tests/functional/automated_osc_integrity.cpp.s
+
 tests/functional/filter_sweep_test.o: tests/functional/filter_sweep_test.cpp.o
 .PHONY : tests/functional/filter_sweep_test.o
 
@@ -1254,6 +1291,7 @@ help:
 	@echo "... audio_check"
 	@echo "... audio_engine"
 	@echo "... audio_engine_shared"
+	@echo "... automated_osc_integrity"
 	@echo "... filter_sweep_test"
 	@echo "... four_beeps_adsr"
 	@echo "... gmock"
@@ -1305,6 +1343,9 @@ help:
 	@echo "... tests/functional/audio_check.o"
 	@echo "... tests/functional/audio_check.i"
 	@echo "... tests/functional/audio_check.s"
+	@echo "... tests/functional/automated_osc_integrity.o"
+	@echo "... tests/functional/automated_osc_integrity.i"
+	@echo "... tests/functional/automated_osc_integrity.s"
 	@echo "... tests/functional/filter_sweep_test.o"
 	@echo "... tests/functional/filter_sweep_test.i"
 	@echo "... tests/functional/filter_sweep_test.s"
