@@ -107,6 +107,7 @@ set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/unit_tests.dir/DependInfo.cmake"
   "CMakeFiles/integration_tests.dir/DependInfo.cmake"
   "CMakeFiles/audio_check.dir/DependInfo.cmake"
+  "CMakeFiles/automated_osc_integrity.dir/DependInfo.cmake"
   "CMakeFiles/metronome_test.dir/DependInfo.cmake"
   "CMakeFiles/four_beeps_adsr.dir/DependInfo.cmake"
   "CMakeFiles/guitar_tuner_verify.dir/DependInfo.cmake"
