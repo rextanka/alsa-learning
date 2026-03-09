@@ -76,17 +76,17 @@ int main(int argc, char* argv[]) {
     test::EngineWrapper engine(sample_rate);
     
     // --- Tier 1 (Direct Path) Initialization ---
-    // The graph must be configured directly via engine parameters.
-    // By default, Voice uses a VCA envelope. To make it a "Direct Path"
-    // we set the envelope to simply pass the signal at full volume.
-    set_param(engine.get(), "vcf_cutoff", 20000.0f);
-    set_param(engine.get(), "amp_attack", 0.001f); // Immediate onset
-    set_param(engine.get(), "amp_decay", 0.0f);
-    set_param(engine.get(), "amp_sustain", 1.0f);  // Full sustain for audit
-    set_param(engine.get(), "amp_release", 0.01f);
+    // Protocol Step 1 & 2 handled by EngineWrapper + ctor.
+    // Protocol Step 3: Modular Patching (Clear ADSR -> VCA link for Tier 1 raw audit)
+    engine_clear_modulations(engine.get());
+
+    // Protocol Step 4: ADSR Arming (Manually open VCA gate for steady tone)
+    set_param(engine.get(), "amp_base", 1.0f); 
+    set_param(engine.get(), "amp_attack", 0.001f);
+    set_param(engine.get(), "amp_sustain", 1.0f);
     
-    // Explicitly connect the envelope to the amplitude target (Tier 1/2 safety)
-    engine_connect_mod(engine.get(), -1, MOD_TGT_AMPLITUDE, MOD_SRC_ENVELOPE, 1.0f);
+    // Protocol Step 5: Lifecycle Start
+    engine_start(engine.get());
 
     auto play_note = [&](std::string note, double freq) {
         std::cout << "\n[MANUAL CHECK] Playing " << note << " (" << freq << " Hz) using " << osc_type_str << " oscillator...\n";
@@ -130,10 +130,6 @@ int main(int argc, char* argv[]) {
         int note_num = static_cast<int>(round(midi_note));
         
         engine_note_on(engine.get(), note_num, 1.0f);
-
-        // Lifecycle Start - engine is already running via EngineWrapper,
-        // but we ensure it's explicitly stated as per the protocol.
-        engine_start(engine.get());
 
         auto start = std::chrono::steady_clock::now();
         while (true) {
