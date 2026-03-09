@@ -1,7 +1,7 @@
 /**
  * @file PulseOscillatorProcessor.hpp
  * @brief Pulse wave oscillator with anti-aliasing.
- */
+ */ 
 
 #ifndef PULSE_OSCILLATOR_PROCESSOR_HPP
 #define PULSE_OSCILLATOR_PROCESSOR_HPP

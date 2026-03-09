@@ -1,5 +1,5 @@
 /**
- * @file JunoChorus.hpp
+ * @file JunoChorus.hpp 
  * @brief Dual-rate BBD delay emulation for the classic Juno stereo width.
  */
 

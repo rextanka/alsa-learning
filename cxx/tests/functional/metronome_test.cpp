@@ -10,7 +10,7 @@
 /**
  * @brief Functional test for the MusicalClock and Metronome logic.
  * Validates rhythmic stability and precision timing.
- * 
+ *  
  * Usage: ./metronome_test [bpm] [bars] [sig] [--analyze]
  */
 int main(int argc, char** argv) {

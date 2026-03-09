@@ -1,5 +1,5 @@
 /**
- * @file Processor.hpp
+ * @file Processor.hpp 
  * @brief Base class for digital signal processing (DSP) components.
  * 
  * This file follows the project rules defined in .cursorrules:

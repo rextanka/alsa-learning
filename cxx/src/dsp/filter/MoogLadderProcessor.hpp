@@ -1,5 +1,5 @@
 /**
- * @file MoogLadderProcessor.hpp
+ * @file MoogLadderProcessor.hpp 
  * @brief 4-pole transistor ladder filter (Moog style).
  */
 

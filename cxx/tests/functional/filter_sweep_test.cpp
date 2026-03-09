@@ -1,6 +1,6 @@
 /**
  * @file filter_sweep_test.cpp
- * @brief Functional test of Moog and Diode filters using a Sawtooth drone and a frequency sweep.
+ * @brief Functional test of Moog and Diode filters using a Sawtooth drone and a frequency sweep. 
  */
 
 #include "../TestHelper.hpp"

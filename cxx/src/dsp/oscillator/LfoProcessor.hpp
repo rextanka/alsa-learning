@@ -1,5 +1,5 @@
 /**
- * @file LfoProcessor.hpp
+ * @file LfoProcessor.hpp 
  * @brief Low Frequency Oscillator with block-rate calculation and smoothing.
  */
 

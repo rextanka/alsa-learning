@@ -3,7 +3,7 @@
  * @brief Sine wave oscillator using rotor-based generation.
  * 
  * This file follows the project rules defined in .cursorrules:
- * - Modern C++: Target C++20/23 for all new code.
+ * - Modern C++: Target C++20/23 for all new code. 
  * - Preserves existing C algorithm: rotor-based sine with periodic normalization.
  */
 

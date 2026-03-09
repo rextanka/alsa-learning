@@ -1,5 +1,5 @@
 /**
- * @file audio_check.cpp
+ * @file audio_check.cpp 
  * @brief Basic audio driver functional check using Bridge API.
  */
 

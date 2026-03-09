@@ -1,5 +1,5 @@
 /**
- * @file VoiceManager.hpp
+ * @file VoiceManager.hpp 
  * @brief Manages a pool of polyphonic voices.
  */
 

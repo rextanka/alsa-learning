@@ -47,7 +47,7 @@ protected:
     }
 
     int sample_rate;
-    std::unique_ptr<test::EngineWrapper> engine_wrapper;
+    std::unique_ptr<test::EngineWrapper> engine_wrapper; 
 };
 
 TEST_F(FunctionalBachMidi, BWV578_Subject_Audible) {

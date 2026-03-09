@@ -1,6 +1,6 @@
 /**
  * @file AudioTap.hpp
- * @brief RT-Safe Audio Tap Processor for non-intrusive analysis.
+ * @brief RT-Safe Audio Tap Processor for non-intrusive analysis. 
  */
 
 #ifndef AUDIO_TAP_HPP

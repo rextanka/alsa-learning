@@ -7,7 +7,7 @@
 
 /**
  * @file four_beeps_adsr.cpp
- * @brief Plays 4 beeps, 1 second apart, descending in pitch to verify ADSR.
+ * @brief Plays 4 beeps, 1 second apart, descending in pitch to verify ADSR. 
  */
 int main() {
     test::init_test_environment();

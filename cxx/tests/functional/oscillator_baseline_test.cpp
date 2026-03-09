@@ -41,7 +41,7 @@ int main() {
     
     auto start_time = std::chrono::steady_clock::now();
     bool last_gate = false;
-
+ 
     while (true) {
         auto now = std::chrono::steady_clock::now();
         auto elapsed_total = std::chrono::duration_cast<std::chrono::seconds>(now - start_time).count();

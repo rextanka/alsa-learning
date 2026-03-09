@@ -1,5 +1,5 @@
 /**
- * @file OscillatorProcessor.hpp
+ * @file OscillatorProcessor.hpp 
  * @brief Base class for oscillator processors.
  * 
  * This file follows the project rules defined in .cursorrules:

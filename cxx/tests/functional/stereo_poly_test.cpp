@@ -1,6 +1,6 @@
 /**
  * @file stereo_poly_test.cpp
- * @brief Functional test for "Mono-until-Mixer" architecture and Stereo Polyphonic spread.
+ * @brief Functional test for "Mono-until-Mixer" architecture and Stereo Polyphonic spread. 
  */
 
 #include "../TestHelper.hpp"

@@ -1,6 +1,6 @@
 /**
  * @file PitchDetector.hpp
- * @brief Peak-picking and parabolic interpolation for frequency estimation.
+ * @brief Peak-picking and parabolic interpolation for frequency estimation. 
  */
 
 #ifndef PITCH_DETECTOR_HPP
