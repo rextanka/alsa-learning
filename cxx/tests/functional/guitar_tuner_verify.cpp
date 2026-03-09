@@ -35,6 +35,7 @@ void print_help() {
 }
 
 int main(int argc, char* argv[]) {
+    test::init_test_environment();
     std::string target_note = "";
     double duration = 5.0;
     std::string osc_type_str = "sine";

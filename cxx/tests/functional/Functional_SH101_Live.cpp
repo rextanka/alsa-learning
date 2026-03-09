@@ -9,6 +9,7 @@
  * @brief Live functional test for SH-101 style bass output via Bridge API.
  */
 int main() {
+    test::init_test_environment();
     int sample_rate = test::get_safe_sample_rate(0);
 
     PRINT_TEST_HEADER(

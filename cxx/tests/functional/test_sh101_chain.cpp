@@ -12,6 +12,7 @@
 class SH101ChainTest : public ::testing::Test {
 protected:
     void SetUp() override {
+        test::init_test_environment();
         sample_rate = test::get_safe_sample_rate(0);
         
         PRINT_TEST_HEADER(
@@ -23,6 +24,9 @@ protected:
         );
 
         engine_wrapper = std::make_unique<test::EngineWrapper>(sample_rate);
+        
+        // Protocol Step 3: Modular Patching
+        engine_connect_mod(engine_wrapper->get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
     }
 
     int sample_rate;

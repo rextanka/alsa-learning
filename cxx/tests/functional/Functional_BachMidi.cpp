@@ -12,6 +12,7 @@
 class FunctionalBachMidi : public ::testing::Test {
 protected:
     void SetUp() override {
+        test::init_test_environment();
         sample_rate = test::get_safe_sample_rate(0);
         
         PRINT_TEST_HEADER(
@@ -25,11 +26,14 @@ protected:
         engine_wrapper = std::make_unique<test::EngineWrapper>(sample_rate);
         EngineHandle engine = engine_wrapper->get();
 
-        // Initialize Modular Patch for British Church Organ
+        // Initialize Modular Patch for British Church Organ - Using engine_connect_mod for Tier 3
         // 1. Chiff: Env -> Cutoff
-        engine_set_modulation(engine, MOD_SRC_ENVELOPE, MOD_TGT_CUTOFF, 0.585f);
+        engine_connect_mod(engine, MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_CUTOFF, 0.585f);
+
+        // 2. VCA: Env -> Amplitude (Mandatory for Tier 2/3)
+        engine_connect_mod(engine, MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
         
-        // 2. ADSR for classic organ feel
+        // 3. ADSR for classic organ feel
         engine_set_adsr(engine, 0.005f, 0.1f, 0.7f, 0.050f);
         set_param(engine, "vcf_cutoff", 4000.0f);
         

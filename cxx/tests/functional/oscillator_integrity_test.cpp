@@ -29,6 +29,7 @@ void run_solo_test(EngineHandle engine, const char* name, const char* label, flo
 }
 
 int main() {
+    test::init_test_environment();
     int sample_rate = test::get_safe_sample_rate(0);
 
     PRINT_TEST_HEADER(
@@ -39,11 +40,10 @@ int main() {
         sample_rate
     );
 
-    test::init_test_environment();
     test::EngineWrapper engine(sample_rate);
 
-    // Force path clearance
-    engine_set_modulation(engine.get(), MOD_SRC_ENVELOPE, MOD_TGT_AMPLITUDE, 1.0f);
+    // Force path clearance - Using engine_connect_mod as per TEST_DESC.md Tier 2 protocol
+    engine_connect_mod(engine.get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
     set_param(engine.get(), "amp_sustain", 1.0f);
     set_param(engine.get(), "vcf_cutoff", 5000.0f);
 

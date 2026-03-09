@@ -18,6 +18,7 @@ float calculate_rms(const float* buffer, size_t frames) {
 }
 
 int main() {
+    test::init_test_environment();
     int sample_rate = test::get_safe_sample_rate(0);
 
     PRINT_TEST_HEADER(
@@ -29,6 +30,16 @@ int main() {
     );
     
     test::EngineWrapper engine(sample_rate);
+
+    // Protocol Step 3 & 4: Modular Patching & ADSR Arming
+    engine_connect_mod(engine.get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
+    set_param(engine.get(), "amp_sustain", 1.0f);
+
+    // Protocol Step 5: Lifecycle Start
+    if (engine_start(engine.get()) != 0) {
+        std::cerr << "Failed to start engine" << std::endl;
+        return 1;
+    }
 
     // Set high cutoff to ensure signal passes
     set_param(engine.get(), "vcf_cutoff", 10000.0f);

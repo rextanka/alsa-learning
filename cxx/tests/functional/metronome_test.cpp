@@ -55,7 +55,8 @@ int main(int argc, char** argv) {
 
     // 2. DSP Audibility & Quality Optimization
     if (!analyze_mode) std::cout << "[METRONOME] Configuring parameters for woodblock clicks..." << std::endl;
-    assert(engine_set_modulation(engine.get(), MOD_SRC_ENVELOPE, MOD_TGT_AMPLITUDE, 1.0f) == 0);
+    // Using engine_connect_mod as per TEST_DESC.md Tier 2 protocol
+    assert(engine_connect_mod(engine.get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f) == 0);
     assert(set_param(engine.get(), "amp_attack", 0.001f) == 0);
     assert(set_param(engine.get(), "amp_decay", 0.050f) == 0);
     assert(set_param(engine.get(), "amp_sustain", 0.0f) == 0);
