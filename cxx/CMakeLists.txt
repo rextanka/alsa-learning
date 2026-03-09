@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(AudioEngine VERSION 1.0.0 LANGUAGES CXX)
 
-# Set C++20 standard
+# Set C++20 standard 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -44,6 +44,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/oscillator)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/envelope)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/filter)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/fx)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/routing)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/analysis)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/hal)
