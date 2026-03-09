@@ -6290,11 +6290,15 @@ CMakeFiles/unit_tests.dir/tests/unit/test_voice_stress.cpp.o: /Users/nickthompso
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/LfoProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/OscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SawtoothOscillatorProcessor.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SineOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SubOscillator.hpp \
+  /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/TriangleOscillatorProcessor.hpp \
   /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing/SourceMixer.hpp
 
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/routing/SourceMixer.hpp:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/TriangleOscillatorProcessor.hpp:
 
 /Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SawtoothOscillatorProcessor.hpp:
 
@@ -8143,6 +8147,8 @@ _deps/googletest-src/googletest/include/gtest/gtest-param-test.h:
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/in_out_result.h:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/ranges_max.h:
+
+/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/src/dsp/oscillator/SineOscillatorProcessor.hpp:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/none_of.h:
 

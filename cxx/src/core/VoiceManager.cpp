@@ -301,9 +301,11 @@ void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
     auto block = voices_[0].voice->borrow_buffer();
     std::span<float> work_span(block->left.data(), output.frames());
 
+    int active_slots = 0;
     for (int i = 0; i < MAX_VOICES; ++i) {
         auto& slot = voices_[i];
         if (slot.active) {
+            active_slots++;
             if (slot.voice->is_active()) {
                 std::fill(work_span.begin(), work_span.end(), 0.0f);
                 slot.voice->pull(work_span, context);
@@ -342,6 +344,11 @@ void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
 
         output.left[j] = soft_clip(outL);
         output.right[j] = soft_clip(outR);
+    }
+
+    static int call_count = 0;
+    if (call_count++ % sample_rate_ == 0) {
+        std::cout << "[DEBUG] VoiceManager::do_pull active_slots=" << active_slots << std::endl;
     }
 }
 

@@ -27,7 +27,7 @@ namespace audio {
  */
 class SourceMixer : public Processor {
 public:
-    static constexpr size_t NUM_CHANNELS = 5;
+    static constexpr size_t NUM_CHANNELS = 8; // Expanded for new oscillators
 
     SourceMixer() {
         gains_.fill(0.0f);

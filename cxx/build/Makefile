@@ -263,17 +263,17 @@ four_beeps_adsr/fast:
 .PHONY : four_beeps_adsr/fast
 
 #=============================================================================
-# Target rules for targets named oscillator_integrity_test
+# Target rules for targets named guitar_tuner_verify
 
 # Build rule for target.
-oscillator_integrity_test: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 oscillator_integrity_test
-.PHONY : oscillator_integrity_test
+guitar_tuner_verify: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 guitar_tuner_verify
+.PHONY : guitar_tuner_verify
 
 # fast build rule for target.
-oscillator_integrity_test/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_integrity_test.dir/build.make CMakeFiles/oscillator_integrity_test.dir/build
-.PHONY : oscillator_integrity_test/fast
+guitar_tuner_verify/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/guitar_tuner_verify.dir/build.make CMakeFiles/guitar_tuner_verify.dir/build
+.PHONY : guitar_tuner_verify/fast
 
 #=============================================================================
 # Target rules for targets named oscillator_baseline_test
@@ -850,6 +850,30 @@ tests/functional/graph_audit_test.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/graph_audit_test.dir/build.make CMakeFiles/graph_audit_test.dir/tests/functional/graph_audit_test.cpp.s
 .PHONY : tests/functional/graph_audit_test.cpp.s
 
+tests/functional/guitar_tuner_verify.o: tests/functional/guitar_tuner_verify.cpp.o
+.PHONY : tests/functional/guitar_tuner_verify.o
+
+# target to build an object file
+tests/functional/guitar_tuner_verify.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/guitar_tuner_verify.dir/build.make CMakeFiles/guitar_tuner_verify.dir/tests/functional/guitar_tuner_verify.cpp.o
+.PHONY : tests/functional/guitar_tuner_verify.cpp.o
+
+tests/functional/guitar_tuner_verify.i: tests/functional/guitar_tuner_verify.cpp.i
+.PHONY : tests/functional/guitar_tuner_verify.i
+
+# target to preprocess a source file
+tests/functional/guitar_tuner_verify.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/guitar_tuner_verify.dir/build.make CMakeFiles/guitar_tuner_verify.dir/tests/functional/guitar_tuner_verify.cpp.i
+.PHONY : tests/functional/guitar_tuner_verify.cpp.i
+
+tests/functional/guitar_tuner_verify.s: tests/functional/guitar_tuner_verify.cpp.s
+.PHONY : tests/functional/guitar_tuner_verify.s
+
+# target to generate assembly for a file
+tests/functional/guitar_tuner_verify.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/guitar_tuner_verify.dir/build.make CMakeFiles/guitar_tuner_verify.dir/tests/functional/guitar_tuner_verify.cpp.s
+.PHONY : tests/functional/guitar_tuner_verify.cpp.s
+
 tests/functional/metronome_test.o: tests/functional/metronome_test.cpp.o
 .PHONY : tests/functional/metronome_test.o
 
@@ -921,30 +945,6 @@ tests/functional/oscillator_drone_test.s: tests/functional/oscillator_drone_test
 tests/functional/oscillator_drone_test.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_drone_test.dir/build.make CMakeFiles/oscillator_drone_test.dir/tests/functional/oscillator_drone_test.cpp.s
 .PHONY : tests/functional/oscillator_drone_test.cpp.s
-
-tests/functional/oscillator_integrity_test.o: tests/functional/oscillator_integrity_test.cpp.o
-.PHONY : tests/functional/oscillator_integrity_test.o
-
-# target to build an object file
-tests/functional/oscillator_integrity_test.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_integrity_test.dir/build.make CMakeFiles/oscillator_integrity_test.dir/tests/functional/oscillator_integrity_test.cpp.o
-.PHONY : tests/functional/oscillator_integrity_test.cpp.o
-
-tests/functional/oscillator_integrity_test.i: tests/functional/oscillator_integrity_test.cpp.i
-.PHONY : tests/functional/oscillator_integrity_test.i
-
-# target to preprocess a source file
-tests/functional/oscillator_integrity_test.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_integrity_test.dir/build.make CMakeFiles/oscillator_integrity_test.dir/tests/functional/oscillator_integrity_test.cpp.i
-.PHONY : tests/functional/oscillator_integrity_test.cpp.i
-
-tests/functional/oscillator_integrity_test.s: tests/functional/oscillator_integrity_test.cpp.s
-.PHONY : tests/functional/oscillator_integrity_test.s
-
-# target to generate assembly for a file
-tests/functional/oscillator_integrity_test.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/oscillator_integrity_test.dir/build.make CMakeFiles/oscillator_integrity_test.dir/tests/functional/oscillator_integrity_test.cpp.s
-.PHONY : tests/functional/oscillator_integrity_test.cpp.s
 
 tests/functional/processor_check.o: tests/functional/processor_check.cpp.o
 .PHONY : tests/functional/processor_check.o
@@ -1261,12 +1261,12 @@ help:
 	@echo "... graph_audit_test"
 	@echo "... gtest"
 	@echo "... gtest_main"
+	@echo "... guitar_tuner_verify"
 	@echo "... integration_tests"
 	@echo "... juno_chorus_tests"
 	@echo "... metronome_test"
 	@echo "... oscillator_baseline_test"
 	@echo "... oscillator_drone_test"
-	@echo "... oscillator_integrity_test"
 	@echo "... processor_check"
 	@echo "... sh101_chain_tests"
 	@echo "... stereo_poly_test"
@@ -1314,6 +1314,9 @@ help:
 	@echo "... tests/functional/graph_audit_test.o"
 	@echo "... tests/functional/graph_audit_test.i"
 	@echo "... tests/functional/graph_audit_test.s"
+	@echo "... tests/functional/guitar_tuner_verify.o"
+	@echo "... tests/functional/guitar_tuner_verify.i"
+	@echo "... tests/functional/guitar_tuner_verify.s"
 	@echo "... tests/functional/metronome_test.o"
 	@echo "... tests/functional/metronome_test.i"
 	@echo "... tests/functional/metronome_test.s"
@@ -1323,9 +1326,6 @@ help:
 	@echo "... tests/functional/oscillator_drone_test.o"
 	@echo "... tests/functional/oscillator_drone_test.i"
 	@echo "... tests/functional/oscillator_drone_test.s"
-	@echo "... tests/functional/oscillator_integrity_test.o"
-	@echo "... tests/functional/oscillator_integrity_test.i"
-	@echo "... tests/functional/oscillator_integrity_test.s"
 	@echo "... tests/functional/processor_check.o"
 	@echo "... tests/functional/processor_check.i"
 	@echo "... tests/functional/processor_check.s"

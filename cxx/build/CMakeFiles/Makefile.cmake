@@ -109,7 +109,7 @@ set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/audio_check.dir/DependInfo.cmake"
   "CMakeFiles/metronome_test.dir/DependInfo.cmake"
   "CMakeFiles/four_beeps_adsr.dir/DependInfo.cmake"
-  "CMakeFiles/oscillator_integrity_test.dir/DependInfo.cmake"
+  "CMakeFiles/guitar_tuner_verify.dir/DependInfo.cmake"
   "CMakeFiles/oscillator_baseline_test.dir/DependInfo.cmake"
   "CMakeFiles/graph_audit_test.dir/DependInfo.cmake"
   "CMakeFiles/filter_sweep_test.dir/DependInfo.cmake"
