@@ -7,7 +7,7 @@
 /**
  * @file Phase10Tests.cpp
  * @brief Functional verification of BPM, Clock, and note name mapping via Bridge API.
- */
+ */ 
 
 void test_musical_logic(int sample_rate) {
     std::cout << "--- Testing Musical Logic (Phase 10) ---" << std::endl;
@@ -63,6 +63,7 @@ void test_musical_logic(int sample_rate) {
 }
 
 int main() {
+    test::init_test_environment();
     int sample_rate = test::get_safe_sample_rate(0);
 
     PRINT_TEST_HEADER(

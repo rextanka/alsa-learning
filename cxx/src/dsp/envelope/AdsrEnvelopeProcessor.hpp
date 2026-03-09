@@ -1,5 +1,5 @@
 /**
- * @file AdsrEnvelopeProcessor.hpp
+ * @file AdsrEnvelopeProcessor.hpp 
  * @brief Concrete implementation of an ADSR (Attack, Decay, Sustain, Release) envelope.
  * 
  * This file follows the project rules defined in .cursorrules:

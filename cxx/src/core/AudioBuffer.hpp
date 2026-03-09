@@ -1,5 +1,5 @@
 /**
- * @file AudioBuffer.hpp
+ * @file AudioBuffer.hpp 
  * @brief Structure representing a multi-channel audio buffer.
  */
 

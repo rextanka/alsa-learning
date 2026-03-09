@@ -1,6 +1,6 @@
 /**
  * @file stereo_poly_test.cpp
- * @brief Functional test for "Mono-until-Mixer" architecture and Stereo Polyphonic spread.
+ * @brief Functional test for "Mono-until-Mixer" architecture and Stereo Polyphonic spread. 
  */
 
 #include "../TestHelper.hpp"
@@ -12,6 +12,7 @@
 class StereoPolyTest : public ::testing::Test {
 protected:
     void SetUp() override {
+        test::init_test_environment();
         sample_rate = test::get_safe_sample_rate(0);
         
         PRINT_TEST_HEADER(
@@ -23,6 +24,12 @@ protected:
         );
 
         engine_wrapper = std::make_unique<test::EngineWrapper>(sample_rate);
+        
+        // Protocol Step 3 & 4 & 5: Modular Patching & ADSR Arming & Lifecycle Start
+        engine_connect_mod(engine_wrapper->get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
+        set_param(engine_wrapper->get(), "sine_gain", 1.0f);
+        set_param(engine_wrapper->get(), "amp_sustain", 1.0f);
+        engine_start(engine_wrapper->get());
     }
 
     int sample_rate;

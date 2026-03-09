@@ -1,6 +1,6 @@
 /**
  * @file filter_sweep_test.cpp
- * @brief Functional test of Moog and Diode filters using a Sawtooth drone and a frequency sweep.
+ * @brief Functional test of Moog and Diode filters using a Sawtooth drone and a frequency sweep. 
  */
 
 #include "../TestHelper.hpp"
@@ -10,6 +10,7 @@
 #include <cmath>
 
 int main() {
+    test::init_test_environment();
     int sample_rate = test::get_safe_sample_rate(0);
 
     PRINT_TEST_HEADER(

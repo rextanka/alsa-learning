@@ -9,6 +9,7 @@
 #include <thread>
 
 int main() {
+    test::init_test_environment();
     int sample_rate = test::get_safe_sample_rate(0);
 
     PRINT_TEST_HEADER(
@@ -19,10 +20,13 @@ int main() {
         sample_rate
     );
 
-    test::init_test_environment();
     test::EngineWrapper engine(sample_rate);
 
-    // Configure ADSR
+    // Protocol Step 3: Modular Patching
+    engine_connect_mod(engine.get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
+
+    // Configure ADSR and Gain
+    set_param(engine.get(), "sine_gain", 1.0f);
     set_param(engine.get(), "amp_attack", 0.05f);
     set_param(engine.get(), "amp_decay", 0.1f);
     set_param(engine.get(), "amp_sustain", 0.7f);
@@ -37,7 +41,7 @@ int main() {
     
     auto start_time = std::chrono::steady_clock::now();
     bool last_gate = false;
-
+ 
     while (true) {
         auto now = std::chrono::steady_clock::now();
         auto elapsed_total = std::chrono::duration_cast<std::chrono::seconds>(now - start_time).count();

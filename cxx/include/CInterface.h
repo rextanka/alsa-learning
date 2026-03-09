@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-
+ 
 /**
  * @file CInterface.h
  * @brief C-compatible API for the Audio Engine.
@@ -53,6 +53,7 @@ typedef void* EngineHandle;
 #define PROC_LFO 1
 #define PROC_FILTER 2
 #define PROC_ENVELOPE 3
+#define PROC_AUDIOTAP 4
 
 // Modulation Parameters
 #define PARAM_PITCH 0
@@ -114,6 +115,7 @@ AUDIO_API void engine_note_off(EngineHandle handle, int note);
 AUDIO_API void engine_set_note_pan(EngineHandle handle, int note, float pan);
 AUDIO_API int engine_set_adsr(EngineHandle handle, float attack, float decay, float sustain, float release);
 AUDIO_API int engine_process(EngineHandle handle, float* output, size_t frames);
+AUDIO_API void engine_process_midi_bytes(EngineHandle handle, const uint8_t* data, size_t size, uint32_t sampleOffset);
 AUDIO_API int engine_start(EngineHandle handle);
 AUDIO_API int engine_stop(EngineHandle handle);
 AUDIO_API int engine_set_bpm(EngineHandle handle, double bpm);
@@ -148,6 +150,14 @@ AUDIO_API int set_param(void* handle, const char* name, float value);
 AUDIO_API int engine_create_processor(EngineHandle handle, int type);
 AUDIO_API int engine_connect_mod(EngineHandle handle, int source_id, int target_id, int param, float intensity);
 AUDIO_API int engine_get_modulation_report(EngineHandle handle, char* buffer, size_t buffer_size);
+
+// AudioTap API
+AUDIO_API int engine_audiotap_reset(EngineHandle handle);
+AUDIO_API int engine_audiotap_read(EngineHandle handle, float* buffer, size_t frames);
+
+// FX API
+AUDIO_API int engine_set_chorus_mode(EngineHandle handle, int mode); // 0=Off, 1=I, 2=II, 3=I+II
+AUDIO_API int engine_set_chorus_enabled(EngineHandle handle, int enabled);
 
 // Logging API
 AUDIO_API void audio_log_message(const char* tag, const char* message);

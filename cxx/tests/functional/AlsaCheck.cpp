@@ -1,4 +1,4 @@
-/**
+/** 
  * @file AlsaCheck.cpp
  * @brief Utility to verify ALSA driver and audio processing using HAL-agnostic Bridge API.
  */
@@ -9,6 +9,7 @@
 #include <chrono>
 
 int main() {
+    test::init_test_environment();
     int sample_rate = test::get_safe_sample_rate(0);
     
     PRINT_TEST_HEADER(
@@ -29,6 +30,9 @@ int main() {
     // For this check, we'll use the default engine's ability to produce sound.
     // Assuming the engine starts with a sane default or we load a basic patch.
     
+    // Explicitly initialize gain stage as per TEST_DESC.md Tier 1 requirements
+    set_param(engine.get(), "sine_gain", 1.0f);
+
     // Just verify the engine starts and stops without crashing.
     if (engine_start(engine.get()) != 0) {
         std::cerr << "Failed to start audio engine." << std::endl;

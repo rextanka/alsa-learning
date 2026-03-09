@@ -176,6 +176,7 @@ The engine also supports dynamic modular connections between external processors
 - `PROC_LFO` (1)
 - `PROC_FILTER` (2)
 - `PROC_ENVELOPE` (3)
+- `PROC_AUDIOTAP` (4)
 
 ### Generic Modulation Parameters (Legacy)
 - `PARAM_PITCH` (0)
@@ -197,6 +198,20 @@ engine_connect_mod(engine, lfo_id, ALL_VOICES, PARAM_PITCH, 0.02f);
 char report[1024];
 engine_get_modulation_report(engine, report, sizeof(report));
 printf("%s\n", report);
+```
+
+### Analysis & Inspection (AudioTap)
+The `AudioTap` allows the host to capture the engine's internal output for visualization or analysis (e.g. pitch detection).
+
+```c
+// 1. Reset the tap buffer
+engine_audiotap_reset(engine);
+
+// 2. The engine will fill the tap during engine_process() or driver callbacks.
+
+// 3. Read back captured samples
+float capture[16384];
+engine_audiotap_read(engine, capture, 16384);
 ```
 >>>>>>> SEARCH
 

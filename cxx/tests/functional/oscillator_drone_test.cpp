@@ -1,5 +1,5 @@
 #include "../TestHelper.hpp"
-#include <iostream>
+#include <iostream> 
 #include <vector>
 #include <chrono>
 #include <thread>
@@ -34,6 +34,7 @@ void play_drone(EngineHandle engine, int wave_type, const char* wave_name, int s
 }
 
 int main() {
+    test::init_test_environment();
     int sample_rate = test::get_safe_sample_rate(0);
 
     PRINT_TEST_HEADER(

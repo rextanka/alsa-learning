@@ -1,5 +1,5 @@
 /**
- * @file TimingValidation.cpp
+ * @file TimingValidation.cpp  
  * @brief Verifies callback timing consistency and jitter.
  */
 
@@ -14,7 +14,6 @@
 void test_callback_jitter(int sample_rate) {
     std::cout << "\n--- Testing Callback Timing Consistency (Jitter) ---" << std::endl;
     
-    test::init_test_environment();
     test::EngineWrapper engine(sample_rate);
     
     if (engine_start(engine.get()) != 0) {
@@ -66,6 +65,7 @@ void test_musical_clock_accuracy(int sample_rate) {
 }
 
 int main() {
+    test::init_test_environment();
     int sample_rate = test::get_safe_sample_rate(0);
 
     PRINT_TEST_HEADER(

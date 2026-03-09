@@ -1,5 +1,5 @@
 /**
- * @file Voice.hpp
+ * @file Voice.hpp 
  * @brief Represents a single synthesizer voice.
  */
 

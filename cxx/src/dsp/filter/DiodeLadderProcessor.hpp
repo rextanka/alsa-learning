@@ -1,5 +1,5 @@
 /**
- * @file DiodeLadderProcessor.hpp
+ * @file DiodeLadderProcessor.hpp 
  * @brief TB-303 style diode ladder filter.
  */
 

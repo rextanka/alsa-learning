@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "../TestHelper.hpp"
+#include "../TestHelper.hpp" 
 #include <vector>
 #include <cmath>
 #include <iostream>
@@ -12,6 +12,7 @@
 class TremulantTest : public ::testing::Test {
 protected:
     void SetUp() override {
+        test::init_test_environment();
         sample_rate = test::get_safe_sample_rate(0);
         
         PRINT_TEST_HEADER(
@@ -23,6 +24,11 @@ protected:
         );
 
         engine_wrapper = std::make_unique<test::EngineWrapper>(sample_rate);
+        
+        // Protocol Step 3 & 4 & 5: Modular Patching & ADSR & Start
+        engine_connect_mod(engine_wrapper->get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
+        set_param(engine_wrapper->get(), "amp_sustain", 1.0f);
+        engine_start(engine_wrapper->get());
     }
 
     int sample_rate;
@@ -32,9 +38,9 @@ protected:
 TEST_F(TremulantTest, ModularTremulant) {
     EngineHandle engine = engine_wrapper->get();
     
-    // 1. Setup internal LFO -> Pitch modulation
+    // 1. Setup internal LFO -> Pitch modulation - Using engine_connect_mod for Tier 2 compliance
     // Intensity: ±0.02 octaves for subtle vibrato
-    engine_set_modulation(engine, MOD_SRC_LFO, MOD_TGT_PITCH, 0.02f);
+    engine_connect_mod(engine, MOD_SRC_LFO, ALL_VOICES, MOD_TGT_PITCH, 0.02f);
 
     // 2. Verify report
     char report[512];

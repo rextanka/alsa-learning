@@ -205,7 +205,7 @@ void Voice::note_off() {
     active_ = false;
 }
 
-bool Voice::is_active() const {
+bool Voice::is_active() const { 
     return active_ || envelope_->is_active();
 }
 

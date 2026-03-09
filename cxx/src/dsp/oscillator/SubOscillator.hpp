@@ -1,5 +1,5 @@
 /**
- * @file SubOscillator.hpp
+ * @file SubOscillator.hpp 
  * @brief Phase-locked square wave generator (f/2 or f/4).
  */
 

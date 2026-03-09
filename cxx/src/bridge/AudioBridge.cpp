@@ -1,5 +1,5 @@
 /**
- * @file AudioBridge.cpp
+ * @file AudioBridge.cpp 
  * @brief C-compatible API bridge for oscillator processors.
  */
 
@@ -16,6 +16,8 @@
 #include "MoogLadderProcessor.hpp"
 #include "DiodeLadderProcessor.hpp"
 #include "DelayLine.hpp"
+#include "AudioTap.hpp"
+#include "JunoChorus.hpp"
 #include "VoiceManager.hpp"
 #include "AudioDriver.hpp"
 #ifdef __APPLE__
@@ -73,6 +75,9 @@ struct EnvelopeHandleImpl : public HandleBase {
 struct EngineHandleImpl : public HandleBase {
     std::unique_ptr<audio::VoiceManager> voice_manager;
     std::unique_ptr<hal::AudioDriver> driver;
+    std::unique_ptr<audio::AudioTap> tap;
+    std::unique_ptr<audio::JunoChorus> chorus;
+    bool chorus_enabled = false;
     audio::MusicalClock clock;
     audio::TwelveToneEqual tuning;
     std::unordered_map<std::string, int> param_name_to_id;
@@ -82,9 +87,14 @@ struct EngineHandleImpl : public HandleBase {
     EngineHandleImpl(int sr)
         : HandleBase(HandleType::Engine)
         , voice_manager(std::make_unique<audio::VoiceManager>(sr))
+        , tap(std::make_unique<audio::AudioTap>(16384))
+        , chorus(std::make_unique<audio::JunoChorus>(static_cast<double>(sr)))
         , clock(static_cast<double>(sr))
         , sample_rate(sr)
     {
+        // Connect the tap to the voice manager output
+        tap->add_input(voice_manager.get());
+
 #ifdef __APPLE__
         driver = std::make_unique<hal::CoreAudioDriver>(sr, 512);
 #else
@@ -95,6 +105,10 @@ struct EngineHandleImpl : public HandleBase {
         // Advanced clock by frames
         clock.advance(static_cast<int32_t>(buffer.frames()));
         voice_manager->pull(buffer);
+        
+        if (chorus_enabled) {
+            chorus->pull(buffer);
+        }
     });
 
         // Initialize parameter mapping for fast UI reflection
@@ -384,6 +398,12 @@ int engine_process(EngineHandle handle, float* output, size_t frames) {
     } catch (...) { return -1; }
 }
 
+void engine_process_midi_bytes(EngineHandle handle, const uint8_t* data, size_t size, uint32_t sampleOffset) {
+    if (!handle || !data || size == 0) return;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->voice_manager->processMidiBytes(data, size, sampleOffset);
+}
+
 int engine_start(EngineHandle handle) {
     if (!handle) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
@@ -399,12 +419,6 @@ int engine_stop(EngineHandle handle) {
         impl->driver->stop();
         return 0;
     } catch (...) { return -1; }
-}
-
-void engine_process_midi_bytes(EngineHandle handle, const uint8_t* data, size_t size, uint32_t sampleOffset) {
-    if (!handle || !data || size == 0) return;
-    auto* impl = static_cast<EngineHandleImpl*>(handle);
-    impl->voice_manager->processMidiBytes(data, size, sampleOffset);
 }
 
 int engine_set_bpm(EngineHandle handle, double bpm) {
@@ -475,17 +489,7 @@ void engine_print_graph(EngineHandle handle) {
     for (auto& slot : impl->voice_manager->get_voices()) {
         if (slot.voice) {
             slot.voice->borrow_buffer(); // Just to access graph implicitly via Voice
-            // But we need explicit access to the graph report. 
-            // Let's assume we can get it from the voice if we expose it.
         }
-    }
-    // For now, let's just print a placeholder or implement it for the first voice
-    auto& voices = impl->voice_manager->get_voices();
-    if (!voices.empty() && voices[0].voice) {
-        // We need a way to reach the graph from the Voice for the report.
-        // Actually, let's just use the first voice's graph if we can reach it.
-        // For simplicity in this bridge call, I'll add a temporary method to Voice if needed, 
-        // or just reach into it if it's public/friend.
     }
     std::cout << "Engine Graph Print Requested (implementation in progress)" << std::endl;
 }
@@ -574,7 +578,6 @@ int engine_load_patch(EngineHandle handle, const char* path) {
 
 int host_get_device_count() {
 #ifdef __APPLE__
-    // Minimal mock for now until full CoreAudio enumeration is implemented
     return 1; 
 #else
     return 0;
@@ -586,7 +589,6 @@ int host_get_device_name(int index, char* buffer, size_t buffer_size) {
     if (index != 0) return -1;
 
 #ifdef __APPLE__
-    // UTF-8 check: Hardcoded name with potential Unicode
     const char* name = "Default Output Device";
     std::strncpy(buffer, name, buffer_size - 1);
     buffer[buffer_size - 1] = '\0';
@@ -597,12 +599,6 @@ int host_get_device_name(int index, char* buffer, size_t buffer_size) {
 }
 
 int host_get_device_sample_rate(int index) {
-    // We don't have a global state for 'current engine rate' easily accessible here 
-    // without tracking the last created engine. 
-    // For now, let's use a safe assumption that 48k is becoming the standard on new Macs,
-    // but the real fix is returning the sample_rate from the EngineHandleImpl.
-    // Since the C interface doesn't pass the handle here, we'll implement a 
-    // singleton-style pointer to the last created engine for rate queries.
     return 48000; 
 }
 
@@ -618,7 +614,6 @@ int set_param(void* handle, const char* name, float value) {
                 engine->voice_manager->set_parameter(id, value);
                 return 0;
             }
-            // Fallback for names not in the fast map
             engine->voice_manager->set_parameter_by_name(name, value);
             return 0;
         }
@@ -632,32 +627,10 @@ int set_param(void* handle, const char* name, float value) {
                 if (std::strcmp(name, "sustain") == 0) { adsr->set_sustain_level(value); return 0; }
                 if (std::strcmp(name, "release") == 0) { adsr->set_release_time(value); return 0; }
             }
-            auto* ad = dynamic_cast<audio::ADEnvelopeProcessor*>(env_impl->processor.get());
-            if (ad) {
-                if (std::strcmp(name, "attack") == 0) { ad->set_attack_time(value); return 0; }
-                if (std::strcmp(name, "decay") == 0) { ad->set_decay_time(value); return 0; }
-            }
         }
 
-        if (base->type == HandleType::Oscillator) {
-             auto* osc_impl = static_cast<OscillatorHandleImpl*>(handle);
-             // Handled frequency etc via specific functions but could add more here
-        }
-
-        // Generic processors (if we decide to wrap them in HandleBase too)
-        // For now, if it's not one of our known handles, we might still be dealing with a raw Processor* 
-        // from some legacy tests, but we should transition them.
-        
         return -1;
     } catch (...) { return -1; }
-}
-
-void audio_log_message(const char* tag, const char* message) {
-    audio::AudioLogger::instance().log_message(tag, message);
-}
-
-void audio_log_event(const char* tag, float value) {
-    audio::AudioLogger::instance().log_event(tag, value);
 }
 
 int engine_create_processor(EngineHandle handle, int type) {
@@ -714,6 +687,51 @@ int engine_get_modulation_report(EngineHandle handle, char* buffer, size_t buffe
     std::strncpy(buffer, report.c_str(), buffer_size - 1);
     buffer[buffer_size - 1] = '\0';
     return 0;
+}
+
+int engine_audiotap_reset(EngineHandle handle) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->tap->reset();
+    return 0;
+}
+
+int engine_audiotap_read(EngineHandle handle, float* buffer, size_t frames) {
+    if (!handle || !buffer || frames == 0) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    std::vector<float> data(frames);
+    impl->tap->read(data);
+    std::memcpy(buffer, data.data(), frames * sizeof(float));
+    return 0;
+}
+
+int engine_set_chorus_mode(EngineHandle handle, int mode) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    audio::JunoChorus::Mode m;
+    switch (mode) {
+        case 1: m = audio::JunoChorus::Mode::I; break;
+        case 2: m = audio::JunoChorus::Mode::II; break;
+        case 3: m = audio::JunoChorus::Mode::I_II; break;
+        default: m = audio::JunoChorus::Mode::Off; break;
+    }
+    impl->chorus->set_mode(m);
+    return 0;
+}
+
+int engine_set_chorus_enabled(EngineHandle handle, int enabled) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->chorus_enabled = (enabled != 0);
+    return 0;
+}
+
+void audio_log_message(const char* tag, const char* message) {
+    audio::AudioLogger::instance().log_message(tag, message);
+}
+
+void audio_log_event(const char* tag, float value) {
+    audio::AudioLogger::instance().log_event(tag, value);
 }
 
 void audio_engine_init() {}

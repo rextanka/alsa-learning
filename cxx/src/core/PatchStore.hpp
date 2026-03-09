@@ -1,5 +1,5 @@
 /**
- * @file PatchStore.hpp
+ * @file PatchStore.hpp 
  * @brief Human-readable JSON patch persistence system.
  */
 

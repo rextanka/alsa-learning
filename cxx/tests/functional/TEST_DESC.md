@@ -64,7 +64,7 @@ When implementing new tests, follow these rules:
 *Use these as reference templates for your Tiers.*
 
 | Test File | Tier | Purpose | Status |
-|-----------|------|---------|--------|
+|-----------|------|---------|--------| 
 | `automated_osc_integrity.cpp`| 2 | High-precision pitch audit using zero-padded DCT. | **CRITICAL** |
 | `audio_check.cpp` | 1 | Basic driver stability. | OK |
 | `four_beeps_adsr.cpp` | 2 | ADSR articulation & lifecycle. | OK |

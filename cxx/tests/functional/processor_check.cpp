@@ -1,6 +1,6 @@
 #include "../TestHelper.hpp"
 #include <iostream>
-#include <vector>
+#include <vector> 
 #include <cmath>
 
 /**
@@ -73,6 +73,7 @@ static bool run_wavetable_c_api_test(int sample_rate) {
 }
 
 int main() {
+    test::init_test_environment();
     int sample_rate = test::get_safe_sample_rate(0);
 
     PRINT_TEST_HEADER(

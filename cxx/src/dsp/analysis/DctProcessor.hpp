@@ -1,5 +1,5 @@
 /**
- * @file DctProcessor.hpp
+ * @file DctProcessor.hpp 
  * @brief Self-contained DCT-II implementation with windowing.
  */
 
