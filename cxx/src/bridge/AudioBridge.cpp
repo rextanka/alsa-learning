@@ -100,11 +100,19 @@ struct EngineHandleImpl : public HandleBase {
 #else
         driver = std::make_unique<hal::AlsaDriver>(sr, 512);
 #endif
-    // Link the driver to the voice manager
+    // Link the driver to the tap (which pulls from voice_manager)
     driver->set_stereo_callback([this](audio::AudioBuffer& buffer) {
         // Advanced clock by frames
         clock.advance(static_cast<int32_t>(buffer.frames()));
-        voice_manager->pull(buffer);
+        
+        // Pull from tap (which pulls from voice_manager)
+        // Note: tap->pull works on mono std::span, so we pull into left 
+        // and copy to right for basic monitoring.
+        std::span<float> left_span(buffer.left.data(), buffer.frames());
+        tap->pull(left_span);
+        
+        // Sync right channel
+        std::copy(buffer.left.begin(), buffer.left.end(), buffer.right.begin());
         
         if (chorus_enabled) {
             chorus->pull(buffer);

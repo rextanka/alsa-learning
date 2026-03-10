@@ -63,6 +63,7 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
     }
 
     if (idle_idx != -1) {
+        std::cout << "[DEBUG] VoiceManager::note_on assigning idle voice " << idle_idx << " for note " << note << std::endl;
         auto& slot = voices_[idle_idx];
         slot.current_note = note;
         slot.active = true;
@@ -89,6 +90,7 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
     }
 
     if (candidate_idx != -1) {
+        std::cout << "[DEBUG] VoiceManager::note_on stealing voice " << candidate_idx << " for note " << note << std::endl;
         auto& candidate = voices_[candidate_idx];
         AudioLogger::instance().log_event("VoiceSteal", static_cast<float>(candidate.current_note));
         
