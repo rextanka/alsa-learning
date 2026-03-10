@@ -29,6 +29,9 @@ protected:
         engine_connect_mod(engine_wrapper->get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
         engine_set_adsr(engine_wrapper->get(), 0.015f, 0.1f, 0.7f, 0.050f);
         
+        // Initialize Tempo (100 BPM as per fugue feel)
+        engine_set_bpm(engine_wrapper->get(), 100.0);
+        
         ASSERT_EQ(engine_start(engine_wrapper->get()), 0);
     }
 
@@ -59,14 +62,46 @@ TEST_F(BachOrganTest, BWV578_Subject_Audible) {
     };
 
     EngineHandle engine = engine_wrapper->get();
-    // Process the bytes
-    // In a real test we'd verify voice activity, but for functional parity:
+    
+    // Mini-Sequencer Logic: Use MusicalClock instead of sleep_for
+    // Assume 96 Ticks Per Beat (PPQN)
+    const int ppqn = 96;
+    double bpm = 100.0;
+    
+    // Calculate how many ticks are in 100ms
+    // Ticks per ms = (BPM * PPQN) / 60000
+    // 100ms * (100 * 96) / 60000 = 100 * 9600 / 60000 = 960000 / 60000 = 16 ticks
+    const int64_t ticks_per_event = 16; 
+    
+    int64_t target_tick = 0;
+
     for (size_t i = 0; i < midiData.size(); i += 3) {
+        // Wait for target tick
+        int64_t current_ticks = 0;
+        while (test::g_keep_running) {
+            engine_get_total_ticks(engine, &current_ticks);
+            if (current_ticks >= target_tick) break;
+            test::wait_while_running(1); // Rest 1s or until signal
+        }
+
+        // Note ON
         engine_process_midi_bytes(engine, &midiData[i], 3, 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        // Note off
+        
+        // Schedule Note OFF 16 ticks later
+        target_tick += ticks_per_event;
+        
+        while (test::g_keep_running) {
+            engine_get_total_ticks(engine, &current_ticks);
+            if (current_ticks >= target_tick) break;
+            test::wait_while_running(1);
+        }
+
+        // Note OFF
         uint8_t off[] = { 0x80, midiData[i+1], 0 };
         engine_process_midi_bytes(engine, off, 3, 0);
+        
+        // Wait another 16 ticks before next note ON
+        target_tick += ticks_per_event;
     }
 
     std::cout << "[BachAudit] MIDI byte processing completed." << std::endl;
