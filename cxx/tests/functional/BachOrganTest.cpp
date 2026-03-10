@@ -29,13 +29,24 @@ protected:
         engine_connect_mod(engine_wrapper->get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
         engine_set_adsr(engine_wrapper->get(), 0.015f, 0.1f, 0.7f, 0.050f);
         
-        // Initialize Tempo (100 BPM as per fugue feel)
+        // Initialize Tempo
         engine_set_bpm(engine_wrapper->get(), 100.0);
-        
         ASSERT_EQ(engine_start(engine_wrapper->get()), 0);
+
+        // --- CALIBRATION PHASE ---
+        // Measure actual tick rate from the engine to drive the sequencer accurately.
+        int64_t start_ticks = 0;
+        engine_get_total_ticks(engine_wrapper->get(), &start_ticks);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        int64_t end_ticks = 0;
+        engine_get_total_ticks(engine_wrapper->get(), &end_ticks);
+        
+        ticks_per_ms = (static_cast<double>(end_ticks) - static_cast<double>(start_ticks)) / 500.0;
+        std::cout << "[BachSequencer] Calibrated tick rate: " << ticks_per_ms << " ticks/ms" << std::endl;
     }
 
     int sample_rate;
+    double ticks_per_ms = 0;
     std::unique_ptr<test::EngineWrapper> engine_wrapper;
 };
 
@@ -63,44 +74,40 @@ TEST_F(BachOrganTest, BWV578_Subject_Audible) {
 
     EngineHandle engine = engine_wrapper->get();
     
-    // Mini-Sequencer Logic: Use MusicalClock instead of sleep_for
-    // Assume 96 Ticks Per Beat (PPQN)
-    const int ppqn = 96;
-    double bpm = 100.0;
-    
-    // Calculate how many ticks are in 100ms
-    // Ticks per ms = (BPM * PPQN) / 60000
-    // 100ms * (100 * 96) / 60000 = 100 * 9600 / 60000 = 960000 / 60000 = 16 ticks
-    const int64_t ticks_per_event = 16; 
+    // Sequencer: Use calibrated tick increments for 100ms notes
+    const double note_duration_ms = 100.0;
+    const double ticks_per_event = note_duration_ms * ticks_per_ms;
     
     int64_t target_tick = 0;
+    engine_get_total_ticks(engine, &target_tick);
 
     for (size_t i = 0; i < midiData.size(); i += 3) {
-        // Wait for target tick
+        // Wait for target_tick
         int64_t current_ticks = 0;
         while (test::g_keep_running) {
             engine_get_total_ticks(engine, &current_ticks);
-            if (current_ticks >= target_tick) break;
-            test::wait_while_running(1); // Rest 1s or until signal
+            if (current_ticks >= static_cast<int64_t>(target_tick)) break;
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
 
         // Note ON
+        std::cout << "[BachSequencer] Tick " << current_ticks << " / Target " << (int64_t)target_tick << ": Note ON " << (int)midiData[i+1] << std::endl;
         engine_process_midi_bytes(engine, &midiData[i], 3, 0);
         
-        // Schedule Note OFF 16 ticks later
+        // Schedule Note OFF
         target_tick += ticks_per_event;
         
         while (test::g_keep_running) {
             engine_get_total_ticks(engine, &current_ticks);
-            if (current_ticks >= target_tick) break;
-            test::wait_while_running(1);
+            if (current_ticks >= static_cast<int64_t>(target_tick)) break;
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
 
         // Note OFF
         uint8_t off[] = { 0x80, midiData[i+1], 0 };
         engine_process_midi_bytes(engine, off, 3, 0);
         
-        // Wait another 16 ticks before next note ON
+        // Prep for next Note ON
         target_tick += ticks_per_event;
     }
 
@@ -115,9 +122,15 @@ TEST_F(BachOrganTest, RunningStatus_Validation) {
               0x47, 0x64  // B4 (Running Status)
     };
 
+    std::cout << "[DEBUG] MIDI data size: " << midiData.size() << std::endl;
     EngineHandle engine = engine_wrapper->get();
+    
     // The MIDI parser inside the engine handles running status
     engine_process_midi_bytes(engine, midiData.data(), midiData.size(), 0);
     
-    std::cout << "[BachAudit] Running Status bytes processed." << std::endl;
+    // Crucial: Wait for the engine to render at least a few buffers
+    // 500ms allows the notes to sustain and be audible
+    test::wait_while_running(1);
+    
+    std::cout << "[BachAudit] Running Status bytes processed and audible." << std::endl;
 }
