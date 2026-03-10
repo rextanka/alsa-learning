@@ -15,3 +15,4 @@ This document tracks the sanity and utility of functional tests following the pr
 | `graph_audit_test` | PASS | Adheres to Tier 3 protocol | Verified signal presence (RMS > 0.001) and hardware health (Xruns) |
 | `guitar_tuner_verify` | PASS | Adheres to Tier 1 protocol | Verified tuning for strings E2, A2, D3, G3, B3, E4 |
 | `metronome_test` | PASS | Adheres to Tier 1 protocol | Verified precise 120 BPM clicks over 2 bars |
+| `oscillator_baseline_test` | PASS | Adheres to Tier 2 protocol | Verified 10s of A4 Sine/ADSR cycling |
