@@ -11,10 +11,11 @@
 
 float calculate_rms(const float* buffer, size_t frames) {
     float sum = 0.0f;
-    for (size_t i = 0; i < frames; ++i) {
+    // Iterate through interleaved stereo buffer
+    for (size_t i = 0; i < frames * 2; ++i) {
         sum += buffer[i] * buffer[i];
     }
-    return std::sqrt(sum / frames);
+    return std::sqrt(sum / (frames * 2));
 }
 
 int main() {
@@ -35,11 +36,8 @@ int main() {
     engine_connect_mod(engine.get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
     set_param(engine.get(), "amp_sustain", 1.0f);
 
-    // Protocol Step 5: Lifecycle Start
-    if (engine_start(engine.get()) != 0) {
-        std::cerr << "Failed to start engine" << std::endl;
-        return 1;
-    }
+    // NOTE: For this audit, we do NOT start the real-time driver.
+    // We manually pump the engine using engine_process to avoid thread contention.
 
     // Set high cutoff to ensure signal passes
     set_param(engine.get(), "vcf_cutoff", 10000.0f);
@@ -77,12 +75,15 @@ int main() {
     for (int i = 0; i < 10; ++i) {
         engine_process(engine.get(), output.data(), frames);
         float rms = calculate_rms(output.data(), frames);
-        std::cout << "Block " << i << " RMS: " << std::fixed << std::setprecision(4) << rms << std::endl;
+        std::cout << "Block " << i << " RMS: " << std::fixed << std::setprecision(4) << rms << " ";
+        if (rms > 0.0001f) std::cout << "[SIGNAL OK]";
+        else std::cout << "[SILENT]";
+        std::cout << std::endl;
     }
     
     engine_note_off(engine.get(), 60);
     std::cout << ">>> Stage 2 Complete <<<" << std::endl;
 
-    std::cout << "\n--- Audit Test Finished. Engine destroyed via RAII. ---" << std::endl;
+    std::cout << "\n--- Audit Test Finished. Engine released via RAII. ---" << std::endl;
     return 0;
 }
