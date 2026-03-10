@@ -12,4 +12,5 @@ This document tracks the sanity and utility of functional tests following the pr
 | `four_beeps_adsr` | PASS | Adheres to Tier 2 protocol | Verified 4 distinct ADSR-articulated pulse beeps |
 | `Functional_BachMidi` | PASS | Adheres to Tier 3 protocol | Verified polyphonic organ performance (BWV 578 & 846) |
 | `Functional_SH101_Live` | PASS | Adheres to Tier 3 protocol | Verified patch loading and low-frequency chromatic performance |
-| `graph_audit_test` | PASS | Adheres to Tier 3 protocol | Verified RMS signal flow through VCO, VCF, and VCA stages |
+| `graph_audit_test` | PASS | Adheres to Tier 3 protocol | Verified signal presence (RMS > 0.001) and hardware health (Xruns) |
+| `guitar_tuner_verify` | PASS | Adheres to Tier 1 protocol | Verified tuning for strings E2, A2, D3, G3, B3, E4 |

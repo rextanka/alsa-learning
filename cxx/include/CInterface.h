@@ -129,6 +129,7 @@ AUDIO_API void engine_print_graph(EngineHandle handle);
 AUDIO_API void engine_flush_logs(EngineHandle handle);
 AUDIO_API int engine_set_filter_type(EngineHandle handle, int type);
 AUDIO_API int engine_set_delay_enabled(EngineHandle handle, int enabled);
+AUDIO_API int engine_get_xrun_count(EngineHandle handle);
 
 // Modulation Matrix Control
 AUDIO_API int engine_set_modulation(EngineHandle handle, int source, int target, float intensity);

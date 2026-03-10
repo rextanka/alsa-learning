@@ -51,6 +51,7 @@ public:
     int sample_rate() const override { return sample_rate_; }
     int block_size() const override { return block_size_; }
     int channels() const { return num_channels_; }
+    int get_xrun_count() const override { return xrun_count_.load(); }
 
 private:
     void thread_loop();
@@ -58,6 +59,7 @@ private:
     void recover_pcm(int err);
 
     snd_pcm_t* pcm_handle_;
+    std::atomic<int> xrun_count_{0};
     std::string device_name_;
     int sample_rate_;
     int block_size_;

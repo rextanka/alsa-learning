@@ -522,6 +522,12 @@ int engine_set_delay_enabled(EngineHandle handle, int /* enabled */) {
     return 0;
 }
 
+int engine_get_xrun_count(EngineHandle handle) {
+    if (!handle) return 0;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    return impl->driver->get_xrun_count();
+}
+
 int engine_set_modulation(EngineHandle handle, int source, int target, float intensity) {
     if (!handle) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);

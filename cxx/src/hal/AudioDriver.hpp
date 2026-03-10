@@ -72,6 +72,12 @@ public:
      * @return int Number of frames per block.
      */
     virtual int block_size() const = 0;
+
+    /**
+     * @brief Get the count of buffer under-runs (Xruns) since start.
+     * @return int Xrun count (default 0 if unsupported).
+     */
+    virtual int get_xrun_count() const { return 0; }
 };
 
 } // namespace hal
