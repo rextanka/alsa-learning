@@ -10,3 +10,4 @@ This document tracks the sanity and utility of functional tests following the pr
 | `BachOrganTest` | PASS | Adheres to Tier 3 protocol | Self-calibrated to hardware; verified tempo-accurate polyphonic MIDI playback |
 | `filter_sweep_test` | PASS | Adheres to Tier 3 protocol | Verified Moog and Diode ladder resonant sweeps |
 | `four_beeps_adsr` | PASS | Adheres to Tier 2 protocol | Verified 4 distinct ADSR-articulated pulse beeps |
+| `Functional_BachMidi` | PASS | Adheres to Tier 3 protocol | Verified polyphonic organ performance (BWV 578 & 846) |
