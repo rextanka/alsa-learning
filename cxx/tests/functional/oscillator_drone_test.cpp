@@ -10,15 +10,33 @@
  * Purpose: Verifying raw signal generation for all wave types (2s drones).
  * This test verifies raw oscillator output by creating a 2-second drone for 
  * Sine, Square, Saw, and Triangle waves with the VCA fully open.
+ *
+ * REFACTORED: Now implements Gain Normalization to prevent overlapping signals.
  */
 
 void play_drone(EngineHandle engine, int wave_type, const char* wave_name, int sample_rate) {
     std::cout << "[" << wave_name << "] Playing A4..." << std::endl;
     
-    // Set oscillator wave type
-    set_osc_wavetype(engine, wave_type);
+    // 1. Isolation: Reset all mixer gains to prevent bleed
+    set_param(engine, "pulse_gain", 0.0f);
+    set_param(engine, "saw_gain", 0.0f);
+    set_param(engine, "sub_gain", 0.0f);
+    set_param(engine, "sine_gain", 0.0f);
+    set_param(engine, "triangle_gain", 0.0f);
     
-    // Open VCA fully
+    // 2. Routing: Map the wave type to the correct mixer gain
+    if (wave_type == WAVE_SINE) {
+        set_param(engine, "sine_gain", 1.0f);
+    } else if (wave_type == WAVE_SQUARE) {
+        set_param(engine, "pulse_gain", 1.0f);
+    } else if (wave_type == WAVE_SAW) {
+        set_param(engine, "saw_gain", 1.0f);
+    } else if (wave_type == WAVE_TRIANGLE) {
+        set_param(engine, "triangle_gain", 1.0f);
+    }
+    
+    // 3. Global State: Set oscillator wave type and open VCA fully
+    set_osc_wavetype(engine, wave_type);
     set_param(engine, "amp_attack", 0.0f);
     set_param(engine, "amp_sustain", 1.0f);
     
