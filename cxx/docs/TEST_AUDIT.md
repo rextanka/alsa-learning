@@ -17,3 +17,4 @@ This document tracks the sanity and utility of functional tests following the pr
 | `metronome_test` | PASS | Adheres to Tier 1 protocol | Verified precise 120 BPM clicks over 2 bars |
 | `oscillator_baseline_test` | PASS | Adheres to Tier 2 protocol | Verified 10s of A4 Sine/ADSR cycling |
 | `oscillator_drone_test` | PASS | Adheres to Tier 1 protocol | Verified continuous drones for Sine, Square, Saw, Triangle |
+| `oscillator_integrity_test` | PASS | Adheres to Tier 1 protocol | Verified solo/mute behavior for Pulse, Sub, Saw |
