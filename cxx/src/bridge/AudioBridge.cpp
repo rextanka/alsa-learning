@@ -134,6 +134,7 @@ struct EngineHandleImpl : public HandleBase {
         param_name_to_id["pulse_width"] = 14;
         param_name_to_id["sine_gain"] = 15;
         param_name_to_id["triangle_gain"] = 16;
+        param_name_to_id["wavetable_gain"] = 17;
     }
 };
 
@@ -623,6 +624,25 @@ int set_param(void* handle, const char* name, float value) {
         
         if (base->type == HandleType::Engine) {
             auto* engine = static_cast<EngineHandleImpl*>(handle);
+
+            // SPECIAL MAPPING: wavetable_type
+            if (std::strcmp(name, "wavetable_type") == 0) {
+                int type_idx = static_cast<int>(value);
+                // Apply to all voices
+                for (auto& slot : engine->voice_manager->get_voices()) {
+                    if (slot.voice) {
+                        slot.voice->set_parameter(18, static_cast<float>(type_idx));
+                    }
+                }
+                return 0;
+            }
+
+            // SPECIAL MAPPING: osc_frequency
+            if (std::strcmp(name, "osc_frequency") == 0) {
+                engine->voice_manager->set_parameter(0, value); // 0 = PITCH/FREQ
+                return 0;
+            }
+
             if (engine->param_name_to_id.count(name)) {
                 int id = engine->param_name_to_id[name];
                 engine->voice_manager->set_parameter(id, value);

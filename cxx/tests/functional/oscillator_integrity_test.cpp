@@ -69,11 +69,16 @@ int main() {
     run_sequential_stage(engine.get(), "Pulse (PolyBLEP)", "pulse_gain");
     run_sequential_stage(engine.get(), "Sawtooth (PolyBLEP)", "saw_gain");
 
-    // Wavetable testing: explicitly set to Saw table
+    // Stage: Wavetable Verification
+    std::cout << "\n>>> STAGE: Wavetable (Interpolated Saw) <<<" << std::endl;
+    // 1. Prime the wavetable state
     set_param(engine.get(), "wavetable_type", 1.0f); // 1 = Saw
+    set_param(engine.get(), "osc_frequency", 261.63f); // C4
+
+    // 2. Execute with sequential helper
     run_sequential_stage(engine.get(), "Wavetable (Interpolated Saw)", "wavetable_gain");
 
-    // Sub-Oscillator: Phase Lock Logic (Requires Pulse parent)
+    // Stage: Sub-Oscillator Phase Lock Logic (Requires Pulse parent)
     std::cout << "\n>>> STAGE: Sub + Pulse (Phase Lock) <<<" << std::endl;
     engine_audiotap_reset(engine.get());
     
