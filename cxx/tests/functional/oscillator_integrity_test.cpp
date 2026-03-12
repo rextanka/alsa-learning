@@ -70,8 +70,7 @@ int main() {
     run_sequential_stage(engine.get(), "Sawtooth (PolyBLEP)", "saw_gain");
 
     // Stage: Wavetable Verification
-    std::cout << "\n>>> STAGE: Wavetable (Interpolated Saw) <<<" << std::endl;
-    // 1. Prime the wavetable state
+    // 1. Prime the wavetable state before starting the stage
     set_param(engine.get(), "wavetable_type", 1.0f); // 1 = Saw
     set_param(engine.get(), "osc_frequency", 261.63f); // C4
 
