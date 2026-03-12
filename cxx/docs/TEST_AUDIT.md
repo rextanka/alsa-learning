@@ -18,4 +18,4 @@ This document tracks the sanity and utility of functional tests following the pr
 | `oscillator_baseline_test` | PASS | Adheres to Tier 2 protocol | Verified 10s of A4 Sine/ADSR cycling |
 | `oscillator_drone_test` | PASS | Adheres to Tier 1 protocol | Verified continuous drones for Sine, Square, Saw, Triangle |
 | `oscillator_integrity_test` | PASS | Adheres to Tier 2 protocol | Verified sequential isolated plucks for all 6 oscillator types including Wavetable and Sub |
-| `Phase10Tests` | PASS | Adheres to Tier 2 protocol | Verified BPM clock precision and string-based note mapping |
+| `Phase10Tests` | PASS | Adheres to Tier 2 protocol | Verified BPM clock precision and audible string-based note mapping |
