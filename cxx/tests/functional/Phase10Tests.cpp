@@ -18,7 +18,8 @@ void test_musical_logic(int sample_rate) {
     
     // 1. Enable Source and VCA Modulation for audible verification
     set_param(engine.get(), "sine_gain", 1.0f);
-    engine_set_modulation(engine.get(), MOD_SRC_ENVELOPE, MOD_TGT_AMPLITUDE, 1.0f);
+    engine_clear_modulations(engine.get());
+    engine_connect_mod(engine.get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
     
     // Set ADSR for musical articulation
     set_param(engine.get(), "amp_attack", 0.01f);
@@ -29,6 +30,7 @@ void test_musical_logic(int sample_rate) {
     char report[256];
     engine_get_modulation_report(engine.get(), report, sizeof(report));
     std::cout << "[Phase10] Modulation State:\n" << report << std::endl;
+    assert(strstr(report, "Src: 0 -> Tgt: -1 (Param: 3)") != nullptr);
 
     // Start engine to allow real-time thread to drive the clock
     if (engine_start(engine.get()) != 0) {

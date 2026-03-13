@@ -28,6 +28,7 @@ Voice::Voice(int sample_rate)
     saw_oscillator_ = std::make_unique<SawtoothOscillatorProcessor>(sample_rate);
     sine_oscillator_ = std::make_unique<SineOscillatorProcessor>(sample_rate);
     triangle_oscillator_ = std::make_unique<TriangleOscillatorProcessor>(sample_rate);
+    wavetable_oscillator_ = std::make_unique<WavetableOscillatorProcessor>(static_cast<double>(sample_rate));
     source_mixer_ = std::make_unique<SourceMixer>();
     source_mixer_->set_gain(1, 1.0f); // Default main pulse gain
     source_mixer_->set_gain(2, 0.5f); // Default sub-osc gain
@@ -144,6 +145,12 @@ void Voice::set_parameter(int param, float value) {
         case 16: // TRIANGLE_GAIN (New mapping for Tuner Tool)
             source_mixer_->set_gain(4, value);
             break;
+        case 17: // WAVETABLE_GAIN
+            source_mixer_->set_gain(5, value);
+            break;
+        case 18: // WAVETABLE_TYPE
+            wavetable_oscillator_->setWaveType(static_cast<WaveType>(static_cast<int>(value)));
+            break;
         case 14: // PULSE_WIDTH (Native)
             if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
                 pulse_osc->set_pulse_width(value);
@@ -171,6 +178,7 @@ void Voice::rebuild_graph() {
     graph_->add_node(saw_oscillator_.get());
     graph_->add_node(sine_oscillator_.get());
     graph_->add_node(triangle_oscillator_.get());
+    graph_->add_node(wavetable_oscillator_.get());
 }
 
 void Voice::note_on(double frequency) {
@@ -182,6 +190,7 @@ void Voice::note_on(double frequency) {
     saw_oscillator_->reset();
     sine_oscillator_->reset();
     triangle_oscillator_->reset();
+    wavetable_oscillator_->reset();
     envelope_->reset();
     lfo_->reset();
     if (filter_) filter_->reset();
@@ -191,6 +200,7 @@ void Voice::note_on(double frequency) {
     saw_oscillator_->set_frequency(frequency);
     sine_oscillator_->set_frequency(frequency);
     triangle_oscillator_->set_frequency(frequency);
+    wavetable_oscillator_->setFrequency(frequency);
     
     // Hardwire VCA if missing
     if (matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_) <= 0.001f) {
@@ -207,6 +217,11 @@ void Voice::note_off() {
 
 bool Voice::is_active() const { 
     return active_ || envelope_->is_active();
+}
+
+bool Voice::is_releasing() const {
+    // A voice is releasing if the gate is off but the envelope is still active.
+    return !active_ && envelope_->is_active();
 }
 
 void Voice::reset() {
@@ -249,6 +264,7 @@ void Voice::apply_modulation() {
     saw_oscillator_->set_frequency(mod_freq);
     sine_oscillator_->set_frequency(mod_freq);
     triangle_oscillator_->set_frequency(mod_freq);
+    wavetable_oscillator_->setFrequency(mod_freq);
 
     // Apply Cutoff Modulation
     if (filter_) {
@@ -300,6 +316,13 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
         float sine_sample = static_cast<float>(sine_oscillator_->tick());
         float tri_sample = static_cast<float>(triangle_oscillator_->tick());
         
+        // Manual pull for wavetable since it's a Processor but we're tick-mixing
+        // Note: Wavetable generates in-place, so we just use the first sample of a tmp buffer
+        float w_buf[1];
+        std::span<float> w_span(w_buf, 1);
+        wavetable_oscillator_->pull(w_span, context);
+        float w_sample = w_buf[0];
+
         // Mix using SourceMixer logic
         std::array<float, SourceMixer::NUM_CHANNELS> inputs;
         inputs.fill(0.0f);
@@ -308,6 +331,7 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
         inputs[2] = s_sample;
         inputs[3] = sine_sample;
         inputs[4] = tri_sample;
+        inputs[5] = w_sample;
         
         output[i] = source_mixer_->mix(inputs);
         

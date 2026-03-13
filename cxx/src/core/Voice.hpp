@@ -11,6 +11,7 @@
 #include "oscillator/SawtoothOscillatorProcessor.hpp"
 #include "oscillator/SineOscillatorProcessor.hpp"
 #include "oscillator/TriangleOscillatorProcessor.hpp"
+#include "oscillator/WavetableOscillatorProcessor.hpp"
 #include "envelope/AdsrEnvelopeProcessor.hpp"
 #include "filter/FilterProcessor.hpp"
 #include "oscillator/LfoProcessor.hpp"
@@ -56,6 +57,11 @@ public:
     void set_pan(float pan);
     float pan() const { return pan_; }
 
+    /**
+     * @brief Check if the voice is in the release stage.
+     */
+    bool is_releasing() const;
+
 protected:
     void do_pull(std::span<float> output, const VoiceContext* context = nullptr) override;
 
@@ -70,6 +76,7 @@ private:
     std::unique_ptr<SawtoothOscillatorProcessor> saw_oscillator_;
     std::unique_ptr<SineOscillatorProcessor> sine_oscillator_;
     std::unique_ptr<TriangleOscillatorProcessor> triangle_oscillator_;
+    std::unique_ptr<WavetableOscillatorProcessor> wavetable_oscillator_;
     std::unique_ptr<SourceMixer> source_mixer_;
     std::unique_ptr<AdsrEnvelopeProcessor> envelope_;
     std::unique_ptr<FilterProcessor> filter_;

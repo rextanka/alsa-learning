@@ -77,16 +77,29 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
         return;
     }
 
-    // 3. Voice Stealing: Priority (Idle > Releasing > Oldest Active)
+    // 3. Voice Stealing: Tiered Priority (Releasing > Oldest Active)
     int candidate_idx = -1;
-    
-    // Priority 2: Steal Oldest Active Voice
-    uint64_t oldest_time = std::numeric_limits<uint64_t>::max();
+    uint64_t oldest_releasing_time = std::numeric_limits<uint64_t>::max();
+    uint64_t oldest_active_time = std::numeric_limits<uint64_t>::max();
+    int oldest_active_idx = -1;
+
     for (int i = 0; i < MAX_VOICES; ++i) {
-        if (voices_[i].last_note_on_time < oldest_time) {
-            oldest_time = voices_[i].last_note_on_time;
-            candidate_idx = i;
+        if (voices_[i].voice->is_releasing()) {
+            if (voices_[i].last_note_on_time < oldest_releasing_time) {
+                oldest_releasing_time = voices_[i].last_note_on_time;
+                candidate_idx = i;
+            }
+        } else {
+            if (voices_[i].last_note_on_time < oldest_active_time) {
+                oldest_active_time = voices_[i].last_note_on_time;
+                oldest_active_idx = i;
+            }
         }
+    }
+
+    // If no releasing voice found, fallback to oldest active
+    if (candidate_idx == -1) {
+        candidate_idx = oldest_active_idx;
     }
 
     if (candidate_idx != -1) {

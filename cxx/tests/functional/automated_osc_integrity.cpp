@@ -14,6 +14,8 @@
 #include <cmath>
 #include <iomanip>
 #include <thread>
+#include <cassert>
+#include <cstring>
 #include <chrono>
 
 /**
@@ -103,7 +105,13 @@ int main() {
     // Explicitly configure for Tier 2 modular architecture
     set_param(engine.get(), "sine_gain", 1.0f);
     engine_set_adsr(engine.get(), 0.001f, 0.01f, 1.0f, 0.01f);
-    engine_set_modulation(engine.get(), MOD_SRC_ENVELOPE, MOD_TGT_AMPLITUDE, 1.0f);
+    engine_clear_modulations(engine.get());
+    engine_connect_mod(engine.get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
+
+    // Audit modulation
+    char mod_report[256];
+    engine_get_modulation_report(engine.get(), mod_report, sizeof(mod_report));
+    assert(strstr(mod_report, "Src: 0 -> Tgt: -1 (Param: 3)") != nullptr);
     
     // Testing mid-range notes for stability (C4, A4, A5)
     all_passed &= verify_freq(engine.get(), dct, 261.63f, (float)sample_rate);

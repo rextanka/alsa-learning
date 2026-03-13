@@ -36,8 +36,14 @@ int main() {
     set_param(engine.get(), "vcf_cutoff", 20000.0f);
     set_param(engine.get(), "vcf_res", 0.0f);
 
-    // VCA (ADSR) Configuration - Using engine_connect_mod as per TEST_DESC.md Tier 2 protocol
+    // VCA (ADSR) Configuration - Using engine_connect_mod as per TESTING.md protocol
+    engine_clear_modulations(engine.get());
     assert(engine_connect_mod(engine.get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f) == 0);
+
+    // Audit modulation
+    char mod_report[256];
+    engine_get_modulation_report(engine.get(), mod_report, sizeof(mod_report));
+    assert(strstr(mod_report, "Src: 0 -> Tgt: -1 (Param: 3)") != nullptr);
     assert(set_param(engine.get(), "amp_attack", 0.050f) == 0);  // 50ms fade in
     assert(set_param(engine.get(), "amp_decay", 0.100f) == 0);   // 100ms decay
     assert(set_param(engine.get(), "amp_sustain", 0.8f) == 0);   // Hold at 80% volume

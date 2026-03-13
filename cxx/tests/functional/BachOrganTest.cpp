@@ -25,9 +25,16 @@ protected:
 
         engine_wrapper = std::make_unique<test::EngineWrapper>(sample_rate);
         
-        // Protocol Step 3 & 4: Modular Patching & ADSR
-        engine_connect_mod(engine_wrapper->get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
-        engine_set_adsr(engine_wrapper->get(), 0.015f, 0.1f, 0.7f, 0.050f);
+    // Protocol Step 3 & 4: Modular Patching & ADSR
+    engine_clear_modulations(engine_wrapper->get());
+    engine_connect_mod(engine_wrapper->get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
+
+    // Audit modulation
+    char mod_report[256];
+    engine_get_modulation_report(engine_wrapper->get(), mod_report, sizeof(mod_report));
+    assert(strstr(mod_report, "Src: 0 -> Tgt: -1 (Param: 3)") != nullptr);
+
+    engine_set_adsr(engine_wrapper->get(), 0.015f, 0.1f, 0.7f, 0.050f);
         
         // Initialize Tempo
         engine_set_bpm(engine_wrapper->get(), 100.0);
@@ -129,7 +136,7 @@ TEST_F(BachOrganTest, RunningStatus_Validation) {
     engine_process_midi_bytes(engine, midiData.data(), midiData.size(), 0);
     
     // Crucial: Wait for the engine to render at least a few buffers
-    // 500ms allows the notes to sustain and be audible
+    // 1000ms allows the notes to sustain and be audible
     test::wait_while_running(1);
     
     std::cout << "[BachAudit] Running Status bytes processed and audible." << std::endl;
