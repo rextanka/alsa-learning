@@ -19,4 +19,4 @@ This document tracks the sanity and utility of functional tests following the pr
 | `oscillator_drone_test` | PASS | Adheres to Tier 1 protocol | Verified continuous drones for Sine, Square, Saw, Triangle |
 | `oscillator_integrity_test` | PASS | Adheres to Tier 2 protocol | Verified sequential isolated plucks for all 6 oscillator types including Wavetable and Sub |
 | `Phase10Tests` | PASS | Adheres to Tier 2 protocol | Verified BPM clock precision and audible string-based note mapping |
-| `sh101_chain_tests` | PASS | Adheres to Tier 3 protocol | Verified SH-101 signal path and patch persistence |
+| `sh101_chain_tests` | PASS | Adheres to Tier 3 protocol | Refactored for real-time audibility; verified SH-101 signal path |
