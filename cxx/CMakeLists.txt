@@ -202,6 +202,7 @@ if(BUILD_TESTING)
     add_test(NAME Functional_Phase10 COMMAND Phase10Tests)
     add_test(NAME Functional_Timing COMMAND TimingValidation)
     add_test(NAME Functional_OscIntegrity COMMAND automated_osc_integrity)
+    add_test(NAME Functional_ProcessorFidelity COMMAND processor_check)
 
     if(UNIX AND NOT APPLE)
         add_functional_test(AlsaCheck AlsaCheck.cpp)
