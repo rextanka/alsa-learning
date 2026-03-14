@@ -268,6 +268,12 @@ To bridge the gap between the C-compatible public API and the internal Flexible 
 | 13 | `pulse_gain` | `VCO` | 13 | Pulse level |
 | 14 | `pulse_width` | `VCO` | 14 | Pulse Width (Native) |
 
+### Future Architectural Roadmap
+
+1. **Typed Port Protocol**: Replace raw buffer passing with metadata-aware connections (`PORT_AUDIO`, `PORT_CONTROL`) to prevent illegal signal routing and ensure deterministic validation at the Bridge level.
+2. **Global Modulation Bus**: Shift from per-voice matrices to a centralized bus where global sources (e.g., Vibrato LFO) write to synchronized slots, improving phase coherency and reducing CPU overhead via a subscription model.
+3. **BaseOscillator Hierarchy**: Consolidate redundant logic (gain, fine-tuning, pitch-bend) into a polymorphic collection, allowing the `Voice` to manage generators as a dynamic list rather than hardcoded pointers.
+
 ### Implementation Rules
 1. **Test Source of Truth**: All testing standards, including the "Golden Lifecycle" and mandatory modular routing protocols, are defined in [cxx/docs/TESTING.md](cxx/docs/TESTING.md).
 1. **Bridge Duty**: The `AudioBridge` (EngineHandleImpl) MUST maintain a `param_name_to_id` map matching the "String Label" column.

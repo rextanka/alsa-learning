@@ -149,6 +149,7 @@ if(BUILD_TESTING)
         tests/unit/test_logger.cpp
         tests/unit/test_clock_logic.cpp
         tests/unit/test_modulation_matrix.cpp
+        tests/unit/test_bus_headroom.cpp
     )
     target_include_directories(unit_tests PRIVATE tests/unit tests)
     target_link_libraries(unit_tests PRIVATE audio_engine gtest_main)

@@ -8,6 +8,7 @@
 
 #include "Processor.hpp"
 #include "Voice.hpp"
+#include "SummingBus.hpp"
 #include "MidiEvent.hpp"
 #include "MidiParser.hpp"
 #include <vector>
@@ -17,6 +18,11 @@
 namespace audio {
 
 using namespace engine::core;
+
+/**
+ * @brief Manages a pool of voices for polyphonic playback.
+ */
+class AudioTap;
 
 /**
  * @brief Manages a pool of voices for polyphonic playback.
@@ -110,6 +116,11 @@ public:
      */
     void set_mod_source(int id, std::shared_ptr<Processor> processor);
 
+    /**
+     * @brief Set the diagnostic tap to monitor mono output.
+     */
+    void set_diagnostic_tap(AudioTap* tap) { diagnostic_tap_ = tap; }
+
 protected:
     /**
      * @brief Pull audio from all active voices and sum them.
@@ -123,6 +134,14 @@ protected:
      * @brief Pull audio from all active voices and sum them (Stereo).
      */
     void do_pull(AudioBuffer& output, const VoiceContext* context = nullptr) override;
+
+public:
+    /**
+     * @brief Pull audio from all active voices and sum them (Stereo), feeding an optional diagnostic tap.
+     */
+    void pull_with_tap(AudioBuffer& output, Processor* tap, const VoiceContext* context = nullptr);
+
+protected:
 
 private:
     /**
@@ -145,6 +164,7 @@ private:
     std::array<int, 128> note_to_voice_map_; // Maps MIDI pitch to voice index
     MidiParser midi_parser_;
     int sample_rate_;
+    std::unique_ptr<SummingBus> summing_bus_;
 
 public:
     struct Connection {
@@ -162,6 +182,7 @@ private:
     std::unordered_map<int, std::shared_ptr<Processor>> mod_sources_;
     std::vector<float> mod_buffer_;
     float voice_spread_ = 0.5f; // Default 50% spread
+    AudioTap* diagnostic_tap_ = nullptr;
 
 public:
     const std::array<VoiceSlot, MAX_VOICES>& get_voices() const { return voices_; }

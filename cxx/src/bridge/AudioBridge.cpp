@@ -29,6 +29,7 @@
 #include "TuningSystem.hpp"
 #include "Logger.hpp"
 #include "PatchStore.hpp"
+#include "SummingBus.hpp"
 #include <memory>
 #include <span>
 #include <cstring>
@@ -75,6 +76,7 @@ struct EnvelopeHandleImpl : public HandleBase {
 struct EngineHandleImpl : public HandleBase {
     std::unique_ptr<audio::VoiceManager> voice_manager;
     std::unique_ptr<hal::AudioDriver> driver;
+    std::unique_ptr<audio::SummingBus> summing_bus;
     std::unique_ptr<audio::AudioTap> tap;
     std::unique_ptr<audio::JunoChorus> chorus;
     bool chorus_enabled = false;
@@ -87,32 +89,25 @@ struct EngineHandleImpl : public HandleBase {
     EngineHandleImpl(int sr)
         : HandleBase(HandleType::Engine)
         , voice_manager(std::make_unique<audio::VoiceManager>(sr))
+        , summing_bus(std::make_unique<audio::SummingBus>(512))
         , tap(std::make_unique<audio::AudioTap>(16384))
         , chorus(std::make_unique<audio::JunoChorus>(static_cast<double>(sr)))
         , clock(static_cast<double>(sr))
         , sample_rate(sr)
     {
-        // Connect the tap to the voice manager output
-        tap->add_input(voice_manager.get());
 
 #ifdef __APPLE__
         driver = std::make_unique<hal::CoreAudioDriver>(sr, 512);
 #else
         driver = std::make_unique<hal::AlsaDriver>(sr, 512);
 #endif
-    // Link the driver to the tap (which pulls from voice_manager)
+    // Link the driver to the voice manager (which uses SummingBus)
     driver->set_stereo_callback([this](audio::AudioBuffer& buffer) {
         // Advanced clock by frames
         clock.advance(static_cast<int32_t>(buffer.frames()));
         
-        // Pull from tap (which pulls from voice_manager)
-        // Note: tap->pull works on mono std::span, so we pull into left 
-        // and copy to right for basic monitoring.
-        std::span<float> left_span(buffer.left.data(), buffer.frames());
-        tap->pull(left_span);
-        
-        // Sync right channel
-        std::copy(buffer.left.begin(), buffer.left.end(), buffer.right.begin());
+        // Pull with diagnostic tap
+        voice_manager->pull_with_tap(buffer, tap.get());
         
         if (chorus_enabled) {
             chorus->pull(buffer);

@@ -22,6 +22,11 @@ Every functional test in `cxx/tests/functional/` **MUST** execute these 5 steps 
 ## 2. Modular Graph Initialization
 Tests must explicitly initialize the graph according to their requirements. Do not use a "one-size-fits-all" lifecycle. Choose the appropriate Tier:
 
+### Signal Chain Standard
+*   **Mono Voice**: Each voice operates mono internally.
+*   **Summing Bus**: All voices are aggregated into a stereo `SummingBus` that handles constant-power panning and master gain.
+*   **Effects Chain**: The Bus output is processed through global FX (Chorus, etc.) before reaching the HAL.
+
 - **Tier 1 (Direct Path)**: `Oscillator -> Output`.
   - Required: `engine_start`, `set_param` (Gain).
 - **Tier 2 (Modulated Path)**: `Oscillator -> Modulator -> Output`.
@@ -134,3 +139,12 @@ Every functional test in `cxx/tests/functional/` MUST include a standardized hea
 3.  **Harden:** Use "Stress Tests" (flooding parameters, triggering many voices) to ensure the component is robust.
 4.  **Green Build Requirement**: All tests must pass before merging.
 5.  **Documentation**: Update `BRIDGE_GUIDE.md` if any C-API changes were made.
+
+---
+
+## 9. Implementation SOP (Standard Operating Procedure)
+
+1. **Verify Tier**: Identify the simplest graph (Tier 1/2/3) for the test.
+2. **Modular Routing**: Use `engine_connect_mod` explicitly.
+3. **Diagnostic Audit**: When adding a TEE point (AudioTap), verify that the tap operation is a non-destructive push (`tap->write()`).
+4. **Silence-Check**: If a functional test fails with "Empty Buffer," the first audit point is the `AudioBridge` callback to ensure the signal is reaching the diagnostic tap.

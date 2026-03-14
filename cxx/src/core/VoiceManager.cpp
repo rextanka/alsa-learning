@@ -4,6 +4,8 @@
  */
 
 #include "VoiceManager.hpp"
+#include "SummingBus.hpp"
+#include "AudioTap.hpp"
 #include "Logger.hpp"
 #include <cmath>
 #include <algorithm>
@@ -19,6 +21,7 @@ namespace audio {
 VoiceManager::VoiceManager(int sample_rate)
     : timestamp_counter_(0)
     , sample_rate_(sample_rate)
+    , summing_bus_(std::make_unique<SummingBus>(512))
 {
     for (auto& slot : voices_) {
         slot.voice = std::make_unique<Voice>(sample_rate);
@@ -230,6 +233,7 @@ void VoiceManager::set_mod_source(int id, std::shared_ptr<Processor> processor) 
 }
 
 void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context) {
+    // Mono Summing for mono-span output
     std::fill(output.begin(), output.end(), 0.0f);
 
     if (mod_buffer_.size() < output.size()) {
@@ -254,7 +258,7 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
         }
     }
 
-    // 2. Sum active voices
+    // 2. Sum active voices into mono span
     auto block = voices_[0].voice->borrow_buffer();
     std::span<float> work_span(block->left.data(), output.size());
 
@@ -263,7 +267,7 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
         if (slot.active) {
             if (slot.voice->is_active()) {
                 std::fill(work_span.begin(), work_span.end(), 0.0f);
-                slot.voice->pull(work_span, context);
+                slot.voice->pull_mono(work_span, context);
                 for (size_t j = 0; j < output.size(); ++j) {
                     output[j] += work_span[j];
                 }
@@ -288,7 +292,12 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
 }
 
 void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
+    pull_with_tap(output, diagnostic_tap_, context);
+}
+
+void VoiceManager::pull_with_tap(AudioBuffer& output, Processor* tap, const VoiceContext* context) {
     output.clear();
+    summing_bus_->clear();
 
     if (mod_buffer_.size() < output.frames()) {
         mod_buffer_.resize(output.frames());
@@ -312,7 +321,7 @@ void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
         }
     }
 
-    // 3. Render and Sum Voices with Constant-Power Panning
+    // 3. Render and Sum Voices into SummingBus
     auto block = voices_[0].voice->borrow_buffer();
     std::span<float> work_span(block->left.data(), output.frames());
 
@@ -320,20 +329,19 @@ void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
     for (int i = 0; i < MAX_VOICES; ++i) {
         auto& slot = voices_[i];
         if (slot.active) {
-            active_slots++;
             if (slot.voice->is_active()) {
+                active_slots++;
                 std::fill(work_span.begin(), work_span.end(), 0.0f);
-                slot.voice->pull(work_span, context);
+                slot.voice->pull_mono(work_span, context);
 
-                float pan = slot.voice->pan();
-                float theta = (pan + 1.0f) * (static_cast<float>(M_PI) / 4.0f);
-                float gainL = std::cos(theta);
-                float gainR = std::sin(theta);
-
-                for (size_t j = 0; j < output.frames(); ++j) {
-                    output.left[j] += work_span[j] * gainL;
-                    output.right[j] += work_span[j] * gainR;
+                // Feed diagnostic tap if provided (non-destructive push)
+                if (tap) {
+                    if (auto* audio_tap = dynamic_cast<AudioTap*>(tap)) {
+                        audio_tap->write(work_span);
+                    }
                 }
+
+                summing_bus_->add_voice(work_span, slot.voice->pan());
             } else {
                 slot.active = false;
                 if (slot.current_note != -1) {
@@ -346,20 +354,8 @@ void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
         }
     }
     
-    // 4. Master Safety Gain (0.15) and Simple Soft Clipping
-    for (size_t j = 0; j < output.frames(); ++j) {
-        float outL = output.left[j] * 0.15f;
-        float outR = output.right[j] * 0.15f;
-
-        auto soft_clip = [](float s) {
-            if (s > 0.95f) return 0.95f + 0.05f * std::tanh((s - 0.95f) / 0.05f);
-            if (s < -0.95f) return -0.95f + 0.05f * std::tanh((s + 0.95f) / 0.05f);
-            return s;
-        };
-
-        output.left[j] = soft_clip(outL);
-        output.right[j] = soft_clip(outR);
-    }
+    // 4. Final Output from Bus
+    summing_bus_->pull(output);
 
     static int call_count = 0;
     if (call_count++ % sample_rate_ == 0) {
