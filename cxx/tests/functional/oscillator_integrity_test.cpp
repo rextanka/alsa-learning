@@ -7,10 +7,26 @@
 #include <iostream> 
 #include <thread>
 #include <chrono>
+#include <vector>
+#include <cmath>
+#include <cassert>
+
+/**
+ * @brief Calculates RMS level of a mono buffer.
+ */
+float calculate_rms(const float* buffer, size_t frames) {
+    if (frames == 0) return 0.0f;
+    float sum = 0.0f;
+    for (size_t i = 0; i < frames; ++i) {
+        sum += buffer[i] * buffer[i];
+    }
+    return std::sqrt(sum / static_cast<float>(frames));
+}
 
 /**
  * @brief Refactored Stage Helper: Implements Sequential Voice Strategy.
  * Each stage is isolated with a total mixer reset and follows a musical ADSR lifecycle.
+ * HARDENED: Now asserts that RMS level is > 0.001f to detect silent failures.
  */
 void run_sequential_stage(EngineHandle engine, const char* name, const char* gain_param, float level = 1.0f) {
     std::cout << "\n>>> STAGE: " << name << " <<<" << std::endl;
@@ -35,7 +51,24 @@ void run_sequential_stage(EngineHandle engine, const char* name, const char* gai
     engine_note_on_name(engine, "C4", 0.8f);
     
     // 5. Wait for full decay + release cycle
-    std::this_thread::sleep_for(std::chrono::milliseconds(1800));
+    // Use a slightly shorter wait to capture the peak during the decay phase
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    
+    // 6. Hardened Diagnostic Capture
+    const size_t frames = 4096;
+    std::vector<float> capture(frames);
+    engine_audiotap_read(engine, capture.data(), frames);
+    float rms = calculate_rms(capture.data(), frames);
+    std::cout << "  Diagnostic RMS: " << rms << std::endl;
+    
+    if (rms <= 0.001f) {
+        std::cerr << "  [FAIL] Signal path is DEAD at stage: " << name << std::endl;
+        assert(rms > 0.001f);
+    } else {
+        std::cout << "  [PASS] Signal detected." << std::endl;
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1300));
     engine_note_off_name(engine, "C4");
     std::this_thread::sleep_for(std::chrono::milliseconds(400));
 }
@@ -70,11 +103,11 @@ int main() {
     run_sequential_stage(engine.get(), "Sawtooth (PolyBLEP)", "saw_gain");
 
     // Stage: Wavetable Verification
-    // 1. Prime the wavetable state before starting the stage
+    // 1. Prime the wavetable state (Set type and frequency)
     set_param(engine.get(), "wavetable_type", 1.0f); // 1 = Saw
     set_param(engine.get(), "osc_frequency", 261.63f); // C4
 
-    // 2. Execute with sequential helper
+    // 2. Execute stage
     run_sequential_stage(engine.get(), "Wavetable (Interpolated Saw)", "wavetable_gain");
 
     // Stage: Sub-Oscillator Phase Lock Logic (Requires Pulse parent)
@@ -93,7 +126,16 @@ int main() {
 
     std::cout << "  Triggering C4 (Aligned Transient)..." << std::endl;
     engine_note_on_name(engine.get(), "C4", 0.8f);
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    const size_t frames = 4096;
+    std::vector<float> capture(frames);
+    engine_audiotap_read(engine.get(), capture.data(), frames);
+    float rms = calculate_rms(capture.data(), frames);
+    std::cout << "  Diagnostic RMS (Sub): " << rms << std::endl;
+    assert(rms > 0.001f);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
     engine_note_off_name(engine.get(), "C4");
     std::this_thread::sleep_for(std::chrono::milliseconds(400));
 

@@ -240,18 +240,14 @@ void Voice::reset() {
 
 void Voice::apply_modulation() {
     // Collect modulation source values
-    // RT-Safe: AdsrEnvelopeProcessor::pull is non-virtual and doesn't allocate.
-    float env_val = 0.0f;
-    float tmp_env_buf[1];
-    std::span<float> tmp_env_span(tmp_env_buf, 1);
-    envelope_->pull(tmp_env_span);
-    env_val = tmp_env_buf[0];
-
-    float lfo_val = 0.0f;
-    float tmp_lfo_buf[1];
-    std::span<float> tmp_lfo_span(tmp_lfo_buf, 1);
-    lfo_->pull(tmp_lfo_span);
-    lfo_val = tmp_lfo_buf[0];
+    // RT-Safe: Get current level from processors without non-destructive pull
+    float env_val = envelope_->get_level();
+    
+    // Manual pull for LFO since it's a Processor but we're block-rate mixing
+    float l_buf[1];
+    std::span<float> l_span(l_buf, 1);
+    lfo_->pull(l_span);
+    float lfo_val = l_buf[0];
 
     current_source_values_[static_cast<size_t>(ModulationSource::Envelope)] = env_val;
     current_source_values_[static_cast<size_t>(ModulationSource::LFO)] = lfo_val;
@@ -280,9 +276,13 @@ void Voice::apply_modulation() {
         filter_->set_resonance(std::clamp(base_resonance_ + res_mod, 0.0f, 0.99f));
     }
 
-    // 3. Apply Amplitude Modulation
-    float amp_mod = matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_);
-    current_amplitude_ = std::clamp(base_amplitude_ * amp_mod, 0.0f, 1.0f);
+    // 3. Apply Amplitude Modulation (Safe Fallback)
+    if (matrix_.has_no_connections(ModulationTarget::Amplitude)) {
+        current_amplitude_ = base_amplitude_;
+    } else {
+        float amp_mod = matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_);
+        current_amplitude_ = std::clamp(base_amplitude_ * amp_mod, 0.0f, 1.0f);
+    }
 
     // 4. Apply PWM
     float pw_mod = matrix_.sum_for_target(ModulationTarget::PulseWidth, current_source_values_);
