@@ -86,6 +86,10 @@ struct EngineHandleImpl : public HandleBase {
     int sample_rate;
     int next_processor_id = 100; // Start at 100 to avoid confusion with voice indices
 
+    virtual ~EngineHandleImpl() {
+        if (driver) driver->stop();
+    }
+
     EngineHandleImpl(int sr)
         : HandleBase(HandleType::Engine)
         , voice_manager(std::make_unique<audio::VoiceManager>(sr))
@@ -103,13 +107,15 @@ struct EngineHandleImpl : public HandleBase {
 #endif
     // Link the driver to the voice manager (which uses SummingBus)
     driver->set_stereo_callback([this](audio::AudioBuffer& buffer) {
+        if (!voice_manager) return;
+        
         // Advanced clock by frames
         clock.advance(static_cast<int32_t>(buffer.frames()));
         
         // Pull with diagnostic tap
         voice_manager->pull_with_tap(buffer, tap.get());
         
-        if (chorus_enabled) {
+        if (chorus_enabled && chorus) {
             chorus->pull(buffer);
         }
     });

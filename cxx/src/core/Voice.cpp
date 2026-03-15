@@ -277,11 +277,20 @@ void Voice::apply_modulation() {
     }
 
     // 3. Apply Amplitude Modulation (Safe Fallback)
+    // IMPORTANT: The main ADSR gate is handled by envelope_->pull() at the end.
+    // Modulation here is for ADDITIONAL scaling (e.g. LFO -> Amp).
     if (matrix_.has_no_connections(ModulationTarget::Amplitude)) {
         current_amplitude_ = base_amplitude_;
     } else {
-        float amp_mod = matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_);
-        current_amplitude_ = std::clamp(base_amplitude_ * amp_mod, 0.0f, 1.0f);
+        float amp_mod_sum = matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_);
+        
+        // ARCHITECTURAL CHOICE: If the sum is 0 (e.g. no active modulators),
+        // we default to unity scaling (1.0) so the VCA remains open.
+        if (std::abs(amp_mod_sum) < 0.001f) {
+            current_amplitude_ = base_amplitude_;
+        } else {
+            current_amplitude_ = base_amplitude_ * std::clamp(amp_mod_sum, 0.0f, 2.0f);
+        }
     }
 
     // 4. Apply PWM
