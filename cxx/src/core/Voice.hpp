@@ -65,6 +65,12 @@ public:
 protected:
     void do_pull(std::span<float> output, const VoiceContext* context = nullptr) override;
 
+public:
+    /**
+     * @brief Pull a mono signal from this voice.
+     */
+    void pull_mono(std::span<float> output, const VoiceContext* context = nullptr);
+
 private:
     static constexpr size_t MAX_BLOCK_SIZE = 1024;
 
@@ -90,6 +96,10 @@ private:
     float base_cutoff_;
     float base_resonance_;
     float base_amplitude_;
+
+    // Current modulated parameters
+    double current_frequency_;
+    float current_amplitude_;
 
     int sample_rate_;
     float pan_; // -1.0 to 1.0

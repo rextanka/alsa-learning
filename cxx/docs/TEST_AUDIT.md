@@ -22,7 +22,7 @@ This document tracks the sanity and utility of functional tests following the pr
 | `sh101_chain_tests` | PASS | Adheres to Tier 3 protocol | Refactored for real-time audibility; verified SH-101 signal path |
 | `processor_check` | PASS | Fidelity Audit | Verified oscillator frequency accuracy via hysteresis zero-crossing |
 | `test_juno_chorus` | PASS | Stereo Verification | Verified stereo separation from mode-based chorus processing |
-| `test_tremulant_preset` | PASS | Adheres to Tier 2 protocol | Verified LFO -> Pitch modulation via Matrix |
+| `test_tremulant_preset` | PASS | Adheres to Tier 2 protocol | Verified LFO -> Pitch modulation via Matrix (Fixed VCA binding) |
 | `TimingValidation` | PASS | Driver Stability | Verified callback jitter and sample-accurate clock drift |
 | `SummingBus` | PASS | Unit Test Validation | Verified constant-power panning and 16-voice headroom |
 | **OVERALL** | **PASS** | **100% GREEN** | **Functional and Unit test suites are fully verified (20 functional tests).** |

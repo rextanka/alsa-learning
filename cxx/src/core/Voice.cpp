@@ -18,6 +18,8 @@ Voice::Voice(int sample_rate)
     , base_cutoff_(4000.0f)
     , base_resonance_(0.4f)
     , base_amplitude_(1.0f)
+    , current_frequency_(440.0)
+    , current_amplitude_(1.0f)
     , sample_rate_(sample_rate)
     , pan_(0.0f)
     , active_(false)
@@ -230,6 +232,7 @@ void Voice::reset() {
     saw_oscillator_->reset();
     sine_oscillator_->reset();
     triangle_oscillator_->reset();
+    wavetable_oscillator_->reset();
     envelope_->reset();
     lfo_->reset();
     if (filter_) filter_->reset();
@@ -253,20 +256,20 @@ void Voice::apply_modulation() {
     current_source_values_[static_cast<size_t>(ModulationSource::Envelope)] = env_val;
     current_source_values_[static_cast<size_t>(ModulationSource::LFO)] = lfo_val;
 
-    // Apply Pitch Modulation
+    // 1. Apply Pitch Modulation
     float pitch_mod = matrix_.sum_for_target(ModulationTarget::Pitch, current_source_values_);
-    double mod_freq = base_frequency_ * std::pow(2.0, static_cast<double>(pitch_mod));
+    current_frequency_ = base_frequency_ * std::pow(2.0, static_cast<double>(pitch_mod));
     
     // Safety check for frequency floor
-    if (mod_freq < 20.0) mod_freq = base_frequency_;
+    if (current_frequency_ < 20.0) current_frequency_ = base_frequency_;
 
-    oscillator_->set_frequency(mod_freq);
-    saw_oscillator_->set_frequency(mod_freq);
-    sine_oscillator_->set_frequency(mod_freq);
-    triangle_oscillator_->set_frequency(mod_freq);
-    wavetable_oscillator_->setFrequency(mod_freq);
+    oscillator_->set_frequency(current_frequency_);
+    saw_oscillator_->set_frequency(current_frequency_);
+    sine_oscillator_->set_frequency(current_frequency_);
+    triangle_oscillator_->set_frequency(current_frequency_);
+    wavetable_oscillator_->setFrequency(current_frequency_);
 
-    // Apply Cutoff Modulation
+    // 2. Apply Cutoff Modulation
     if (filter_) {
         float cutoff_mod = matrix_.sum_for_target(ModulationTarget::Cutoff, current_source_values_);
         float mod_cutoff = base_cutoff_ * std::pow(2.0f, cutoff_mod);
@@ -277,14 +280,11 @@ void Voice::apply_modulation() {
         filter_->set_resonance(std::clamp(base_resonance_ + res_mod, 0.0f, 0.99f));
     }
 
-    // Apply Amplitude Modulation
+    // 3. Apply Amplitude Modulation
     float amp_mod = matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_);
-    // In many legacy paths, base_amplitude acts as the multiplier
-    // For now, we allow the matrix to SCALE the base_amplitude
-    float final_amp = base_amplitude_ * std::clamp(amp_mod, 0.0f, 1.0f);
-    (void)final_amp; // We'll use base_amplitude_ directly in do_pull for the fix
+    current_amplitude_ = std::clamp(base_amplitude_ * amp_mod, 0.0f, 1.0f);
 
-    // Apply PWM
+    // 4. Apply PWM
     float pw_mod = matrix_.sum_for_target(ModulationTarget::PulseWidth, current_source_values_);
     if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
         pulse_osc->set_pulse_width(pw_mod);
@@ -292,6 +292,10 @@ void Voice::apply_modulation() {
 }
 
 void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
+    pull_mono(output, context);
+}
+
+void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
     // 1. UPDATE MODULATION
     apply_modulation();
 
@@ -301,13 +305,13 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
     std::span<float> saw_span(block->left.data(), output.size());
     
     // Ensure independent oscillators are set correctly
-    saw_oscillator_->set_frequency(base_frequency_);
+    saw_oscillator_->set_frequency(current_frequency_);
     saw_oscillator_->pull(saw_span, context);
 
     auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get());
     auto* sub_osc = dynamic_cast<SubOscillator*>(sub_oscillator_.get());
 
-    pulse_osc->set_frequency(base_frequency_);
+    pulse_osc->set_frequency(current_frequency_);
 
     // Render interleaved oscillator mix into output span
     for (size_t i = 0; i < output.size(); ++i) {
@@ -336,7 +340,7 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
         output[i] = source_mixer_->mix(inputs);
         
         // Final amplitude scaling (RT-Safe)
-        output[i] *= base_amplitude_;
+        output[i] *= current_amplitude_;
     }
 
     // 3. PROCESS THROUGH MODIFIERS (Manual Serial Processing)
@@ -352,7 +356,6 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
         float abs_s = std::abs(s);
         if (abs_s > peak) peak = abs_s;
     }
-
 }
 
 } // namespace audio
