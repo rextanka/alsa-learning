@@ -148,3 +148,5 @@ Every functional test in `cxx/tests/functional/` MUST include a standardized hea
 2. **Modular Routing**: Use `engine_connect_mod` explicitly.
 3. **Diagnostic Audit**: When adding a TEE point (AudioTap), verify that the tap operation is a non-destructive push (`tap->write()`).
 4. **Silence-Check**: If a functional test fails with "Empty Buffer," the first audit point is the `AudioBridge` callback to ensure the signal is reaching the diagnostic tap.
+5. **Implementation Requirement**: Before adding new components, verify the architectural compatibility against ARCH_PLAN.md.
+6. **SOP**: Any C-API changes require an immediate update to BRIDGE_GUIDE.md.

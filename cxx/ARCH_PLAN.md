@@ -281,6 +281,13 @@ To bridge the gap between the C-compatible public API and the internal Flexible 
 3. **RT-Safety**: All mapping lookups occur outside the audio thread or via lock-free atomic caches.
 
 ---
+## Documentation Map
+- **Build/CI**: BUILD.md
+- **Functional Testing**: cxx/docs/TESTING.md
+- **C-Bridge Contract**: cxx/docs/BRIDGE_GUIDE.md
+- **Processor Specifications**: cxx/docs/MODULE_DESC.md
 
 ## References
 - Project rules: repo root `.clinerules` (Git workflow, NVI, C++20).
+
+
