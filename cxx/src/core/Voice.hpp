@@ -8,17 +8,10 @@
 
 #include "Processor.hpp"
 #include "VcaProcessor.hpp"
-#include "oscillator/OscillatorProcessor.hpp"
-#include "oscillator/SawtoothOscillatorProcessor.hpp"
-#include "oscillator/SineOscillatorProcessor.hpp"
-#include "oscillator/TriangleOscillatorProcessor.hpp"
-#include "oscillator/WavetableOscillatorProcessor.hpp"
-#include "envelope/AdsrEnvelopeProcessor.hpp"
 #include "filter/FilterProcessor.hpp"
 #include "oscillator/LfoProcessor.hpp"
-#include "oscillator/SubOscillator.hpp"
-#include "routing/SourceMixer.hpp"
 #include "routing/CompositeGenerator.hpp"
+#include "envelope/AdsrEnvelopeProcessor.hpp"
 #include "AudioGraph.hpp"
 #include "ModulationMatrix.hpp"
 #include <memory>
@@ -39,13 +32,9 @@ public:
     void note_on(double frequency);
     void note_off();
 
-    SourceMixer& source_mixer() { return *source_mixer_; }
-    SubOscillator& sub_oscillator() { return *sub_oscillator_; }
     bool is_active() const;
     void reset() override;
 
-    OscillatorProcessor& oscillator() { return *oscillator_; }
-    EnvelopeProcessor& envelope() { return *envelope_; }
     FilterProcessor* filter() { return filter_.get(); }
     LfoProcessor& lfo() { return *lfo_; }
     ModulationMatrix& matrix() { return matrix_; }
@@ -105,18 +94,8 @@ public:
     void pull_mono(std::span<float> output, const VoiceContext* context = nullptr);
 
 private:
-    void rebuild_graph();
     void apply_modulation();
 
-    std::unique_ptr<OscillatorProcessor> oscillator_;
-    std::unique_ptr<SubOscillator> sub_oscillator_;
-    std::unique_ptr<SawtoothOscillatorProcessor> saw_oscillator_;
-    std::unique_ptr<SineOscillatorProcessor> sine_oscillator_;
-    std::unique_ptr<TriangleOscillatorProcessor> triangle_oscillator_;
-    std::unique_ptr<WavetableOscillatorProcessor> wavetable_oscillator_;
-    std::unique_ptr<SourceMixer> source_mixer_;
-    std::unique_ptr<AdsrEnvelopeProcessor> envelope_;
-    std::unique_ptr<VcaProcessor> vca_;
     std::unique_ptr<FilterProcessor> filter_;
     std::unique_ptr<LfoProcessor> lfo_;
     std::unique_ptr<AudioGraph> graph_;

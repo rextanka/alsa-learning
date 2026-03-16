@@ -383,14 +383,10 @@ void engine_set_note_pan(EngineHandle handle, int note, float pan) {
 int engine_set_adsr(EngineHandle handle, float attack, float decay, float sustain, float release) {
     if (!handle) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
-    for (auto& slot : impl->voice_manager->get_voices()) {
-        if (auto* adsr = dynamic_cast<audio::AdsrEnvelopeProcessor*>(&slot.voice->envelope())) {
-            adsr->set_attack_time(attack);
-            adsr->set_decay_time(decay);
-            adsr->set_sustain_level(sustain);
-            adsr->set_release_time(release);
-        }
-    }
+    impl->voice_manager->set_parameter(4, attack);
+    impl->voice_manager->set_parameter(5, decay);
+    impl->voice_manager->set_parameter(6, sustain);
+    impl->voice_manager->set_parameter(7, release);
     return 0;
 }
 
