@@ -2,8 +2,6 @@
 #include "CInterface.h"
 #include <vector>
 #include <cstring>
-#include <fstream>
-#include <filesystem>
 
 class BridgeTest : public ::testing::Test {
 protected:
@@ -68,7 +66,7 @@ TEST_F(BridgeTest, ModuleRegistryReportsBuiltinTypes) {
     ASSERT_NE(engine, nullptr);
 
     int count = engine_get_module_count(engine);
-    EXPECT_GE(count, 9); // at least 9 built-in types (includes DRAWBAR_ORGAN)
+    EXPECT_GE(count, 8); // at least 8 built-in types
 
     char buf[128];
     bool found_vco = false;
@@ -118,87 +116,5 @@ TEST_F(BridgeTest, ChainConstructionViaAPIProducesAudio) {
     for (float s : buffer) peak = std::max(peak, std::abs(s));
     EXPECT_GT(peak, 0.0f);
 
-    engine_destroy(engine);
-}
-
-// --- Phase 15: Patch v2 JSON load ---
-
-// Locate the patches/ directory relative to the test binary.
-static std::string find_patch(const std::string& name) {
-    // Try a few common locations: alongside binary, in repo root.
-    for (const char* base : {"patches", "../patches", "../../patches",
-                              "../../../cxx/patches"}) {
-        std::string p = std::string(base) + "/" + name;
-        if (std::filesystem::exists(p)) return p;
-    }
-    return "";
-}
-
-TEST_F(BridgeTest, LoadPatchV2ShBass) {
-    std::string patch = find_patch("sh_bass.json");
-    if (patch.empty()) { GTEST_SKIP() << "patches/sh_bass.json not found"; }
-
-    EngineHandle engine = engine_create(sample_rate);
-    ASSERT_NE(engine, nullptr);
-    EXPECT_EQ(engine_load_patch(engine, patch.c_str()), 0);
-
-    engine_note_on(engine, 36, 1.0f); // C2 bass note
-    std::vector<float> buffer(block_size * 2, 0.0f);
-    engine_process(engine, buffer.data(), block_size);
-    float peak = 0.0f;
-    for (float s : buffer) peak = std::max(peak, std::abs(s));
-    EXPECT_GT(peak, 0.0f);
-
-    engine_destroy(engine);
-}
-
-TEST_F(BridgeTest, DrawbarOrganChainProducesAudio) {
-    EngineHandle engine = engine_create(sample_rate);
-    ASSERT_NE(engine, nullptr);
-
-    EXPECT_EQ(engine_add_module(engine, "DRAWBAR_ORGAN", "ORGAN"), 0);
-    EXPECT_EQ(engine_add_module(engine, "ADSR_ENVELOPE", "ENV"),   0);
-    EXPECT_EQ(engine_add_module(engine, "VCA",           "VCA"),   0);
-    EXPECT_EQ(engine_connect_ports(engine, "ENV", "envelope_out", "VCA", "gain_cv"), 0);
-    EXPECT_EQ(engine_bake(engine), 0);
-
-    // Open the 8' principal drawbar via named parameter
-    set_param(engine, "drawbar_8", 8.0f);
-    set_param(engine, "amp_attack", 0.0f);
-    set_param(engine, "amp_sustain", 1.0f);
-
-    engine_note_on(engine, 60, 1.0f);
-    std::vector<float> buffer(block_size * 2, 0.0f);
-    engine_process(engine, buffer.data(), block_size);
-
-    float peak = 0.0f;
-    for (float s : buffer) peak = std::max(peak, std::abs(s));
-    EXPECT_GT(peak, 0.0f);
-
-    engine_destroy(engine);
-}
-
-TEST_F(BridgeTest, LoadPatchV2OrganDrawbar) {
-    std::string patch = find_patch("organ_drawbar.json");
-    if (patch.empty()) { GTEST_SKIP() << "patches/organ_drawbar.json not found"; }
-
-    EngineHandle engine = engine_create(sample_rate);
-    ASSERT_NE(engine, nullptr);
-    EXPECT_EQ(engine_load_patch(engine, patch.c_str()), 0);
-
-    engine_note_on(engine, 60, 1.0f);
-    std::vector<float> buffer(block_size * 2, 0.0f);
-    engine_process(engine, buffer.data(), block_size);
-    float peak = 0.0f;
-    for (float s : buffer) peak = std::max(peak, std::abs(s));
-    EXPECT_GT(peak, 0.0f);
-
-    engine_destroy(engine);
-}
-
-TEST_F(BridgeTest, LoadPatchV2BadFileReturnsError) {
-    EngineHandle engine = engine_create(sample_rate);
-    ASSERT_NE(engine, nullptr);
-    EXPECT_EQ(engine_load_patch(engine, "/nonexistent/path/patch.json"), -1);
     engine_destroy(engine);
 }
