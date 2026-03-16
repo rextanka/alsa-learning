@@ -24,11 +24,17 @@ protected:
         );
 
         engine_wrapper = std::make_unique<test::EngineWrapper>(sample_rate);
-        
-        // Protocol Step 3 & 4 & 5: Modular Patching & ADSR & Start
-        engine_connect_mod(engine_wrapper->get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
+
+        // Phase 15 chain
+        engine_add_module(engine_wrapper->get(), "COMPOSITE_GENERATOR", "VCO");
+        engine_add_module(engine_wrapper->get(), "ADSR_ENVELOPE",       "ENV");
+        engine_add_module(engine_wrapper->get(), "VCA",                 "VCA");
+        engine_connect_ports(engine_wrapper->get(), "ENV", "envelope_out", "VCA", "gain_cv");
+        engine_bake(engine_wrapper->get());
+
+        set_param(engine_wrapper->get(), "sine_gain",   1.0f);
         set_param(engine_wrapper->get(), "amp_sustain", 1.0f);
-        engine_start(engine_wrapper->get());
+        // No engine_start: ModularTremulant uses offline engine_process for RMS analysis.
     }
 
     int sample_rate;

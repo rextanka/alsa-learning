@@ -189,6 +189,23 @@ public:
     virtual PortType output_port_type() const { return PortType::PORT_AUDIO; }
 
     /**
+     * @brief Set the base oscillator frequency (Hz). No-op for non-generator nodes.
+     *
+     * Override in generator processors (e.g. CompositeGenerator, DrawbarOrganProcessor)
+     * so that Voice::note_on() can dispatch without a dynamic_cast.
+     */
+    virtual void set_frequency(double /*freq*/) {}
+
+    /**
+     * @brief Apply a named parameter by string key.
+     *
+     * Returns true if the parameter was recognised and applied.
+     * Default implementation is a no-op (returns false).
+     * Override in module processors (e.g. DrawbarOrganProcessor).
+     */
+    virtual bool apply_parameter(const std::string& /*name*/, float /*value*/) { return false; }
+
+    /**
      * @brief Declared input port type for bake() chain-level validation (Phase 14).
      * Default: PORT_AUDIO. Override for processors that consume a control-rate signal.
      *

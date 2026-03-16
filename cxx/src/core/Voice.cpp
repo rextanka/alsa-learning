@@ -140,14 +140,24 @@ void Voice::set_parameter(int param, float value) {
     }
 }
 
+bool Voice::set_named_parameter(const std::string& name, float value) {
+    // Try the virtual Processor::apply_parameter() on each chain node.
+    for (auto& entry : signal_chain_) {
+        if (entry.node->apply_parameter(name, value)) return true;
+    }
+    return false;
+}
+
 void Voice::note_on(double frequency) {
     active_ = true;
     base_frequency_ = frequency;
     for (auto& entry : signal_chain_) entry.node->reset();
     lfo_->reset();
     if (filter_) filter_->reset();
-    if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) {
-        vco->set_frequency(frequency);
+    // Dispatch frequency to the first chain node via the virtual Processor::set_frequency().
+    // This works for CompositeGenerator, DrawbarOrganProcessor, or any future generator.
+    if (!signal_chain_.empty()) {
+        signal_chain_[0].node->set_frequency(frequency);
     }
     if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV"))) {
         env->gate_on();
@@ -201,8 +211,8 @@ void Voice::apply_modulation() {
     current_frequency_ = base_frequency_ * std::pow(2.0, static_cast<double>(pitch_mod));
     if (current_frequency_ < 20.0) current_frequency_ = base_frequency_;
 
-    if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) {
-        vco->set_frequency(current_frequency_);
+    if (!signal_chain_.empty()) {
+        signal_chain_[0].node->set_frequency(current_frequency_);
     }
 
     if (filter_) {
@@ -310,10 +320,10 @@ void Voice::bake() {
     if (signal_chain_.empty()) {
         throw std::logic_error("Voice::bake() called on empty signal_chain_");
     }
-    // Generator-First Rule: first node must be a CompositeGenerator.
-    if (dynamic_cast<CompositeGenerator*>(signal_chain_[0].node.get()) == nullptr) {
+    // Generator-First Rule: first node must output PORT_AUDIO (it is the audio source).
+    if (signal_chain_[0].node->output_port_type() != PortType::PORT_AUDIO) {
         throw std::logic_error(
-            "Voice::bake() failed: signal_chain_[0] is not a CompositeGenerator");
+            "Voice::bake() failed: signal_chain_[0] must be an audio generator (PORT_AUDIO output)");
     }
     // Port-Type Rules:
     //   1. Last node must output PORT_AUDIO (chain output is always audio).

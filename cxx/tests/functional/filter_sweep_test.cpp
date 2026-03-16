@@ -23,6 +23,13 @@ int main() {
 
     test::EngineWrapper engine(sample_rate);
 
+    // Phase 15 chain
+    engine_add_module(engine.get(), "COMPOSITE_GENERATOR", "VCO");
+    engine_add_module(engine.get(), "ADSR_ENVELOPE",       "ENV");
+    engine_add_module(engine.get(), "VCA",                 "VCA");
+    engine_connect_ports(engine.get(), "ENV", "envelope_out", "VCA", "gain_cv");
+    engine_bake(engine.get());
+
     // Set Up Signal Chain: isolate sawtooth — zero all defaults first
     set_param(engine.get(), "pulse_gain",    0.0f);
     set_param(engine.get(), "sub_gain",      0.0f);

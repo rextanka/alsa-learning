@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "name": "Juno Pad",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
+        { "type": "ADSR_ENVELOPE",        "tag": "ENV" },
+        { "type": "VCA",                  "tag": "VCA" }
+      ],
+      "connections": [
+        { "from_tag": "ENV", "from_port": "envelope_out",
+          "to_tag":   "VCA", "to_port":   "gain_cv" }
+      ],
+      "parameters": {
+        "saw_gain":      1.0,
+        "pulse_gain":    0.0,
+        "sine_gain":     0.3,
+        "triangle_gain": 0.0,
+        "sub_gain":      0.0,
+        "amp_attack":   0.4,
+        "amp_decay":    0.1,
+        "amp_sustain":  0.8,
+        "amp_release":  0.6,
+        "vcf_cutoff":   2000.0,
+        "vcf_res":      0.1
+      }
+    }
+  ]
+}

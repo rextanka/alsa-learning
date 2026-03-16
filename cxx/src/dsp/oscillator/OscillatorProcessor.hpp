@@ -52,7 +52,7 @@ public:
     /**
      * @brief Set frequency (instant change).
      */
-    void set_frequency(double freq) {
+    void set_frequency(double freq) override {
         current_freq_ = freq;
         target_freq_ = freq;
         transitioning_ = false;

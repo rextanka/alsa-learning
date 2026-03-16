@@ -1,12 +1,14 @@
 #include <gtest/gtest.h>
 #include "../TestHelper.hpp"
 #include <vector>
-#include <thread> 
+#include <thread>
 #include <chrono>
 
 /**
  * @file BachOrganTest.cpp
  * @brief Functional verification of MIDI playback using the Bridge API.
+ *
+ * Patch: church pipe organ (DRAWBAR_ORGAN) — same registration as Functional_BachMidi.
  */
 
 class BachOrganTest : public ::testing::Test {
@@ -14,41 +16,49 @@ protected:
     void SetUp() override {
         test::init_test_environment();
         sample_rate = test::get_safe_sample_rate(0);
-        
+
         PRINT_TEST_HEADER(
             "Bach Organ Functional Validation",
             "Verifies MIDI parsing and playback via Bridge API.",
-            "MIDI Data -> Bridge -> Engine -> Output",
+            "MIDI Data -> Engine (DRAWBAR_ORGAN -> ADSR_ENVELOPE -> VCA) -> Output",
             "Successful identification of MIDI events and audible response.",
             sample_rate
         );
 
         engine_wrapper = std::make_unique<test::EngineWrapper>(sample_rate);
-        
-    // Protocol Step 3 & 4: Modular Patching & ADSR
-    engine_clear_modulations(engine_wrapper->get());
-    engine_connect_mod(engine_wrapper->get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
+        EngineHandle engine = engine_wrapper->get();
 
-    // Audit modulation
-    char mod_report[256];
-    engine_get_modulation_report(engine_wrapper->get(), mod_report, sizeof(mod_report));
-    assert(strstr(mod_report, "Src: 0 -> Tgt: -1 (Param: 3)") != nullptr);
+        // Phase 15 organ chain
+        engine_add_module(engine, "DRAWBAR_ORGAN", "ORGAN");
+        engine_add_module(engine, "ADSR_ENVELOPE", "ENV");
+        engine_add_module(engine, "VCA",           "VCA");
+        engine_connect_ports(engine, "ENV", "envelope_out", "VCA", "gain_cv");
+        engine_bake(engine);
 
-    engine_set_adsr(engine_wrapper->get(), 0.015f, 0.1f, 0.7f, 0.050f);
-        
-        // Initialize Tempo
-        engine_set_bpm(engine_wrapper->get(), 100.0);
-        ASSERT_EQ(engine_start(engine_wrapper->get()), 0);
+        // Church pipe organ registration: 16', 8', 4', 2⅔' open
+        set_param(engine, "drawbar_16",  6.0f);
+        set_param(engine, "drawbar_8",   8.0f);
+        set_param(engine, "drawbar_4",   6.0f);
+        set_param(engine, "drawbar_223", 4.0f);
+        set_param(engine, "drawbar_2",   2.0f);
 
-        // --- CALIBRATION PHASE ---
-        // Measure actual tick rate from the engine to drive the sequencer accurately.
+        // Church organ ADSR: instant attack, sustain, modest release
+        set_param(engine, "amp_attack",  0.015f);
+        set_param(engine, "amp_decay",   0.1f);
+        set_param(engine, "amp_sustain", 0.7f);
+        set_param(engine, "amp_release", 0.05f);
+
+        engine_set_bpm(engine, 100.0);
+        ASSERT_EQ(engine_start(engine), 0);
+
+        // Calibrate tick rate so the sequencer can time events accurately
         int64_t start_ticks = 0;
-        engine_get_total_ticks(engine_wrapper->get(), &start_ticks);
+        engine_get_total_ticks(engine, &start_ticks);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         int64_t end_ticks = 0;
-        engine_get_total_ticks(engine_wrapper->get(), &end_ticks);
-        
-        ticks_per_ms = (static_cast<double>(end_ticks) - static_cast<double>(start_ticks)) / 500.0;
+        engine_get_total_ticks(engine, &end_ticks);
+
+        ticks_per_ms = (static_cast<double>(end_ticks) - start_ticks) / 500.0;
         std::cout << "[BachSequencer] Calibrated tick rate: " << ticks_per_ms << " ticks/ms" << std::endl;
     }
 
@@ -63,8 +73,7 @@ protected:
  */
 TEST_F(BachOrganTest, BWV578_Subject_Audible) {
     std::cout << "[BachAudit] Starting BWV 578 Functional Validation..." << std::endl;
-    
-    // We use the high-level MIDI byte processing in the bridge
+
     std::vector<uint8_t> midiData = {
         0x90, 67, 100, // G4
         0x90, 74, 100, // D5
@@ -80,16 +89,14 @@ TEST_F(BachOrganTest, BWV578_Subject_Audible) {
     };
 
     EngineHandle engine = engine_wrapper->get();
-    
-    // Sequencer: Use calibrated tick increments for 100ms notes
+
     const double note_duration_ms = 100.0;
-    const double ticks_per_event = note_duration_ms * ticks_per_ms;
-    
+    const double ticks_per_event  = note_duration_ms * ticks_per_ms;
+
     int64_t target_tick = 0;
     engine_get_total_ticks(engine, &target_tick);
 
     for (size_t i = 0; i < midiData.size(); i += 3) {
-        // Wait for target_tick
         int64_t current_ticks = 0;
         while (test::g_keep_running) {
             engine_get_total_ticks(engine, &current_ticks);
@@ -97,25 +104,21 @@ TEST_F(BachOrganTest, BWV578_Subject_Audible) {
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
 
-        // Note ON
-        std::cout << "[BachSequencer] Tick " << current_ticks << " / Target " << (int64_t)target_tick << ": Note ON " << (int)midiData[i+1] << std::endl;
+        std::cout << "[BachSequencer] Tick " << current_ticks
+                  << " / Target " << target_tick
+                  << ": Note ON " << static_cast<int>(midiData[i + 1]) << std::endl;
         engine_process_midi_bytes(engine, &midiData[i], 3, 0);
-        
-        // Schedule Note OFF
-        target_tick += ticks_per_event;
-        
+        target_tick += static_cast<int64_t>(ticks_per_event);
+
         while (test::g_keep_running) {
             engine_get_total_ticks(engine, &current_ticks);
             if (current_ticks >= static_cast<int64_t>(target_tick)) break;
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
 
-        // Note OFF
-        uint8_t off[] = { 0x80, midiData[i+1], 0 };
+        uint8_t off[] = { 0x80, midiData[i + 1], 0 };
         engine_process_midi_bytes(engine, off, 3, 0);
-        
-        // Prep for next Note ON
-        target_tick += ticks_per_event;
+        target_tick += static_cast<int64_t>(ticks_per_event);
     }
 
     std::cout << "[BachAudit] MIDI byte processing completed." << std::endl;
@@ -129,15 +132,12 @@ TEST_F(BachOrganTest, RunningStatus_Validation) {
               0x47, 0x64  // B4 (Running Status)
     };
 
-    std::cout << "[DEBUG] MIDI data size: " << midiData.size() << std::endl;
+    std::cout << "[RunningStatus] MIDI data size: " << midiData.size() << std::endl;
     EngineHandle engine = engine_wrapper->get();
-    
-    // The MIDI parser inside the engine handles running status
+
     engine_process_midi_bytes(engine, midiData.data(), midiData.size(), 0);
-    
-    // Crucial: Wait for the engine to render at least a few buffers
-    // 1000ms allows the notes to sustain and be audible
+
     test::wait_while_running(1);
-    
+
     std::cout << "[BachAudit] Running Status bytes processed and audible." << std::endl;
 }

@@ -252,6 +252,12 @@ void VoiceManager::set_parameter_by_name(const std::string& name, float value) {
 
     if (param_id != -1) {
         set_parameter(param_id, value);
+    } else {
+        // Unknown to the legacy table — try each voice's named-parameter dispatch
+        // (handles DrawbarOrgan drawbar_* and any future module-specific params).
+        for (auto& slot : voices_) {
+            if (slot.voice) slot.voice->set_named_parameter(name, value);
+        }
     }
 }
 

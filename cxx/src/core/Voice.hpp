@@ -44,9 +44,18 @@ public:
     BufferPool::BufferPtr borrow_buffer() { return graph_->borrow_buffer(); }
 
     /**
-     * @brief Set a modulation parameter.
+     * @brief Set a modulation parameter (legacy integer-ID API).
      */
     void set_parameter(int param, float value);
+
+    /**
+     * @brief Set a named parameter on any chain node that recognises it.
+     *
+     * Tries all nodes in order via Processor::set_parameter(name, value).
+     * Returns true if at least one node accepted the parameter.
+     * Falls back to the legacy integer-ID table for well-known names.
+     */
+    bool set_named_parameter(const std::string& name, float value);
 
     void set_pan(float pan);
     float pan() const { return pan_; }

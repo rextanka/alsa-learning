@@ -79,7 +79,7 @@ public:
 
     // --- Frequency ---
 
-    void set_frequency(double freq) {
+    void set_frequency(double freq) override {
         pulse_osc_->set_frequency(freq);
         saw_osc_->set_frequency(freq);
         sine_osc_->set_frequency(freq);

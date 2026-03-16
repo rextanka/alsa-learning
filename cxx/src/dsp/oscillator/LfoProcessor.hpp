@@ -46,7 +46,7 @@ public:
         declare_parameter({"waveform",  "LFO Waveform",  0.0f,   3.0f, 0.0f});
     }
 
-    void set_frequency(double freq) {
+    void set_frequency(double freq) override {
         frequency_ = freq;
     }
 

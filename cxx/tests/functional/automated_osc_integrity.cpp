@@ -1,9 +1,12 @@
 /**
- * @file automated_osc_integrity.cpp 
+ * @file automated_osc_integrity.cpp
  * @brief Tier 2 Functional Test: Automated Pitch Verification.
- * 
- * This test verifies that the oscillators are in tune by analyzing the
- * output of a modular graph using the C Bridge API and AudioTap.
+ *
+ * Verifies oscillators are in tune by analyzing output via the C Bridge API
+ * and AudioTap, then running a DCT-based pitch detector.
+ *
+ * Chain: COMPOSITE_GENERATOR -> ADSR_ENVELOPE -> VCA (Phase 15)
+ * Analysis: DctProcessor + PitchDetector (test-local C++ analysis helpers).
  */
 
 #include "../TestHelper.hpp"
@@ -13,35 +16,22 @@
 #include <vector>
 #include <cmath>
 #include <iomanip>
-#include <thread>
 #include <cassert>
 #include <cstring>
-#include <chrono>
 
-/**
- * @brief Helper to verify frequency for a single target.
- */
-bool verify_freq(EngineHandle engine, audio::DctProcessor& dct, float target_freq, float sample_rate) {
+static bool verify_freq(EngineHandle engine, audio::DctProcessor& dct,
+                        float target_freq, float sample_rate) {
     std::cout << "[VERIFY] Target: " << target_freq << " Hz" << std::endl;
-    
-    // 1. Setup engine state and flush previous note
+
     engine_audiotap_reset(engine);
-    
-    // Convert frequency to MIDI note for engine_note_on
-    // f = 440 * 2^((n-69)/12) -> n = 69 + 12 * log2(f/440)
+
     int note = static_cast<int>(std::round(69.0 + 12.0 * std::log2(target_freq / 440.0)));
     engine_note_on(engine, note, 1.0f);
+    test::wait_while_running(1);
 
-    // 2. "Warm up" and fill the tap buffer using the real-time background thread.
-    // We need at least 16384 samples (341ms at 48kHz). 0.4s ensures a clean snapshot.
-    // Use wait_while_running to keep the thread alive without deadlocking.
-    test::wait_while_running(1); // Wait 1 second (rounded up from 0.4s for int-based helper)
-
-    // 3. Capture the most recent samples from the tap matching the DCT input size
     std::vector<float> captured(dct.get_input_size());
     engine_audiotap_read(engine, captured.data(), dct.get_input_size());
 
-    // Audit: Verify analysis buffer is non-zero
     float sum_abs = 0.0f;
     for (float s : captured) sum_abs += std::abs(s);
     if (sum_abs < 1e-6f) {
@@ -49,29 +39,23 @@ bool verify_freq(EngineHandle engine, audio::DctProcessor& dct, float target_fre
         return false;
     }
 
-    // 4. Run DCT analysis (with zero-padding inside)
     std::vector<float> magnitudes(dct.get_dct_size());
     std::cout << "  [DEBUG] Processing DCT (size: " << dct.get_dct_size() << ")..." << std::endl;
     dct.process(captured, magnitudes);
-    std::cout << "  [DEBUG] Finished." << std::endl;
 
-    // 5. Detect pitch with sub-bin accuracy
-    float detected = audio::PitchDetector::detect(magnitudes, sample_rate);
-    
-    float error = std::abs(detected - target_freq);
-    float error_percent = (target_freq > 0) ? (error / target_freq) * 100.0f : 0.0f;
+    float detected    = audio::PitchDetector::detect(magnitudes, sample_rate);
+    float error       = std::abs(detected - target_freq);
+    float error_pct   = (target_freq > 0.0f) ? (error / target_freq) * 100.0f : 0.0f;
 
     std::cout << "  Detected: " << std::fixed << std::setprecision(3) << detected << " Hz"
-              << " | Error: " << std::setprecision(3) << error << " Hz (" 
-              << std::setprecision(2) << error_percent << "%)" << std::endl;
+              << "  Error: "    << std::setprecision(3) << error     << " Hz ("
+              << std::setprecision(2) << error_pct << "%)" << std::endl;
 
-    // Clean up note and allow release stage to finish
     engine_note_off(engine, note);
     test::wait_while_running(1);
 
-    // Deviation limit: 1.0% (Robust sanity check for mid-range)
-    if (error_percent > 1.0f) {
-        std::cerr << "  [FAIL] Frequency deviation " << error_percent << "% exceeds 1.0% limit!" << std::endl;
+    if (error_pct > 1.0f) {
+        std::cerr << "  [FAIL] Frequency deviation " << error_pct << "% exceeds 1.0% limit!" << std::endl;
         return false;
     }
 
@@ -82,41 +66,38 @@ bool verify_freq(EngineHandle engine, audio::DctProcessor& dct, float target_fre
 int main() {
     test::init_test_environment();
     int sample_rate = test::get_safe_sample_rate();
-    
+
     PRINT_TEST_HEADER(
         "Automated Pitch Integrity",
         "Verify oscillators are in tune using the bridge-level AudioTap.",
-        "Engine -> AudioTap -> DCT -> PitchDetector",
+        "COMPOSITE_GENERATOR -> ADSR_ENVELOPE -> VCA -> AudioTap -> DCT -> PitchDetector",
         "Detected frequencies within 1.0% of MIDI targets.",
         sample_rate
     );
 
-    // 1. Initialize Engine via Bridge (Golden Lifecycle)
     test::EngineWrapper engine(sample_rate);
+
+    // Phase 15 chain — fast ADSR so the note sustains at full level immediately
+    engine_add_module(engine.get(), "COMPOSITE_GENERATOR", "VCO");
+    engine_add_module(engine.get(), "ADSR_ENVELOPE",       "ENV");
+    engine_add_module(engine.get(), "VCA",                 "VCA");
+    engine_connect_ports(engine.get(), "ENV", "envelope_out", "VCA", "gain_cv");
+    engine_bake(engine.get());
+
+    set_param(engine.get(), "sine_gain",   1.0f);
+    set_param(engine.get(), "amp_attack",  0.001f);
+    set_param(engine.get(), "amp_decay",   0.01f);
+    set_param(engine.get(), "amp_sustain", 1.0f);
+    set_param(engine.get(), "amp_release", 0.01f);
+
     engine_start(engine.get());
-    
-    // 2. Setup Analysis Components (Helper classes)
-    // Stable parameters: 16k window, 32k DCT transform (2x padding)
+
     audio::DctProcessor dct(16384, 32768);
 
-    // 3. Run Test Suite for mid-to-high range pitches
     bool all_passed = true;
-    
-    // Explicitly configure for Tier 2 modular architecture
-    set_param(engine.get(), "sine_gain", 1.0f);
-    engine_set_adsr(engine.get(), 0.001f, 0.01f, 1.0f, 0.01f);
-    engine_clear_modulations(engine.get());
-    engine_connect_mod(engine.get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
-
-    // Audit modulation
-    char mod_report[256];
-    engine_get_modulation_report(engine.get(), mod_report, sizeof(mod_report));
-    assert(strstr(mod_report, "Src: 0 -> Tgt: -1 (Param: 3)") != nullptr);
-    
-    // Testing mid-range notes for stability (C4, A4, A5)
-    all_passed &= verify_freq(engine.get(), dct, 261.63f, (float)sample_rate);
-    all_passed &= verify_freq(engine.get(), dct, 440.00f, (float)sample_rate);
-    all_passed &= verify_freq(engine.get(), dct, 880.00f, (float)sample_rate);
+    all_passed &= verify_freq(engine.get(), dct, 261.63f, static_cast<float>(sample_rate));
+    all_passed &= verify_freq(engine.get(), dct, 440.00f, static_cast<float>(sample_rate));
+    all_passed &= verify_freq(engine.get(), dct, 880.00f, static_cast<float>(sample_rate));
 
     if (!all_passed) {
         std::cerr << "FAILED: One or more oscillator frequency tests failed." << std::endl;

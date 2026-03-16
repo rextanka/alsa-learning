@@ -36,17 +36,30 @@ Every functional test in `cxx/tests/functional/` **MUST** execute these steps in
 ## 2. Modular Graph Initialization
 Tests must explicitly initialize the graph according to their requirements. Do not use a "one-size-fits-all" lifecycle. Choose the appropriate Tier:
 
-### Signal Chain Standard
-*   **Mono Voice**: Each voice operates mono internally.
-*   **Summing Bus**: All voices are aggregated into a stereo `SummingBus` that handles constant-power panning and master gain.
-*   **Effects Chain**: The Bus output is processed through global FX (Chorus, etc.) before reaching the HAL.
+### Signal Chain Standard: Mono-until-Mixer
+
+Each voice is a strictly mono signal path internally (`COMPOSITE_GENERATOR → ADSR_ENVELOPE → VCA`). Stereo width is introduced at the engine output level, not inside a voice.
+
+```
+Voice 0  (mono) ──┐
+Voice 1  (mono) ──┤  SummingBus  ──► Stereo L/R  ──► Global FX  ──► HAL / engine_process
+Voice N  (mono) ──┘  (panning)
+```
+
+*   **Mono Voice**: Each voice operates on a single `std::span<float>`. No voice produces stereo output directly.
+*   **SummingBus**: Aggregates all active mono voices into a stereo `AudioBuffer` by applying constant-power panning per voice (`L = cos θ, R = sin θ`).
+*   **Global FX**: Chorus, delay, etc. are applied to the stereo bus output after summing.
+*   **`engine_process`**: Routes through the same stereo `SummingBus` path as the HAL callback. The output buffer must be `frames × 2` floats (interleaved `[L₀, R₀, L₁, R₁, …]`).
+
+> **Rule**: never set gain, filter, or pan parameters inside a voice chain for stereo width. Pan is set per-voice via `engine_set_note_pan(handle, note, pan)` where `pan ∈ [-1.0, +1.0]`. The default `voice_spread` is 0.5 (voices alternate ±0.5 pan on each note-on).
 
 - **Tier 1 (Direct Path)**: `Oscillator -> Output`.
   - Required: `engine_start`, `set_param` (Gain).
-- **Tier 2 (Modulated Path)**: `Oscillator -> Modulator -> Output`.
-  - Required: Tier 1 requirements + `engine_connect_mod` (e.g., ADSR -> VCA).
+- **Tier 2 (Modulated Path)**: `COMPOSITE_GENERATOR -> ADSR_ENVELOPE -> VCA -> Output`.
+  - Required: Phase 15 chain (`engine_add_module` / `engine_connect_ports("ENV", "envelope_out", "VCA", "gain_cv")` / `engine_bake`).
+  - Optional matrix routes: `engine_connect_mod` (e.g., LFO → pitch, LFO → cutoff).
 - **Tier 3 (Complex Path)**: `Oscillator -> VCF -> VCA -> Output`.
-  - Required: Tier 2 requirements + Filter/Resonance initialization.
+  - Required: Tier 2 requirements + `engine_set_filter_type` + Filter/Resonance params.
 
 ---
 
@@ -54,12 +67,50 @@ Tests must explicitly initialize the graph according to their requirements. Do n
 Before a test is executed, the developer (or Cline) must confirm:
 1. **Graph Definition**: Is the signal path documented in the `PRINT_TEST_HEADER`?
 2. **Lifecycle State**: Has `engine_start()` been called for this specific configuration?
-3. **Connectivity**: If modulation is used, has `engine_connect_mod` been called to link the source to the target?
+3. **Connectivity**: Is the audio signal path wired via `engine_connect_ports` + `engine_bake`? If optional modulation matrix routes (LFO→pitch, LFO→cutoff) are needed, has `engine_connect_mod` also been called?
 4. **Gain Stage**: Is the gain stage of every module in the graph explicitly initialized to a non-zero value?
 
 ---
 
-## 4. RT-Safe Logger
+## 4. Silence Debugger Protocol
+
+If a test produces no audio, follow this binary search path — do not guess:
+
+1. **Check Lifecycle**: Is `engine_bake()` called after `engine_add_module` / `engine_connect_ports`? Is `engine_start()` called?
+2. **Check ENV→VCA link**: Is `ENV.envelope_out` connected to `VCA.gain_cv`? (`engine_connect_ports`)
+3. **Check Gate**: Is `amp_sustain` set to a non-zero value?
+4. **Check Mixer**: Are the oscillator gains (e.g., `sine_gain`) set to > 0.0f?
+5. **Check AudioTap**: If using `engine_audiotap_read`, ensure `engine_audiotap_reset` was called and the tap buffer has been filled by at least one `engine_process` call.
+
+---
+
+## 5. Test Registry
+
+| Test File | Tier | Purpose |
+|-----------|------|---------|
+| `automated_osc_integrity.cpp` | 2 | High-precision pitch audit (DCT) |
+| `audio_check.cpp` | 1 | Basic driver stability |
+| `four_beeps_adsr.cpp` | 2 | ADSR articulation & lifecycle |
+| `filter_sweep_test.cpp` | 3 | Moog/Diode resonant sweep |
+| `guitar_tuner_verify.cpp` | 1 | Interactive pitch accuracy |
+| `oscillator_integrity_test.cpp` | 1 | Solo/mute behaviour |
+| `oscillator_baseline_test.cpp` | 1 | Oscillator output baseline |
+| `oscillator_drone_test.cpp` | 1 | Sustained drone stability |
+| `graph_audit_test.cpp` | 3 | Dynamic signal chain audit |
+| `metronome_test.cpp` | 1 | Rhythmic click timing |
+| `Phase10Tests.cpp` | 2 | BPM/clock and note-name API |
+| `stereo_poly_test.cpp` | 2 | Polyphonic voice panning |
+| `test_sh101_chain.cpp` | 3 | SH-101 bass chain + LFO PWM |
+| `test_tremulant_preset.cpp` | 2 | LFO → pitch vibrato |
+| `test_juno_chorus.cpp` | 2 | Juno chorus stereo separation |
+| `Functional_BachMidi.cpp` | 3 | MIDI polyphony, DrawbarOrgan |
+| `BachOrganTest.cpp` | 3 | DrawbarOrgan register blend |
+| `Functional_SH101_Live.cpp` | 3 | Patch load + live pluck seq |
+| `patch_sequence_test.cpp` | 3 | Four reference patches: SH-101 ostinato, TB-303 acid sweep, Juno pad melody, Drawbar Organ chorale |
+
+---
+
+## 6. RT-Safe Logger
 
 The `AudioLogger` is a lock-free, single-producer single-consumer ring buffer designed for use in the high-priority Audio Thread.
 
@@ -83,7 +134,7 @@ audio_log_message("Toy", "Filter Initialized");
 audio_log_event("Cutoff", 440.0f);
 ```
 
-## 5. Behavioral Testing with Telemetry
+## 7. Behavioral Testing with Telemetry
 
 When testing components like the `VoiceManager`, checking the output buffer is often not enough to verify complex logic like voice stealing. The `AudioLogger` allows us to verify **internal state** without the "observer effect" of slow I/O.
 
@@ -114,7 +165,7 @@ TEST(VoiceStressTest, VerifyOldestIsStolen) {
 
 ---
 
-## 6. Configuration Guide (10ms MMA Target)
+## 8. Configuration Guide (10ms MMA Target)
 
 To maintain the **10ms MMA Latency Target**, all functional tests follow this dynamic protocol:
 
@@ -129,7 +180,7 @@ To maintain the **10ms MMA Latency Target**, all functional tests follow this dy
 
 ---
 
-## 7. Test Output Standards
+## 9. Test Output Standards
 
 Every functional test in `cxx/tests/functional/` MUST include a standardized header block using the `PRINT_TEST_HEADER` macro.
 
@@ -146,7 +197,7 @@ Every functional test in `cxx/tests/functional/` MUST include a standardized hea
 
 ---
 
-## 8. Implementation SOP for New Components
+## 10. Implementation SOP for New Components
 
 1.  **Instrument:** Add `log_event` or `log_message` calls to critical state transitions.
 2.  **Verify:** Write a test that triggers these transitions and uses the `AudioLogger` to verify.
@@ -156,7 +207,7 @@ Every functional test in `cxx/tests/functional/` MUST include a standardized hea
 
 ---
 
-## 9. Implementation SOP (Standard Operating Procedure)
+## 11. Implementation SOP (Standard Operating Procedure)
 
 1. **Verify Tier**: Identify the simplest graph (Tier 1/2/3) for the test.
 2. **C API compliance check**: If the test is functional, confirm it imports only `CInterface.h` and `TestHelper.hpp`. Flag any C++ internal include as non-compliant.

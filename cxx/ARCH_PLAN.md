@@ -132,6 +132,42 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
 
 ---
 
+## Audio Terminology
+
+Precise use of these terms is mandatory throughout all source code, documentation, and API contracts. Ambiguity between "sample" and "frame" is a common source of buffer-sizing bugs.
+
+### Sample
+A **sample** is a single scalar quantised amplitude value for **one channel** at one point in time. It is the atomic unit of digital audio. Represented as `float` internally.
+
+### Sample Frame
+A **sample frame** (or simply **frame**) is the set of samples — one per channel — that are presented to the DAC simultaneously. The channel count determines the frame width:
+
+| Stream Format | Samples per Frame | Layout |
+|---|---|---|
+| Mono | 1 | `[C]` |
+| Stereo | 2 | `[L, R]` (interleaved) |
+| Quadraphonic | 4 | `[FL, FR, RL, RR]` (interleaved) |
+
+A buffer of *N* frames in a stereo stream therefore contains *2N* samples stored as `[L₀, R₀, L₁, R₁, …, L_{N-1}, R_{N-1}]`.
+
+### Block
+A **block** (or **processing block**) is a contiguous sequence of *N* frames processed atomically by the DSP graph in a single callback invocation. *N* is the **block size** (see Block Size Policy). The engine's internal voice graph and modulation matrix advance by exactly one block per callback.
+
+### API Contract for `engine_process`
+`engine_process(handle, float* output, size_t frames)` — the `frames` parameter is a **frame count**, not a sample count. The function produces **stereo interleaved** output via the same `SummingBus` path as the HAL callback, including voice panning and global FX (Chorus). The caller must provide a buffer of at least `frames × 2` floats.
+
+```c
+const size_t FRAMES = 512;
+float output[FRAMES * 2]; // stereo interleaved: 1024 floats
+engine_process(handle, output, FRAMES);
+// output[i*2]   = left  sample of frame i
+// output[i*2+1] = right sample of frame i
+```
+
+This guarantees that offline test analysis and live HAL rendering are driven by identical signal graph paths.
+
+---
+
 ## Block Size Policy
 
 Block size is **runtime-configurable** and must be chosen by the host at engine creation time based on hardware capability queries. There is no hardcoded default — the appropriate size is platform and hardware dependent (e.g. 512 samples on a modern ARM laptop for minimum latency; 1024 samples on older x86 hardware for stability).
