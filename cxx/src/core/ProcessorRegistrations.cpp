@@ -22,7 +22,6 @@
 #include "../dsp/oscillator/LfoProcessor.hpp"
 #include "../dsp/oscillator/WhiteNoiseProcessor.hpp"
 #include "../dsp/fx/JunoChorus.hpp"
-#include "../dsp/routing/DrawbarOrganProcessor.hpp"
 
 namespace audio {
 
@@ -68,11 +67,6 @@ void register_builtin_processors() {
         "JUNO_CHORUS",
         "Dual-rate BBD chorus emulating the Juno-60 stereo width effect",
         [](int sr) { return std::make_unique<JunoChorus>(sr); }
-    );
-    reg.register_module(
-        "DRAWBAR_ORGAN",
-        "9-partial tonewheel organ at Hammond footage ratios (16' to 1')",
-        [](int sr) { return std::make_unique<DrawbarOrganProcessor>(sr); }
     );
 }
 

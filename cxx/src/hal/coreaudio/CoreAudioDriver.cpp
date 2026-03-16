@@ -58,10 +58,9 @@ CoreAudioDriver::CoreAudioDriver(int sample_rate, int block_size)
     }
 
     // 4. Set the stream format (PCM Float32, Stereo, Non-Interleaved)
-    // Use the requested sample rate, capped at 48 kHz (hardware safety ceiling).
-    const int capped_sr = std::min(sample_rate_, 48000);
+    // Enforce 48kHz and strictly follow requested format
     AudioStreamBasicDescription streamFormat{};  // zero-init all fields
-    streamFormat.mSampleRate = static_cast<double>(capped_sr);
+    streamFormat.mSampleRate = 48000.0;
     streamFormat.mFormatID = kAudioFormatLinearPCM;
     streamFormat.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsNonInterleaved | kAudioFormatFlagIsPacked;
     streamFormat.mBitsPerChannel = 32;

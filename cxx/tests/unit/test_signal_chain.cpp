@@ -6,7 +6,6 @@
 
 #include <gtest/gtest.h>
 #include "CompositeGenerator.hpp"
-#include "DrawbarOrganProcessor.hpp"
 #include "Processor.hpp"
 #include "ModuleRegistry.hpp"
 #include <vector>
@@ -115,8 +114,7 @@ TEST_F(ModuleRegistryTest, RegistryContainsAllBuiltinTypes) {
     auto& reg = ModuleRegistry::instance();
     const std::vector<std::string> expected = {
         "COMPOSITE_GENERATOR", "ADSR_ENVELOPE", "VCA",
-        "MOOG_FILTER", "DIODE_FILTER", "LFO", "WHITE_NOISE", "JUNO_CHORUS",
-        "DRAWBAR_ORGAN"
+        "MOOG_FILTER", "DIODE_FILTER", "LFO", "WHITE_NOISE", "JUNO_CHORUS"
     };
     for (const auto& name : expected) {
         EXPECT_NE(reg.find(name), nullptr) << "Missing: " << name;
@@ -153,73 +151,4 @@ TEST_F(ModuleRegistryTest, MoogFilterHasDeclaredParameters) {
 
 TEST_F(ModuleRegistryTest, FindUnknownTypeReturnsNullptr) {
     EXPECT_EQ(ModuleRegistry::instance().find("DOES_NOT_EXIST"), nullptr);
-}
-
-// --- DrawbarOrganProcessor tests ---
-
-TEST(DrawbarOrgan, ProducesAudioWhenDrawbarOpen) {
-    DrawbarOrganProcessor organ(kSampleRate);
-    organ.set_frequency(440.0);
-    organ.set_drawbar(2, 8.0f); // 8' principal, full open
-
-    std::vector<float> buf(kBlockSize, 0.0f);
-    organ.pull(std::span<float>(buf));
-
-    float peak = 0.0f;
-    for (float s : buf) peak = std::max(peak, std::abs(s));
-    EXPECT_GT(peak, 0.0f);
-}
-
-TEST(DrawbarOrgan, SilentWhenAllDrawbarsClosed) {
-    DrawbarOrganProcessor organ(kSampleRate);
-    organ.set_frequency(440.0);
-    for (size_t i = 0; i < DrawbarOrganProcessor::NUM_DRAWBARS; ++i)
-        organ.set_drawbar(i, 0.0f);
-
-    std::vector<float> buf(kBlockSize, 0.0f);
-    organ.pull(std::span<float>(buf));
-
-    float peak = 0.0f;
-    for (float s : buf) peak = std::max(peak, std::abs(s));
-    EXPECT_FLOAT_EQ(peak, 0.0f);
-}
-
-TEST(DrawbarOrgan, ApplyParameterRoutesDrawbarNames) {
-    DrawbarOrganProcessor organ(kSampleRate);
-    organ.set_frequency(440.0);
-    // Close the default-open drawbar, then open via apply_parameter
-    organ.set_drawbar(2, 0.0f);
-    EXPECT_TRUE(organ.apply_parameter("drawbar_8", 8.0f));
-
-    std::vector<float> buf(kBlockSize, 0.0f);
-    organ.pull(std::span<float>(buf));
-
-    float peak = 0.0f;
-    for (float s : buf) peak = std::max(peak, std::abs(s));
-    EXPECT_GT(peak, 0.0f);
-}
-
-TEST(DrawbarOrgan, HarmonicRatiosDistinctFrequencies) {
-    // Pull two drawbars with different harmonics — output should differ
-    DrawbarOrganProcessor organ1(kSampleRate);
-    organ1.set_frequency(440.0);
-    organ1.set_drawbar(2, 8.0f); // 8' = 1x
-    for (size_t i = 0; i < DrawbarOrganProcessor::NUM_DRAWBARS; ++i)
-        if (i != 2) organ1.set_drawbar(i, 0.0f);
-
-    DrawbarOrganProcessor organ2(kSampleRate);
-    organ2.set_frequency(440.0);
-    organ2.set_drawbar(3, 8.0f); // 4' = 2x
-    for (size_t i = 0; i < DrawbarOrganProcessor::NUM_DRAWBARS; ++i)
-        if (i != 3) organ2.set_drawbar(i, 0.0f);
-
-    std::vector<float> buf1(kBlockSize), buf2(kBlockSize);
-    organ1.pull(std::span<float>(buf1));
-    organ2.pull(std::span<float>(buf2));
-
-    bool differs = false;
-    for (size_t i = 0; i < kBlockSize; ++i) {
-        if (std::abs(buf1[i] - buf2[i]) > 1e-4f) { differs = true; break; }
-    }
-    EXPECT_TRUE(differs);
 }
