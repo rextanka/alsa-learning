@@ -23,8 +23,9 @@ Each port has a **tag** (a unique string name on that module instance, e.g. `"pi
 * **Purpose**: Primary periodic harmonic generation.
 * **Ports**:
   - `PORT_CONTROL` in: `pitch_cv`, `pwm_cv`, `sync_in`
-  - `PORT_AUDIO` out: `audio_out`
-* **Logic**: Exponential frequency response ($f = f_0 \cdot 2^{CV}$).
+  - `PORT_AUDIO` out: `sine_out`, `tri_out`, `saw_out`, `pulse_out`
+* **Logic**: Exponential frequency response ($f = f_0 \cdot 2^{CV}$). All four waveforms are produced simultaneously; downstream SourceMixer nodes select and blend them.
+* **Waveforms**: Sine, Triangle, Sawtooth, Pulse (square/PWM). Triangle wave has only odd harmonics at squared-amplitude rolloff (A/n²), giving a near-sine timbre. Sawtooth has all harmonics at 1/n rolloff.
 
 
 * **LFO (Low Frequency Oscillator)**
@@ -32,6 +33,7 @@ Each port has a **tag** (a unique string name on that module instance, e.g. `"pi
 * **Ports**:
   - `PORT_CONTROL` in: `rate_cv`, `reset`
   - `PORT_CONTROL` out: `control_out`
+* **Waveforms**: Sine (vibrato, tremolo), Triangle (linear ramp modulation), Sawtooth, Square, S&H (random stepped modulation). Waveform is a configuration parameter, not a port.
 * **Note**: LFO output is `PORT_CONTROL`, not `PORT_AUDIO`. It is a modulation source and must not be patched directly into an audio mix.
 
 
@@ -50,8 +52,10 @@ Each port has a **tag** (a unique string name on that module instance, e.g. `"pi
 * **Ports**:
   - `PORT_AUDIO` in: `audio_in`
   - `PORT_AUDIO` out: `audio_out`
-  - `PORT_CONTROL` in: `cutoff_cv`, `res_cv`
-* **Modes**: Switchable Low-Pass (24dB), High-Pass, Band-Pass, and Notch.
+  - `PORT_CONTROL` in: `cutoff_cv`, `res_cv`, `kybd_cv`
+* **Modes**: Switchable Low-Pass (24dB/oct), High-Pass (12dB/oct), Band-Pass (12dB/oct), and Notch.
+* **Keyboard tracking**: `kybd_cv` accepts the same 1V/octave pitch CV as the VCO. The VCF must apply the same exponential voltage-to-frequency response as the VCO so the cutoff point can track pitch. A tracking amount parameter (0.0–1.0) scales how closely the cutoff follows the keyboard.
+* **Self-oscillation**: At maximum resonance the filter becomes a sine wave oscillator at the cutoff frequency. This is a supported implementation behaviour.
 
 
 * **Resonator**
@@ -70,8 +74,9 @@ Each port has a **tag** (a unique string name on that module instance, e.g. `"pi
 * **Ports**:
   - `PORT_AUDIO` in: `audio_in`
   - `PORT_AUDIO` out: `audio_out`
-  - `PORT_CONTROL` in: `gain_cv`
+  - `PORT_CONTROL` in: `gain_cv`, `initial_gain_cv`
 * **Behavior**: Switchable Linear (for modulation) and Exponential (for loudness) response.
+* **Initial gain**: `initial_gain_cv` sets the resting DC level around which `gain_cv` modulates. Required for LFO tremolo: without a non-zero initial gain, a bipolar LFO signal would only open the VCA on positive half-cycles. When `initial_gain_cv` is not patched, the VCA defaults to fully closed (0.0) so that only envelope-driven gain is heard.
 * **Note**: The VCA and Envelope Generator are distinct nodes. The Envelope Generator produces a `PORT_CONTROL` signal that is patched into the VCA's `gain_cv` input. They must not be merged into a single processor.
 
 
@@ -80,6 +85,7 @@ Each port has a **tag** (a unique string name on that module instance, e.g. `"pi
 * **Ports**:
   - `PORT_CONTROL` in: `gate_in`, `trigger_in`
   - `PORT_CONTROL` out: `envelope_out`
+* **Curve shape**: Attack, Decay, and Release segments use **exponential curves** by default (perceptually natural). Linear mode is selectable for special effects. Sustain is a fixed level (no curve).
 * **Note**: Output is `PORT_CONTROL` only. To shape audio amplitude, patch `envelope_out` → VCA `gain_cv`. To shape filter cutoff, patch `envelope_out` → VCF `cutoff_cv`.
 
 
@@ -101,6 +107,7 @@ These modules operate entirely in the control domain. They require `PORT_CONTROL
   - `PORT_CONTROL` in: `cv_in`
   - `PORT_CONTROL` out: `cv_out`
 * **Behavior**: Implements Log/Linear/Exponential curves.
+* **Portamento use case**: When patched between keyboard pitch CV and VCO `pitch_cv`, this module acts as a portamento/glide circuit — a slew limiter that smooths stepped keyboard CV into a gliding pitch transition. Portamento rate is controlled by the rise/fall time parameters.
 
 
 * **CV Mixer/Attenuverter**
