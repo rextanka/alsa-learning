@@ -25,8 +25,13 @@ int main() {
         return 1;
     }
 
-    // Explicitly initialize gain stage as per TEST_DESC.md Tier 1 requirements
-    set_param(engine.get(), "sine_gain", 1.0f);
+    // Isolate sine oscillator: zero out all default gains, then enable sine only.
+    // Voice constructor enables pulse_gain=1.0 and sub_gain=0.5 by default;
+    // those must be cleared so only the sine is heard.
+    set_param(engine.get(), "pulse_gain", 0.0f);
+    set_param(engine.get(), "sub_gain",   0.0f);
+    set_param(engine.get(), "saw_gain",   0.0f);
+    set_param(engine.get(), "sine_gain",  1.0f);
 
     engine_note_on(engine.get(), 69, 0.5f);
 

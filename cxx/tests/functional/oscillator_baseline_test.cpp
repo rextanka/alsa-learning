@@ -25,8 +25,12 @@ int main() {
     // Protocol Step 3: Modular Patching
     engine_connect_mod(engine.get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
 
-    // Configure ADSR and Gain
-    set_param(engine.get(), "sine_gain", 1.0f);
+    // Configure ADSR and Gain: isolate sine — zero all defaults first
+    set_param(engine.get(), "pulse_gain",    0.0f);
+    set_param(engine.get(), "sub_gain",      0.0f);
+    set_param(engine.get(), "saw_gain",      0.0f);
+    set_param(engine.get(), "triangle_gain", 0.0f);
+    set_param(engine.get(), "sine_gain",     1.0f);
     set_param(engine.get(), "amp_attack", 0.05f);
     set_param(engine.get(), "amp_decay", 0.1f);
     set_param(engine.get(), "amp_sustain", 0.7f);

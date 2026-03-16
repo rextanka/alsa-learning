@@ -20,7 +20,12 @@ namespace audio {
 
 /**
  * @brief ADSR Envelope Processor.
- * 
+ *
+ * Output contract (MODULE_DESC §3, VCA/Envelope separation rule):
+ *   do_pull() fills the output span with per-sample envelope level values
+ *   in the range [0.0, 1.0].  It does NOT multiply audio in-place.
+ *   Audio amplitude scaling is performed by VcaProcessor::apply().
+ *
  * Implements a standard four-stage envelope with linear ramps for A, D, and R.
  */
 class AdsrEnvelopeProcessor : public EnvelopeProcessor {
@@ -88,8 +93,10 @@ public:
 
 protected:
     void do_pull(std::span<float> output, const VoiceContext* /* voice_context */ = nullptr) override {
+        // RT-SAFE: fill output with per-sample envelope level (PORT_CONTROL signal).
+        // Must NOT multiply audio in-place — that is VcaProcessor's responsibility.
         for (auto& sample : output) {
-            sample *= process_sample();
+            sample = process_sample();
         }
     }
 
