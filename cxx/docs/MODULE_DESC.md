@@ -1,6 +1,8 @@
 # Module Descriptions: Musical Toolbox
 
-This document defines the functional requirements for all DSP processors.
+This document defines the functional requirements for all DSP processors. It is the
+source of truth for port names, port types, parameter declarations, and connection rules.
+All C++ implementations, C API functions, and patch files are governed by this document.
 
 ---
 
@@ -9,171 +11,296 @@ This document defines the functional requirements for all DSP processors.
 All modules declare their ports using two types:
 
 - **`PORT_AUDIO`** — an audio-rate signal carrying sound. Range: `[-1.0, 1.0]`. Connects only to `PORT_AUDIO` inputs.
-- **`PORT_CONTROL`** — an audio-rate signal carrying modulation or CV. Range: `[-1.0, 1.0]` bipolar or `[0.0, 1.0]` unipolar. Connects only to `PORT_CONTROL` inputs.
+- **`PORT_CONTROL`** — an audio-rate signal carrying modulation or CV. Connects only to `PORT_CONTROL` inputs.
 
-Both port types run at **audio rate** — a full `std::span<float>` per block. The distinction is semantic and enforced at graph construction time, not by a different sample rate.
+Both port types run at **audio rate** — a full `std::span<float>` per block. The distinction is semantic and enforced at `bake()` time.
 
-Each port has a **tag** (a unique string name on that module instance, e.g. `"pitch_cv"`, `"audio_out"`) used by the graph to form named connections. `bake()` validates that all connections match port types before the voice becomes active.
+### Control Value Conventions
+
+`PORT_CONTROL` ports follow one of two range conventions, declared per port:
+
+- **Unipolar** `[0.0, 1.0]` — used for gain, envelope output, drawbar levels, and any quantity that cannot be negative.
+- **Bipolar** `[-1.0, 1.0]` — used for LFO output, pitch CV, attenuverter output, and any quantity that can invert.
+
+Pitch CV follows the **1V/oct convention scaled to float**: each `1.0` unit represents one octave (a doubling of frequency).
+
+Each port descriptor includes a `unipolar` flag. Mismatching a unipolar source to a bipolar destination (or vice versa) is a patch authoring error, not a type error — `bake()` does not reject it, but the connection semantics must be documented in the patch.
+
+### Lifecycle Ports (Gate & Trigger)
+
+Certain port names are **reserved lifecycle ports**. They are driven by the `VoiceContext` (note_on/note_off events) and must not be wired via `connections_`. `bake()` recognises and skips validation for these ports:
+
+| Reserved port name | Signal |
+|--------------------|--------|
+| `gate_in`          | High while note is held, low on note_off |
+| `trigger_in`       | One-block pulse on note_on |
+
+### Feedback Connections
+
+A connection that forms a cycle in the signal graph (e.g. delay feedback) must be marked `"feedback": true` in the patch. The graph executor uses the **previous block's output** for feedback connections, breaking the cycle without aliasing. Non-feedback connections form a DAG validated by `bake()`.
+
+### Port Declaration in C++
+
+Each processor subclass calls `declare_port()` in its constructor for every port it owns:
+
+```cpp
+declare_port({"envelope_out", PORT_CONTROL, OUT, UNIPOLAR});
+declare_port({"gate_in",      PORT_CONTROL, IN,  UNIPOLAR}); // lifecycle — not wired via connections_
+```
+
+The `ModuleRegistry` singleton collects these declarations at library load time via static initializers in each processor `.cpp` file.
+
+---
+
+## Parameter Declaration
+
+Alongside ports, each module declares its **parameters** — the knobs and switches a host
+exposes to the user. Parameters are queryable via the C API.
+
+```cpp
+struct ParameterDescriptor {
+    std::string name;       // "cutoff", "attack_time"
+    std::string label;      // human-readable: "Cutoff Frequency"
+    float min, max, def;    // range and default
+    bool  logarithmic;      // true for frequency/time params
+};
+```
+
+Each processor calls `declare_parameter()` in its constructor alongside `declare_port()`.
+
+---
+
+## Module Registry
+
+At library load time each processor `.cpp` registers its module type with `ModuleRegistry::instance()` via a static initializer:
+
+```cpp
+static bool reg = ModuleRegistry::instance().register_module({
+    "MOOG_FILTER",
+    "4-pole Moog ladder low-pass filter",
+    ports,       // from declare_port() calls
+    parameters,  // from declare_parameter() calls
+    [](int sr) { return std::make_unique<MoogLadderProcessor>(sr); }
+});
+```
+
+The registry is queryable via the C API (`engine_get_module_count`, `engine_get_module_type`, `engine_get_module_port`, `engine_get_module_parameter`). See BRIDGE_GUIDE.md §5.
 
 ---
 
 ## 1. Generators (Oscillators & Noise)
 
-* **VCO (Voltage Controlled Oscillator)**
-* **Purpose**: Primary periodic harmonic generation.
-* **Ports**:
-  - `PORT_CONTROL` in: `pitch_cv`, `pwm_cv`, `sync_in`
-  - `PORT_AUDIO` out: `sine_out`, `tri_out`, `saw_out`, `pulse_out`
-* **Logic**: Exponential frequency response ($f = f_0 \cdot 2^{CV}$). All four waveforms are produced simultaneously; downstream SourceMixer nodes select and blend them.
-* **Waveforms**: Sine, Triangle, Sawtooth, Pulse (square/PWM). Triangle wave has only odd harmonics at squared-amplitude rolloff (A/n²), giving a near-sine timbre. Sawtooth has all harmonics at 1/n rolloff.
+### VCO (Voltage Controlled Oscillator)
+- **Type name**: `COMPOSITE_GENERATOR`
+- **Purpose**: Primary periodic harmonic generation. Owns all waveform oscillators and a SourceMixer.
+- **Ports**:
+  - `PORT_CONTROL` in `pitch_cv` (bipolar, 1V/oct)
+  - `PORT_CONTROL` in `pwm_cv` (bipolar)
+  - `PORT_AUDIO` out `audio_out`
+- **Parameters**: `saw_gain`, `pulse_gain`, `sine_gain`, `triangle_gain`, `sub_gain`, `wavetable_gain`, `noise_gain` (all 0.0–1.0), `pulse_width` (0.0–0.5), `wavetable_type` (int enum)
+- **Logic**: Exponential frequency response (f = f₀ · 2^CV). All waveforms produced simultaneously, blended by internal SourceMixer. Sub-oscillator phase-coupled to pulse oscillator.
 
+### LFO (Low Frequency Oscillator)
+- **Type name**: `LFO`
+- **Purpose**: Sub-audio modulation source.
+- **Ports**:
+  - `PORT_CONTROL` in `rate_cv` (unipolar)
+  - `PORT_CONTROL` in `reset` (unipolar, lifecycle-style trigger)
+  - `PORT_CONTROL` out `control_out` (bipolar)
+- **Parameters**: `rate` (0.01–20 Hz), `intensity` (0.0–1.0), `waveform` (enum: Sine, Triangle, Saw, Square, S&H)
+- **Note**: Output is `PORT_CONTROL`. Must not be patched directly into an audio mix.
 
-* **LFO (Low Frequency Oscillator)**
-* **Purpose**: Sub-audio modulation source. Produces a control signal for modulating other parameters.
-* **Ports**:
-  - `PORT_CONTROL` in: `rate_cv`, `reset`
-  - `PORT_CONTROL` out: `control_out`
-* **Waveforms**: Sine (vibrato, tremolo), Triangle (linear ramp modulation), Sawtooth, Square, S&H (random stepped modulation). Waveform is a configuration parameter, not a port.
-* **Note**: LFO output is `PORT_CONTROL`, not `PORT_AUDIO`. It is a modulation source and must not be patched directly into an audio mix.
+### Noise Generator
+- **Type name**: `WHITE_NOISE`
+- **Purpose**: Stochastic signal generation.
+- **Ports**:
+  - `PORT_AUDIO` out `audio_out`
+- **Parameters**: none (embedded in `COMPOSITE_GENERATOR` as channel 6; also available standalone)
+- **Modes**: White (flat). Pink (−3dB/octave) planned.
 
+### Drawbar Organ
+- **Type name**: `DRAWBAR_ORGAN`
+- **Purpose**: Additive synthesis modelling a Hammond-style tonewheel organ. Nine sine oscillators at fixed harmonic ratios corresponding to drawbar footage (16', 8', 4', 2⅔', 2', 1⅗', 1½', 1⅓', 1').
+- **Ports**:
+  - `PORT_CONTROL` in `pitch_cv` (bipolar, 1V/oct)
+  - `PORT_AUDIO` out `audio_out`
+- **Parameters**: `drawbar_16`, `drawbar_8`, `drawbar_4`, `drawbar_267`, `drawbar_2`, `drawbar_135`, `drawbar_113`, `drawbar_1` (all 0.0–1.0, unipolar), `percussion` (bool), `percussion_decay` (0.0–2.0s)
+- **Note**: Gate-through operation is achieved by setting ADSR attack=0, decay=0, sustain=1.0, release short. Verified by Bach organ tests.
 
-* **Noise Generator**
-* **Purpose**: Stochastic signal generation.
-* **Ports**:
-  - `PORT_AUDIO` out: `audio_out`
-* **Modes**: White (flat) and Pink (-3dB/octave) noise.
-
-
+---
 
 ## 2. Filters (Timbre Shaping)
 
-* **VCF (Voltage Controlled Filter)**
-* **Purpose**: Subtractive frequency manipulation.
-* **Ports**:
-  - `PORT_AUDIO` in: `audio_in`
-  - `PORT_AUDIO` out: `audio_out`
-  - `PORT_CONTROL` in: `cutoff_cv`, `res_cv`, `kybd_cv`
-* **Modes**: Switchable Low-Pass (24dB/oct), High-Pass (12dB/oct), Band-Pass (12dB/oct), and Notch.
-* **Keyboard tracking**: `kybd_cv` accepts the same 1V/octave pitch CV as the VCO. The VCF must apply the same exponential voltage-to-frequency response as the VCO so the cutoff point can track pitch. A tracking amount parameter (0.0–1.0) scales how closely the cutoff follows the keyboard.
-* **Self-oscillation**: At maximum resonance the filter becomes a sine wave oscillator at the cutoff frequency. This is a supported implementation behaviour.
+### VCF — Moog Ladder
+- **Type name**: `MOOG_FILTER`
+- **Purpose**: 4-pole Moog ladder low-pass filter (24dB/oct). Self-oscillates at max resonance.
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in`
+  - `PORT_AUDIO` out `audio_out`
+  - `PORT_CONTROL` in `cutoff_cv` (bipolar)
+  - `PORT_CONTROL` in `res_cv` (unipolar)
+  - `PORT_CONTROL` in `kybd_cv` (bipolar, 1V/oct keyboard tracking)
+- **Parameters**: `cutoff` (20–20000 Hz, log), `resonance` (0.0–1.0)
 
+### VCF — Diode Ladder
+- **Type name**: `DIODE_FILTER`
+- **Purpose**: Diode ladder filter with a characteristically aggressive resonance.
+- **Ports**: same as `MOOG_FILTER`
+- **Parameters**: same as `MOOG_FILTER`
 
-* **Resonator**
-* **Purpose**: Emulation of physical acoustic body resonances/cavities.
-* **Ports**:
-  - `PORT_AUDIO` in: `audio_in`
-  - `PORT_AUDIO` out: `audio_out`
-  - `PORT_CONTROL` in: `freq_cv`
+### Resonator
+- **Type name**: `RESONATOR`
+- **Purpose**: Emulation of physical acoustic body resonances/cavities.
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in`
+  - `PORT_AUDIO` out `audio_out`
+  - `PORT_CONTROL` in `freq_cv` (bipolar)
+- **Parameters**: `frequency` (20–20000 Hz, log), `decay` (0.0–4.0s)
+- **Status**: Planned.
 
-
+---
 
 ## 3. Amplitude & Dynamics
 
-* **VCA (Voltage Controlled Amplifier)**
-* **Purpose**: Gain control and output stage. A dedicated audio gain node — separate from the Envelope Generator.
-* **Ports**:
-  - `PORT_AUDIO` in: `audio_in`
-  - `PORT_AUDIO` out: `audio_out`
-  - `PORT_CONTROL` in: `gain_cv`, `initial_gain_cv`
-* **Behavior**: Switchable Linear (for modulation) and Exponential (for loudness) response.
-* **Initial gain**: `initial_gain_cv` sets the resting DC level around which `gain_cv` modulates. Required for LFO tremolo: without a non-zero initial gain, a bipolar LFO signal would only open the VCA on positive half-cycles. When `initial_gain_cv` is not patched, the VCA defaults to fully closed (0.0) so that only envelope-driven gain is heard.
-* **Note**: The VCA and Envelope Generator are distinct nodes. The Envelope Generator produces a `PORT_CONTROL` signal that is patched into the VCA's `gain_cv` input. They must not be merged into a single processor.
+### VCA (Voltage Controlled Amplifier)
+- **Type name**: `VCA`
+- **Purpose**: Gain control and output stage. Distinct from the Envelope Generator.
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in`
+  - `PORT_AUDIO` out `audio_out`
+  - `PORT_CONTROL` in `gain_cv` (unipolar)
+  - `PORT_CONTROL` in `initial_gain_cv` (unipolar)
+- **Parameters**: `initial_gain` (0.0–1.0)
+- **Behaviour**: Linear gain by default. `initial_gain_cv` sets resting DC level so a bipolar LFO can produce tremolo without fully closing the VCA on negative half-cycles.
 
+### Envelope Generator (ADSR)
+- **Type name**: `ADSR_ENVELOPE`
+- **Purpose**: Transient shaping. Produces a control signal driven by gate events.
+- **Ports**:
+  - `PORT_CONTROL` in `gate_in` (unipolar — **lifecycle port**, driven by VoiceContext)
+  - `PORT_CONTROL` in `trigger_in` (unipolar — **lifecycle port**)
+  - `PORT_CONTROL` out `envelope_out` (unipolar)
+- **Parameters**: `attack` (0.0–10.0s, log), `decay` (0.0–10.0s, log), `sustain` (0.0–1.0), `release` (0.0–10.0s, log)
+- **Curve shape**: Exponential attack, decay, and release by default (perceptually natural).
+- **Note**: Output is `PORT_CONTROL` only. To shape amplitude: patch `envelope_out` → VCA `gain_cv`. To shape filter: patch `envelope_out` → VCF `cutoff_cv`.
 
-* **Envelope Generator (ADSR/AD)**
-* **Purpose**: Transient shaping. Produces a control signal driven by gate events.
-* **Ports**:
-  - `PORT_CONTROL` in: `gate_in`, `trigger_in`
-  - `PORT_CONTROL` out: `envelope_out`
-* **Curve shape**: Attack, Decay, and Release segments use **exponential curves** by default (perceptually natural). Linear mode is selectable for special effects. Sustain is a fixed level (no curve).
-* **Note**: Output is `PORT_CONTROL` only. To shape audio amplitude, patch `envelope_out` → VCA `gain_cv`. To shape filter cutoff, patch `envelope_out` → VCF `cutoff_cv`.
+### Envelope Follower
+- **Type name**: `ENVELOPE_FOLLOWER`
+- **Purpose**: Extracts a dynamic control signal from an audio input.
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in`
+  - `PORT_CONTROL` out `envelope_out` (unipolar)
+- **Parameters**: `attack` (0.0–1.0s), `release` (0.0–2.0s)
+- **Status**: Planned.
 
-
-* **Envelope Follower**
-* **Purpose**: Extraction of dynamic control signals from audio inputs.
-* **Ports**:
-  - `PORT_AUDIO` in: `audio_in`
-  - `PORT_CONTROL` out: `envelope_out`
-
-
+---
 
 ## 4. Modulation & CV Utilities
 
-These modules operate entirely in the control domain. They require `PORT_CONTROL` connections to be useful and are first-class nodes in the `signal_chain_`.
+These modules operate entirely in the control domain.
 
-* **Maths Function Generator**
-* **Purpose**: Versatile envelope, slew limiter, or LFO with configurable curve shapes.
-* **Ports**:
-  - `PORT_CONTROL` in: `cv_in`
-  - `PORT_CONTROL` out: `cv_out`
-* **Behavior**: Implements Log/Linear/Exponential curves.
-* **Portamento use case**: When patched between keyboard pitch CV and VCO `pitch_cv`, this module acts as a portamento/glide circuit — a slew limiter that smooths stepped keyboard CV into a gliding pitch transition. Portamento rate is controlled by the rise/fall time parameters.
+### Maths / Function Generator
+- **Type name**: `MATHS`
+- **Purpose**: Envelope, slew limiter, or LFO with configurable curve shapes. Acts as portamento when patched between keyboard pitch CV and VCO `pitch_cv`.
+- **Ports**:
+  - `PORT_CONTROL` in `cv_in` (bipolar)
+  - `PORT_CONTROL` out `cv_out` (bipolar)
+- **Parameters**: `rise` (0.0–10.0s), `fall` (0.0–10.0s), `curve` (enum: Log, Linear, Exponential)
+- **Status**: Planned.
 
+### CV Mixer / Attenuverter
+- **Type name**: `CV_MIXER`
+- **Purpose**: Combines, scales, and inverts control signals before routing to a destination. Negative mix weights implement inversion.
+- **Ports**:
+  - `PORT_CONTROL` in `cv_in_1` … `cv_in_4` (bipolar)
+  - `PORT_CONTROL` out `cv_out` (bipolar)
+- **Parameters**: `gain_1` … `gain_4` (−1.0–1.0)
+- **Status**: Planned.
 
-* **CV Mixer/Attenuverter**
-* **Purpose**: Combining, scaling, and inverting control signals before routing to a destination.
-* **Ports**:
-  - `PORT_CONTROL` in: `cv_in_1`, `cv_in_2`, `cv_in_3`, `cv_in_4`
-  - `PORT_CONTROL` out: `cv_out`
-* **Note**: Negative mix weights implement signal inversion (attenuverter behaviour).
+### S&H (Sample & Hold)
+- **Type name**: `SAMPLE_HOLD`
+- **Purpose**: Stepped modulation — freezes an input CV at each clock trigger.
+- **Ports**:
+  - `PORT_CONTROL` in `cv_in` (bipolar)
+  - `PORT_CONTROL` in `clock_in` (unipolar)
+  - `PORT_CONTROL` out `cv_out` (bipolar)
+- **Status**: Planned.
 
-
-* **S&H (Sample & Hold)**
-* **Purpose**: Stepped modulation — freezes an input CV at each clock trigger.
-* **Ports**:
-  - `PORT_CONTROL` in: `cv_in`, `clock_in`
-  - `PORT_CONTROL` out: `cv_out`
-
-
+---
 
 ## 5. Effects & Spatial
 
-* **Spatial Processor**
-* **Purpose**: Panning and stereo field positioning.
-* **Ports**:
-  - `PORT_AUDIO` in: `audio_in`
-  - `PORT_AUDIO` out: `left_out`, `right_out`
-  - `PORT_CONTROL` in: `pan_cv`
+### Juno Chorus
+- **Type name**: `JUNO_CHORUS`
+- **Purpose**: BBD-style stereo chorus emulating the Roland Juno-60 chorus circuit.
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in`
+  - `PORT_AUDIO` out `audio_out`
+- **Parameters**: `mode` (enum: Off, I, II, I+II), `rate` (0.1–10 Hz), `depth` (0.0–1.0)
+- **Note**: Architecturally a **global FX module** — one instance processes the summed voice output, not a per-voice chain node. Per-voice instantiation is a temporary workaround pending global FX chain support (Phase 16).
 
+### Spatial Processor
+- **Type name**: `SPATIAL`
+- **Purpose**: Panning and stereo field positioning.
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in`
+  - `PORT_AUDIO` out `left_out`
+  - `PORT_AUDIO` out `right_out`
+  - `PORT_CONTROL` in `pan_cv` (bipolar)
+- **Parameters**: `pan` (−1.0–1.0)
 
-* **Echo/Delay**
-* **Purpose**: Time-based repetition and echo.
-* **Ports**:
-  - `PORT_AUDIO` in: `audio_in`
-  - `PORT_AUDIO` out: `audio_out`
-  - `PORT_CONTROL` in: `time_cv`, `feedback_cv`
+### Echo / Delay
+- **Type name**: `ECHO_DELAY`
+- **Purpose**: Time-based repetition and echo.
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in`
+  - `PORT_AUDIO` out `audio_out`
+  - `PORT_CONTROL` in `time_cv` (unipolar)
+  - `PORT_CONTROL` in `feedback_cv` (unipolar)
+- **Parameters**: `time` (0.0–2.0s), `feedback` (0.0–0.99), `mix` (0.0–1.0)
+- **Note**: Feedback connection from `audio_out` back to `audio_in` must be marked `"feedback": true` in the patch. The executor uses the previous block's output to break the cycle.
+- **Status**: Planned.
 
-
+---
 
 ## 6. Global I/O
 
-* **Audio Input**
-* **Purpose**: Interface for external audio signals entering the graph.
-* **Ports**:
-  - `PORT_AUDIO` out: `audio_out`
+### Summing Mixer (Source Mixer)
+- **Type name**: `SOURCE_MIXER`
+- **Purpose**: Combines multiple audio signals before processing. Head node for multi-oscillator voices.
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in_1` … `audio_in_N`
+  - `PORT_AUDIO` out `audio_out`
+- **Parameters**: `gain_1` … `gain_N` (0.0–1.0 each)
+- **Note**: Embedded inside `COMPOSITE_GENERATOR`. Also available as a standalone node.
 
+### Ring Modulator
+- **Type name**: `RING_MOD`
+- **Purpose**: Non-linear frequency interaction between two audio signals.
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in_a`
+  - `PORT_AUDIO` in `audio_in_b`
+  - `PORT_AUDIO` out `audio_out`
+- **Status**: Planned.
 
-* **Summing Mixer (Source Mixer)**
-* **Purpose**: Combines multiple audio signals before processing. Head node for multi-oscillator voices.
-* **Ports**:
-  - `PORT_AUDIO` in: `audio_in_1` … `audio_in_N`
-  - `PORT_AUDIO` out: `audio_out`
-
-
-* **Ring Modulator**
-* **Purpose**: Non-linear frequency interaction between two audio signals.
-* **Ports**:
-  - `PORT_AUDIO` in: `audio_in_a`, `audio_in_b`
-  - `PORT_AUDIO` out: `audio_out`
-
-
+### Audio Input
+- **Type name**: `AUDIO_INPUT`
+- **Purpose**: Interface for external audio signals (e.g. side-chain, vocoder source).
+- **Ports**:
+  - `PORT_AUDIO` out `audio_out`
+- **Note**: Requires audio driver input buffer support. Pending audio driver input capability (Phase 16).
+- **Status**: Planned.
 
 ---
 
 ## Implementation Rules
 
-* **Port type enforcement**: `bake()` must reject any connection where a `PORT_AUDIO` output is connected to a `PORT_CONTROL` input, or vice versa.
-* **Generator-first rule**: `bake()` must verify that the first node in `signal_chain_` has a `PORT_AUDIO` out (i.e. is a Generator or SourceMixer).
-* **VCA/Envelope separation**: The `AdsrEnvelopeProcessor` must not multiply audio in-place. It produces `PORT_CONTROL` output only. A separate `VcaProcessor` node performs the audio multiplication using its `gain_cv` input.
-* **Dynamic Routing**: Modules are not hardcoded in the `Voice`. The `Voice` manages a `std::vector` of processor nodes, assigned instance tags (e.g. `"VCO_1"`, `"VCF_HP"`, `"ENV_AMP"`) for parameter targeting and port connection.
-* **Tagging**: Each port on each node instance has a unique tag. Connections are formed by specifying `{source_node_tag, port_tag} → {dest_node_tag, port_tag}`.
+- **Port type enforcement**: `bake()` must reject any connection where a `PORT_AUDIO` output is connected to a `PORT_CONTROL` input, or vice versa.
+- **Generator-first rule**: `bake()` must verify that the first node in `signal_chain_` outputs `PORT_AUDIO`.
+- **VCA/Envelope separation**: `AdsrEnvelopeProcessor` produces `PORT_CONTROL` output only. A separate `VcaProcessor` node performs audio multiplication via its `gain_cv` input. They must not be merged.
+- **Lifecycle ports**: `gate_in` and `trigger_in` are injected by `VoiceContext`, not wired via `connections_`. `bake()` skips connection validation for these port names.
+- **Feedback connections**: Must be marked `"feedback": true`. The executor uses the previous block's output for these connections.
+- **Multiple inputs**: A node with multiple input ports (Ring Modulator, CV Mixer, SourceMixer) has all inputs gathered before `pull()` is called. The executor must resolve all inputs before executing any node.
+- **Dynamic routing**: Modules are not hardcoded in `Voice`. The `Voice` manages a `std::vector` of processor nodes with instance tags (e.g. `"VCO"`, `"VCF_LP"`, `"ENV_AMP"`) for parameter targeting and port connection.
+- **Global vs per-voice**: Per-voice modules live in `signal_chain_`. Global modules (chorus, reverb, master bus) live in a separate global FX chain applied after voice summing. Do not instantiate global modules per-voice.
+- **Sample rate**: All internal timing (ADSR curves, LFO rates, delay times) must derive from the runtime `sample_rate_` passed at construction. No hardcoded sample rate assumptions. Supported rates: 44100 Hz and 48000 Hz. If hardware reports a rate above 48000, the engine negotiates down to 48000.

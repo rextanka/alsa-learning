@@ -4,18 +4,32 @@ This document outlines the testing strategy, the use of the RT-Safe telemetry sy
 
 ---
 
+## 0. The Fundamental Testing Principle
+
+> **Functional tests are consumer contracts. They use only `CInterface.h`.**
+
+- **Functional tests** (`tests/functional/`) must import no C++ headers beyond `TestHelper.hpp` and `CInterface.h`. No internal types, no `Voice`, no `VoiceFactory`, no `Processor` subclasses. If a behaviour cannot be exercised through the C API it is not a supported feature — expose it through the API first.
+- **Unit tests** (`tests/unit/`) may use internal C++ classes directly. They test implementation detail, not consumer contract.
+- **Integration tests** (`tests/integration/`) test the bridge layer — they use the C API but may also inspect internal state via the logger.
+
+**Audit rule**: Any functional test that imports a C++ header other than `TestHelper.hpp` is non-compliant and must be rewritten or moved to unit/integration.
+
+**Implication for `VoiceFactory`**: `VoiceFactory` is a C++ internal. Functional tests must not reference it. Chain construction in functional tests uses `engine_add_module` / `engine_connect_ports` / `engine_bake` or `engine_load_patch`.
+
+---
+
 ## 1. The "Golden Lifecycle" Protocol (MANDATORY)
-Every functional test in `cxx/tests/functional/` **MUST** execute these 5 steps in the specified order. Skipping these is the primary cause of silent engine failures.
+Every functional test in `cxx/tests/functional/` **MUST** execute these steps in the specified order. Skipping these is the primary cause of silent engine failures.
 
 1.  **Environment Init**: `test::init_test_environment()`
-2.  **Engine Wrapper**: `test::EngineWrapper engine(sample_rate)`
-3.  **Modular Patching**: 
-    * **MANDATORY**: Connect modulator to target using `engine_connect_mod`.
-    * **DEPRECATED**: `engine_set_modulation` is deprecated and must not be used in new tests.
-    * Example: `engine_connect_mod(engine.get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f)`
-4.  **ADSR Arming**: 
-    * MUST set `amp_attack`, `amp_decay`, `amp_sustain`, and `amp_release` via `set_param`.
-5.  **Lifecycle Start**: `engine_start(engine.get())`
+2.  **Sample Rate Query**: `int sr = test::get_safe_sample_rate(0)` — never hardcode.
+3.  **Engine Wrapper**: `test::EngineWrapper engine(sr)`
+4.  **Chain Construction**: Load a patch or build a chain explicitly:
+    * **Preferred**: `engine_load_patch(engine.get(), "patches/sh_bass.json")`
+    * **Explicit**: `engine_add_module` → `engine_connect_ports` → `engine_bake`
+    * **Removed**: `engine_set_modulation` is removed. Do not use it.
+5.  **Parameter Init**: Set any patch-specific overrides via `set_param`.
+6.  **Lifecycle Start**: `engine_start(engine.get())`
 
 ---
 
@@ -109,8 +123,8 @@ To maintain the **10ms MMA Latency Target**, all functional tests follow this dy
     1. Query hardware using `host_get_device_sample_rate(0)`.
     2. Use `test::get_safe_sample_rate()` fallback logic to handle "Device Busy" or "No Device" scenarios.
     3. Initialize engine via `engine_create(sample_rate)`.
-- **Buffer Size**: Fixed at `512 samples`.
-  - Latency is calculated dynamically: `(512 / sample_rate) * 1000 ms`.
+- **Buffer Size**: Queried from hardware via `host_get_device_block_size()` (Phase 17). Until Phase 17 lands, 512 samples is used as a temporary default — do not hardcode it in new tests.
+  - Latency is calculated dynamically: `(block_size / sample_rate) * 1000 ms`.
 - **Platform-Agnostic HAL**: Tests must use `EngineHandle` and `CInterface.h`.
 
 ---
@@ -145,8 +159,9 @@ Every functional test in `cxx/tests/functional/` MUST include a standardized hea
 ## 9. Implementation SOP (Standard Operating Procedure)
 
 1. **Verify Tier**: Identify the simplest graph (Tier 1/2/3) for the test.
-2. **Modular Routing**: Use `engine_connect_mod` explicitly.
-3. **Diagnostic Audit**: When adding a TEE point (AudioTap), verify that the tap operation is a non-destructive push (`tap->write()`).
-4. **Silence-Check**: If a functional test fails with "Empty Buffer," the first audit point is the `AudioBridge` callback to ensure the signal is reaching the diagnostic tap.
-5. **Implementation Requirement**: Before adding new components, verify the architectural compatibility against ARCH_PLAN.md.
-6. **SOP**: Any C-API changes require an immediate update to BRIDGE_GUIDE.md.
+2. **C API compliance check**: If the test is functional, confirm it imports only `CInterface.h` and `TestHelper.hpp`. Flag any C++ internal include as non-compliant.
+3. **Chain Construction**: Use `engine_load_patch` or `engine_add_module` / `engine_connect_ports` / `engine_bake`. Do not use `VoiceFactory` or `engine_set_modulation`.
+4. **Diagnostic Audit**: When adding a TEE point (AudioTap), verify the tap is a non-destructive push (`tap->write()`).
+5. **Silence-Check**: If a functional test fails with "Empty Buffer," the first audit point is the `AudioBridge` callback.
+6. **Implementation Requirement**: Before adding new components, verify compatibility against ARCH_PLAN.md.
+7. **SOP**: Any C-API changes require an immediate update to BRIDGE_GUIDE.md and MODULE_DESC.md (if a new module type is involved).
