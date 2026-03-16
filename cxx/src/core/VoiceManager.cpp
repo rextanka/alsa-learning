@@ -243,8 +243,12 @@ void VoiceManager::set_parameter_by_name(const std::string& name, float value) {
     else if (name == "sub_gain") param_id = 11;
     else if (name == "saw_gain") param_id = 12;
     else if (name == "pulse_gain") param_id = 13;
-    else if (name == "pulse_width") param_id = 14;
-    else if (name == "noise_gain") param_id = 18;
+    else if (name == "pulse_width")    param_id = 14;
+    else if (name == "sine_gain")      param_id = 15;
+    else if (name == "triangle_gain")  param_id = 16;
+    else if (name == "wavetable_gain") param_id = 17;
+    else if (name == "noise_gain")     param_id = 18;
+    else if (name == "wavetable_type") param_id = 19;
 
     if (param_id != -1) {
         set_parameter(param_id, value);

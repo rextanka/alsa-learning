@@ -530,7 +530,7 @@ void engine_print_graph(EngineHandle handle) {
             slot.voice->borrow_buffer(); // Just to access graph implicitly via Voice
         }
     }
-    std::cout << "Engine Graph Print Requested (implementation in progress)" << std::endl;
+    audio::AudioLogger::instance().log_message("GraphPrint", "requested");
 }
 
 void engine_flush_logs(EngineHandle /* handle */) {
@@ -542,9 +542,7 @@ int engine_set_filter_type(EngineHandle handle, int type) {
     if (!handle) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
     
-    // LOG: Confirm swap
-    std::cout << "BRIDGE: Switching Filter Type to ID " << type << std::endl;
-    
+    audio::AudioLogger::instance().log_event("FilterTypeSwitch", static_cast<float>(type));
     impl->voice_manager->set_filter_type(type);
     return 0;
 }
