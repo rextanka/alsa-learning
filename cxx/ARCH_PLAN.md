@@ -139,7 +139,7 @@ Block size is **runtime-configurable** and must be chosen by the host at engine 
 - Query available block sizes via `host_get_device_block_sizes()` (Phase 16).
 - Pass the chosen size to `engine_create(sample_rate, block_size)`.
 - All internal buffers are allocated at engine creation time to accommodate the chosen size.
-- `MAX_BLOCK_SIZE` in `Voice.hpp` defines the compile-time upper bound for stack buffer allocation.
+- Internal buffers are allocated at engine creation time to accommodate the chosen block size.
 
 ---
 
@@ -150,7 +150,7 @@ Block size is **runtime-configurable** and must be chosen by the host at engine 
 | 1-11  | Core DSP, Factory, Polyphony, Musical Clock, Dual-Layer Testing | Complete |
 | 12    | **MIDI Integration**: `MidiParser` and `MidiEvent` feeding into `VoiceManager`. | Complete |
 | 13    | **Golden Era Expansion**: SH-101 & Juno-60 building blocks (Sub-Osc, Source Mixer, Chorus, JSON Persistence). | Complete |
-| 14    | **Dynamic Signal Chain**: (a) Extend `Processor` with typed port declarations (`PORT_AUDIO`/`PORT_CONTROL`) and per-port tagging. (b) Separate `AdsrEnvelopeProcessor` from VCA into distinct nodes. (c) Refactor `Voice` to `signal_chain_` vector with `add_processor()`, named port connections, and `bake()` validation. (d) Implement `VoiceFactory` with correct topologies. (e) Add Voice Groups to `VoiceManager`. | In Progress |
+| 14    | **Dynamic Signal Chain**: (a) Extend `Processor` with typed port declarations (`PORT_AUDIO`/`PORT_CONTROL`) and per-port tagging. (b) Separate `AdsrEnvelopeProcessor` from VCA into distinct nodes. (c) Refactor `Voice` to `signal_chain_` vector with `add_processor()`, named port connections, and `bake()` validation. (d) Implement `VoiceFactory` with correct topologies. (e) Add Voice Groups to `VoiceManager`. | Complete |
 | 15    | **Spatial & Stereo FX**: Reverb, Chorus, Flanger, and Delay. | Planned |
 | 16    | **Host Interrogation & Enumeration**: Safely query device list, hardware sample rates, and supported block sizes via UTF-8 C-Bridge. | Planned |
 | 17    | **Non-Intrusive Logger**: RT-safe lock-free logging. | Complete |
@@ -292,7 +292,11 @@ To bridge the gap between the C-compatible public API and the internal Flexible 
 | 12 | `saw_gain` | `VCO` | Sawtooth level | 0.0–1.0 |
 | 13 | `pulse_gain` | `VCO` | Pulse level | 0.0–1.0 |
 | 14 | `pulse_width` | `VCO` | Pulse Width (native) | 0.0–0.5 |
-| 15 | `noise_gain` | `VCO` | White noise level | 0.0–1.0 |
+| 15 | `sine_gain` | `VCO` | Sine oscillator level | 0.0–1.0 |
+| 16 | `triangle_gain` | `VCO` | Triangle oscillator level | 0.0–1.0 |
+| 17 | `wavetable_gain` | `VCO` | Wavetable oscillator level | 0.0–1.0 |
+| 18 | `noise_gain` | `VCO` | White noise level | 0.0–1.0 |
+| 19 | `wavetable_type` | `VCO` | Wavetable waveform type | 0–N (enum) |
 
 ### Future Architectural Roadmap
 
@@ -302,7 +306,7 @@ To bridge the gap between the C-compatible public API and the internal Flexible 
 ### Implementation Rules
 1. **Test Source of Truth**: All testing standards, including the "Golden Lifecycle" and mandatory modular routing protocols, are defined in [cxx/docs/TESTING.md](cxx/docs/TESTING.md).
 1. **Bridge Duty**: The `AudioBridge` (EngineHandleImpl) MUST maintain a `param_name_to_id` map matching the "String Label" column.
-2. **Voice Duty**: The `Voice` constructor MUST use `register_parameter(GlobalID, Tag, InternalID)` to link the bridge to the signal chain.
+2. **Voice Duty**: Parameter routing is handled by `Voice::set_parameter(int id, float value)` dispatching through `find_by_tag()` to chain nodes. The Global ID must match the registry table above.
 3. **RT-Safety**: All mapping lookups occur outside the audio thread or via lock-free atomic caches.
 
 ---

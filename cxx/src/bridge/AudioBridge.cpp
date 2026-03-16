@@ -136,6 +136,7 @@ struct EngineHandleImpl : public HandleBase {
         param_name_to_id["sine_gain"] = 15;
         param_name_to_id["triangle_gain"] = 16;
         param_name_to_id["wavetable_gain"] = 17;
+        param_name_to_id["noise_gain"] = 18;
     }
 };
 
