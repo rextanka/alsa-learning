@@ -87,6 +87,11 @@ struct EngineHandleImpl : public HandleBase {
     int sample_rate;
     int next_processor_id = 100; // Start at 100 to avoid confusion with voice indices
 
+    // Phase 15: pending chain spec (built up by engine_add_module / engine_connect_ports)
+    struct ModuleSpec { std::string type_name; std::string tag; };
+    std::vector<ModuleSpec> pending_modules;
+    std::vector<audio::Voice::PortConnection> pending_connections;
+
     virtual ~EngineHandleImpl() {
         if (driver) driver->stop();
     }
@@ -527,22 +532,7 @@ int engine_get_xrun_count(EngineHandle handle) {
     return impl->driver->get_xrun_count();
 }
 
-int engine_set_modulation(EngineHandle handle, int source, int target, float intensity) {
-    if (!handle) return -1;
-    auto* impl = static_cast<EngineHandleImpl*>(handle);
-    
-    // Apply to all voices for now
-    for (auto& slot : impl->voice_manager->get_voices()) {
-        if (slot.voice) {
-            slot.voice->matrix().set_connection(
-                static_cast<audio::ModulationSource>(source),
-                static_cast<audio::ModulationTarget>(target),
-                intensity
-            );
-        }
-    }
-    return 0;
-}
+// engine_set_modulation removed in Phase 15 — use engine_connect_ports instead.
 
 int engine_clear_modulations(EngineHandle handle) {
     if (!handle) return -1;
@@ -578,11 +568,9 @@ int engine_load_patch(EngineHandle handle, const char* path) {
         float r = patch.parameters.count("release") ? patch.parameters.at("release") : 0.1f;
         engine_set_adsr(handle, a, d, s, r);
 
-        // Apply modulations
+        // Modulation matrix connections via the now-removed engine_set_modulation
+        // are not applied here.  Patch v2 uses engine_connect_ports instead.
         engine_clear_modulations(handle);
-        for (auto const& conn : patch.modulations) {
-            engine_set_modulation(handle, static_cast<int>(conn.source), static_cast<int>(conn.target), conn.intensity);
-        }
         
         return 0;
     }
@@ -768,5 +756,87 @@ void audio_log_event(const char* tag, float value) {
 
 void audio_engine_init() {}
 void audio_engine_cleanup() {}
+
+// ---------------------------------------------------------------------------
+// Phase 15: Module Registry Query
+// ---------------------------------------------------------------------------
+
+int engine_get_module_count(EngineHandle handle) {
+    if (!handle) return -1;
+    auto names = audio::ModuleRegistry::instance().type_names();
+    return static_cast<int>(names.size());
+}
+
+int engine_get_module_type(EngineHandle handle, int index,
+                           char* buffer, size_t buf_size) {
+    if (!handle || !buffer || buf_size == 0) return -1;
+    auto names = audio::ModuleRegistry::instance().type_names();
+    if (index < 0 || static_cast<size_t>(index) >= names.size()) return -1;
+    std::snprintf(buffer, buf_size, "%s", names[static_cast<size_t>(index)].c_str());
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 15: Chain Construction
+// ---------------------------------------------------------------------------
+
+int engine_add_module(EngineHandle handle,
+                      const char* type_name,
+                      const char* tag) {
+    if (!handle || !type_name || !tag) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    if (!audio::ModuleRegistry::instance().find(type_name)) return -1;
+    impl->pending_modules.push_back({type_name, tag});
+    return 0;
+}
+
+int engine_connect_ports(EngineHandle handle,
+                         const char* from_tag, const char* from_port,
+                         const char* to_tag,   const char* to_port) {
+    if (!handle || !from_tag || !from_port || !to_tag || !to_port) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->pending_connections.push_back({from_tag, from_port, to_tag, to_port});
+    return 0;
+}
+
+int engine_bake(EngineHandle handle) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+
+    if (impl->pending_modules.empty()) return -1; // nothing to bake
+
+    const int sr = impl->sample_rate;
+    auto& reg = audio::ModuleRegistry::instance();
+
+    // Snapshot so the lambda captures by value.
+    auto modules     = impl->pending_modules;
+    auto connections = impl->pending_connections;
+
+    try {
+        impl->voice_manager->rebuild_all_voices([&]() {
+            auto voice = std::make_unique<audio::Voice>(sr);
+            for (const auto& m : modules) {
+                auto proc = reg.create(m.type_name, sr);
+                if (!proc) throw std::runtime_error(
+                    "engine_bake: unknown type '" + m.type_name + "'");
+                voice->add_processor(std::move(proc), m.tag);
+            }
+            for (const auto& c : connections) {
+                voice->connect(c.from_tag, c.from_port,
+                               c.to_tag,   c.to_port);
+            }
+            voice->bake();
+            return voice;
+        });
+    } catch (const std::exception& e) {
+        audio::AudioLogger::instance().log_message("engine_bake", e.what());
+        return -1;
+    }
+
+    // Clear pending spec so a new chain can be described after this.
+    impl->pending_modules.clear();
+    impl->pending_connections.clear();
+    return 0;
+}
 
 } // extern "C"

@@ -14,6 +14,7 @@
 #include <vector>
 #include <array>
 #include <memory>
+#include <functional>
 
 namespace audio {
 
@@ -125,6 +126,17 @@ public:
      * 1.0 = Voices fully panned across the stereo field.
      */
     void set_voice_spread(float spread);
+
+    /**
+     * @brief Rebuild all voice slots using a factory.
+     *
+     * Called from engine_bake() after a new chain is described via
+     * engine_add_module() / engine_connect_ports().  Must be called from
+     * the control thread before engine_start().  Not RT-safe.
+     *
+     * @param factory Callable returning a fully-baked unique_ptr<Voice>.
+     */
+    void rebuild_all_voices(const std::function<std::unique_ptr<Voice>()>& factory);
 
     /**
      * @brief Clear all modulation connections for a specific processor ID.

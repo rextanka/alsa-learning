@@ -37,6 +37,16 @@ VoiceManager::VoiceManager(int sample_rate)
     mod_buffer_.resize(512); // Default block size
 }
 
+void VoiceManager::rebuild_all_voices(const std::function<std::unique_ptr<Voice>()>& factory) {
+    for (auto& slot : voices_) {
+        slot.voice         = factory();
+        slot.current_note  = -1;
+        slot.active        = false;
+        slot.last_note_on_time = 0;
+    }
+    note_to_voice_map_.fill(-1);
+}
+
 void VoiceManager::set_voice_spread(float spread) {
     voice_spread_ = std::clamp(spread, 0.0f, 1.0f);
 }
