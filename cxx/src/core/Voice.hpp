@@ -84,6 +84,40 @@ public:
      */
     Processor* find_by_tag(std::string_view tag);
 
+    // -------------------------------------------------------------------------
+    // Phase 15: Named port connections (data-driven signal routing)
+    // -------------------------------------------------------------------------
+
+    /**
+     * @brief A directed connection between two named ports on chain nodes.
+     *
+     * from_tag / from_port: source node tag and output port name.
+     * to_tag   / to_port  : sink node tag and input port name.
+     *
+     * Lifecycle ports (gate_in, trigger_in) are driven by VoiceContext and
+     * must NOT be wired via connect().
+     */
+    struct PortConnection {
+        std::string from_tag;
+        std::string from_port;
+        std::string to_tag;
+        std::string to_port;
+    };
+
+    /**
+     * @brief Register a named port connection.
+     *
+     * Must be called before bake(). The connection is validated at bake() time.
+     * Invalidates the baked state.
+     */
+    void connect(std::string from_tag, std::string from_port,
+                 std::string to_tag,   std::string to_port);
+
+    /**
+     * @brief Read-only view of all registered connections.
+     */
+    const std::vector<PortConnection>& connections() const { return connections_; }
+
 protected:
     void do_pull(std::span<float> output, const VoiceContext* context = nullptr) override;
 
@@ -110,7 +144,7 @@ private:
 
     // Current modulated parameters
     double current_frequency_;
-    float current_amplitude_;
+    [[maybe_unused]] float current_amplitude_; // reserved for amplitude modulation routing
 
     int sample_rate_;
     float pan_; // -1.0 to 1.0
@@ -129,6 +163,7 @@ private:
         std::string tag;
     };
     std::vector<ChainEntry> signal_chain_;
+    std::vector<PortConnection> connections_; // Phase 15: named port wiring
     bool baked_ = false;
 };
 

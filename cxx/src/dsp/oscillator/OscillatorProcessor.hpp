@@ -189,7 +189,7 @@ protected:
     /**
      * @brief Pull Model: Generate block of samples (Stereo).
      */
-    void do_pull(AudioBuffer& output, const VoiceContext* voice_context = nullptr) override {
+    void do_pull(AudioBuffer& output, const VoiceContext* /* voice_context */ = nullptr) override {
         for (size_t i = 0; i < output.frames(); ++i) {
             update_frequency_ramp();
             float sample = static_cast<float>(generate_sample());

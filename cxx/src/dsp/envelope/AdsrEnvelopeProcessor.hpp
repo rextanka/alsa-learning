@@ -54,6 +54,16 @@ public:
         , release_time_(0.2f)
     {
         update_rates();
+
+        // Phase 15: named port declarations
+        declare_port({"gate_in",      PORT_CONTROL, PortDirection::IN,  true}); // lifecycle
+        declare_port({"trigger_in",   PORT_CONTROL, PortDirection::IN,  true}); // lifecycle
+        declare_port({"envelope_out", PORT_CONTROL, PortDirection::OUT, true}); // unipolar [0,1]
+
+        declare_parameter({"attack",   "Attack Time",  0.0f, 10.0f, 0.01f, true});
+        declare_parameter({"decay",    "Decay Time",   0.0f, 10.0f, 0.1f,  true});
+        declare_parameter({"sustain",  "Sustain Level",0.0f,  1.0f, 0.7f});
+        declare_parameter({"release",  "Release Time", 0.0f, 10.0f, 0.2f,  true});
     }
 
     void gate_on() override {

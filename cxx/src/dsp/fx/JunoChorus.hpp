@@ -40,6 +40,12 @@ public:
         delay_r_.set_feedback(0.0f);
         delay_l_.set_mix(0.5f);
         delay_r_.set_mix(0.5f);
+
+        // Phase 15: named port declarations
+        declare_port({"audio_in",  PORT_AUDIO, PortDirection::IN});
+        declare_port({"audio_out", PORT_AUDIO, PortDirection::OUT});
+
+        declare_parameter({"mode", "Chorus Mode", 0.0f, 3.0f, 0.0f});
     }
 
     void set_mode(Mode mode) {

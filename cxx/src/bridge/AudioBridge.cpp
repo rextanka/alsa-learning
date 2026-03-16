@@ -28,6 +28,7 @@
 #include "MusicalClock.hpp"
 #include "TuningSystem.hpp"
 #include "Logger.hpp"
+#include "ModuleRegistry.hpp"
 #include "PatchStore.hpp"
 #include "SummingBus.hpp"
 #include <memory>
@@ -356,6 +357,7 @@ int envelope_is_active(EnvelopeHandle handle) {
 }
 
 EngineHandle engine_create(unsigned int sample_rate) {
+    audio::register_builtin_processors();
     try { return static_cast<EngineHandle>(new EngineHandleImpl(sample_rate)); } catch (...) { return nullptr; }
 }
 
@@ -515,7 +517,7 @@ int engine_set_filter_type(EngineHandle handle, int type) {
     return 0;
 }
 
-int engine_set_delay_enabled(EngineHandle handle, int /* enabled */) {
+int engine_set_delay_enabled(EngineHandle /* handle */, int /* enabled */) {
     return 0;
 }
 
@@ -609,7 +611,7 @@ int host_get_device_name(int index, char* buffer, size_t buffer_size) {
 #endif
 }
 
-int host_get_device_sample_rate(int index) {
+int host_get_device_sample_rate(int /* index */) {
     return 48000; 
 }
 

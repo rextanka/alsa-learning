@@ -41,7 +41,7 @@ void VoiceManager::set_voice_spread(float spread) {
     voice_spread_ = std::clamp(spread, 0.0f, 1.0f);
 }
 
-void VoiceManager::note_on(int note, float velocity, double frequency) {
+void VoiceManager::note_on(int note, float /* velocity */, double frequency) {
     double freq = (frequency > 0.0) ? frequency : note_to_freq(note);
 
     // 1. Check if the note is already playing (re-trigger)
@@ -124,7 +124,7 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
     }
 }
 
-void VoiceManager::note_on(int note, float velocity, int group_id, double frequency) {
+void VoiceManager::note_on(int note, float /* velocity */, int group_id, double frequency) {
     double freq = (frequency > 0.0) ? frequency : note_to_freq(note);
 
     // Re-trigger check within group

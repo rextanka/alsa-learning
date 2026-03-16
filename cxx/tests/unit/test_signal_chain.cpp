@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 #include "CompositeGenerator.hpp"
 #include "Processor.hpp"
+#include "ModuleRegistry.hpp"
 #include <vector>
 #include <cmath>
 
@@ -100,4 +101,54 @@ TEST(CompositeGenerator, FrequencyChangeTakesEffect) {
         if (std::abs(buf1[i] - buf2[i]) > 1e-4f) { differs = true; break; }
     }
     EXPECT_TRUE(differs);
+}
+
+// --- ModuleRegistry tests (Phase 15) ---
+
+class ModuleRegistryTest : public ::testing::Test {
+protected:
+    void SetUp() override { ModuleRegistry::instance(); register_builtin_processors(); }
+};
+
+TEST_F(ModuleRegistryTest, RegistryContainsAllBuiltinTypes) {
+    auto& reg = ModuleRegistry::instance();
+    const std::vector<std::string> expected = {
+        "COMPOSITE_GENERATOR", "ADSR_ENVELOPE", "VCA",
+        "MOOG_FILTER", "DIODE_FILTER", "LFO", "WHITE_NOISE", "JUNO_CHORUS"
+    };
+    for (const auto& name : expected) {
+        EXPECT_NE(reg.find(name), nullptr) << "Missing: " << name;
+    }
+}
+
+TEST_F(ModuleRegistryTest, FactoryProducesInstance) {
+    auto proc = ModuleRegistry::instance().create("COMPOSITE_GENERATOR", 48000);
+    ASSERT_NE(proc, nullptr);
+    EXPECT_EQ(proc->output_port_type(), PortType::PORT_AUDIO);
+}
+
+TEST_F(ModuleRegistryTest, AdsrEnvelopeHasDeclaredPorts) {
+    const auto* desc = ModuleRegistry::instance().find("ADSR_ENVELOPE");
+    ASSERT_NE(desc, nullptr);
+    bool has_envelope_out = false;
+    for (const auto& p : desc->ports) {
+        if (p.name == "envelope_out" && p.type == PortType::PORT_CONTROL
+                                     && p.unipolar)
+            has_envelope_out = true;
+    }
+    EXPECT_TRUE(has_envelope_out);
+}
+
+TEST_F(ModuleRegistryTest, MoogFilterHasDeclaredParameters) {
+    const auto* desc = ModuleRegistry::instance().find("MOOG_FILTER");
+    ASSERT_NE(desc, nullptr);
+    bool has_cutoff = false;
+    for (const auto& p : desc->parameters) {
+        if (p.name == "cutoff" && p.logarithmic) has_cutoff = true;
+    }
+    EXPECT_TRUE(has_cutoff);
+}
+
+TEST_F(ModuleRegistryTest, FindUnknownTypeReturnsNullptr) {
+    EXPECT_EQ(ModuleRegistry::instance().find("DOES_NOT_EXIST"), nullptr);
 }

@@ -66,6 +66,7 @@ set(ENGINE_SOURCES
     src/core/VoiceManager.cpp
     src/core/MidiParser.cpp
     src/core/PatchStore.cpp
+    src/core/ProcessorRegistrations.cpp
 )
 
 if(APPLE)

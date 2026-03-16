@@ -30,6 +30,15 @@ public:
     {
         for (int i = 0; i < 4; ++i) stage_[i] = 0.0f;
         update_coefficients();
+
+        // Phase 15: named port declarations
+        declare_port({"audio_in",     PORT_AUDIO,   PortDirection::IN});
+        declare_port({"audio_out",    PORT_AUDIO,   PortDirection::OUT});
+        declare_port({"cutoff_cv",    PORT_CONTROL, PortDirection::IN,  false}); // bipolar [-1,1]
+        declare_port({"resonance_cv", PORT_CONTROL, PortDirection::IN,  true});  // unipolar [0,1]
+
+        declare_parameter({"cutoff",    "Cutoff Frequency", 20.0f, 20000.0f, 20000.0f, true});
+        declare_parameter({"resonance", "Resonance",         0.0f,     1.0f,     0.0f});
     }
 
     void set_cutoff(float frequency) override {

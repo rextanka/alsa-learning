@@ -27,7 +27,13 @@ namespace audio {
 
 class VcaProcessor : public Processor {
 public:
-    VcaProcessor() = default;
+    VcaProcessor() {
+        // Phase 15: named port declarations
+        declare_port({"audio_in",        PORT_AUDIO,   PortDirection::IN});
+        declare_port({"audio_out",       PORT_AUDIO,   PortDirection::OUT});
+        declare_port({"gain_cv",         PORT_CONTROL, PortDirection::IN,  true}); // unipolar [0,1]
+        declare_port({"initial_gain_cv", PORT_CONTROL, PortDirection::IN,  true}); // unipolar [0,1]
+    }
 
     /**
      * @brief Apply VCA gain: audio[i] *= gain_cv[i] * scale.
@@ -51,10 +57,12 @@ public:
 
     void reset() override {}
 
+    // VcaProcessor consumes a PORT_CONTROL gain signal (from AdsrEnvelopeProcessor).
+    PortType input_port_type() const override { return PortType::PORT_CONTROL; }
+
 protected:
-    // Processor stub — VcaProcessor is driven via apply(), not pull().
-    // A full pull()-based implementation will be wired in Phase 14 once
-    // the typed port system provides PORT_AUDIO / PORT_CONTROL connections.
+    // VcaProcessor is driven via the static apply() helper, not pull().
+    // The pull() stub is present to satisfy the Processor interface.
     void do_pull(std::span<float> output,
                  const VoiceContext* /*ctx*/ = nullptr) override {
         std::fill(output.begin(), output.end(), 0.0f);

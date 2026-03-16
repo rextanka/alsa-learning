@@ -173,7 +173,7 @@ protected:
         }
     }
 
-    void do_pull(AudioBuffer& output, const VoiceContext* voice_context = nullptr) override {
+    void do_pull(AudioBuffer& output, const VoiceContext* /* voice_context */ = nullptr) override {
         for (size_t i = 0; i < output.frames(); ++i) {
             update_frequency_ramp();
             

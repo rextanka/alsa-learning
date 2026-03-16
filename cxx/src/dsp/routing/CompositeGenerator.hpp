@@ -59,6 +59,22 @@ public:
         mixer_          = std::make_unique<SourceMixer>();
 
         set_tag("VCO");
+
+        // Phase 15: named port declarations
+        declare_port({"audio_out", PORT_AUDIO,   PortDirection::OUT});
+        declare_port({"pitch_cv",  PORT_CONTROL, PortDirection::IN,  false}); // bipolar 1V/oct
+        declare_port({"pwm_cv",    PORT_CONTROL, PortDirection::IN,  false}); // bipolar
+
+        // Parameters
+        declare_parameter({"saw_gain",       "Sawtooth Level",  0.0f, 1.0f, 0.0f});
+        declare_parameter({"pulse_gain",     "Pulse Level",     0.0f, 1.0f, 0.0f});
+        declare_parameter({"sine_gain",      "Sine Level",      0.0f, 1.0f, 1.0f});
+        declare_parameter({"triangle_gain",  "Triangle Level",  0.0f, 1.0f, 0.0f});
+        declare_parameter({"sub_gain",       "Sub Level",       0.0f, 1.0f, 0.0f});
+        declare_parameter({"wavetable_gain", "Wavetable Level", 0.0f, 1.0f, 0.0f});
+        declare_parameter({"noise_gain",     "Noise Level",     0.0f, 1.0f, 0.0f});
+        declare_parameter({"pulse_width",    "Pulse Width",     0.0f, 0.5f, 0.5f});
+        declare_parameter({"wavetable_type", "Wavetable Type",  0.0f, 8.0f, 0.0f});
     }
 
     // --- Frequency ---
@@ -136,7 +152,7 @@ protected:
     }
 
 private:
-    int sample_rate_;
+    [[maybe_unused]] int sample_rate_; // reserved for future per-sample-rate reconfiguration
 
     std::unique_ptr<PulseOscillatorProcessor>    pulse_osc_;
     std::unique_ptr<SubOscillator>               sub_osc_;

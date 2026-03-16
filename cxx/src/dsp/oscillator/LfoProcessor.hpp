@@ -37,6 +37,13 @@ public:
         , waveform_(Waveform::Sine)
     {
         smoothing_coeff_ = 1.0f; // will be computed on first do_pull
+
+        // Phase 15: named port declarations
+        declare_port({"lfo_out", PORT_CONTROL, PortDirection::OUT, false}); // bipolar [-1,1]
+
+        declare_parameter({"frequency", "LFO Rate",      0.01f, 20.0f, 1.0f, true});
+        declare_parameter({"intensity", "LFO Intensity", 0.0f,   1.0f, 1.0f});
+        declare_parameter({"waveform",  "LFO Waveform",  0.0f,   3.0f, 0.0f});
     }
 
     void set_frequency(double freq) {

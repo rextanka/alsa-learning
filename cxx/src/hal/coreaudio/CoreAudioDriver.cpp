@@ -4,7 +4,7 @@
  */
 
 #include "CoreAudioDriver.hpp"
-#include <iostream>
+#include "Logger.hpp"
 
 namespace hal {
 
@@ -28,14 +28,14 @@ CoreAudioDriver::CoreAudioDriver(int sample_rate, int block_size)
     // 2. Find the component
     AudioComponent comp = AudioComponentFindNext(NULL, &desc);
     if (comp == NULL) {
-        std::cerr << "CoreAudioDriver: Failed to find default output component" << std::endl;
+        audio::AudioLogger::instance().log_message("CoreAudio", "Failed to find default output component");
         return;
     }
 
     // 3. Open the audio unit
     OSStatus status = AudioComponentInstanceNew(comp, &audio_unit_);
     if (status != noErr) {
-        std::cerr << "CoreAudioDriver: AudioComponentInstanceNew failed" << std::endl;
+        audio::AudioLogger::instance().log_message("CoreAudio", "AudioComponentInstanceNew failed");
         return;
     }
 
@@ -49,15 +49,17 @@ CoreAudioDriver::CoreAudioDriver(int sample_rate, int block_size)
         0,
         &hwFormat,
         &propSize);
-    
+
     if (status == noErr) {
         sample_rate_ = static_cast<int>(hwFormat.mSampleRate);
-        std::cout << "CoreAudioDriver: Host sample rate detected as " << sample_rate_ << " Hz" << std::endl;
+        char buf[64];
+        std::snprintf(buf, sizeof(buf), "Host SR detected: %d Hz", sample_rate_);
+        audio::AudioLogger::instance().log_message("CoreAudio", buf);
     }
 
     // 4. Set the stream format (PCM Float32, Stereo, Non-Interleaved)
     // Enforce 48kHz and strictly follow requested format
-    AudioStreamBasicDescription streamFormat = {0};
+    AudioStreamBasicDescription streamFormat{};  // zero-init all fields
     streamFormat.mSampleRate = 48000.0;
     streamFormat.mFormatID = kAudioFormatLinearPCM;
     streamFormat.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsNonInterleaved | kAudioFormatFlagIsPacked;
@@ -76,7 +78,7 @@ CoreAudioDriver::CoreAudioDriver(int sample_rate, int block_size)
         sizeof(streamFormat));
     
     if (status != noErr) {
-        std::cerr << "CoreAudioDriver: Failed to set stream format" << std::endl;
+        audio::AudioLogger::instance().log_message("CoreAudio", "Failed to set stream format");
         return;
     }
 
@@ -94,14 +96,14 @@ CoreAudioDriver::CoreAudioDriver(int sample_rate, int block_size)
         sizeof(callbackStruct));
 
     if (status != noErr) {
-        std::cerr << "CoreAudioDriver: Failed to set render callback" << std::endl;
+        audio::AudioLogger::instance().log_message("CoreAudio", "Failed to set render callback");
         return;
     }
 
     // 6. Initialize the audio unit
     status = AudioUnitInitialize(audio_unit_);
     if (status != noErr) {
-        std::cerr << "CoreAudioDriver: AudioUnitInitialize failed" << std::endl;
+        audio::AudioLogger::instance().log_message("CoreAudio", "AudioUnitInitialize failed");
         return;
     }
 
@@ -114,10 +116,12 @@ CoreAudioDriver::CoreAudioDriver(int sample_rate, int block_size)
         0,
         &streamFormat,
         &propSize);
-    
+
     if (status == noErr) {
         sample_rate_ = static_cast<int>(streamFormat.mSampleRate);
-        std::cout << "CoreAudioDriver: Final sample rate confirmed as " << sample_rate_ << " Hz" << std::endl;
+        char buf[64];
+        std::snprintf(buf, sizeof(buf), "Final SR confirmed: %d Hz", sample_rate_);
+        audio::AudioLogger::instance().log_message("CoreAudio", buf);
     }
 }
 
