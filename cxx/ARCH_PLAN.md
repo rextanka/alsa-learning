@@ -150,7 +150,7 @@ Block size is **runtime-configurable** and must be chosen by the host at engine 
 | 1-11  | Core DSP, Factory, Polyphony, Musical Clock, Dual-Layer Testing | Complete |
 | 12    | **MIDI Integration**: `MidiParser` and `MidiEvent` feeding into `VoiceManager`. | Complete |
 | 13    | **Golden Era Expansion**: SH-101 & Juno-60 building blocks (Sub-Osc, Source Mixer, Chorus, JSON Persistence). | Complete |
-| 14    | **Dynamic Signal Chain**: (a) Extend `Processor` with typed port declarations (`PORT_AUDIO`/`PORT_CONTROL`) and per-port tagging. (b) Separate `AdsrEnvelopeProcessor` from VCA into distinct nodes. (c) Refactor `Voice` to `signal_chain_` vector with `add_processor()`, named port connections, and `bake()` validation. (d) Implement `VoiceFactory` with correct topologies. (e) Add Voice Groups to `VoiceManager`. | Complete |
+| 14    | **Dynamic Signal Chain**: (a) Extend `Processor` with typed port declarations (`PORT_AUDIO`/`PORT_CONTROL`) and per-port tagging. (b) Separate `AdsrEnvelopeProcessor` from VCA into distinct nodes. (c) Refactor `Voice` to `signal_chain_` vector with `add_processor()`, named port connections, and `bake()` validation. (d) Implement `VoiceFactory` with correct topologies. (e) Add Voice Groups to `VoiceManager`. | Partial — (b)(d)(e) complete; (a)(c) need `bake()` port-type compatibility validation |
 | 15    | **Spatial & Stereo FX**: Reverb, Chorus, Flanger, and Delay. | Planned |
 | 16    | **Host Interrogation & Enumeration**: Safely query device list, hardware sample rates, and supported block sizes via UTF-8 C-Bridge. | Planned |
 | 17    | **Non-Intrusive Logger**: RT-safe lock-free logging. | Complete |

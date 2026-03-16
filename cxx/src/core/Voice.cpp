@@ -260,6 +260,24 @@ void Voice::bake() {
         throw std::logic_error(
             "Voice::bake() failed: signal_chain_[0] is not a CompositeGenerator");
     }
+    // Port-Type Rules:
+    //   1. Last node must output PORT_AUDIO (chain output is always audio).
+    //   2. No two consecutive PORT_CONTROL nodes (control after control is meaningless).
+    auto port_of = [](const ChainEntry& e) {
+        return e.node->output_port_type();
+    };
+    if (port_of(signal_chain_.back()) != PortType::PORT_AUDIO) {
+        throw std::logic_error(
+            "Voice::bake() failed: last node in signal_chain_ must output PORT_AUDIO");
+    }
+    for (size_t i = 1; i < signal_chain_.size(); ++i) {
+        if (port_of(signal_chain_[i - 1]) == PortType::PORT_CONTROL &&
+            port_of(signal_chain_[i])     == PortType::PORT_CONTROL) {
+            throw std::logic_error(
+                "Voice::bake() failed: consecutive PORT_CONTROL nodes at positions "
+                + std::to_string(i - 1) + " and " + std::to_string(i));
+        }
+    }
     baked_ = true;
 }
 
