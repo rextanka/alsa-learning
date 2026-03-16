@@ -29,6 +29,8 @@
 #include "TuningSystem.hpp"
 #include "Logger.hpp"
 #include "ModuleRegistry.hpp"
+#include <nlohmann/json.hpp>
+#include <fstream>
 #include "PatchStore.hpp"
 #include "SummingBus.hpp"
 #include <memory>
@@ -91,6 +93,10 @@ struct EngineHandleImpl : public HandleBase {
     struct ModuleSpec { std::string type_name; std::string tag; };
     std::vector<ModuleSpec> pending_modules;
     std::vector<audio::Voice::PortConnection> pending_connections;
+
+    // Scratch buffers for engine_process stereo path (avoids per-call allocation).
+    std::vector<float> process_left;
+    std::vector<float> process_right;
 
     virtual ~EngineHandleImpl() {
         if (driver) driver->stop();
@@ -402,12 +408,31 @@ int engine_process(EngineHandle handle, float* output, size_t frames) {
     if (!handle || !output || frames == 0) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
     try {
-        std::span<float> output_span(output, frames);
-        
+        // Resize scratch buffers if needed (not in the audio thread, so allocation is safe).
+        if (impl->process_left.size() < frames) {
+            impl->process_left.resize(frames);
+            impl->process_right.resize(frames);
+        }
+
+        audio::AudioBuffer buffer;
+        buffer.left  = std::span<float>(impl->process_left.data(),  frames);
+        buffer.right = std::span<float>(impl->process_right.data(), frames);
+
         // Sample-accurate clock advance
         impl->clock.advance(static_cast<int32_t>(frames));
-        
-        impl->voice_manager->pull(output_span);
+
+        // Stereo pull: applies voice panning via SummingBus, same path as the HAL callback.
+        impl->voice_manager->pull_with_tap(buffer, impl->tap.get());
+
+        if (impl->chorus_enabled && impl->chorus) {
+            impl->chorus->pull(buffer);
+        }
+
+        // Interleave L/R into the caller's stereo buffer: [L0, R0, L1, R1, ...]
+        for (size_t i = 0; i < frames; ++i) {
+            output[i * 2]     = buffer.left[i];
+            output[i * 2 + 1] = buffer.right[i];
+        }
         return 0;
     } catch (...) { return -1; }
 }
@@ -551,30 +576,119 @@ int engine_save_patch(EngineHandle handle, const char* path) {
     return 0;
 }
 
+/**
+ * @brief Load a patch from a JSON file.
+ *
+ * Supports two formats:
+ *   version 1 — legacy parameter-map format (backwards compatible).
+ *   version 2 — Phase 15 multi-group format with typed chain + named connections.
+ *
+ * Version 2 JSON shape (single or multi-group):
+ * {
+ *   "version": 2,
+ *   "name": "...",
+ *   "groups": [
+ *     {
+ *       "id": 0,
+ *       "chain": [
+ *         {"type": "COMPOSITE_GENERATOR", "tag": "VCO"},
+ *         {"type": "ADSR_ENVELOPE",        "tag": "ENV"},
+ *         {"type": "VCA",                  "tag": "VCA"}
+ *       ],
+ *       "connections": [
+ *         {"from_tag": "ENV", "from_port": "envelope_out",
+ *          "to_tag":   "VCA", "to_port":   "gain_cv"}
+ *       ],
+ *       "parameters": { "saw_gain": 1.0, "amp_attack": 0.01, ... }
+ *     }
+ *   ]
+ * }
+ *
+ * Multi-group patches apply the chain from group 0 to all voices (Phase 15
+ * uses a single global topology; per-group topologies are Phase 15.5+).
+ */
 int engine_load_patch(EngineHandle handle, const char* path) {
     if (!handle || !path) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
-    audio::PatchData patch;
-    if (audio::PatchStore::load_from_file(patch, path)) {
-        // Apply parameters
-        for (auto const& [name, value] : patch.parameters) {
-            impl->voice_manager->set_parameter_by_name(name, value);
+    auto& log = audio::AudioLogger::instance();
+
+    try {
+        std::ifstream file(path);
+        if (!file.is_open()) {
+            log.log_message("engine_load_patch", ("Failed to open: " + std::string(path)).c_str());
+            return -1;
         }
+        nlohmann::json j;
+        file >> j;
 
-        // Apply ADSR specific (if in parameters)
-        float a = patch.parameters.count("attack") ? patch.parameters.at("attack") : 0.01f;
-        float d = patch.parameters.count("decay") ? patch.parameters.at("decay") : 0.1f;
-        float s = patch.parameters.count("sustain") ? patch.parameters.at("sustain") : 0.5f;
-        float r = patch.parameters.count("release") ? patch.parameters.at("release") : 0.1f;
-        engine_set_adsr(handle, a, d, s, r);
+        int version = j.value("version", 1);
 
-        // Modulation matrix connections via the now-removed engine_set_modulation
-        // are not applied here.  Patch v2 uses engine_connect_ports instead.
-        engine_clear_modulations(handle);
-        
-        return 0;
+        if (version >= 2) {
+            // --- Patch v2: typed chain + named connections ---
+            if (!j.contains("groups") || !j["groups"].is_array()
+                    || j["groups"].empty()) {
+                log.log_message("engine_load_patch", "v2 patch missing 'groups' array");
+                return -1;
+            }
+            // Phase 15: apply the first group's chain to all voices.
+            const auto& group = j["groups"][0];
+
+            // Build chain
+            impl->pending_modules.clear();
+            impl->pending_connections.clear();
+
+            if (group.contains("chain")) {
+                for (const auto& m : group["chain"]) {
+                    std::string type = m.at("type").get<std::string>();
+                    std::string tag  = m.at("tag").get<std::string>();
+                    if (engine_add_module(handle, type.c_str(), tag.c_str()) != 0) {
+                        log.log_message("engine_load_patch",
+                            ("Unknown module type: " + type).c_str());
+                        return -1;
+                    }
+                }
+            }
+            if (group.contains("connections")) {
+                for (const auto& c : group["connections"]) {
+                    engine_connect_ports(handle,
+                        c.at("from_tag").get<std::string>().c_str(),
+                        c.at("from_port").get<std::string>().c_str(),
+                        c.at("to_tag").get<std::string>().c_str(),
+                        c.at("to_port").get<std::string>().c_str());
+                }
+            }
+            if (engine_bake(handle) != 0) {
+                log.log_message("engine_load_patch", "engine_bake() failed");
+                return -1;
+            }
+            // Apply parameters after bake (voices now exist with the new chain).
+            if (group.contains("parameters")) {
+                for (const auto& [name, val] : group["parameters"].items()) {
+                    impl->voice_manager->set_parameter_by_name(name, val.get<float>());
+                }
+            }
+            log.log_message("engine_load_patch", ("Loaded v2: " + j.value("name", "")).c_str());
+            return 0;
+
+        } else {
+            // --- Patch v1: legacy parameter-map format ---
+            audio::PatchData patch;
+            if (!audio::PatchStore::load_from_file(patch, path)) return -1;
+            for (auto const& [name, value] : patch.parameters) {
+                impl->voice_manager->set_parameter_by_name(name, value);
+            }
+            float a = patch.parameters.count("attack")  ? patch.parameters.at("attack")  : 0.01f;
+            float d = patch.parameters.count("decay")   ? patch.parameters.at("decay")   : 0.1f;
+            float s = patch.parameters.count("sustain") ? patch.parameters.at("sustain") : 0.5f;
+            float r = patch.parameters.count("release") ? patch.parameters.at("release") : 0.2f;
+            engine_set_adsr(handle, a, d, s, r);
+            engine_clear_modulations(handle);
+            return 0;
+        }
+    } catch (const std::exception& e) {
+        log.log_message("engine_load_patch", e.what());
+        return -1;
     }
-    return -1;
 }
 
 int host_get_device_count() {
