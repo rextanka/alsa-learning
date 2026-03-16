@@ -1,8 +1,10 @@
 # Git Workflow Rules
+> Canonical reference: `cxx/docs/GIT_POLICY.md`
+
 - Return to Base: Before starting any new task or branch, you MUST `git checkout main` and `git pull origin main`. All new branches must originate from a clean and updated `main`.
 - ALWAYS check the current branch with `git branch --show-current` before committing.
 - NEVER push directly to `main`.
-- ALWAYS create a new branch for each exercise using the format `yyyymmddhhmm` (e.g., 202602201415).
+- ALWAYS create a new branch for each task using the format `yyyymmddhhmm` (e.g., 202603151042). No separators.
 - ALWAYS use the remote alias `origin` (e.g., `git push -u origin <branch_name>`).
 - If a command fails because a branch or remote doesn't exist, use `git remote -v` to verify the setup before retrying.
 - Post-Push Reminder: After successfully pushing a new branch to GitHub, you MUST explicitly remind me to: 'Please go to GitHub to create the PR and perform a squash merge. Once merged, let me know so I can sync main for the next task.'
@@ -10,17 +12,18 @@
 - Documentation Sync: Whenever a new function is exported in CInterface.h, the docs/BRIDGE_GUIDE.md must be updated to reflect the change, ensuring documentation stays in sync with the binary interface.
 
 # Commit Standards
-- Use Conventional Commits (e.g., `feat:`, `refactor:`, `fix:`, `chore:`).
+- Use Conventional Commits (e.g., `feat:`, `refactor:`, `fix:`, `chore:`, `docs:`, `test:`).
 - For multi-line commit messages, use the syntax `git commit -m "Subject" -m "Body line 1" -m "Body line 2"` to ensure newlines are preserved in the shell.
 
 # DSP Rules
-- Ensure all audio processors follow the NVI (Non-Virtual Interface) pattern.
-- Maintain sample-rate independence by passing `sample_rate` to constructors.
+> Expanded in `cxx/ARCH_PLAN.md` and `cxx/docs/MODULE_DESC.md`
 
-# Project Rules & Architecture (from .cursorrules)
+- Ensure all audio processors follow the NVI (Non-Virtual Interface) pattern as defined in `cxx/src/dsp/Processor.hpp`.
+- Maintain sample-rate independence by passing `sample_rate` to constructors. Never hardcode 44100 or 48000 in DSP logic.
+- Any code executing in the audio callback path must be RT-Safe: no locks, no allocations, no blocking I/O. Document with `// RT-SAFE:` comment.
 
-## Branching
-- Use `yyyymmdd-hhmm` for all new branches (e.g. `20260219-1430`).
+# Project Rules & Architecture
+> Canonical reference: `cxx/ARCH_PLAN.md`
 
 ## Cross-Platform Scope
 - Support **Fedora Linux**, **macOS**, and future **Windows 11**.
@@ -28,21 +31,26 @@
 
 ## Separation of Concerns
 - **Hardware / OS audio** (ALSA, CoreAudio, WASAPI) must be strictly separated from **core DSP** (oscillators, envelopes, filters, etc.).
-- Do not mix platform APIs with signal-processing logic. Use a thin abstraction layer so DSP stays portable.
+- Do not mix platform APIs with signal-processing logic. Use a thin abstraction layer (`hal::AudioDriver`) so DSP stays portable.
 
 ## Modern C++
-- Target **C++20/23** for all new code.
+- Target **C++20** for all new code.
 - Prefer: `std::span`, `std::atomic`, smart pointers (`std::unique_ptr`, `std::shared_ptr`), and standard containers.
 - Avoid raw pointers and manual memory management in new code where possible.
 
 ## Interoperability (C API Layer)
-- Expose core C++ logic through a **C-compatible API** so that:
+> Canonical reference: `cxx/docs/BRIDGE_GUIDE.md`
+
+- Expose core C++ logic through a **C-compatible API** (`include/CInterface.h`) so that:
   - **macOS:** Swift can use it via Bridge / C interop.
   - **Linux:** C++ GUI stacks (Qt, GTK, etc.) can link against it.
   - **Windows:** .NET (C#) can use it via P/Invoke or C++/CLI.
 - Keep the C API minimal, stable, and free of C++ types in the public interface.
 
 ## Build System
+> Canonical reference: `cxx/BUILD.md`
+
 - **Output directory:** All compiled binaries go under `bin/`.
 - Use **CMake** for cross-platform configuration and dependency management.
 - Do not rely on platform-specific paths or tools in the core build logic.
+- Run `ctest --output-on-failure` before every PR. Green build is required to merge.

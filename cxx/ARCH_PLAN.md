@@ -8,8 +8,8 @@
 
 To maintain the high reliability required for professional-grade audio software, the following policies are strictly enforced:
 
+1.  **Git Policy**: Branch naming, commit standards, PR process, and documentation sync rules are defined in [cxx/docs/GIT_POLICY.md](cxx/docs/GIT_POLICY.md).
 1.  **Test Source of Truth**: All testing standards, including the "Golden Lifecycle" and mandatory modular routing protocols, are defined in [cxx/docs/TESTING.md](cxx/docs/TESTING.md).
-
 1.  **Green Build Requirement**: All existing tests must pass (`ctest` or `./bin/unit_tests`) before a Pull Request is created or merged.
 2.  **Test-First Features**: Every new feature or architectural change MUST be accompanied by at least one unit test or integration test.
 3.  **Regression Testing**: Every bug fix MUST include a corresponding regression test that fails without the fix and passes with it.
@@ -283,11 +283,13 @@ To bridge the gap between the C-compatible public API and the internal Flexible 
 ---
 ## Documentation Map
 - **Build/CI**: BUILD.md
+- **Git Policy**: cxx/docs/GIT_POLICY.md
 - **Functional Testing**: cxx/docs/TESTING.md
 - **C-Bridge Contract**: cxx/docs/BRIDGE_GUIDE.md
 - **Processor Specifications**: cxx/docs/MODULE_DESC.md
 
 ## References
-- Project rules: repo root `.clinerules` (Git workflow, NVI, C++20).
+- Git workflow: [cxx/docs/GIT_POLICY.md](cxx/docs/GIT_POLICY.md) (branch naming, PR process, commit standards).
+- Coding rules: repo root `.clinerules` (quick-reference; points to canonical docs above).
 
 
