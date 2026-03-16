@@ -343,45 +343,24 @@ void Voice::bake() {
                 + std::to_string(i - 1) + " and " + std::to_string(i));
         }
     }
-    // Phase 15: validate named port connections
-    static constexpr std::string_view kLifecyclePorts[] = {"gate_in", "trigger_in"};
-    for (const auto& conn : connections_) {
-        // Lifecycle ports are driven by VoiceContext — disallow explicit wiring.
-        for (const auto& lp : kLifecyclePorts) {
-            if (conn.to_port == lp || conn.from_port == lp) {
-                throw std::logic_error(
-                    "Voice::bake() failed: lifecycle port '" + std::string(lp)
-                    + "' must not be wired via connect()");
-            }
-        }
-        // Both nodes must be in the chain.
-        auto* from = find_by_tag(conn.from_tag);
-        auto* to   = find_by_tag(conn.to_tag);
-        if (!from) throw std::logic_error(
-            "Voice::bake() connection: unknown from_tag '" + conn.from_tag + "'");
-        if (!to)   throw std::logic_error(
-            "Voice::bake() connection: unknown to_tag '"   + conn.to_tag   + "'");
-        // Both named ports must exist with matching types.
-        const auto* fp = from->find_port(conn.from_port);
-        const auto* tp = to->find_port(conn.to_port);
-        if (!fp) throw std::logic_error(
-            "Voice::bake() connection: port '" + conn.from_port
-            + "' not declared on '" + conn.from_tag + "'");
-        if (!tp) throw std::logic_error(
-            "Voice::bake() connection: port '" + conn.to_port
-            + "' not declared on '" + conn.to_tag + "'");
-        if (fp->dir != PortDirection::OUT) throw std::logic_error(
-            "Voice::bake() connection: '" + conn.from_port + "' on '"
-            + conn.from_tag + "' is not an output port");
-        if (tp->dir != PortDirection::IN) throw std::logic_error(
-            "Voice::bake() connection: '" + conn.to_port + "' on '"
-            + conn.to_tag + "' is not an input port");
-        if (fp->type != tp->type) throw std::logic_error(
-            "Voice::bake() connection: type mismatch between '"
-            + conn.from_tag + "::" + conn.from_port + "' and '"
-            + conn.to_tag   + "::" + conn.to_port   + "'");
+    // Port-Type Rules:
+    //   1. Last node must output PORT_AUDIO (chain output is always audio).
+    //   2. No two consecutive PORT_CONTROL nodes (control after control is meaningless).
+    auto port_of = [](const ChainEntry& e) {
+        return e.node->output_port_type();
+    };
+    if (port_of(signal_chain_.back()) != PortType::PORT_AUDIO) {
+        throw std::logic_error(
+            "Voice::bake() failed: last node in signal_chain_ must output PORT_AUDIO");
     }
-
+    for (size_t i = 1; i < signal_chain_.size(); ++i) {
+        if (port_of(signal_chain_[i - 1]) == PortType::PORT_CONTROL &&
+            port_of(signal_chain_[i])     == PortType::PORT_CONTROL) {
+            throw std::logic_error(
+                "Voice::bake() failed: consecutive PORT_CONTROL nodes at positions "
+                + std::to_string(i - 1) + " and " + std::to_string(i));
+        }
+    }
     baked_ = true;
 }
 

@@ -174,18 +174,8 @@ Block size is **runtime-configurable** and must be chosen by the host at engine 
 
 - Query available block sizes via `host_get_device_block_sizes()` (Phase 17).
 - Pass the chosen size to `engine_create(sample_rate, block_size)`.
-- All internal buffers are allocated at engine creation time to accommodate the chosen block size.
-
----
-
-## Sample Rate Policy
-
-The engine supports **44100 Hz and 48000 Hz** exclusively. These are the two rates common to consumer and professional computer audio interfaces, including USB interfaces.
-
-- **Rate negotiation**: `engine_create` queries the hardware via `host_get_device_sample_rate()`. If the hardware reports a rate above 48000 Hz (e.g. 96000, 192000), the engine negotiates down to 48000 Hz. If the hardware rate is below 44100 Hz the engine returns an error.
-- **No hardcoded rates**: All internal timing — ADSR curves, LFO rates, delay times, metronome — must derive from the runtime `sample_rate_` stored at engine creation. No source file may contain the literals `44100` or `48000` for timing logic.
-- **USB interfaces**: USB audio interfaces may report stricter latency constraints and non-standard preferred block sizes. Block size must come from the hardware query (Phase 17), not assumed.
-- **Processing budget**: Rates above 48000 Hz double or quadruple processing cost for 16-voice polyphony. 48000 Hz is the practical ceiling for this engine's target hardware.
+- All internal buffers are allocated at engine creation time to accommodate the chosen size.
+- Internal buffers are allocated at engine creation time to accommodate the chosen block size.
 
 ---
 
@@ -196,15 +186,14 @@ The engine supports **44100 Hz and 48000 Hz** exclusively. These are the two rat
 | 1-11  | Core DSP, Factory, Polyphony, Musical Clock, Dual-Layer Testing | Complete |
 | 12    | **MIDI Integration**: `MidiParser` and `MidiEvent` feeding into `VoiceManager`. | Complete |
 | 13    | **Golden Era Expansion**: SH-101 & Juno-60 building blocks (Sub-Osc, Source Mixer, Chorus, JSON Persistence). | Complete |
-| 14    | **Dynamic Signal Chain**: (a) `Processor` typed port declarations (`PORT_AUDIO`/`PORT_CONTROL`) and `input_port_type()`. (b) Separate `AdsrEnvelopeProcessor` from VCA into distinct nodes. (c) `Voice` `signal_chain_` vector with `add_processor()`, `bake()` Generator-First and port-type validation. (d) Voice Groups in `VoiceManager`. | Partial — (a)(b)(c)(d) structurally complete; named `PortConnection` graph and data-driven `pull_mono` complete in Phase 15 |
-| 15    | **Module Registry, Named Port Connections & Patch v2**: (a) `ModuleRegistry` — self-registration via static initializers, queryable via C API. (b) `declare_port()` / `declare_parameter()` on `Processor`. (c) Explicit `PortConnection` graph in `Voice`; `bake()` validates named connections. (d) Data-driven `pull_mono` — full graph executor (audio + CV, multi-input, feedback). (e) Patch format v2 — multi-group JSON with named connections. (f) `engine_add_module` / `engine_connect_ports` / `engine_bake` / `engine_load_patch` C API. (g) `engine_set_modulation` removed; `VoiceFactory` retired. (h) `DrawbarOrgan` generator module. (i) Four reference patches: `sh_bass`, `tb_bass`, `organ`, `juno_pad`. | In Progress |
-| 16    | **Spatial & Stereo FX**: Global FX chain (post voice-summing bus). Reverb, Chorus, Flanger, Delay as global modules. | Planned |
-| 17    | **Host Interrogation & Enumeration**: Query device list, hardware sample rates, and supported block sizes via C-Bridge. | Planned |
-| 18    | **Non-Intrusive Logger**: RT-safe lock-free logging. | Complete |
-| 19    | **Unit & Integration Strategy**: GUnit vs. standalone API tests. | Complete |
-| 20    | **ParameterManager**: Centralized zipper-free parameter ramping and smoothing for all audio-rate parameter changes. | Planned |
-| 21    | **MIDI File Player**: `MidiFilePlayer` Source module for sequenced playback. | Planned |
-| 22    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation. | Planned |
+| 14    | **Dynamic Signal Chain**: (a) Extend `Processor` with typed port declarations (`PORT_AUDIO`/`PORT_CONTROL`) and per-port tagging. (b) Separate `AdsrEnvelopeProcessor` from VCA into distinct nodes. (c) Refactor `Voice` to `signal_chain_` vector with `add_processor()`, named port connections, and `bake()` validation. (d) Implement `VoiceFactory` with correct topologies. (e) Add Voice Groups to `VoiceManager`. | Partial — (b)(d)(e) complete; (a)(c) need `bake()` port-type compatibility validation |
+| 15    | **Spatial & Stereo FX**: Reverb, Chorus, Flanger, and Delay. | Planned |
+| 16    | **Host Interrogation & Enumeration**: Safely query device list, hardware sample rates, and supported block sizes via UTF-8 C-Bridge. | Planned |
+| 17    | **Non-Intrusive Logger**: RT-safe lock-free logging. | Complete |
+| 18    | **Unit & Integration Strategy**: GUnit vs. standalone API tests. | Complete |
+| 19    | **ParameterManager**: Centralized zipper-free parameter ramping and smoothing for all audio-rate parameter changes. | Planned |
+| 20    | **MIDI File Player**: `MidiFilePlayer` Source module for sequenced playback. | Planned |
+| 21    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation. | Planned |
 
 ---
 

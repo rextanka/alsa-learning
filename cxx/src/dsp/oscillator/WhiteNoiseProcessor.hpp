@@ -18,10 +18,7 @@ namespace audio {
 
 class WhiteNoiseProcessor : public Processor {
 public:
-    WhiteNoiseProcessor() : state_(0xDEADBEEFu) {
-        // Phase 15: named port declarations
-        declare_port({"audio_out", PORT_AUDIO, PortDirection::OUT});
-    }
+    WhiteNoiseProcessor() : state_(0xDEADBEEFu) {}
 
     void reset() override { state_ = 0xDEADBEEFu; }
 
