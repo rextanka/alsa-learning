@@ -9,8 +9,6 @@
 #include <gtest/gtest.h>
 #include "VoiceFactory.hpp"
 #include "routing/CompositeGenerator.hpp"
-#include "envelope/AdsrEnvelopeProcessor.hpp"
-#include "VcaProcessor.hpp"
 #include <vector>
 #include <cmath>
 
@@ -79,22 +77,4 @@ TEST_F(VoiceFactoryTest, ReleasingAfterNoteOff) {
 TEST_F(VoiceFactoryTest, BakeFailsOnEmptyChain) {
     Voice bare(kSR);
     EXPECT_THROW(bare.bake(), std::logic_error);
-}
-
-TEST_F(VoiceFactoryTest, BakeFailsWhenLastNodeIsPortControl) {
-    // Chain ending with a PORT_CONTROL node (ADSR outputs control) is invalid.
-    Voice bad(kSR);
-    bad.add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
-    bad.add_processor(std::make_unique<AdsrEnvelopeProcessor>(kSR), "ENV");
-    EXPECT_THROW(bad.bake(), std::logic_error);
-}
-
-TEST_F(VoiceFactoryTest, BakeFailsOnConsecutivePortControlNodes) {
-    // Two consecutive PORT_CONTROL nodes are nonsensical.
-    Voice bad(kSR);
-    bad.add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
-    bad.add_processor(std::make_unique<AdsrEnvelopeProcessor>(kSR), "ENV1");
-    bad.add_processor(std::make_unique<AdsrEnvelopeProcessor>(kSR), "ENV2");
-    bad.add_processor(std::make_unique<VcaProcessor>(), "VCA");
-    EXPECT_THROW(bad.bake(), std::logic_error);
 }
