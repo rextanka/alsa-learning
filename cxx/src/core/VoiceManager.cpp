@@ -26,9 +26,8 @@ VoiceManager::VoiceManager(int sample_rate)
     for (auto& slot : voices_) {
         slot.voice = std::make_unique<Voice>(sample_rate);
         
-        // DEFAULT VCA CONNECTION: Envelope -> Amplitude (Intensity: 1.0f)
-        // This ensures audible output by default.
-        slot.voice->matrix().set_connection(ModulationSource::Envelope, ModulationTarget::Amplitude, 1.0f);
+        // Initial modulation state is clean. Primary VCA gate is handled
+        // by Voice::pull_mono calling envelope_->pull() directly.
         
         slot.current_note = -1;
         slot.active = false;

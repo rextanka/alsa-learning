@@ -252,6 +252,7 @@ void Voice::apply_modulation() {
     current_source_values_[static_cast<size_t>(ModulationSource::Envelope)] = env_val;
     current_source_values_[static_cast<size_t>(ModulationSource::LFO)] = lfo_val;
 
+
     // 1. Apply Pitch Modulation
     float pitch_mod = matrix_.sum_for_target(ModulationTarget::Pitch, current_source_values_);
     current_frequency_ = base_frequency_ * std::pow(2.0, static_cast<double>(pitch_mod));
@@ -292,6 +293,7 @@ void Voice::apply_modulation() {
             current_amplitude_ = base_amplitude_ * std::clamp(amp_mod_sum, 0.0f, 2.0f);
         }
     }
+
 
     // 4. Apply PWM
     float pw_mod = matrix_.sum_for_target(ModulationTarget::PulseWidth, current_source_values_);
@@ -365,6 +367,7 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
         float abs_s = std::abs(s);
         if (abs_s > peak) peak = abs_s;
     }
+    
 }
 
 } // namespace audio
