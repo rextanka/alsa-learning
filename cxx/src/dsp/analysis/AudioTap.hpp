@@ -78,6 +78,20 @@ public:
      */
     size_t get_capacity() const { return buffer_size_; }
 
+    /**
+     * @brief Feed audio into the tap's internal ring buffer.
+     * 
+     * This is the "TEE" write operation for the audio thread.
+     */
+    void write(std::span<float> data) {
+        size_t head = write_head_.load(std::memory_order_relaxed);
+        for (float sample : data) {
+            buffer_[head] = sample;
+            head = (head + 1) & mask_;
+        }
+        write_head_.store(head, std::memory_order_release);
+    }
+
 protected:
     /**
      * @brief RT-Safe implementation of the pull protocol.
@@ -94,14 +108,7 @@ protected:
         }
 
         // 2. Copy the pulled audio into our internal analysis ring buffer
-        size_t head = write_head_.load(std::memory_order_relaxed);
-        for (float sample : output) {
-            buffer_[head] = sample;
-            head = (head + 1) & mask_;
-        }
-        
-        // Commit the write head so the analysis thread can see it
-        write_head_.store(head, std::memory_order_release);
+        write(output);
     }
 
 private:

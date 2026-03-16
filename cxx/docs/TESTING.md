@@ -1,8 +1,51 @@
 # Testing & Telemetry in the Audio Engine
 
-This document outlines the testing strategy and the use of the RT-Safe telemetry system for the Audio Engine.
+This document outlines the testing strategy, the use of the RT-Safe telemetry system, and the mandatory protocols for functional engine testing.
 
-## RT-Safe Logger
+---
+
+## 1. The "Golden Lifecycle" Protocol (MANDATORY)
+Every functional test in `cxx/tests/functional/` **MUST** execute these 5 steps in the specified order. Skipping these is the primary cause of silent engine failures.
+
+1.  **Environment Init**: `test::init_test_environment()`
+2.  **Engine Wrapper**: `test::EngineWrapper engine(sample_rate)`
+3.  **Modular Patching**: 
+    * **MANDATORY**: Connect modulator to target using `engine_connect_mod`.
+    * **DEPRECATED**: `engine_set_modulation` is deprecated and must not be used in new tests.
+    * Example: `engine_connect_mod(engine.get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f)`
+4.  **ADSR Arming**: 
+    * MUST set `amp_attack`, `amp_decay`, `amp_sustain`, and `amp_release` via `set_param`.
+5.  **Lifecycle Start**: `engine_start(engine.get())`
+
+---
+
+## 2. Modular Graph Initialization
+Tests must explicitly initialize the graph according to their requirements. Do not use a "one-size-fits-all" lifecycle. Choose the appropriate Tier:
+
+### Signal Chain Standard
+*   **Mono Voice**: Each voice operates mono internally.
+*   **Summing Bus**: All voices are aggregated into a stereo `SummingBus` that handles constant-power panning and master gain.
+*   **Effects Chain**: The Bus output is processed through global FX (Chorus, etc.) before reaching the HAL.
+
+- **Tier 1 (Direct Path)**: `Oscillator -> Output`.
+  - Required: `engine_start`, `set_param` (Gain).
+- **Tier 2 (Modulated Path)**: `Oscillator -> Modulator -> Output`.
+  - Required: Tier 1 requirements + `engine_connect_mod` (e.g., ADSR -> VCA).
+- **Tier 3 (Complex Path)**: `Oscillator -> VCF -> VCA -> Output`.
+  - Required: Tier 2 requirements + Filter/Resonance initialization.
+
+---
+
+## 3. Mandatory "Graph-Aware" Checklist
+Before a test is executed, the developer (or Cline) must confirm:
+1. **Graph Definition**: Is the signal path documented in the `PRINT_TEST_HEADER`?
+2. **Lifecycle State**: Has `engine_start()` been called for this specific configuration?
+3. **Connectivity**: If modulation is used, has `engine_connect_mod` been called to link the source to the target?
+4. **Gain Stage**: Is the gain stage of every module in the graph explicitly initialized to a non-zero value?
+
+---
+
+## 4. RT-Safe Logger
 
 The `AudioLogger` is a lock-free, single-producer single-consumer ring buffer designed for use in the high-priority Audio Thread.
 
@@ -26,11 +69,7 @@ audio_log_message("Toy", "Filter Initialized");
 audio_log_event("Cutoff", 440.0f);
 ```
 
-## Writing Tests
-
-We use **GoogleTest** for both Unit and Integration tests.
-
-### 1. Behavioral Testing with Telemetry
+## 5. Behavioral Testing with Telemetry
 
 When testing components like the `VoiceManager`, checking the output buffer is often not enough to verify complex logic like voice stealing. The `AudioLogger` allows us to verify **internal state** without the "observer effect" of slow I/O.
 
@@ -59,32 +98,55 @@ TEST(VoiceStressTest, VerifyOldestIsStolen) {
 }
 ```
 
-## Developer Workflow (Pre-Check-in)
+---
 
-To maintain a "Green Build," every developer must follow this loop before pushing code:
+## 6. Configuration Guide (10ms MMA Target)
 
-1.  **Build**: `cd cxx/build && cmake .. && make -j`
-2.  **Test**: `ctest --output-on-failure` or `./bin/unit_tests`
-3.  **Verify RT-Safety**: Ensure no new `printf` or `std::cout` calls were added to the audio thread (use `AudioLogger` instead).
-4.  **Documentation**: Update `BRIDGE_GUIDE.md` if any C-API changes were made.
+To maintain the **10ms MMA Latency Target**, all functional tests follow this dynamic protocol:
 
-### 2. Unit Tests
+- **Dynamic Sample Rate**: Mandatory. Never hardcode sample rates.
+- **Protocol**: 
+    1. Query hardware using `host_get_device_sample_rate(0)`.
+    2. Use `test::get_safe_sample_rate()` fallback logic to handle "Device Busy" or "No Device" scenarios.
+    3. Initialize engine via `engine_create(sample_rate)`.
+- **Buffer Size**: Fixed at `512 samples`.
+  - Latency is calculated dynamically: `(512 / sample_rate) * 1000 ms`.
+- **Platform-Agnostic HAL**: Tests must use `EngineHandle` and `CInterface.h`.
 
-Unit tests should focus on isolated components (`src/core` or `src/dsp`).
-Place new tests in `cxx/tests/unit/` and register them in `cxx/CMakeLists.txt`.
+---
 
-Key areas to test:
-- **Sample-accurate timing:** `test_clock_logic.cpp`
-- **Envelope behavior:** `test_envelope_stages.cpp`
-- **Stress & Load:** `test_voice_stress.cpp`
+## 7. Test Output Standards
 
-### 3. Integration Tests
+Every functional test in `cxx/tests/functional/` MUST include a standardized header block using the `PRINT_TEST_HEADER` macro.
 
-Integration tests verify the C-API and the interaction between multiple components.
-Place these in `cxx/tests/integration/`.
+- **Header Format Requirement**:
+    ```
+    ================================================================
+    --- TEST: [Test Name] ---
+    Intent:   [Clear statement of intent]
+    Chain:    [Signal path description, e.g., VCO -> VCF -> VCA]
+    Expected: [Expected audible or logged result]
+    Hardware: [Detected Sample Rate] | ~[Calculated Latency]ms (512 samples)
+    ================================================================
+    ```
 
-## SOP for New Components
+---
 
-1.  **Instrument:** Add `log_event` or `log_message` calls to critical state transitions in your new component.
-2.  **Verify:** Write a test that triggers these transitions and uses the `AudioLogger` to verify they happened.
+## 8. Implementation SOP for New Components
+
+1.  **Instrument:** Add `log_event` or `log_message` calls to critical state transitions.
+2.  **Verify:** Write a test that triggers these transitions and uses the `AudioLogger` to verify.
 3.  **Harden:** Use "Stress Tests" (flooding parameters, triggering many voices) to ensure the component is robust.
+4.  **Green Build Requirement**: All tests must pass before merging.
+5.  **Documentation**: Update `BRIDGE_GUIDE.md` if any C-API changes were made.
+
+---
+
+## 9. Implementation SOP (Standard Operating Procedure)
+
+1. **Verify Tier**: Identify the simplest graph (Tier 1/2/3) for the test.
+2. **Modular Routing**: Use `engine_connect_mod` explicitly.
+3. **Diagnostic Audit**: When adding a TEE point (AudioTap), verify that the tap operation is a non-destructive push (`tap->write()`).
+4. **Silence-Check**: If a functional test fails with "Empty Buffer," the first audit point is the `AudioBridge` callback to ensure the signal is reaching the diagnostic tap.
+5. **Implementation Requirement**: Before adding new components, verify the architectural compatibility against ARCH_PLAN.md.
+6. **SOP**: Any C-API changes require an immediate update to BRIDGE_GUIDE.md.

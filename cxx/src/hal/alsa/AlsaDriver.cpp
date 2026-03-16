@@ -254,6 +254,7 @@ void AlsaDriver::thread_loop() {
 
 void AlsaDriver::recover_pcm(int err) {
     if (err == -EPIPE) {
+        xrun_count_++;
         snd_pcm_prepare(pcm_handle_);
     } else if (err == -ESTRPIPE) {
         while ((err = snd_pcm_resume(pcm_handle_)) == -EAGAIN)

@@ -52,12 +52,23 @@ TEST_F(TremulantTest, ModularTremulant) {
     engine_note_on(engine, 64, 0.8f); // E4
     engine_note_on(engine, 67, 0.8f); // G4
 
-    // 4. Process a block and check that modulation is active
+    // 4. Process enough blocks to allow the ADSR envelope to open (50ms attack)
     std::vector<float> output(512 * 2); // Stereo
+    for (int i = 0; i < 20; ++i) { // ~200ms
+        engine_process(engine, output.data(), 512);
+    }
+
+    // 5. Audit the final block
     int result = engine_process(engine, output.data(), 512);
     EXPECT_EQ(result, 0);
 
-    std::cout << "[TremulantTest] Verified LFO -> Pitch modular route." << std::endl;
+    // Harden the test: Verify signal is present
+    float sum_sq = 0;
+    for(float s : output) sum_sq += s * s;
+    float rms = std::sqrt(sum_sq / output.size());
+    ASSERT_GT(rms, 0.001f) << "FAILED: Tremulant test output is silent! RMS=" << rms;
+
+    std::cout << "[TremulantTest] Verified LFO -> Pitch modular route. RMS=" << rms << std::endl;
 }
 
 TEST_F(TremulantTest, ModulationReport) {

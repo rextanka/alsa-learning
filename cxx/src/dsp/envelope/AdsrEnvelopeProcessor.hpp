@@ -81,6 +81,11 @@ public:
     void set_sustain_level(float level) { sustain_level_ = std::clamp(level, 0.0f, 1.0f); update_rates(); }
     void set_release_time(float seconds) { release_time_ = std::max(0.001f, seconds); update_rates(); }
 
+    /**
+     * @brief Get the current output level of the envelope.
+     */
+    float get_level() const { return current_level_; }
+
 protected:
     void do_pull(std::span<float> output, const VoiceContext* /* voice_context */ = nullptr) override {
         for (auto& sample : output) {

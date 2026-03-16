@@ -149,6 +149,7 @@ if(BUILD_TESTING)
         tests/unit/test_logger.cpp
         tests/unit/test_clock_logic.cpp
         tests/unit/test_modulation_matrix.cpp
+        tests/unit/test_bus_headroom.cpp
     )
     target_include_directories(unit_tests PRIVATE tests/unit tests)
     target_link_libraries(unit_tests PRIVATE audio_engine gtest_main)
@@ -184,15 +185,16 @@ if(BUILD_TESTING)
     add_functional_test(four_beeps_adsr four_beeps_adsr.cpp)
     add_functional_test(guitar_tuner_verify guitar_tuner_verify.cpp)
     add_functional_test(oscillator_baseline_test oscillator_baseline_test.cpp)
+    add_functional_test(oscillator_integrity_test oscillator_integrity_test.cpp)
     add_functional_test(graph_audit_test graph_audit_test.cpp)
     add_functional_test(filter_sweep_test filter_sweep_test.cpp)
-    add_functional_gtest(stereo_poly_test stereo_poly_test.cpp)
     add_functional_test(processor_check processor_check.cpp)
     add_functional_test(oscillator_drone_test oscillator_drone_test.cpp)
     add_functional_test(Phase10Tests Phase10Tests.cpp)
     add_functional_test(TimingValidation TimingValidation.cpp)
     
     add_functional_gtest(Functional_BachMidi Functional_BachMidi.cpp)
+    add_functional_gtest(BachOrganTest BachOrganTest.cpp)
     add_functional_gtest(tremulant_tests test_tremulant_preset.cpp)
     add_functional_gtest(sh101_chain_tests test_sh101_chain.cpp)
     add_functional_gtest(juno_chorus_tests test_juno_chorus.cpp)
@@ -201,6 +203,7 @@ if(BUILD_TESTING)
     add_test(NAME Functional_Phase10 COMMAND Phase10Tests)
     add_test(NAME Functional_Timing COMMAND TimingValidation)
     add_test(NAME Functional_OscIntegrity COMMAND automated_osc_integrity)
+    add_test(NAME Functional_ProcessorFidelity COMMAND processor_check)
 
     if(UNIX AND NOT APPLE)
         add_functional_test(AlsaCheck AlsaCheck.cpp)

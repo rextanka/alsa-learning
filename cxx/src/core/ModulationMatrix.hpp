@@ -131,6 +131,16 @@ public:
         }
     }
 
+    /**
+     * @brief Check if a target has any active modulation connections.
+     */
+    bool has_no_connections(ModulationTarget target) const {
+        for (const auto& conn : connections_) {
+            if (conn.active && conn.target == target) return false;
+        }
+        return true;
+    }
+
 private:
     std::array<ModulationConnection, MAX_CONNECTIONS> connections_;
 };

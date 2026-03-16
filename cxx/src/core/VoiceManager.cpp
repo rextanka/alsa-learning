@@ -4,6 +4,8 @@
  */
 
 #include "VoiceManager.hpp"
+#include "SummingBus.hpp"
+#include "AudioTap.hpp"
 #include "Logger.hpp"
 #include <cmath>
 #include <algorithm>
@@ -19,13 +21,13 @@ namespace audio {
 VoiceManager::VoiceManager(int sample_rate)
     : timestamp_counter_(0)
     , sample_rate_(sample_rate)
+    , summing_bus_(std::make_unique<SummingBus>(512))
 {
     for (auto& slot : voices_) {
         slot.voice = std::make_unique<Voice>(sample_rate);
         
-        // DEFAULT VCA CONNECTION: Envelope -> Amplitude (Intensity: 1.0f)
-        // This ensures audible output by default.
-        slot.voice->matrix().set_connection(ModulationSource::Envelope, ModulationTarget::Amplitude, 1.0f);
+        // Initial modulation state is clean. Primary VCA gate is handled
+        // by Voice::pull_mono calling envelope_->pull() directly.
         
         slot.current_note = -1;
         slot.active = false;
@@ -63,6 +65,7 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
     }
 
     if (idle_idx != -1) {
+        std::cout << "[DEBUG] VoiceManager::note_on assigning idle voice " << idle_idx << " for note " << note << std::endl;
         auto& slot = voices_[idle_idx];
         slot.current_note = note;
         slot.active = true;
@@ -76,19 +79,33 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
         return;
     }
 
-    // 3. Voice Stealing: Priority (Idle > Releasing > Oldest Active)
+    // 3. Voice Stealing: Tiered Priority (Releasing > Oldest Active)
     int candidate_idx = -1;
-    
-    // Priority 2: Steal Oldest Active Voice
-    uint64_t oldest_time = std::numeric_limits<uint64_t>::max();
+    uint64_t oldest_releasing_time = std::numeric_limits<uint64_t>::max();
+    uint64_t oldest_active_time = std::numeric_limits<uint64_t>::max();
+    int oldest_active_idx = -1;
+
     for (int i = 0; i < MAX_VOICES; ++i) {
-        if (voices_[i].last_note_on_time < oldest_time) {
-            oldest_time = voices_[i].last_note_on_time;
-            candidate_idx = i;
+        if (voices_[i].voice->is_releasing()) {
+            if (voices_[i].last_note_on_time < oldest_releasing_time) {
+                oldest_releasing_time = voices_[i].last_note_on_time;
+                candidate_idx = i;
+            }
+        } else {
+            if (voices_[i].last_note_on_time < oldest_active_time) {
+                oldest_active_time = voices_[i].last_note_on_time;
+                oldest_active_idx = i;
+            }
         }
     }
 
+    // If no releasing voice found, fallback to oldest active
+    if (candidate_idx == -1) {
+        candidate_idx = oldest_active_idx;
+    }
+
     if (candidate_idx != -1) {
+        std::cout << "[DEBUG] VoiceManager::note_on stealing voice " << candidate_idx << " for note " << note << std::endl;
         auto& candidate = voices_[candidate_idx];
         AudioLogger::instance().log_event("VoiceSteal", static_cast<float>(candidate.current_note));
         
@@ -215,6 +232,7 @@ void VoiceManager::set_mod_source(int id, std::shared_ptr<Processor> processor) 
 }
 
 void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context) {
+    // Mono Summing for mono-span output
     std::fill(output.begin(), output.end(), 0.0f);
 
     if (mod_buffer_.size() < output.size()) {
@@ -239,7 +257,7 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
         }
     }
 
-    // 2. Sum active voices
+    // 2. Sum active voices into mono span
     auto block = voices_[0].voice->borrow_buffer();
     std::span<float> work_span(block->left.data(), output.size());
 
@@ -248,7 +266,7 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
         if (slot.active) {
             if (slot.voice->is_active()) {
                 std::fill(work_span.begin(), work_span.end(), 0.0f);
-                slot.voice->pull(work_span, context);
+                slot.voice->pull_mono(work_span, context);
                 for (size_t j = 0; j < output.size(); ++j) {
                     output[j] += work_span[j];
                 }
@@ -273,7 +291,12 @@ void VoiceManager::do_pull(std::span<float> output, const VoiceContext* context)
 }
 
 void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
+    pull_with_tap(output, diagnostic_tap_, context);
+}
+
+void VoiceManager::pull_with_tap(AudioBuffer& output, Processor* tap, const VoiceContext* context) {
     output.clear();
+    summing_bus_->clear();
 
     if (mod_buffer_.size() < output.frames()) {
         mod_buffer_.resize(output.frames());
@@ -297,7 +320,7 @@ void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
         }
     }
 
-    // 3. Render and Sum Voices with Constant-Power Panning
+    // 3. Render and Sum Voices into SummingBus
     auto block = voices_[0].voice->borrow_buffer();
     std::span<float> work_span(block->left.data(), output.frames());
 
@@ -305,20 +328,19 @@ void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
     for (int i = 0; i < MAX_VOICES; ++i) {
         auto& slot = voices_[i];
         if (slot.active) {
-            active_slots++;
             if (slot.voice->is_active()) {
+                active_slots++;
                 std::fill(work_span.begin(), work_span.end(), 0.0f);
-                slot.voice->pull(work_span, context);
+                slot.voice->pull_mono(work_span, context);
 
-                float pan = slot.voice->pan();
-                float theta = (pan + 1.0f) * (static_cast<float>(M_PI) / 4.0f);
-                float gainL = std::cos(theta);
-                float gainR = std::sin(theta);
-
-                for (size_t j = 0; j < output.frames(); ++j) {
-                    output.left[j] += work_span[j] * gainL;
-                    output.right[j] += work_span[j] * gainR;
+                // Feed diagnostic tap if provided (non-destructive push)
+                if (tap) {
+                    if (auto* audio_tap = dynamic_cast<AudioTap*>(tap)) {
+                        audio_tap->write(work_span);
+                    }
                 }
+
+                summing_bus_->add_voice(work_span, slot.voice->pan());
             } else {
                 slot.active = false;
                 if (slot.current_note != -1) {
@@ -331,20 +353,8 @@ void VoiceManager::do_pull(AudioBuffer& output, const VoiceContext* context) {
         }
     }
     
-    // 4. Master Safety Gain (0.15) and Simple Soft Clipping
-    for (size_t j = 0; j < output.frames(); ++j) {
-        float outL = output.left[j] * 0.15f;
-        float outR = output.right[j] * 0.15f;
-
-        auto soft_clip = [](float s) {
-            if (s > 0.95f) return 0.95f + 0.05f * std::tanh((s - 0.95f) / 0.05f);
-            if (s < -0.95f) return -0.95f + 0.05f * std::tanh((s + 0.95f) / 0.05f);
-            return s;
-        };
-
-        output.left[j] = soft_clip(outL);
-        output.right[j] = soft_clip(outR);
-    }
+    // 4. Final Output from Bus
+    summing_bus_->pull(output);
 
     static int call_count = 0;
     if (call_count++ % sample_rate_ == 0) {

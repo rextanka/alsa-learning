@@ -29,6 +29,7 @@
 #include "TuningSystem.hpp"
 #include "Logger.hpp"
 #include "PatchStore.hpp"
+#include "SummingBus.hpp"
 #include <memory>
 #include <span>
 #include <cstring>
@@ -75,6 +76,7 @@ struct EnvelopeHandleImpl : public HandleBase {
 struct EngineHandleImpl : public HandleBase {
     std::unique_ptr<audio::VoiceManager> voice_manager;
     std::unique_ptr<hal::AudioDriver> driver;
+    std::unique_ptr<audio::SummingBus> summing_bus;
     std::unique_ptr<audio::AudioTap> tap;
     std::unique_ptr<audio::JunoChorus> chorus;
     bool chorus_enabled = false;
@@ -84,29 +86,36 @@ struct EngineHandleImpl : public HandleBase {
     int sample_rate;
     int next_processor_id = 100; // Start at 100 to avoid confusion with voice indices
 
+    virtual ~EngineHandleImpl() {
+        if (driver) driver->stop();
+    }
+
     EngineHandleImpl(int sr)
         : HandleBase(HandleType::Engine)
         , voice_manager(std::make_unique<audio::VoiceManager>(sr))
+        , summing_bus(std::make_unique<audio::SummingBus>(512))
         , tap(std::make_unique<audio::AudioTap>(16384))
         , chorus(std::make_unique<audio::JunoChorus>(static_cast<double>(sr)))
         , clock(static_cast<double>(sr))
         , sample_rate(sr)
     {
-        // Connect the tap to the voice manager output
-        tap->add_input(voice_manager.get());
 
 #ifdef __APPLE__
         driver = std::make_unique<hal::CoreAudioDriver>(sr, 512);
 #else
         driver = std::make_unique<hal::AlsaDriver>(sr, 512);
 #endif
-    // Link the driver to the voice manager
+    // Link the driver to the voice manager (which uses SummingBus)
     driver->set_stereo_callback([this](audio::AudioBuffer& buffer) {
+        if (!voice_manager) return;
+        
         // Advanced clock by frames
         clock.advance(static_cast<int32_t>(buffer.frames()));
-        voice_manager->pull(buffer);
         
-        if (chorus_enabled) {
+        // Pull with diagnostic tap
+        voice_manager->pull_with_tap(buffer, tap.get());
+        
+        if (chorus_enabled && chorus) {
             chorus->pull(buffer);
         }
     });
@@ -126,6 +135,7 @@ struct EngineHandleImpl : public HandleBase {
         param_name_to_id["pulse_width"] = 14;
         param_name_to_id["sine_gain"] = 15;
         param_name_to_id["triangle_gain"] = 16;
+        param_name_to_id["wavetable_gain"] = 17;
     }
 };
 
@@ -514,6 +524,12 @@ int engine_set_delay_enabled(EngineHandle handle, int /* enabled */) {
     return 0;
 }
 
+int engine_get_xrun_count(EngineHandle handle) {
+    if (!handle) return 0;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    return impl->driver->get_xrun_count();
+}
+
 int engine_set_modulation(EngineHandle handle, int source, int target, float intensity) {
     if (!handle) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
@@ -609,6 +625,25 @@ int set_param(void* handle, const char* name, float value) {
         
         if (base->type == HandleType::Engine) {
             auto* engine = static_cast<EngineHandleImpl*>(handle);
+
+            // SPECIAL MAPPING: wavetable_type
+            if (std::strcmp(name, "wavetable_type") == 0) {
+                int type_idx = static_cast<int>(value);
+                // Apply to all voices
+                for (auto& slot : engine->voice_manager->get_voices()) {
+                    if (slot.voice) {
+                        slot.voice->set_parameter(18, static_cast<float>(type_idx));
+                    }
+                }
+                return 0;
+            }
+
+            // SPECIAL MAPPING: osc_frequency
+            if (std::strcmp(name, "osc_frequency") == 0) {
+                engine->voice_manager->set_parameter(0, value); // 0 = PITCH/FREQ
+                return 0;
+            }
+
             if (engine->param_name_to_id.count(name)) {
                 int id = engine->param_name_to_id[name];
                 engine->voice_manager->set_parameter(id, value);

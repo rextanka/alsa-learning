@@ -11,6 +11,7 @@
 #include "oscillator/SawtoothOscillatorProcessor.hpp"
 #include "oscillator/SineOscillatorProcessor.hpp"
 #include "oscillator/TriangleOscillatorProcessor.hpp"
+#include "oscillator/WavetableOscillatorProcessor.hpp"
 #include "envelope/AdsrEnvelopeProcessor.hpp"
 #include "filter/FilterProcessor.hpp"
 #include "oscillator/LfoProcessor.hpp"
@@ -56,8 +57,19 @@ public:
     void set_pan(float pan);
     float pan() const { return pan_; }
 
+    /**
+     * @brief Check if the voice is in the release stage.
+     */
+    bool is_releasing() const;
+
 protected:
     void do_pull(std::span<float> output, const VoiceContext* context = nullptr) override;
+
+public:
+    /**
+     * @brief Pull a mono signal from this voice.
+     */
+    void pull_mono(std::span<float> output, const VoiceContext* context = nullptr);
 
 private:
     static constexpr size_t MAX_BLOCK_SIZE = 1024;
@@ -70,6 +82,7 @@ private:
     std::unique_ptr<SawtoothOscillatorProcessor> saw_oscillator_;
     std::unique_ptr<SineOscillatorProcessor> sine_oscillator_;
     std::unique_ptr<TriangleOscillatorProcessor> triangle_oscillator_;
+    std::unique_ptr<WavetableOscillatorProcessor> wavetable_oscillator_;
     std::unique_ptr<SourceMixer> source_mixer_;
     std::unique_ptr<AdsrEnvelopeProcessor> envelope_;
     std::unique_ptr<FilterProcessor> filter_;
@@ -83,6 +96,10 @@ private:
     float base_cutoff_;
     float base_resonance_;
     float base_amplitude_;
+
+    // Current modulated parameters
+    double current_frequency_;
+    float current_amplitude_;
 
     int sample_rate_;
     float pan_; // -1.0 to 1.0

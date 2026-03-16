@@ -8,6 +8,8 @@
 
 To maintain the high reliability required for professional-grade audio software, the following policies are strictly enforced:
 
+1.  **Test Source of Truth**: All testing standards, including the "Golden Lifecycle" and mandatory modular routing protocols, are defined in [cxx/docs/TESTING.md](cxx/docs/TESTING.md).
+
 1.  **Green Build Requirement**: All existing tests must pass (`ctest` or `./bin/unit_tests`) before a Pull Request is created or merged.
 2.  **Test-First Features**: Every new feature or architectural change MUST be accompanied by at least one unit test or integration test.
 3.  **Regression Testing**: Every bug fix MUST include a corresponding regression test that fails without the fix and passes with it.
@@ -266,12 +268,26 @@ To bridge the gap between the C-compatible public API and the internal Flexible 
 | 13 | `pulse_gain` | `VCO` | 13 | Pulse level |
 | 14 | `pulse_width` | `VCO` | 14 | Pulse Width (Native) |
 
+### Future Architectural Roadmap
+
+1. **Typed Port Protocol**: Replace raw buffer passing with metadata-aware connections (`PORT_AUDIO`, `PORT_CONTROL`) to prevent illegal signal routing and ensure deterministic validation at the Bridge level.
+2. **Global Modulation Bus**: Shift from per-voice matrices to a centralized bus where global sources (e.g., Vibrato LFO) write to synchronized slots, improving phase coherency and reducing CPU overhead via a subscription model.
+3. **BaseOscillator Hierarchy**: Consolidate redundant logic (gain, fine-tuning, pitch-bend) into a polymorphic collection, allowing the `Voice` to manage generators as a dynamic list rather than hardcoded pointers.
+
 ### Implementation Rules
+1. **Test Source of Truth**: All testing standards, including the "Golden Lifecycle" and mandatory modular routing protocols, are defined in [cxx/docs/TESTING.md](cxx/docs/TESTING.md).
 1. **Bridge Duty**: The `AudioBridge` (EngineHandleImpl) MUST maintain a `param_name_to_id` map matching the "String Label" column.
 2. **Voice Duty**: The `Voice` constructor MUST use `register_parameter(GlobalID, Tag, InternalID)` to link the bridge to the signal chain.
 3. **RT-Safety**: All mapping lookups occur outside the audio thread or via lock-free atomic caches.
 
 ---
+## Documentation Map
+- **Build/CI**: BUILD.md
+- **Functional Testing**: cxx/docs/TESTING.md
+- **C-Bridge Contract**: cxx/docs/BRIDGE_GUIDE.md
+- **Processor Specifications**: cxx/docs/MODULE_DESC.md
 
 ## References
 - Project rules: repo root `.clinerules` (Git workflow, NVI, C++20).
+
+

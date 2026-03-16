@@ -18,6 +18,8 @@ Voice::Voice(int sample_rate)
     , base_cutoff_(4000.0f)
     , base_resonance_(0.4f)
     , base_amplitude_(1.0f)
+    , current_frequency_(440.0)
+    , current_amplitude_(1.0f)
     , sample_rate_(sample_rate)
     , pan_(0.0f)
     , active_(false)
@@ -28,6 +30,7 @@ Voice::Voice(int sample_rate)
     saw_oscillator_ = std::make_unique<SawtoothOscillatorProcessor>(sample_rate);
     sine_oscillator_ = std::make_unique<SineOscillatorProcessor>(sample_rate);
     triangle_oscillator_ = std::make_unique<TriangleOscillatorProcessor>(sample_rate);
+    wavetable_oscillator_ = std::make_unique<WavetableOscillatorProcessor>(static_cast<double>(sample_rate));
     source_mixer_ = std::make_unique<SourceMixer>();
     source_mixer_->set_gain(1, 1.0f); // Default main pulse gain
     source_mixer_->set_gain(2, 0.5f); // Default sub-osc gain
@@ -144,6 +147,12 @@ void Voice::set_parameter(int param, float value) {
         case 16: // TRIANGLE_GAIN (New mapping for Tuner Tool)
             source_mixer_->set_gain(4, value);
             break;
+        case 17: // WAVETABLE_GAIN
+            source_mixer_->set_gain(5, value);
+            break;
+        case 18: // WAVETABLE_TYPE
+            wavetable_oscillator_->setWaveType(static_cast<WaveType>(static_cast<int>(value)));
+            break;
         case 14: // PULSE_WIDTH (Native)
             if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
                 pulse_osc->set_pulse_width(value);
@@ -171,6 +180,7 @@ void Voice::rebuild_graph() {
     graph_->add_node(saw_oscillator_.get());
     graph_->add_node(sine_oscillator_.get());
     graph_->add_node(triangle_oscillator_.get());
+    graph_->add_node(wavetable_oscillator_.get());
 }
 
 void Voice::note_on(double frequency) {
@@ -182,6 +192,7 @@ void Voice::note_on(double frequency) {
     saw_oscillator_->reset();
     sine_oscillator_->reset();
     triangle_oscillator_->reset();
+    wavetable_oscillator_->reset();
     envelope_->reset();
     lfo_->reset();
     if (filter_) filter_->reset();
@@ -191,6 +202,7 @@ void Voice::note_on(double frequency) {
     saw_oscillator_->set_frequency(frequency);
     sine_oscillator_->set_frequency(frequency);
     triangle_oscillator_->set_frequency(frequency);
+    wavetable_oscillator_->setFrequency(frequency);
     
     // Hardwire VCA if missing
     if (matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_) <= 0.001f) {
@@ -209,12 +221,18 @@ bool Voice::is_active() const {
     return active_ || envelope_->is_active();
 }
 
+bool Voice::is_releasing() const {
+    // A voice is releasing if the gate is off but the envelope is still active.
+    return !active_ && envelope_->is_active();
+}
+
 void Voice::reset() {
     oscillator_->reset();
     sub_oscillator_->reset();
     saw_oscillator_->reset();
     sine_oscillator_->reset();
     triangle_oscillator_->reset();
+    wavetable_oscillator_->reset();
     envelope_->reset();
     lfo_->reset();
     if (filter_) filter_->reset();
@@ -222,35 +240,33 @@ void Voice::reset() {
 
 void Voice::apply_modulation() {
     // Collect modulation source values
-    // RT-Safe: AdsrEnvelopeProcessor::pull is non-virtual and doesn't allocate.
-    float env_val = 0.0f;
-    float tmp_env_buf[1];
-    std::span<float> tmp_env_span(tmp_env_buf, 1);
-    envelope_->pull(tmp_env_span);
-    env_val = tmp_env_buf[0];
-
-    float lfo_val = 0.0f;
-    float tmp_lfo_buf[1];
-    std::span<float> tmp_lfo_span(tmp_lfo_buf, 1);
-    lfo_->pull(tmp_lfo_span);
-    lfo_val = tmp_lfo_buf[0];
+    // RT-Safe: Get current level from processors without non-destructive pull
+    float env_val = envelope_->get_level();
+    
+    // Manual pull for LFO since it's a Processor but we're block-rate mixing
+    float l_buf[1];
+    std::span<float> l_span(l_buf, 1);
+    lfo_->pull(l_span);
+    float lfo_val = l_buf[0];
 
     current_source_values_[static_cast<size_t>(ModulationSource::Envelope)] = env_val;
     current_source_values_[static_cast<size_t>(ModulationSource::LFO)] = lfo_val;
 
-    // Apply Pitch Modulation
+
+    // 1. Apply Pitch Modulation
     float pitch_mod = matrix_.sum_for_target(ModulationTarget::Pitch, current_source_values_);
-    double mod_freq = base_frequency_ * std::pow(2.0, static_cast<double>(pitch_mod));
+    current_frequency_ = base_frequency_ * std::pow(2.0, static_cast<double>(pitch_mod));
     
     // Safety check for frequency floor
-    if (mod_freq < 20.0) mod_freq = base_frequency_;
+    if (current_frequency_ < 20.0) current_frequency_ = base_frequency_;
 
-    oscillator_->set_frequency(mod_freq);
-    saw_oscillator_->set_frequency(mod_freq);
-    sine_oscillator_->set_frequency(mod_freq);
-    triangle_oscillator_->set_frequency(mod_freq);
+    oscillator_->set_frequency(current_frequency_);
+    saw_oscillator_->set_frequency(current_frequency_);
+    sine_oscillator_->set_frequency(current_frequency_);
+    triangle_oscillator_->set_frequency(current_frequency_);
+    wavetable_oscillator_->setFrequency(current_frequency_);
 
-    // Apply Cutoff Modulation
+    // 2. Apply Cutoff Modulation
     if (filter_) {
         float cutoff_mod = matrix_.sum_for_target(ModulationTarget::Cutoff, current_source_values_);
         float mod_cutoff = base_cutoff_ * std::pow(2.0f, cutoff_mod);
@@ -261,14 +277,25 @@ void Voice::apply_modulation() {
         filter_->set_resonance(std::clamp(base_resonance_ + res_mod, 0.0f, 0.99f));
     }
 
-    // Apply Amplitude Modulation
-    float amp_mod = matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_);
-    // In many legacy paths, base_amplitude acts as the multiplier
-    // For now, we allow the matrix to SCALE the base_amplitude
-    float final_amp = base_amplitude_ * std::clamp(amp_mod, 0.0f, 1.0f);
-    (void)final_amp; // We'll use base_amplitude_ directly in do_pull for the fix
+    // 3. Apply Amplitude Modulation (Safe Fallback)
+    // IMPORTANT: The main ADSR gate is handled by envelope_->pull() at the end.
+    // Modulation here is for ADDITIONAL scaling (e.g. LFO -> Amp).
+    if (matrix_.has_no_connections(ModulationTarget::Amplitude)) {
+        current_amplitude_ = base_amplitude_;
+    } else {
+        float amp_mod_sum = matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_);
+        
+        // ARCHITECTURAL CHOICE: If the sum is 0 (e.g. no active modulators),
+        // we default to unity scaling (1.0) so the VCA remains open.
+        if (std::abs(amp_mod_sum) < 0.001f) {
+            current_amplitude_ = base_amplitude_;
+        } else {
+            current_amplitude_ = base_amplitude_ * std::clamp(amp_mod_sum, 0.0f, 2.0f);
+        }
+    }
 
-    // Apply PWM
+
+    // 4. Apply PWM
     float pw_mod = matrix_.sum_for_target(ModulationTarget::PulseWidth, current_source_values_);
     if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
         pulse_osc->set_pulse_width(pw_mod);
@@ -276,6 +303,10 @@ void Voice::apply_modulation() {
 }
 
 void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
+    pull_mono(output, context);
+}
+
+void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
     // 1. UPDATE MODULATION
     apply_modulation();
 
@@ -285,13 +316,13 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
     std::span<float> saw_span(block->left.data(), output.size());
     
     // Ensure independent oscillators are set correctly
-    saw_oscillator_->set_frequency(base_frequency_);
+    saw_oscillator_->set_frequency(current_frequency_);
     saw_oscillator_->pull(saw_span, context);
 
     auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get());
     auto* sub_osc = dynamic_cast<SubOscillator*>(sub_oscillator_.get());
 
-    pulse_osc->set_frequency(base_frequency_);
+    pulse_osc->set_frequency(current_frequency_);
 
     // Render interleaved oscillator mix into output span
     for (size_t i = 0; i < output.size(); ++i) {
@@ -300,6 +331,13 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
         float sine_sample = static_cast<float>(sine_oscillator_->tick());
         float tri_sample = static_cast<float>(triangle_oscillator_->tick());
         
+        // Manual pull for wavetable since it's a Processor but we're tick-mixing
+        // Note: Wavetable generates in-place, so we just use the first sample of a tmp buffer
+        float w_buf[1];
+        std::span<float> w_span(w_buf, 1);
+        wavetable_oscillator_->pull(w_span, context);
+        float w_sample = w_buf[0];
+
         // Mix using SourceMixer logic
         std::array<float, SourceMixer::NUM_CHANNELS> inputs;
         inputs.fill(0.0f);
@@ -308,11 +346,12 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
         inputs[2] = s_sample;
         inputs[3] = sine_sample;
         inputs[4] = tri_sample;
+        inputs[5] = w_sample;
         
         output[i] = source_mixer_->mix(inputs);
         
         // Final amplitude scaling (RT-Safe)
-        output[i] *= base_amplitude_;
+        output[i] *= current_amplitude_;
     }
 
     // 3. PROCESS THROUGH MODIFIERS (Manual Serial Processing)
@@ -328,7 +367,7 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
         float abs_s = std::abs(s);
         if (abs_s > peak) peak = abs_s;
     }
-
+    
 }
 
 } // namespace audio
