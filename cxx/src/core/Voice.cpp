@@ -120,7 +120,11 @@ void Voice::set_parameter(int param, float value) {
             if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->mixer().set_gain(5, value);
             break;
         }
-        case 18: { // WAVETABLE_TYPE
+        case 18: { // NOISE_GAIN
+            if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->mixer().set_gain(6, value);
+            break;
+        }
+        case 19: { // WAVETABLE_TYPE
             auto wtype = static_cast<WaveType>(static_cast<int>(value));
             if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->wavetable_osc().setWaveType(wtype);
             break;

@@ -17,12 +17,14 @@ static void play_drone(EngineHandle engine, const char* wave_name,
     std::cout << "[" << wave_name << "] Playing A4..." << std::endl;
     
     // 1. Isolation: Reset all mixer gains to prevent bleed
-    set_param(engine, "pulse_gain", 0.0f);
-    set_param(engine, "saw_gain", 0.0f);
-    set_param(engine, "sub_gain", 0.0f);
-    set_param(engine, "sine_gain", 0.0f);
+    set_param(engine, "pulse_gain",    0.0f);
+    set_param(engine, "saw_gain",      0.0f);
+    set_param(engine, "sub_gain",      0.0f);
+    set_param(engine, "sine_gain",     0.0f);
     set_param(engine, "triangle_gain", 0.0f);
-    
+    set_param(engine, "wavetable_gain",0.0f);
+    set_param(engine, "noise_gain",    0.0f);
+
     // 2. Routing: Map the wave type to the correct mixer gain
     if (wave_type == WAVE_SINE) {
         set_param(engine, "sine_gain", 1.0f);
@@ -32,10 +34,12 @@ static void play_drone(EngineHandle engine, const char* wave_name,
         set_param(engine, "saw_gain", 1.0f);
     } else if (wave_type == WAVE_TRIANGLE) {
         set_param(engine, "triangle_gain", 1.0f);
+    } else if (wave_type == -1) { // NOISE (aperiodic — no wave type)
+        set_param(engine, "noise_gain", 1.0f);
     }
-    
+
     // 3. Global State: Set oscillator wave type and open VCA fully
-    set_osc_wavetype(engine, wave_type);
+    if (wave_type >= 0) set_osc_wavetype(engine, wave_type);
     set_param(engine, "amp_attack", 0.0f);
     set_param(engine, "amp_sustain", 1.0f);
     
@@ -54,7 +58,7 @@ int main() {
         "Oscillator Drone Integrity",
         "Verifying raw signal generation for all wave types (2s drones).",
         "VCO -> VCA -> Output",
-        "Continuous 2-second drone for Sine, Square, Saw, and Triangle at A4.",
+        "Continuous 2-second drone for Sine, Square, Saw, Triangle, and Noise at A4.",
         sample_rate
     );
 
@@ -73,10 +77,11 @@ int main() {
     }
 
     // Test each wave type
-    play_drone(engine.get(), WAVE_SINE, "SINE", sample_rate);
-    play_drone(engine.get(), WAVE_SQUARE, "SQUARE", sample_rate);
-    play_drone(engine.get(), WAVE_SAW, "SAW", sample_rate);
+    play_drone(engine.get(), WAVE_SINE,     "SINE",     sample_rate);
+    play_drone(engine.get(), WAVE_SQUARE,   "SQUARE",   sample_rate);
+    play_drone(engine.get(), WAVE_SAW,      "SAW",      sample_rate);
     play_drone(engine.get(), WAVE_TRIANGLE, "TRIANGLE", sample_rate);
+    play_drone(engine.get(), -1,            "NOISE",    sample_rate);
 
     engine_stop(engine.get());
     std::cout << "--- Test Complete. Engine destroyed via RAII. ---" << std::endl;

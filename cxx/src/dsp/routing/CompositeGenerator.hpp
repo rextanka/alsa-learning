@@ -22,6 +22,7 @@
 #include "../oscillator/WavetableOscillatorProcessor.hpp"
 #include "../oscillator/SubOscillator.hpp"
 #include "../oscillator/PulseOscillatorProcessor.hpp"
+#include "../oscillator/WhiteNoiseProcessor.hpp"
 #include "SourceMixer.hpp"
 #include <memory>
 #include <array>
@@ -33,13 +34,14 @@ namespace audio {
  *
  * Default tag: "VCO". Placed as signal_chain_[0] in a baked Voice.
  *
- * Channel mapping (matches Voice::pull_mono and SourceMixer):
+ * Channel mapping (matches SourceMixer):
  *   0: Sawtooth
  *   1: Pulse
  *   2: Sub-Oscillator
  *   3: Sine
  *   4: Triangle
  *   5: Wavetable
+ *   6: White Noise
  */
 class CompositeGenerator : public Processor {
 public:
@@ -53,6 +55,7 @@ public:
         tri_osc_        = std::make_unique<TriangleOscillatorProcessor>(sample_rate);
         wavetable_osc_  = std::make_unique<WavetableOscillatorProcessor>(
                               static_cast<double>(sample_rate));
+        noise_osc_      = std::make_unique<WhiteNoiseProcessor>();
         mixer_          = std::make_unique<SourceMixer>();
 
         set_tag("VCO");
@@ -83,17 +86,19 @@ public:
         tri_osc_->set_frequency(freq);
         wavetable_osc_->setFrequency(freq);
         // SubOscillator tracks the pulse oscillator's phase — no independent freq.
+        // WhiteNoiseProcessor is aperiodic — no frequency to set.
     }
 
     // --- Accessors for parameter routing ---
 
-    PulseOscillatorProcessor& pulse_osc()     { return *pulse_osc_; }
-    SawtoothOscillatorProcessor& saw_osc()    { return *saw_osc_; }
-    SineOscillatorProcessor& sine_osc()       { return *sine_osc_; }
-    TriangleOscillatorProcessor& tri_osc()    { return *tri_osc_; }
+    PulseOscillatorProcessor& pulse_osc()         { return *pulse_osc_; }
+    SawtoothOscillatorProcessor& saw_osc()        { return *saw_osc_; }
+    SineOscillatorProcessor& sine_osc()           { return *sine_osc_; }
+    TriangleOscillatorProcessor& tri_osc()        { return *tri_osc_; }
     WavetableOscillatorProcessor& wavetable_osc() { return *wavetable_osc_; }
-    SubOscillator& sub_osc()                  { return *sub_osc_; }
-    SourceMixer& mixer()                      { return *mixer_; }
+    SubOscillator& sub_osc()                      { return *sub_osc_; }
+    WhiteNoiseProcessor& noise_osc()              { return *noise_osc_; }
+    SourceMixer& mixer()                          { return *mixer_; }
 
     // --- Processor interface ---
 
@@ -104,13 +109,14 @@ public:
         sine_osc_->reset();
         tri_osc_->reset();
         wavetable_osc_->reset();
+        noise_osc_->reset();
     }
 
     PortType output_port_type() const override { return PortType::PORT_AUDIO; }
 
 protected:
     /**
-     * @brief RT-SAFE: per-sample tick loop migrated verbatim from Voice::pull_mono.
+     * @brief RT-SAFE: per-sample tick loop.
      *
      * Fills output with the soft-saturated mix of all oscillators weighted
      * by the SourceMixer gains. No allocations.
@@ -121,8 +127,8 @@ protected:
         auto* sub   = sub_osc_.get();
 
         for (size_t i = 0; i < output.size(); ++i) {
-            float p_sample   = static_cast<float>(pulse->tick());
-            float s_sample   = static_cast<float>(sub->generate_sample(pulse->get_phase()));
+            float p_sample    = static_cast<float>(pulse->tick());
+            float s_sample    = static_cast<float>(sub->generate_sample(pulse->get_phase()));
             float sine_sample = static_cast<float>(sine_osc_->tick());
             float tri_sample  = static_cast<float>(tri_osc_->tick());
 
@@ -130,7 +136,6 @@ protected:
             float w_buf[1];
             std::span<float> w_span(w_buf, 1);
             wavetable_osc_->pull(w_span, context);
-            float w_sample = w_buf[0];
 
             std::array<float, SourceMixer::NUM_CHANNELS> inputs;
             inputs.fill(0.0f);
@@ -139,13 +144,11 @@ protected:
             inputs[2] = s_sample;
             inputs[3] = sine_sample;
             inputs[4] = tri_sample;
-            inputs[5] = w_sample;
+            inputs[5] = w_buf[0];
+            inputs[6] = noise_osc_->tick();
 
             output[i] = mixer_->mix(inputs);
         }
-
-        // All oscillators are advanced per-sample via tick() above — no additional
-        // phase update needed here.
     }
 
 private:
@@ -157,6 +160,7 @@ private:
     std::unique_ptr<SineOscillatorProcessor>     sine_osc_;
     std::unique_ptr<TriangleOscillatorProcessor> tri_osc_;
     std::unique_ptr<WavetableOscillatorProcessor> wavetable_osc_;
+    std::unique_ptr<WhiteNoiseProcessor>         noise_osc_;
     std::unique_ptr<SourceMixer>                 mixer_;
 };
 

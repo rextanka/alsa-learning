@@ -11,7 +11,6 @@
 #include <cmath>
 #include <algorithm>
 #include <limits>
-#include <iostream>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -76,7 +75,7 @@ void VoiceManager::note_on(int note, float /* velocity */, double frequency) {
     }
 
     if (idle_idx != -1) {
-        std::cout << "[DEBUG] VoiceManager::note_on assigning idle voice " << idle_idx << " for note " << note << std::endl;
+        AudioLogger::instance().log_event("VoiceAssign", static_cast<float>(note));
         auto& slot = voices_[idle_idx];
         slot.current_note = note;
         slot.active = true;
@@ -116,7 +115,7 @@ void VoiceManager::note_on(int note, float /* velocity */, double frequency) {
     }
 
     if (candidate_idx != -1) {
-        std::cout << "[DEBUG] VoiceManager::note_on stealing voice " << candidate_idx << " for note " << note << std::endl;
+        AudioLogger::instance().log_message("VoiceSteal", "stealing");
         auto& candidate = voices_[candidate_idx];
         AudioLogger::instance().log_event("VoiceSteal", static_cast<float>(candidate.current_note));
         
@@ -245,6 +244,7 @@ void VoiceManager::set_parameter_by_name(const std::string& name, float value) {
     else if (name == "saw_gain") param_id = 12;
     else if (name == "pulse_gain") param_id = 13;
     else if (name == "pulse_width") param_id = 14;
+    else if (name == "noise_gain") param_id = 18;
 
     if (param_id != -1) {
         set_parameter(param_id, value);
@@ -456,9 +456,10 @@ void VoiceManager::pull_with_tap(AudioBuffer& output, Processor* tap, const Voic
     // 4. Final Output from Bus
     summing_bus_->pull(output);
 
+    // RT-SAFE: periodic telemetry via lock-free AudioLogger
     static int call_count = 0;
     if (call_count++ % sample_rate_ == 0) {
-        std::cout << "[DEBUG] VoiceManager::do_pull active_slots=" << active_slots << std::endl;
+        AudioLogger::instance().log_event("ActiveVoices", static_cast<float>(active_slots));
     }
 }
 
