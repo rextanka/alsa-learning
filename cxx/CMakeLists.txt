@@ -62,6 +62,7 @@ endif()
 set(ENGINE_SOURCES
     src/bridge/AudioBridge.cpp
     src/core/Voice.cpp
+    src/core/VoiceFactory.cpp
     src/core/VoiceManager.cpp
     src/core/MidiParser.cpp
     src/core/PatchStore.cpp
@@ -151,6 +152,7 @@ if(BUILD_TESTING)
         tests/unit/test_modulation_matrix.cpp
         tests/unit/test_bus_headroom.cpp
         tests/unit/test_signal_chain.cpp
+        tests/unit/test_voice_factory.cpp
     )
     target_include_directories(unit_tests PRIVATE tests/unit tests)
     target_link_libraries(unit_tests PRIVATE audio_engine gtest_main)

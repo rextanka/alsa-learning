@@ -122,44 +122,72 @@ void Voice::set_parameter(int param, float value) {
             break;
         case 3: // VCF_ENV_AMOUNT (Tag VCF, Internal ID 3)
             break;
-        case 4: // Global ID 4 -> VCA Attack
-            envelope_->set_attack_time(value);
+        case 4: { // Global ID 4 -> VCA Attack
+            auto* env = baked_ ? dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV")) : envelope_.get();
+            if (env) env->set_attack_time(value);
             break;
-        case 5: // Global ID 5 -> VCA Decay
-            envelope_->set_decay_time(value);
+        }
+        case 5: { // Global ID 5 -> VCA Decay
+            auto* env = baked_ ? dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV")) : envelope_.get();
+            if (env) env->set_decay_time(value);
             break;
-        case 6: // Global ID 6 -> VCA Sustain
-            envelope_->set_sustain_level(value);
+        }
+        case 6: { // Global ID 6 -> VCA Sustain
+            auto* env = baked_ ? dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV")) : envelope_.get();
+            if (env) env->set_sustain_level(value);
             break;
-        case 7: // Global ID 7 -> VCA Release
-            envelope_->set_release_time(value);
+        }
+        case 7: { // Global ID 7 -> VCA Release
+            auto* env = baked_ ? dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV")) : envelope_.get();
+            if (env) env->set_release_time(value);
             break;
-        case 11: // SUB_GAIN
-            source_mixer_->set_gain(2, value);
+        }
+        case 11: { // SUB_GAIN
+            auto* vco = baked_ ? dynamic_cast<CompositeGenerator*>(find_by_tag("VCO")) : nullptr;
+            if (vco) vco->mixer().set_gain(2, value); else source_mixer_->set_gain(2, value);
             break;
-        case 12: // SAW_GAIN
-            source_mixer_->set_gain(0, value);
+        }
+        case 12: { // SAW_GAIN
+            auto* vco = baked_ ? dynamic_cast<CompositeGenerator*>(find_by_tag("VCO")) : nullptr;
+            if (vco) vco->mixer().set_gain(0, value); else source_mixer_->set_gain(0, value);
             break;
-        case 13: // PULSE_GAIN
-            source_mixer_->set_gain(1, value);
+        }
+        case 13: { // PULSE_GAIN
+            auto* vco = baked_ ? dynamic_cast<CompositeGenerator*>(find_by_tag("VCO")) : nullptr;
+            if (vco) vco->mixer().set_gain(1, value); else source_mixer_->set_gain(1, value);
             break;
-        case 15: // SINE_GAIN (New mapping for Tuner Tool)
-            source_mixer_->set_gain(3, value);
+        }
+        case 15: { // SINE_GAIN
+            auto* vco = baked_ ? dynamic_cast<CompositeGenerator*>(find_by_tag("VCO")) : nullptr;
+            if (vco) vco->mixer().set_gain(3, value); else source_mixer_->set_gain(3, value);
             break;
-        case 16: // TRIANGLE_GAIN (New mapping for Tuner Tool)
-            source_mixer_->set_gain(4, value);
+        }
+        case 16: { // TRIANGLE_GAIN
+            auto* vco = baked_ ? dynamic_cast<CompositeGenerator*>(find_by_tag("VCO")) : nullptr;
+            if (vco) vco->mixer().set_gain(4, value); else source_mixer_->set_gain(4, value);
             break;
-        case 17: // WAVETABLE_GAIN
-            source_mixer_->set_gain(5, value);
+        }
+        case 17: { // WAVETABLE_GAIN
+            auto* vco = baked_ ? dynamic_cast<CompositeGenerator*>(find_by_tag("VCO")) : nullptr;
+            if (vco) vco->mixer().set_gain(5, value); else source_mixer_->set_gain(5, value);
             break;
-        case 18: // WAVETABLE_TYPE
-            wavetable_oscillator_->setWaveType(static_cast<WaveType>(static_cast<int>(value)));
+        }
+        case 18: { // WAVETABLE_TYPE
+            auto* vco = baked_ ? dynamic_cast<CompositeGenerator*>(find_by_tag("VCO")) : nullptr;
+            auto wtype = static_cast<WaveType>(static_cast<int>(value));
+            if (vco) vco->wavetable_osc().setWaveType(wtype);
+            else wavetable_oscillator_->setWaveType(wtype);
             break;
-        case 14: // PULSE_WIDTH (Native)
-            if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
+        }
+        case 14: { // PULSE_WIDTH (Native)
+            if (baked_) {
+                auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"));
+                if (vco) vco->pulse_osc().set_pulse_width(value);
+            } else if (auto* pulse_osc = dynamic_cast<PulseOscillatorProcessor*>(oscillator_.get())) {
                 pulse_osc->set_pulse_width(value);
             }
             break;
+        }
         case 10: // PULSE_WIDTH (Legacy Alias)
             set_parameter(14, value);
             break;
@@ -188,6 +216,20 @@ void Voice::rebuild_graph() {
 void Voice::note_on(double frequency) {
     active_ = true;
     base_frequency_ = frequency;
+
+    if (baked_) {
+        for (auto& entry : signal_chain_) entry.node->reset();
+        lfo_->reset();
+        if (filter_) filter_->reset();
+        if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) {
+            vco->set_frequency(frequency);
+        }
+        if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV"))) {
+            env->gate_on();
+        }
+        return;
+    }
+
     // Ensure all processors are reset to clear stuck DC or phase
     oscillator_->reset();
     sub_oscillator_->reset();
@@ -205,30 +247,60 @@ void Voice::note_on(double frequency) {
     sine_oscillator_->set_frequency(frequency);
     triangle_oscillator_->set_frequency(frequency);
     wavetable_oscillator_->setFrequency(frequency);
-    
+
     // Hardwire VCA if missing
     if (matrix_.sum_for_target(ModulationTarget::Amplitude, current_source_values_) <= 0.001f) {
          matrix_.set_connection(ModulationSource::Envelope, ModulationTarget::Amplitude, 1.0f);
     }
-    
+
     envelope_->gate_on();
 }
 
 void Voice::note_off() {
+    if (baked_) {
+        if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV"))) {
+            env->gate_off();
+        }
+        active_ = false;
+        return;
+    }
     envelope_->gate_off();
     active_ = false;
 }
 
-bool Voice::is_active() const { 
+bool Voice::is_active() const {
+    if (baked_) {
+        if (active_) return true;
+        for (const auto& entry : signal_chain_) {
+            if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(entry.node.get())) {
+                return env->is_active();
+            }
+        }
+        return false;
+    }
     return active_ || envelope_->is_active();
 }
 
 bool Voice::is_releasing() const {
+    if (baked_) {
+        for (const auto& entry : signal_chain_) {
+            if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(entry.node.get())) {
+                return !active_ && env->is_active();
+            }
+        }
+        return false;
+    }
     // A voice is releasing if the gate is off but the envelope is still active.
     return !active_ && envelope_->is_active();
 }
 
 void Voice::reset() {
+    if (baked_) {
+        for (auto& entry : signal_chain_) entry.node->reset();
+        lfo_->reset();
+        if (filter_) filter_->reset();
+        return;
+    }
     oscillator_->reset();
     sub_oscillator_->reset();
     saw_oscillator_->reset();
@@ -241,6 +313,37 @@ void Voice::reset() {
 }
 
 void Voice::apply_modulation() {
+    if (baked_) {
+        auto* env_node = dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV"));
+        float env_val = env_node ? env_node->get_level() : 0.0f;
+
+        float l_buf[1];
+        std::span<float> l_span(l_buf, 1);
+        lfo_->pull(l_span);
+        float lfo_val = l_buf[0];
+
+        current_source_values_[static_cast<size_t>(ModulationSource::Envelope)] = env_val;
+        current_source_values_[static_cast<size_t>(ModulationSource::LFO)] = lfo_val;
+
+        float pitch_mod = matrix_.sum_for_target(ModulationTarget::Pitch, current_source_values_);
+        current_frequency_ = base_frequency_ * std::pow(2.0, static_cast<double>(pitch_mod));
+        if (current_frequency_ < 20.0) current_frequency_ = base_frequency_;
+
+        if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) {
+            vco->set_frequency(current_frequency_);
+        }
+
+        if (filter_) {
+            float cutoff_mod = matrix_.sum_for_target(ModulationTarget::Cutoff, current_source_values_);
+            float mod_cutoff = base_cutoff_ * std::pow(2.0f, cutoff_mod);
+            if (mod_cutoff < 20.0f) mod_cutoff = 20.0f;
+            filter_->set_cutoff(mod_cutoff);
+            float res_mod = matrix_.sum_for_target(ModulationTarget::Resonance, current_source_values_);
+            filter_->set_resonance(std::clamp(base_resonance_ + res_mod, 0.0f, 0.99f));
+        }
+        return;
+    }
+
     // Collect modulation source values
     // RT-Safe: Get current level from processors without non-destructive pull
     float env_val = envelope_->get_level();
@@ -309,6 +412,44 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
 }
 
 void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
+    // -------------------------------------------------------------------------
+    // Phase 14 baked path: iterate signal_chain_ with tag-dispatch for ENV/VCA.
+    // -------------------------------------------------------------------------
+    if (baked_) {
+        apply_modulation();
+
+        // Borrow a buffer for the envelope control signal (PORT_CONTROL).
+        // RT-SAFE: borrow_buffer() is a lock-free pool allocation.
+        auto env_block = graph_->borrow_buffer();
+        std::span<float> env_span(env_block->left.data(), output.size());
+        bool env_filled = false;
+
+        bool audio_generated = false;
+        for (auto& entry : signal_chain_) {
+            if (entry.tag == "ENV") {
+                // Fill env_span with [0,1] control levels — not audio.
+                entry.node->pull(env_span, context);
+                env_filled = true;
+            } else if (entry.tag == "VCA") {
+                // Apply filter (if present) before VCA.
+                if (audio_generated && filter_) filter_->pull(output, context);
+                // Apply envelope × base_amplitude to the audio buffer in-place.
+                if (env_filled) {
+                    VcaProcessor::apply(output, env_span, base_amplitude_);
+                }
+            } else {
+                // All other nodes (VCO, …) pull audio in-place.
+                entry.node->pull(output, context);
+                audio_generated = true;
+            }
+        }
+        return;
+    }
+
+    // -------------------------------------------------------------------------
+    // Legacy path (unbaked): original hardcoded render loop — unchanged.
+    // -------------------------------------------------------------------------
+
     // 1. UPDATE MODULATION
     apply_modulation();
 

@@ -4,6 +4,7 @@
  */
 
 #include "VoiceManager.hpp"
+#include "VoiceFactory.hpp"
 #include "SummingBus.hpp"
 #include "AudioTap.hpp"
 #include "Logger.hpp"
@@ -24,7 +25,7 @@ VoiceManager::VoiceManager(int sample_rate)
     , summing_bus_(std::make_unique<SummingBus>(512))
 {
     for (auto& slot : voices_) {
-        slot.voice = std::make_unique<Voice>(sample_rate);
+        slot.voice = VoiceFactory::createSH101(sample_rate);
         
         // Initial modulation state is clean. Primary VCA gate is handled
         // by Voice::pull_mono calling envelope_->pull() directly.
