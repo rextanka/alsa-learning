@@ -14,10 +14,10 @@ This document defines the JSON structure for the SH-101 Bass patch used in `Func
         "noise_gain": 0.1,
         "vcf_cutoff": 450.0,
         "vcf_res": 0.6,
-        "attack": 0.005,
-        "decay": 0.15,
-        "sustain": 0.4,
-        "release": 0.1
+        "amp_attack": 0.005,
+        "amp_decay": 0.15,
+        "amp_sustain": 0.4,
+        "amp_release": 0.1
     },
     "modulations": [
         {
@@ -43,10 +43,10 @@ This document defines the JSON structure for the SH-101 Bass patch used in `Func
 | `noise_gain` | SourceMixer (Ch 3) | Gain for the white noise source. |
 | `vcf_cutoff` | Moog/Diode Filter | Base cutoff frequency in Hz. |
 | `vcf_res` | Moog/Diode Filter | Filter resonance (0.0 to 1.0). |
-| `attack` | ADSR Envelope | Attack time in seconds (90/10 pluck target: 0.005s). |
-| `decay` | ADSR Envelope | Decay time in seconds (90/10 pluck target: 0.15s). |
-| `sustain` | ADSR Envelope | Sustain level (0.0 to 1.0). |
-| `release` | ADSR Envelope | Release time in seconds. |
+| `amp_attack` | ADSR Envelope | Attack time in seconds (90/10 pluck target: 0.005s). |
+| `amp_decay` | ADSR Envelope | Decay time in seconds (90/10 pluck target: 0.15s). |
+| `amp_sustain` | ADSR Envelope | Sustain level (0.0 to 1.0). |
+| `amp_release` | ADSR Envelope | Release time in seconds. |
 
 ## Modulation Matrix Enums
 
