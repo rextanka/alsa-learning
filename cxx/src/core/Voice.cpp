@@ -9,7 +9,6 @@
 #include "filter/DiodeLadderProcessor.hpp"
 #include <vector>
 #include <cmath>
-#include <iostream>
 
 namespace audio {
 
@@ -66,7 +65,7 @@ Voice::Voice(int sample_rate)
     // This will be scaled by the modulation envelope in do_pull.
     base_amplitude_ = 1.0f;
 
-    std::cout << "[VOICE] VCA Modulation Connected" << std::endl;
+    AudioLogger::instance().log_message("VOICE", "VCA Modulation Connected");
 
     current_source_values_.fill(0.0f);
     log_counter_ = 0;

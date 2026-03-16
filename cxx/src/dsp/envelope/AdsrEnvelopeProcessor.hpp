@@ -15,6 +15,7 @@
 #include <atomic>
 #include <span>
 #include <algorithm>
+#include <cmath>
 
 namespace audio {
 
@@ -26,7 +27,9 @@ namespace audio {
  *   in the range [0.0, 1.0].  It does NOT multiply audio in-place.
  *   Audio amplitude scaling is performed by VcaProcessor::apply().
  *
- * Implements a standard four-stage envelope with linear ramps for A, D, and R.
+ * Implements a standard four-stage envelope with exponential curves for A, D,
+ * and R segments using a one-pole IIR filter per stage. Each coefficient is
+ * computed so the stage reaches ~99% of its target in the specified time.
  */
 class AdsrEnvelopeProcessor : public EnvelopeProcessor {
 public:
@@ -101,30 +104,42 @@ protected:
     }
 
 private:
+    // Exponential one-pole IIR per stage.
+    // Each stage approaches its target asymptotically; a small overshoot/undershoot
+    // on the target ensures the termination threshold is reliably crossed.
+    static constexpr float kAttackTarget  =  1.001f; // slightly above 1 → crosses 1.0
+    static constexpr float kReleaseTarget = -0.001f; // slightly below 0 → crosses 0.0
+
     float process_sample() {
         switch (state_) {
             case State::Attack:
-                current_level_ += attack_rate_;
+                current_level_ = attack_coeff_ * current_level_
+                                + (1.0f - attack_coeff_) * kAttackTarget;
                 if (current_level_ >= 1.0f) {
                     current_level_ = 1.0f;
                     state_ = State::Decay;
                 }
                 break;
 
-            case State::Decay:
-                current_level_ -= decay_rate_;
+            case State::Decay: {
+                // Target slightly below sustain so the level crosses the threshold.
+                const float decay_target = sustain_level_ - 0.001f;
+                current_level_ = decay_coeff_ * current_level_
+                                + (1.0f - decay_coeff_) * decay_target;
                 if (current_level_ <= sustain_level_) {
                     current_level_ = sustain_level_;
                     state_ = State::Sustain;
                 }
                 break;
+            }
 
             case State::Sustain:
                 current_level_ = sustain_level_;
                 break;
 
             case State::Release:
-                current_level_ -= release_rate_;
+                current_level_ = release_coeff_ * current_level_
+                                + (1.0f - release_coeff_) * kReleaseTarget;
                 if (current_level_ <= 0.0f) {
                     current_level_ = 0.0f;
                     state_ = State::Idle;
@@ -138,10 +153,13 @@ private:
         return current_level_;
     }
 
+    // Compute one-pole coefficients: coeff = exp(-log(9) / (time * sr))
+    // This ensures the stage reaches ~99% of its target in `time` seconds.
     void update_rates() {
-        attack_rate_ = 1.0f / (attack_time_ * sample_rate_);
-        decay_rate_ = (1.0f - sustain_level_) / (decay_time_ * sample_rate_);
-        release_rate_ = sustain_level_ / (release_time_ * sample_rate_);
+        static constexpr float kLog9 = 2.197224577f; // log(9)
+        attack_coeff_  = std::exp(-kLog9 / (attack_time_  * static_cast<float>(sample_rate_)));
+        decay_coeff_   = std::exp(-kLog9 / (decay_time_   * static_cast<float>(sample_rate_)));
+        release_coeff_ = std::exp(-kLog9 / (release_time_ * static_cast<float>(sample_rate_)));
     }
 
     int sample_rate_;
@@ -153,9 +171,9 @@ private:
     float sustain_level_;
     float release_time_;
 
-    float attack_rate_;
-    float decay_rate_;
-    float release_rate_;
+    float attack_coeff_;
+    float decay_coeff_;
+    float release_coeff_;
 };
 
 } // namespace audio

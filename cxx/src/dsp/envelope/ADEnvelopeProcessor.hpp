@@ -8,11 +8,15 @@
 
 #include "EnvelopeProcessor.hpp"
 #include <algorithm>
+#include <cmath>
 
 namespace audio {
 
 /**
  * @brief AD Envelope Processor.
+ *
+ * Exponential curves for both Attack and Decay using a one-pole IIR filter.
+ * Each stage reaches ~99% of its target in the specified time.
  */
 class ADEnvelopeProcessor : public EnvelopeProcessor {
 public:
@@ -64,11 +68,14 @@ protected:
         }
     }
 
-private:
+    static constexpr float kAttackTarget  =  1.001f;
+    static constexpr float kDecayTarget   = -0.001f;
+
     float process_sample() {
         switch (state_) {
             case State::Attack:
-                current_level_ += attack_rate_;
+                current_level_ = attack_coeff_ * current_level_
+                                + (1.0f - attack_coeff_) * kAttackTarget;
                 if (current_level_ >= 1.0f) {
                     current_level_ = 1.0f;
                     state_ = State::Decay;
@@ -76,7 +83,8 @@ private:
                 break;
 
             case State::Decay:
-                current_level_ -= decay_rate_;
+                current_level_ = decay_coeff_ * current_level_
+                                + (1.0f - decay_coeff_) * kDecayTarget;
                 if (current_level_ <= 0.0f) {
                     current_level_ = 0.0f;
                     state_ = State::Idle;
@@ -91,8 +99,9 @@ private:
     }
 
     void update_rates() {
-        attack_rate_ = 1.0f / (attack_time_ * sample_rate_);
-        decay_rate_ = 1.0f / (decay_time_ * sample_rate_);
+        static constexpr float kLog9 = 2.197224577f;
+        attack_coeff_ = std::exp(-kLog9 / (attack_time_ * static_cast<float>(sample_rate_)));
+        decay_coeff_  = std::exp(-kLog9 / (decay_time_  * static_cast<float>(sample_rate_)));
     }
 
     int sample_rate_;
@@ -100,8 +109,8 @@ private:
     float current_level_;
     float attack_time_;
     float decay_time_;
-    float attack_rate_;
-    float decay_rate_;
+    float attack_coeff_;
+    float decay_coeff_;
 };
 
 } // namespace audio

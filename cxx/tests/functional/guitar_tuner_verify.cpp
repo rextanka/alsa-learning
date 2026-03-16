@@ -11,12 +11,12 @@
 using namespace std::chrono_literals;
 
 const std::map<std::string, double> guitar_tuning = {
-    {"E2", 82.41},  // 6th String
-    {"A2", 110.00}, // 5th String
-    {"D3", 146.83}, // 4th String
-    {"G3", 196.00}, // 3rd String
-    {"B3", 246.94}, // 2nd String
-    {"E4", 329.63}  // 1st String
+    {"E3", 164.81},  // 6th String +1 octave
+    {"A3", 220.00},  // 5th String +1 octave
+    {"D4", 293.66},  // 4th String +1 octave
+    {"G4", 392.00},  // 3rd String +1 octave
+    {"B4", 493.88},  // 2nd String +1 octave
+    {"E5", 659.26}   // 1st String +1 octave
 };
 
 void print_help() {
@@ -24,7 +24,7 @@ void print_help() {
     std::cout << "Usage: guitar_tuner_verify [options]\n\n";
     std::cout << "Options:\n";
     std::cout << "  -h, --help            Show this help message\n";
-    std::cout << "  -n, --note <note>     Play a specific string (E2, A2, D3, G3, B3, E4)\n";
+    std::cout << "  -n, --note <note>     Play a specific string (E3, A3, D4, G4, B4, E5)\n";
     std::cout << "  -d, --duration <sec>  Set play duration in seconds (default: 5.0)\n";
     std::cout << "  -o, --osc <type>      Select oscillator (sine, saw, square, triangle) (default: sine)\n";
     std::cout << "  -c, --cycle           Cycle through all strings (default if no note specified)\n\n";
@@ -162,7 +162,7 @@ int main(int argc, char* argv[]) {
 
     if (cycle) {
         // Sort order for cycling: E2, A2, D3, G3, B3, E4
-        std::vector<std::string> order = {"E2", "A2", "D3", "G3", "B3", "E4"};
+        std::vector<std::string> order = {"E3", "A3", "D4", "G4", "B4", "E5"};
         for (const auto& note : order) {
             play_note(note, guitar_tuning.at(note));
         }
