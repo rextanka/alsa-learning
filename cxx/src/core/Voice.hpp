@@ -73,8 +73,6 @@ public:
     void pull_mono(std::span<float> output, const VoiceContext* context = nullptr);
 
 private:
-    static constexpr size_t MAX_BLOCK_SIZE = 1024;
-
     void rebuild_graph();
     void apply_modulation();
 
