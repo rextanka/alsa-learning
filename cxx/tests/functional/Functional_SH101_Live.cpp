@@ -28,7 +28,7 @@ int main() {
     
     if (engine_load_patch(engine.get(), patch_path) != 0) {
         // Try absolute path or search up
-        patch_path = "/Users/nickthompson/src/cpp/audio/alsa-learning/cxx/assets/patches/sh101_bass.json";
+        patch_path = "/Users/nthompson/src/cxx/alsa-learning/cxx/assets/patches/sh101_bass.json";
         std::cout << "📂 Trying absolute path: " << patch_path << std::endl;
         if (engine_load_patch(engine.get(), patch_path) != 0) {
              std::cerr << "❌ Failed to load patch 'sh101_bass.json'." << std::endl;
