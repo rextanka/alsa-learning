@@ -125,6 +125,75 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
     }
 }
 
+void VoiceManager::note_on(int note, float velocity, int group_id, double frequency) {
+    double freq = (frequency > 0.0) ? frequency : note_to_freq(note);
+
+    // Re-trigger check within group
+    int existing_idx = note_to_voice_map_[note & 0x7F];
+    if (existing_idx != -1) {
+        auto& slot = voices_[existing_idx];
+        if (slot.active && slot.current_note == note && slot.group_id == group_id) {
+            slot.last_note_on_time = next_timestamp();
+            slot.voice->note_on(freq);
+            return;
+        }
+    }
+
+    // Find idle voice in group
+    int idle_idx = -1;
+    for (int i = 0; i < MAX_VOICES; ++i) {
+        if (voices_[i].group_id == group_id && !voices_[i].voice->is_active()) {
+            idle_idx = i;
+            break;
+        }
+    }
+
+    if (idle_idx != -1) {
+        auto& slot = voices_[idle_idx];
+        slot.current_note = note;
+        slot.active = true;
+        slot.last_note_on_time = next_timestamp();
+        note_to_voice_map_[note & 0x7F] = idle_idx;
+        slot.voice->set_pan((idle_idx % 2 == 0) ? -1.0f * voice_spread_ : voice_spread_);
+        slot.voice->note_on(freq);
+        return;
+    }
+
+    // Voice stealing within group
+    int candidate_idx = -1;
+    uint64_t oldest_releasing = std::numeric_limits<uint64_t>::max();
+    uint64_t oldest_active   = std::numeric_limits<uint64_t>::max();
+    int oldest_active_idx = -1;
+
+    for (int i = 0; i < MAX_VOICES; ++i) {
+        if (voices_[i].group_id != group_id) continue;
+        if (voices_[i].voice->is_releasing()) {
+            if (voices_[i].last_note_on_time < oldest_releasing) {
+                oldest_releasing = voices_[i].last_note_on_time;
+                candidate_idx = i;
+            }
+        } else {
+            if (voices_[i].last_note_on_time < oldest_active) {
+                oldest_active = voices_[i].last_note_on_time;
+                oldest_active_idx = i;
+            }
+        }
+    }
+    if (candidate_idx == -1) candidate_idx = oldest_active_idx;
+
+    if (candidate_idx != -1) {
+        auto& candidate = voices_[candidate_idx];
+        if (candidate.current_note != -1) note_to_voice_map_[candidate.current_note & 0x7F] = -1;
+        candidate.voice->reset();
+        candidate.current_note = note;
+        candidate.active = true;
+        candidate.last_note_on_time = next_timestamp();
+        note_to_voice_map_[note & 0x7F] = candidate_idx;
+        candidate.voice->set_pan(0.0f);
+        candidate.voice->note_on(freq);
+    }
+}
+
 void VoiceManager::note_on_panned(int note, float velocity, float pan) {
     note_on(note, velocity);
     set_note_pan(note, pan);
@@ -174,17 +243,31 @@ void VoiceManager::set_parameter_by_name(const std::string& name, float value) {
 
 void VoiceManager::set_parameter(int param_id, float value) {
     for (auto& slot : voices_) {
-        if (slot.voice) {
-            slot.voice->set_parameter(param_id, value);
-        }
+        if (slot.voice) slot.voice->set_parameter(param_id, value);
+    }
+}
+
+void VoiceManager::set_group_parameter(int group_id, int param_id, float value) {
+    for (auto& slot : voices_) {
+        if (slot.voice && slot.group_id == group_id) slot.voice->set_parameter(param_id, value);
     }
 }
 
 void VoiceManager::set_filter_type(int type) {
     for (auto& slot : voices_) {
-        if (slot.voice) {
-            slot.voice->set_filter_type(type);
-        }
+        if (slot.voice) slot.voice->set_filter_type(type);
+    }
+}
+
+void VoiceManager::set_group_filter_type(int group_id, int type) {
+    for (auto& slot : voices_) {
+        if (slot.voice && slot.group_id == group_id) slot.voice->set_filter_type(type);
+    }
+}
+
+void VoiceManager::assign_group(int voice_idx, int group_id) {
+    if (voice_idx >= 0 && voice_idx < MAX_VOICES) {
+        voices_[voice_idx].group_id = group_id;
     }
 }
 

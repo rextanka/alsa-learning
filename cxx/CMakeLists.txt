@@ -153,6 +153,7 @@ if(BUILD_TESTING)
         tests/unit/test_bus_headroom.cpp
         tests/unit/test_signal_chain.cpp
         tests/unit/test_voice_factory.cpp
+        tests/unit/test_voice_groups.cpp
     )
     target_include_directories(unit_tests PRIVATE tests/unit tests)
     target_link_libraries(unit_tests PRIVATE audio_engine gtest_main)
