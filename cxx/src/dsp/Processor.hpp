@@ -17,12 +17,27 @@
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
+#include <string>
+#include <string_view>
 #include "InputSource.hpp"
 #include "VoiceContext.hpp"
 #include "PerformanceProfiler.hpp"
 #include "AudioBuffer.hpp"
 
 namespace audio {
+
+/**
+ * @brief Port type classification for typed signal routing (Phase 14).
+ *
+ * PORT_AUDIO — carries audio-rate samples in [-1, 1].
+ * PORT_CONTROL — carries control-rate signals, typically [0, 1] (e.g. envelope levels).
+ * Both types run at the same sample rate; the distinction is semantic and is validated
+ * at bake() time to prevent misrouted connections.
+ */
+enum class PortType {
+    PORT_AUDIO,
+    PORT_CONTROL
+};
 
 /**
  * @brief Base class for audio processing units (Pull Model).
@@ -119,6 +134,20 @@ public:
     virtual void reset() = 0;
 
     /**
+     * @brief Node tag for signal chain discovery (Phase 14).
+     *
+     * Tags are assigned by VoiceFactory (e.g. "VCO", "VCF", "ENV", "VCA").
+     * Used by Voice::find_by_tag() to locate nodes for parameter routing.
+     */
+    void set_tag(std::string_view tag) { tag_ = tag; }
+    std::string_view tag() const { return tag_; }
+
+    /**
+     * @brief Declared output port type for connection validation at bake() time.
+     */
+    virtual PortType output_port_type() const { return PortType::PORT_AUDIO; }
+
+    /**
      * @brief Get performance metrics.
      * 
      * Returns zero values when AUDIO_ENABLE_PROFILING is not defined.
@@ -140,6 +169,9 @@ protected:
      * @brief Protected list of input sources this processor pulls from.
      */
     std::vector<InputSource*> inputs_;
+
+private:
+    std::string tag_;
 
     /**
      * @brief Pure virtual method for subclasses to implement actual processing (Mono).

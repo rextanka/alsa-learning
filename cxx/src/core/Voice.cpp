@@ -7,8 +7,10 @@
 #include "oscillator/PulseOscillatorProcessor.hpp"
 #include "filter/MoogLadderProcessor.hpp"
 #include "filter/DiodeLadderProcessor.hpp"
+#include "routing/CompositeGenerator.hpp"
 #include <vector>
 #include <cmath>
+#include <stdexcept>
 
 namespace audio {
 
@@ -371,6 +373,35 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
         if (abs_s > peak) peak = abs_s;
     }
     
+}
+
+// =============================================================================
+// Phase 14: Dynamic Signal Chain API
+// =============================================================================
+
+void Voice::add_processor(std::unique_ptr<Processor> p, std::string tag) {
+    p->set_tag(tag);
+    signal_chain_.push_back({std::move(p), std::move(tag)});
+    baked_ = false;
+}
+
+void Voice::bake() {
+    if (signal_chain_.empty()) {
+        throw std::logic_error("Voice::bake() called on empty signal_chain_");
+    }
+    // Generator-First Rule: first node must be a CompositeGenerator.
+    if (dynamic_cast<CompositeGenerator*>(signal_chain_[0].node.get()) == nullptr) {
+        throw std::logic_error(
+            "Voice::bake() failed: signal_chain_[0] is not a CompositeGenerator");
+    }
+    baked_ = true;
+}
+
+Processor* Voice::find_by_tag(std::string_view tag) {
+    for (auto& entry : signal_chain_) {
+        if (entry.tag == tag) return entry.node.get();
+    }
+    return nullptr;
 }
 
 } // namespace audio

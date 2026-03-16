@@ -78,6 +78,8 @@ public:
         return state_ == State::Release;
     }
 
+    PortType output_port_type() const override { return PortType::PORT_CONTROL; }
+
     void reset() override {
         state_ = State::Idle;
         current_level_ = 0.0f;
