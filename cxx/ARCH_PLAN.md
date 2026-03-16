@@ -37,6 +37,7 @@ The library is consumed via a stable C API, enabling host integration in native 
     - **Sources**: Oscillators, Wavetables, MIDI File Players.
     - **Processors**: Filters, Envelopes, FX (Reverb, Delay).
     - **Sinks**: Audio Output (HAL), Non-Intrusive Loggers, Visualizers.
+    - All nodes declare typed ports (`PORT_AUDIO` or `PORT_CONTROL`). Both run at audio rate (`std::span<float>` per block). Connections are validated at `bake()` — `PORT_AUDIO` outputs may only connect to `PORT_AUDIO` inputs, and `PORT_CONTROL` outputs may only connect to `PORT_CONTROL` inputs. See [cxx/docs/MODULE_DESC.md](cxx/docs/MODULE_DESC.md) for per-module port specifications.
 - **Mono-until-Stereo**: Keep signal paths mono for CPU efficiency until spatial effects or stereo-specific processing (panners/reverb) are required. All internal Voice components (VCO, VCF, VCA) must operate on a single mono `std::span<float>`.
 - **Voice Groups**: Voices are partitioned into named groups, each with an independent signal chain topology and patch. This enables keyboard splits (e.g. below middle C → SH-101 group, above → Juno group) and layering (a single MIDI note triggers voices from multiple groups simultaneously).
 - **Centralized Zipper-Free Control**: A dedicated `ParameterManager` will handle all parameter ramping and smoothing. See Phase 19 in the migration table.
@@ -149,7 +150,7 @@ Block size is **runtime-configurable** and must be chosen by the host at engine 
 | 1-11  | Core DSP, Factory, Polyphony, Musical Clock, Dual-Layer Testing | Complete |
 | 12    | **MIDI Integration**: `MidiParser` and `MidiEvent` feeding into `VoiceManager`. | Complete |
 | 13    | **Golden Era Expansion**: SH-101 & Juno-60 building blocks (Sub-Osc, Source Mixer, Chorus, JSON Persistence). | Complete |
-| 14    | **Dynamic Signal Chain**: Refactor `Voice` to `signal_chain_` vector; implement `add_processor()`, `bake()`, node tagging, `VoiceFactory`, and Voice Groups in `VoiceManager`. | In Progress |
+| 14    | **Dynamic Signal Chain**: (a) Extend `Processor` with typed port declarations (`PORT_AUDIO`/`PORT_CONTROL`) and per-port tagging. (b) Separate `AdsrEnvelopeProcessor` from VCA into distinct nodes. (c) Refactor `Voice` to `signal_chain_` vector with `add_processor()`, named port connections, and `bake()` validation. (d) Implement `VoiceFactory` with correct topologies. (e) Add Voice Groups to `VoiceManager`. | In Progress |
 | 15    | **Spatial & Stereo FX**: Reverb, Chorus, Flanger, and Delay. | Planned |
 | 16    | **Host Interrogation & Enumeration**: Safely query device list, hardware sample rates, and supported block sizes via UTF-8 C-Bridge. | Planned |
 | 17    | **Non-Intrusive Logger**: RT-safe lock-free logging. | Complete |
@@ -295,9 +296,8 @@ To bridge the gap between the C-compatible public API and the internal Flexible 
 
 ### Future Architectural Roadmap
 
-1. **Typed Port Protocol**: Replace raw buffer passing with metadata-aware connections (`PORT_AUDIO`, `PORT_CONTROL`) to prevent illegal signal routing and ensure deterministic validation at the Bridge level.
-2. **Global Modulation Bus**: Shift from per-voice matrices to a centralized bus where global sources (e.g., Vibrato LFO) write to synchronized slots, improving phase coherency and reducing CPU overhead via a subscription model.
-3. **BaseOscillator Hierarchy**: Consolidate redundant logic (gain, fine-tuning, pitch-bend) into a polymorphic collection, allowing the `Voice` to manage generators as a dynamic list rather than hardcoded pointers.
+1. **Global Modulation Bus**: Shift from per-voice matrices to a centralized bus where global sources (e.g., Vibrato LFO) write to synchronized slots, improving phase coherency and reducing CPU overhead via a subscription model.
+2. **BaseOscillator Hierarchy**: Consolidate redundant logic (gain, fine-tuning, pitch-bend) into a polymorphic collection, allowing the `Voice` to manage generators as a dynamic list rather than hardcoded pointers.
 
 ### Implementation Rules
 1. **Test Source of Truth**: All testing standards, including the "Golden Lifecycle" and mandatory modular routing protocols, are defined in [cxx/docs/TESTING.md](cxx/docs/TESTING.md).

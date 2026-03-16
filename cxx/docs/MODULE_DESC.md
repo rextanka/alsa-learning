@@ -1,23 +1,44 @@
 # Module Descriptions: Musical Toolbox
 
-This document defines the functional requirements for all DSP processors. All modules must adhere to the `PORT_AUDIO` and `PORT_CONTROL` protocol.
+This document defines the functional requirements for all DSP processors.
+
+---
+
+## Port Type System
+
+All modules declare their ports using two types:
+
+- **`PORT_AUDIO`** — an audio-rate signal carrying sound. Range: `[-1.0, 1.0]`. Connects only to `PORT_AUDIO` inputs.
+- **`PORT_CONTROL`** — an audio-rate signal carrying modulation or CV. Range: `[-1.0, 1.0]` bipolar or `[0.0, 1.0]` unipolar. Connects only to `PORT_CONTROL` inputs.
+
+Both port types run at **audio rate** — a full `std::span<float>` per block. The distinction is semantic and enforced at graph construction time, not by a different sample rate.
+
+Each port has a **tag** (a unique string name on that module instance, e.g. `"pitch_cv"`, `"audio_out"`) used by the graph to form named connections. `bake()` validates that all connections match port types before the voice becomes active.
+
+---
 
 ## 1. Generators (Oscillators & Noise)
 
 * **VCO (Voltage Controlled Oscillator)**
 * **Purpose**: Primary periodic harmonic generation.
-* **Ports**: `PORT_CONTROL` (Pitch CV, PWM CV, Sync In); `PORT_AUDIO` (Output).
+* **Ports**:
+  - `PORT_CONTROL` in: `pitch_cv`, `pwm_cv`, `sync_in`
+  - `PORT_AUDIO` out: `audio_out`
 * **Logic**: Exponential frequency response ($f = f_0 \cdot 2^{CV}$).
 
 
 * **LFO (Low Frequency Oscillator)**
-* **Purpose**: Sub-audio modulation source.
-* **Ports**: `PORT_CONTROL` (Rate CV, Reset); `PORT_AUDIO` (Output).
+* **Purpose**: Sub-audio modulation source. Produces a control signal for modulating other parameters.
+* **Ports**:
+  - `PORT_CONTROL` in: `rate_cv`, `reset`
+  - `PORT_CONTROL` out: `control_out`
+* **Note**: LFO output is `PORT_CONTROL`, not `PORT_AUDIO`. It is a modulation source and must not be patched directly into an audio mix.
 
 
 * **Noise Generator**
 * **Purpose**: Stochastic signal generation.
-* **Ports**: `PORT_AUDIO` (Output).
+* **Ports**:
+  - `PORT_AUDIO` out: `audio_out`
 * **Modes**: White (flat) and Pink (-3dB/octave) noise.
 
 
@@ -26,51 +47,75 @@ This document defines the functional requirements for all DSP processors. All mo
 
 * **VCF (Voltage Controlled Filter)**
 * **Purpose**: Subtractive frequency manipulation.
-* **Ports**: `PORT_AUDIO` (Input, Output); `PORT_CONTROL` (Cutoff CV, Res CV).
+* **Ports**:
+  - `PORT_AUDIO` in: `audio_in`
+  - `PORT_AUDIO` out: `audio_out`
+  - `PORT_CONTROL` in: `cutoff_cv`, `res_cv`
 * **Modes**: Switchable Low-Pass (24dB), High-Pass, Band-Pass, and Notch.
 
 
 * **Resonator**
 * **Purpose**: Emulation of physical acoustic body resonances/cavities.
-* **Ports**: `PORT_AUDIO` (Input, Output); `PORT_CONTROL` (Freq CV).
+* **Ports**:
+  - `PORT_AUDIO` in: `audio_in`
+  - `PORT_AUDIO` out: `audio_out`
+  - `PORT_CONTROL` in: `freq_cv`
 
 
 
 ## 3. Amplitude & Dynamics
 
 * **VCA (Voltage Controlled Amplifier)**
-* **Purpose**: Gain control and output stage.
-* **Ports**: `PORT_AUDIO` (Input, Output); `PORT_CONTROL` (Gain CV).
+* **Purpose**: Gain control and output stage. A dedicated audio gain node — separate from the Envelope Generator.
+* **Ports**:
+  - `PORT_AUDIO` in: `audio_in`
+  - `PORT_AUDIO` out: `audio_out`
+  - `PORT_CONTROL` in: `gain_cv`
 * **Behavior**: Switchable Linear (for modulation) and Exponential (for loudness) response.
+* **Note**: The VCA and Envelope Generator are distinct nodes. The Envelope Generator produces a `PORT_CONTROL` signal that is patched into the VCA's `gain_cv` input. They must not be merged into a single processor.
 
 
 * **Envelope Generator (ADSR/AD)**
-* **Purpose**: Transient shaping.
-* **Ports**: `PORT_CONTROL` (Gate In, Trigger In, Envelope Out).
+* **Purpose**: Transient shaping. Produces a control signal driven by gate events.
+* **Ports**:
+  - `PORT_CONTROL` in: `gate_in`, `trigger_in`
+  - `PORT_CONTROL` out: `envelope_out`
+* **Note**: Output is `PORT_CONTROL` only. To shape audio amplitude, patch `envelope_out` → VCA `gain_cv`. To shape filter cutoff, patch `envelope_out` → VCF `cutoff_cv`.
 
 
 * **Envelope Follower**
 * **Purpose**: Extraction of dynamic control signals from audio inputs.
-* **Ports**: `PORT_AUDIO` (Input); `PORT_CONTROL` (Envelope Out).
+* **Ports**:
+  - `PORT_AUDIO` in: `audio_in`
+  - `PORT_CONTROL` out: `envelope_out`
 
 
 
 ## 4. Modulation & CV Utilities
 
+These modules operate entirely in the control domain. They require `PORT_CONTROL` connections to be useful and are first-class nodes in the `signal_chain_`.
+
 * **Maths Function Generator**
-* **Purpose**: Versatile envelope, slew limiter, or LFO.
-* **Ports**: `PORT_CONTROL` (Input, Output).
-* **Behavior**: Implements complex curves (Log/Linear/Exponential).
+* **Purpose**: Versatile envelope, slew limiter, or LFO with configurable curve shapes.
+* **Ports**:
+  - `PORT_CONTROL` in: `cv_in`
+  - `PORT_CONTROL` out: `cv_out`
+* **Behavior**: Implements Log/Linear/Exponential curves.
 
 
 * **CV Mixer/Attenuverter**
-* **Purpose**: Combining and inverting control signals.
-* **Ports**: `PORT_CONTROL` (Inputs, Output).
+* **Purpose**: Combining, scaling, and inverting control signals before routing to a destination.
+* **Ports**:
+  - `PORT_CONTROL` in: `cv_in_1`, `cv_in_2`, `cv_in_3`, `cv_in_4`
+  - `PORT_CONTROL` out: `cv_out`
+* **Note**: Negative mix weights implement signal inversion (attenuverter behaviour).
 
 
 * **S&H (Sample & Hold)**
-* **Purpose**: Stepped modulation generation.
-* **Ports**: `PORT_CONTROL` (Input, Clock/Trigger, Output).
+* **Purpose**: Stepped modulation — freezes an input CV at each clock trigger.
+* **Ports**:
+  - `PORT_CONTROL` in: `cv_in`, `clock_in`
+  - `PORT_CONTROL` out: `cv_out`
 
 
 
@@ -78,36 +123,50 @@ This document defines the functional requirements for all DSP processors. All mo
 
 * **Spatial Processor**
 * **Purpose**: Panning and stereo field positioning.
-* **Ports**: `PORT_AUDIO` (In, Left Out, Right Out); `PORT_CONTROL` (Pan CV).
+* **Ports**:
+  - `PORT_AUDIO` in: `audio_in`
+  - `PORT_AUDIO` out: `left_out`, `right_out`
+  - `PORT_CONTROL` in: `pan_cv`
 
 
 * **Echo/Delay**
-* **Purpose**: Time-based reverberation and echo.
-* **Ports**: `PORT_AUDIO` (Input, Output); `PORT_CONTROL` (Time/Feedback CV).
+* **Purpose**: Time-based repetition and echo.
+* **Ports**:
+  - `PORT_AUDIO` in: `audio_in`
+  - `PORT_AUDIO` out: `audio_out`
+  - `PORT_CONTROL` in: `time_cv`, `feedback_cv`
 
 
 
 ## 6. Global I/O
 
 * **Audio Input**
-* **Purpose**: Interface for external signals.
-* **Ports**: `PORT_AUDIO` (Output).
+* **Purpose**: Interface for external audio signals entering the graph.
+* **Ports**:
+  - `PORT_AUDIO` out: `audio_out`
 
 
-* **Summing Mixer**
-* **Purpose**: Final aggregation of signal chain output.
-* **Ports**: `PORT_AUDIO` (Inputs, Output).
+* **Summing Mixer (Source Mixer)**
+* **Purpose**: Combines multiple audio signals before processing. Head node for multi-oscillator voices.
+* **Ports**:
+  - `PORT_AUDIO` in: `audio_in_1` … `audio_in_N`
+  - `PORT_AUDIO` out: `audio_out`
 
 
 * **Ring Modulator**
-* **Purpose**: Non-linear frequency interaction.
-* **Ports**: `PORT_AUDIO` (In A, In B, Output).
+* **Purpose**: Non-linear frequency interaction between two audio signals.
+* **Ports**:
+  - `PORT_AUDIO` in: `audio_in_a`, `audio_in_b`
+  - `PORT_AUDIO` out: `audio_out`
 
 
 
 ---
 
-* **Normalization**: All `PORT_AUDIO` signals are treated as `[-1.0, 1.0]`. All `PORT_CONTROL` signals are treated as normalized units (`[-1.0, 1.0]` bipolar or `[0.0, 1.0]` unipolar).
-* **Validation**: The `bake()` step in the `Voice` must ensure that a `Generator` type node occupies the head of the `signal_chain_` to guarantee buffer clearing.
-* **Dynamic Routing**: These modules are not hardcoded in the `Voice`. Instead, the `Voice` manages a `std::vector` of these processor types, which are assigned tags (e.g., `"VCO_1"`, `"VCF_HP"`) for `set_param` and modulation linking.
+## Implementation Rules
 
+* **Port type enforcement**: `bake()` must reject any connection where a `PORT_AUDIO` output is connected to a `PORT_CONTROL` input, or vice versa.
+* **Generator-first rule**: `bake()` must verify that the first node in `signal_chain_` has a `PORT_AUDIO` out (i.e. is a Generator or SourceMixer).
+* **VCA/Envelope separation**: The `AdsrEnvelopeProcessor` must not multiply audio in-place. It produces `PORT_CONTROL` output only. A separate `VcaProcessor` node performs the audio multiplication using its `gain_cv` input.
+* **Dynamic Routing**: Modules are not hardcoded in the `Voice`. The `Voice` manages a `std::vector` of processor nodes, assigned instance tags (e.g. `"VCO_1"`, `"VCF_HP"`, `"ENV_AMP"`) for parameter targeting and port connection.
+* **Tagging**: Each port on each node instance has a unique tag. Connections are formed by specifying `{source_node_tag, port_tag} → {dest_node_tag, port_tag}`.
