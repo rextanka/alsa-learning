@@ -132,11 +132,47 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
 
 ---
 
+## Audio Terminology
+
+Precise use of these terms is mandatory throughout all source code, documentation, and API contracts. Ambiguity between "sample" and "frame" is a common source of buffer-sizing bugs.
+
+### Sample
+A **sample** is a single scalar quantised amplitude value for **one channel** at one point in time. It is the atomic unit of digital audio. Represented as `float` internally.
+
+### Sample Frame
+A **sample frame** (or simply **frame**) is the set of samples — one per channel — that are presented to the DAC simultaneously. The channel count determines the frame width:
+
+| Stream Format | Samples per Frame | Layout |
+|---|---|---|
+| Mono | 1 | `[C]` |
+| Stereo | 2 | `[L, R]` (interleaved) |
+| Quadraphonic | 4 | `[FL, FR, RL, RR]` (interleaved) |
+
+A buffer of *N* frames in a stereo stream therefore contains *2N* samples stored as `[L₀, R₀, L₁, R₁, …, L_{N-1}, R_{N-1}]`.
+
+### Block
+A **block** (or **processing block**) is a contiguous sequence of *N* frames processed atomically by the DSP graph in a single callback invocation. *N* is the **block size** (see Block Size Policy). The engine's internal voice graph and modulation matrix advance by exactly one block per callback.
+
+### API Contract for `engine_process`
+`engine_process(handle, float* output, size_t frames)` — the `frames` parameter is a **frame count**, not a sample count. The function produces **stereo interleaved** output via the same `SummingBus` path as the HAL callback, including voice panning and global FX (Chorus). The caller must provide a buffer of at least `frames × 2` floats.
+
+```c
+const size_t FRAMES = 512;
+float output[FRAMES * 2]; // stereo interleaved: 1024 floats
+engine_process(handle, output, FRAMES);
+// output[i*2]   = left  sample of frame i
+// output[i*2+1] = right sample of frame i
+```
+
+This guarantees that offline test analysis and live HAL rendering are driven by identical signal graph paths.
+
+---
+
 ## Block Size Policy
 
 Block size is **runtime-configurable** and must be chosen by the host at engine creation time based on hardware capability queries. There is no hardcoded default — the appropriate size is platform and hardware dependent (e.g. 512 samples on a modern ARM laptop for minimum latency; 1024 samples on older x86 hardware for stability).
 
-- Query available block sizes via `host_get_device_block_sizes()` (Phase 16).
+- Query available block sizes via `host_get_device_block_sizes()` (Phase 17).
 - Pass the chosen size to `engine_create(sample_rate, block_size)`.
 - All internal buffers are allocated at engine creation time to accommodate the chosen size.
 - Internal buffers are allocated at engine creation time to accommodate the chosen block size.
@@ -213,7 +249,7 @@ m_write_index = (m_write_index + 1) & (m_buffer_size - 1);
             - **Implementation**: `Voice::is_active()` delegates to its internal dynamic nodes, fulfilling the Voice-Manager Contract for polyphonic stealing without external synchronization risks.
         - **Strategic Versatility**: This API allows the construction of complex dual-filter architectures (MS-20 style) or minimal single-oscillator chains (SH-101 style) without changing a single line of `Voice` class code.
         - **Buffer Reuse Strategy**: Use `borrow_buffer()` logic to provide temporary spans for parallel oscillators before they are summed in the `SourceMixer`.
-        - **Factory-Based Configuration**: Specific instruments are created via `VoiceFactory::createSH101()` etc., which pre-configure the node chain, assign tags, and establish default modulation routings.
+        - **Factory-Based Configuration**: Instrument chains are defined in patch files (v2 JSON) and constructed at runtime via `engine_add_module` / `engine_connect_ports` / `engine_bake`. `VoiceFactory` is retired in Phase 15 — chain construction is exclusively driven by the C API and patch loader.
 - **Exponential Parameter Scaling**: Pitch and Filter Cutoff modulation follow a logarithmic/octave-based response: $f_{final} = f_{base} \cdot 2^{mod}$, where $mod$ is the sum of modulation offsets in octaves.
 - **Base + Offset Accumulation**: Processors maintain a "Base" value (anchor). Each block, the `ModulationMatrix` sums all offsets (bipolar) and applies them exponentially to the base.
 - **Soft-Saturated Mixing (Phase 13)**: To emulate analog growl and headroom, the Source Mixer uses a `tanh` soft-saturation curve on the summed output. This prevents harsh digital clipping and provides harmonic richness when multiple oscillators are pushed into the filter.

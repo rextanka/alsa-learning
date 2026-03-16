@@ -140,14 +140,24 @@ void Voice::set_parameter(int param, float value) {
     }
 }
 
+bool Voice::set_named_parameter(const std::string& name, float value) {
+    // Try the virtual Processor::apply_parameter() on each chain node.
+    for (auto& entry : signal_chain_) {
+        if (entry.node->apply_parameter(name, value)) return true;
+    }
+    return false;
+}
+
 void Voice::note_on(double frequency) {
     active_ = true;
     base_frequency_ = frequency;
     for (auto& entry : signal_chain_) entry.node->reset();
     lfo_->reset();
     if (filter_) filter_->reset();
-    if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) {
-        vco->set_frequency(frequency);
+    // Dispatch frequency to the first chain node via the virtual Processor::set_frequency().
+    // This works for CompositeGenerator, DrawbarOrganProcessor, or any future generator.
+    if (!signal_chain_.empty()) {
+        signal_chain_[0].node->set_frequency(frequency);
     }
     if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV"))) {
         env->gate_on();
@@ -201,8 +211,8 @@ void Voice::apply_modulation() {
     current_frequency_ = base_frequency_ * std::pow(2.0, static_cast<double>(pitch_mod));
     if (current_frequency_ < 20.0) current_frequency_ = base_frequency_;
 
-    if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) {
-        vco->set_frequency(current_frequency_);
+    if (!signal_chain_.empty()) {
+        signal_chain_[0].node->set_frequency(current_frequency_);
     }
 
     if (filter_) {
@@ -222,18 +232,66 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
 void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
     apply_modulation();
 
-    auto env_block = graph_->borrow_buffer();
-    std::span<float> env_span(env_block->left.data(), output.size());
-    bool env_filled = false;
+    // --- Phase 15 graph executor (RT-SAFE: pool-borrowed buffers, no heap alloc) ---
+    //
+    // Each PORT_CONTROL node gets its own scratch buffer (borrowed from the
+    // graph's BufferPool).  Audio nodes write in-place into `output`.  The
+    // VCA step looks up its gain_cv source via connections_ (explicit) or by
+    // falling back to the first PORT_CONTROL buffer encountered (legacy).
+    //
+    // Maximum simultaneously live control buffers equals the number of
+    // PORT_CONTROL nodes in the chain — typically 1.
+
+    static constexpr size_t kMaxCtrl = 8; // generous upper bound
+    BufferPool::BufferPtr ctrl_ptrs[kMaxCtrl];
+    std::span<float>      ctrl_spans[kMaxCtrl];
+    const char*           ctrl_tags_arr[kMaxCtrl]; // raw pointer: entry.tag is stable
+    size_t                num_ctrl = 0;
+
+    // Pass 1: allocate scratch buffers for every PORT_CONTROL node.
+    for (const auto& entry : signal_chain_) {
+        if (entry.node->output_port_type() == PortType::PORT_CONTROL
+                && num_ctrl < kMaxCtrl) {
+            ctrl_ptrs[num_ctrl]  = graph_->borrow_buffer();
+            ctrl_spans[num_ctrl] = std::span<float>(
+                ctrl_ptrs[num_ctrl]->left.data(), output.size());
+            ctrl_tags_arr[num_ctrl] = entry.tag.c_str();
+            ++num_ctrl;
+        }
+    }
+
+    // Helper: find the span for a given tag (linear scan, chain is tiny).
+    auto find_ctrl = [&](const std::string& tag) -> std::span<float> {
+        for (size_t i = 0; i < num_ctrl; ++i)
+            if (tag == ctrl_tags_arr[i]) return ctrl_spans[i];
+        return {};
+    };
+
+    // Pass 2: execute chain in order.
     bool audio_generated = false;
+    size_t ctrl_pull_idx = 0; // which ctrl slot to fill next (matches chain order)
 
     for (auto& entry : signal_chain_) {
-        if (entry.tag == "ENV") {
-            entry.node->pull(env_span, context);
-            env_filled = true;
-        } else if (entry.tag == "VCA") {
+        if ([[maybe_unused]] auto* vca = dynamic_cast<VcaProcessor*>(entry.node.get()); vca != nullptr) {
+            // Resolve gain_cv: use explicit connection if declared, else legacy fallback.
+            std::span<float> gain_cv;
+            for (const auto& conn : connections_) {
+                if (conn.to_tag == entry.tag && conn.to_port == "gain_cv") {
+                    gain_cv = find_ctrl(conn.from_tag);
+                    break;
+                }
+            }
+            if (gain_cv.empty() && num_ctrl > 0) {
+                gain_cv = ctrl_spans[0]; // legacy: first control buffer is the envelope
+            }
+            // Filter sits between the last audio node and the VCA.
             if (audio_generated && filter_) filter_->pull(output, context);
-            if (env_filled) VcaProcessor::apply(output, env_span, base_amplitude_);
+            if (!gain_cv.empty()) {
+                VcaProcessor::apply(output, gain_cv, base_amplitude_);
+            }
+        } else if (entry.node->output_port_type() == PortType::PORT_CONTROL) {
+            entry.node->pull(ctrl_spans[ctrl_pull_idx], context);
+            ++ctrl_pull_idx;
         } else {
             entry.node->pull(output, context);
             audio_generated = true;
@@ -251,14 +309,39 @@ void Voice::add_processor(std::unique_ptr<Processor> p, std::string tag) {
     baked_ = false;
 }
 
+void Voice::connect(std::string from_tag, std::string from_port,
+                    std::string to_tag,   std::string to_port) {
+    connections_.push_back({std::move(from_tag), std::move(from_port),
+                            std::move(to_tag),   std::move(to_port)});
+    baked_ = false;
+}
+
 void Voice::bake() {
     if (signal_chain_.empty()) {
         throw std::logic_error("Voice::bake() called on empty signal_chain_");
     }
-    // Generator-First Rule: first node must be a CompositeGenerator.
-    if (dynamic_cast<CompositeGenerator*>(signal_chain_[0].node.get()) == nullptr) {
+    // Generator-First Rule: first node must output PORT_AUDIO (it is the audio source).
+    if (signal_chain_[0].node->output_port_type() != PortType::PORT_AUDIO) {
         throw std::logic_error(
-            "Voice::bake() failed: signal_chain_[0] is not a CompositeGenerator");
+            "Voice::bake() failed: signal_chain_[0] must be an audio generator (PORT_AUDIO output)");
+    }
+    // Port-Type Rules:
+    //   1. Last node must output PORT_AUDIO (chain output is always audio).
+    //   2. No two consecutive PORT_CONTROL nodes (control after control is meaningless).
+    auto port_of = [](const ChainEntry& e) {
+        return e.node->output_port_type();
+    };
+    if (port_of(signal_chain_.back()) != PortType::PORT_AUDIO) {
+        throw std::logic_error(
+            "Voice::bake() failed: last node in signal_chain_ must output PORT_AUDIO");
+    }
+    for (size_t i = 1; i < signal_chain_.size(); ++i) {
+        if (port_of(signal_chain_[i - 1]) == PortType::PORT_CONTROL &&
+            port_of(signal_chain_[i])     == PortType::PORT_CONTROL) {
+            throw std::logic_error(
+                "Voice::bake() failed: consecutive PORT_CONTROL nodes at positions "
+                + std::to_string(i - 1) + " and " + std::to_string(i));
+        }
     }
     // Port-Type Rules:
     //   1. Last node must output PORT_AUDIO (chain output is always audio).

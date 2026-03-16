@@ -24,12 +24,17 @@ protected:
         );
 
         engine_wrapper = std::make_unique<test::EngineWrapper>(sample_rate);
-        
-        // Protocol Step 3 & 4 & 5: Modular Patching & ADSR Arming & Lifecycle Start
-        engine_connect_mod(engine_wrapper->get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
-        set_param(engine_wrapper->get(), "sine_gain", 1.0f);
+
+        // Phase 15 chain
+        engine_add_module(engine_wrapper->get(), "COMPOSITE_GENERATOR", "VCO");
+        engine_add_module(engine_wrapper->get(), "ADSR_ENVELOPE",       "ENV");
+        engine_add_module(engine_wrapper->get(), "VCA",                 "VCA");
+        engine_connect_ports(engine_wrapper->get(), "ENV", "envelope_out", "VCA", "gain_cv");
+        engine_bake(engine_wrapper->get());
+
+        set_param(engine_wrapper->get(), "sine_gain",   1.0f);
         set_param(engine_wrapper->get(), "amp_sustain", 1.0f);
-        engine_start(engine_wrapper->get());
+        // No engine_start: tests use offline engine_process for deterministic analysis.
     }
 
     int sample_rate;
@@ -39,12 +44,15 @@ protected:
 TEST_F(StereoPolyTest, MonoIntegrityTest) {
     EngineHandle engine = engine_wrapper->get();
     
-    // Manual setup via Bridge since we don't have voice_spread in CInterface yet
-    // Assuming spread defaults to 0 or we use standard note_on
+    // voice_spread_ defaults to 0.5 so we must explicitly center the pan
+    // to get L == R for the mono-integrity assertion.
     engine_note_on(engine, 60, 0.8f);
+    engine_set_note_pan(engine, 60, 0.0f); // Center
 
     const size_t frames = 512;
     std::vector<float> output(frames * 2);
+    // Warm up: let the note settle into sustain before measuring.
+    for (int i = 0; i < 3; ++i) engine_process(engine, output.data(), frames);
     engine_process(engine, output.data(), frames);
 
     float total_diff = 0.0f;

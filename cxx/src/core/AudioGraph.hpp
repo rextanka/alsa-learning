@@ -8,6 +8,7 @@
 
 #include "Processor.hpp"
 #include "BufferPool.hpp"
+#include "Logger.hpp"
 #include <vector>
 #include <memory>
 #include <algorithm>
@@ -66,18 +67,19 @@ public:
      * @brief Print a report of the graph's nodes to standard output.
      */
     void report() const {
-        std::cout << "\n--- AUDIO GRAPH REPORT ---" << std::endl;
+        auto& log = AudioLogger::instance();
+        log.log_message("AudioGraph", "--- AUDIO GRAPH REPORT ---");
         if (nodes_.empty()) {
-            std::cout << "Graph is EMPTY." << std::endl;
+            log.log_message("AudioGraph", "Graph is EMPTY.");
         } else {
             for (size_t i = 0; i < nodes_.size(); ++i) {
-                std::cout << "[Slot " << i << "]: " << typeid(*nodes_[i]).name();
-                if (i == 0) std::cout << " -> Output (Internal)";
-                else std::cout << " -> Slot " << (i - 1) << " (In-place)";
-                std::cout << std::endl;
+                const Processor& n = *nodes_[i]; // evaluate before typeid to avoid -Wpotentially-evaluated-expression
+                char buf[128];
+                std::snprintf(buf, sizeof(buf), "[Slot %zu]: %s", i, typeid(n).name());
+                log.log_message("AudioGraph", buf);
             }
         }
-        std::cout << "--------------------------\n" << std::endl;
+        log.log_message("AudioGraph", "--------------------------");
     }
 
     /**

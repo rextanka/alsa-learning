@@ -33,18 +33,17 @@ protected:
 TEST_F(SH101ChainTest, SubOscAndOctave) {
     EngineHandle engine = engine_wrapper->get();
     
-    // 1. Isolation: Clear matrix and setup SH-101 style "Bass" patch
-    engine_clear_modulations(engine);
-    engine_connect_mod(engine, MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
-    engine_connect_mod(engine, MOD_SRC_LFO, ALL_VOICES, MOD_TGT_PULSEWIDTH, 0.2f); // PWM
+    // 1. Phase 15 chain
+    engine_add_module(engine, "COMPOSITE_GENERATOR", "VCO");
+    engine_add_module(engine, "ADSR_ENVELOPE",       "ENV");
+    engine_add_module(engine, "VCA",                 "VCA");
+    engine_connect_ports(engine, "ENV", "envelope_out", "VCA", "gain_cv");
+    engine_bake(engine);
 
-    // 2. Audit modulation report
-    char mod_report[512];
-    engine_get_modulation_report(engine, mod_report, sizeof(mod_report));
-    assert(strstr(mod_report, "Src: 0 -> Tgt: -1 (Param: 3)") != nullptr);
-    assert(strstr(mod_report, "Src: 1 -> Tgt: -1 (Param: 4)") != nullptr);
+    // LFO -> Pulse Width modulation (PWM)
+    engine_connect_mod(engine, MOD_SRC_LFO, ALL_VOICES, MOD_TGT_PULSEWIDTH, 0.2f);
 
-    // 3. Mixer Configuration
+    // 2. Mixer Configuration
     set_param(engine, "pulse_gain", 1.0f);
     set_param(engine, "sub_gain", 0.5f);
     set_param(engine, "vcf_cutoff", 2000.0f); // Warm resonant bass

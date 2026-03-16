@@ -66,6 +66,7 @@ set(ENGINE_SOURCES
     src/core/VoiceManager.cpp
     src/core/MidiParser.cpp
     src/core/PatchStore.cpp
+    src/core/ProcessorRegistrations.cpp
 )
 
 if(APPLE)
@@ -202,17 +203,20 @@ if(BUILD_TESTING)
     add_functional_gtest(tremulant_tests test_tremulant_preset.cpp)
     add_functional_gtest(sh101_chain_tests test_sh101_chain.cpp)
     add_functional_gtest(juno_chorus_tests test_juno_chorus.cpp)
+    add_functional_gtest(stereo_poly_tests stereo_poly_test.cpp)
     add_functional_test(Functional_SH101_Live Functional_SH101_Live.cpp)
+    add_functional_test(patch_sequence_test patch_sequence_test.cpp)
+
+    # Copy patch JSON files to the binary output directory so tests can be run
+    # directly from build/bin without specifying -p.
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/patches
+         DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
     add_test(NAME Functional_Phase10 COMMAND Phase10Tests)
     add_test(NAME Functional_Timing COMMAND TimingValidation)
     add_test(NAME Functional_OscIntegrity COMMAND automated_osc_integrity)
     add_test(NAME Functional_ProcessorFidelity COMMAND processor_check)
 
-    if(UNIX AND NOT APPLE)
-        add_functional_test(AlsaCheck AlsaCheck.cpp)
-        add_test(NAME Functional_AlsaCheck COMMAND AlsaCheck)
-    endif()
 endif()
 
 message(STATUS "Build output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")

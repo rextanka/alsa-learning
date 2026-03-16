@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "name": "Drawbar Organ (Full Ensemble)",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "DRAWBAR_ORGAN", "tag": "ORGAN" },
+        { "type": "ADSR_ENVELOPE", "tag": "ENV" },
+        { "type": "VCA",           "tag": "VCA" }
+      ],
+      "connections": [
+        { "from_tag": "ENV", "from_port": "envelope_out",
+          "to_tag":   "VCA", "to_port":   "gain_cv" }
+      ],
+      "parameters": {
+        "drawbar_16":  0.0,
+        "drawbar_513": 4.0,
+        "drawbar_8":   8.0,
+        "drawbar_4":   8.0,
+        "drawbar_223": 3.0,
+        "drawbar_2":   2.0,
+        "drawbar_135": 0.0,
+        "drawbar_113": 0.0,
+        "drawbar_1":   0.0,
+        "amp_attack":  0.005,
+        "amp_decay":   0.01,
+        "amp_sustain": 1.0,
+        "amp_release": 0.03
+      }
+    }
+  ]
+}

@@ -37,11 +37,21 @@ VoiceManager::VoiceManager(int sample_rate)
     mod_buffer_.resize(512); // Default block size
 }
 
+void VoiceManager::rebuild_all_voices(const std::function<std::unique_ptr<Voice>()>& factory) {
+    for (auto& slot : voices_) {
+        slot.voice         = factory();
+        slot.current_note  = -1;
+        slot.active        = false;
+        slot.last_note_on_time = 0;
+    }
+    note_to_voice_map_.fill(-1);
+}
+
 void VoiceManager::set_voice_spread(float spread) {
     voice_spread_ = std::clamp(spread, 0.0f, 1.0f);
 }
 
-void VoiceManager::note_on(int note, float velocity, double frequency) {
+void VoiceManager::note_on(int note, float /* velocity */, double frequency) {
     double freq = (frequency > 0.0) ? frequency : note_to_freq(note);
 
     // 1. Check if the note is already playing (re-trigger)
@@ -124,7 +134,7 @@ void VoiceManager::note_on(int note, float velocity, double frequency) {
     }
 }
 
-void VoiceManager::note_on(int note, float velocity, int group_id, double frequency) {
+void VoiceManager::note_on(int note, float /* velocity */, int group_id, double frequency) {
     double freq = (frequency > 0.0) ? frequency : note_to_freq(note);
 
     // Re-trigger check within group
@@ -242,6 +252,12 @@ void VoiceManager::set_parameter_by_name(const std::string& name, float value) {
 
     if (param_id != -1) {
         set_parameter(param_id, value);
+    } else {
+        // Unknown to the legacy table — try each voice's named-parameter dispatch
+        // (handles DrawbarOrgan drawbar_* and any future module-specific params).
+        for (auto& slot : voices_) {
+            if (slot.voice) slot.voice->set_named_parameter(name, value);
+        }
     }
 }
 

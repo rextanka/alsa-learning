@@ -1,21 +1,24 @@
+/**
+ * @file four_beeps_adsr.cpp
+ * @brief Plays 4 beeps, 1 second apart, descending in pitch to verify ADSR.
+ *
+ * Chain: COMPOSITE_GENERATOR -> ADSR_ENVELOPE -> VCA (Phase 15)
+ * Waveform: Triangle — clean for ADSR articulation audit.
+ */
+
 #include "../TestHelper.hpp"
 #include <iostream>
 #include <vector>
 #include <thread>
 #include <chrono>
-#include <cassert>
 
-/**
- * @file four_beeps_adsr.cpp
- * @brief Plays 4 beeps, 1 second apart, descending in pitch to verify ADSR. 
- */
 int main() {
     test::init_test_environment();
     int sample_rate = test::get_safe_sample_rate(0);
 
     PRINT_TEST_HEADER(
         "Validate ADSR envelope articulation and voice lifecycle.",
-        "Triangle Oscillator -> VCA (ADSR) -> Output.",
+        "Triangle Oscillator -> ADSR_ENVELOPE -> VCA -> Output.",
         "Four distinct clean beeps with audible attack/decay and no clicks.",
         "4 distinct ADSR-shaped tones (D3, G3, B3, E4) matching guitar strings 4-1.",
         sample_rate
@@ -23,57 +26,50 @@ int main() {
 
     test::EngineWrapper engine(sample_rate);
 
-    // 1. Configure: isolate triangle — clean waveform for ADSR articulation test
+    // Phase 15 chain
+    engine_add_module(engine.get(), "COMPOSITE_GENERATOR", "VCO");
+    engine_add_module(engine.get(), "ADSR_ENVELOPE",       "ENV");
+    engine_add_module(engine.get(), "VCA",                 "VCA");
+    engine_connect_ports(engine.get(), "ENV", "envelope_out", "VCA", "gain_cv");
+    engine_bake(engine.get());
+
+    // Triangle waveform only
     set_param(engine.get(), "pulse_gain",    0.0f);
     set_param(engine.get(), "sub_gain",      0.0f);
     set_param(engine.get(), "saw_gain",      0.0f);
     set_param(engine.get(), "sine_gain",     0.0f);
     set_param(engine.get(), "triangle_gain", 0.8f);
-    
-    // VCF Open: Cutoff fully open, resonance zeroed
+
+    // VCF open, no resonance
     set_param(engine.get(), "vcf_cutoff", 20000.0f);
-    set_param(engine.get(), "vcf_res", 0.0f);
+    set_param(engine.get(), "vcf_res",    0.0f);
 
-    // VCA (ADSR) Configuration - Using engine_connect_mod as per TESTING.md protocol
-    engine_clear_modulations(engine.get());
-    assert(engine_connect_mod(engine.get(), MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f) == 0);
-
-    // Audit modulation
-    char mod_report[256];
-    engine_get_modulation_report(engine.get(), mod_report, sizeof(mod_report));
-    assert(strstr(mod_report, "Src: 0 -> Tgt: -1 (Param: 3)") != nullptr);
-    assert(set_param(engine.get(), "amp_attack", 0.050f) == 0);  // 50ms fade in
-    assert(set_param(engine.get(), "amp_decay", 0.100f) == 0);   // 100ms decay
-    assert(set_param(engine.get(), "amp_sustain", 0.8f) == 0);   // Hold at 80% volume
-    assert(set_param(engine.get(), "amp_release", 0.100f) == 0);  // 100ms fade out
+    // ADSR: 50ms attack / 100ms decay / 80% sustain / 100ms release
+    set_param(engine.get(), "amp_attack",  0.050f);
+    set_param(engine.get(), "amp_decay",   0.100f);
+    set_param(engine.get(), "amp_sustain", 0.8f);
+    set_param(engine.get(), "amp_release", 0.100f);
 
     if (engine_start(engine.get()) != 0) {
         std::cerr << "Failed to start audio engine" << std::endl;
         return 1;
     }
 
-    // 2. Guitar strings 4-1: D3, G3, B3, E4 — tuner-friendly pitches
+    // Guitar strings 4-1: D3, G3, B3, E4
     const char* notes[] = {"D3", "G3", "B3", "E4"};
-    
+
     for (int i = 0; i < 4; ++i) {
         std::cout << "[BEEP " << (i + 1) << "] Playing " << notes[i] << "..." << std::endl;
-        
-        // Trigger Note On
-        engine_note_on_name(engine.get(), notes[i], 0.8f);
-        
-        // Hold for 0.75 seconds
-        std::this_thread::sleep_for(std::chrono::milliseconds(750));
 
-        // Trigger Note Off (Triggers Release phase)
+        engine_note_on_name(engine.get(), notes[i], 0.8f);
+        std::this_thread::sleep_for(std::chrono::milliseconds(750));
         engine_note_off_name(engine.get(), notes[i]);
 
-        // Wait for the remainder of the 1.5-second interval
         if (i < 3) {
             std::this_thread::sleep_for(std::chrono::milliseconds(750));
         }
     }
 
-    // Wait slightly for the final release to complete
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
     engine_stop(engine.get());

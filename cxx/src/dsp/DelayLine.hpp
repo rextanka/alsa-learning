@@ -101,7 +101,7 @@ protected:
         }
     }
 
-    void do_pull(AudioBuffer& output, const VoiceContext* voice_context = nullptr) override {
+    void do_pull(AudioBuffer& output, const VoiceContext* /* voice_context */ = nullptr) override {
         // For simplicity, process stereo input as mono delay
         // In a real delay, we might have two buffers.
         for (size_t i = 0; i < output.frames(); ++i) {

@@ -1,20 +1,19 @@
+/**
+ * @file oscillator_drone_test.cpp
+ * @brief Raw signal generation verification — 2-second drones for all waveforms.
+ *
+ * Chain: COMPOSITE_GENERATOR -> ADSR_ENVELOPE -> VCA (Phase 15)
+ * Each waveform is isolated via mixer gain parameters.
+ */
+
 #include "../TestHelper.hpp"
-#include <iostream> 
+#include <iostream>
 #include <vector>
 #include <chrono>
 #include <thread>
 
-/**
- * oscillator_drone_test.cpp
- * 
- * Purpose: Verifying raw signal generation for all wave types (2s drones).
- * This test verifies raw oscillator output by creating a 2-second drone for 
- * Sine, Square, Saw, and Triangle waves with the VCA fully open.
- *
- * REFACTORED: Now implements Gain Normalization to prevent overlapping signals.
- */
-
-void play_drone(EngineHandle engine, int wave_type, const char* wave_name, int sample_rate) {
+static void play_drone(EngineHandle engine, const char* wave_name,
+                       const char* gain_param) {
     std::cout << "[" << wave_name << "] Playing A4..." << std::endl;
     
     // 1. Isolation: Reset all mixer gains to prevent bleed
@@ -46,11 +45,7 @@ void play_drone(EngineHandle engine, int wave_type, const char* wave_name, int s
     
     // Start note
     engine_note_on_name(engine, "A4", 0.8f);
-    
-    // Simulate 2 seconds of real-time wait for hardware output
     std::this_thread::sleep_for(std::chrono::seconds(2));
-    
-    // Stop note
     engine_note_off_name(engine, "A4");
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 }
@@ -69,6 +64,13 @@ int main() {
 
     test::EngineWrapper engine(sample_rate);
 
+    // Phase 15 chain
+    engine_add_module(engine.get(), "COMPOSITE_GENERATOR", "VCO");
+    engine_add_module(engine.get(), "ADSR_ENVELOPE",       "ENV");
+    engine_add_module(engine.get(), "VCA",                 "VCA");
+    engine_connect_ports(engine.get(), "ENV", "envelope_out", "VCA", "gain_cv");
+    engine_bake(engine.get());
+
     if (engine_start(engine.get()) != 0) {
         std::cerr << "Failed to start engine" << std::endl;
         return 1;
@@ -82,8 +84,6 @@ int main() {
     play_drone(engine.get(), -1,            "NOISE",    sample_rate);
 
     engine_stop(engine.get());
-
     std::cout << "--- Test Complete. Engine destroyed via RAII. ---" << std::endl;
-
     return 0;
 }

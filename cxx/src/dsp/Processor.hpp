@@ -27,16 +27,54 @@
 namespace audio {
 
 /**
- * @brief Port type classification for typed signal routing (Phase 14).
+ * @brief Port type classification for typed signal routing (Phase 14/15).
  *
  * PORT_AUDIO — carries audio-rate samples in [-1, 1].
- * PORT_CONTROL — carries control-rate signals, typically [0, 1] (e.g. envelope levels).
+ * PORT_CONTROL — carries control-rate signals, unipolar [0,1] or bipolar [-1,1].
  * Both types run at the same sample rate; the distinction is semantic and is validated
  * at bake() time to prevent misrouted connections.
  */
 enum class PortType {
     PORT_AUDIO,
     PORT_CONTROL
+};
+
+// C++20: bring enumerators into namespace audio so subclasses can write
+// PORT_AUDIO / PORT_CONTROL without the PortType:: prefix.
+using enum PortType;
+
+/** @brief Port direction — input or output on a module. */
+enum class PortDirection { IN, OUT };
+
+/**
+ * @brief Named port descriptor (Phase 15).
+ *
+ * Each Processor subclass calls declare_port() in its constructor for every
+ * port it owns. The ModuleRegistry aggregates these at library load time.
+ *
+ * unipolar: true if PORT_CONTROL range is [0,1]; false if bipolar [-1,1].
+ *           Ignored for PORT_AUDIO ports.
+ */
+struct PortDescriptor {
+    std::string   name;
+    PortType      type;
+    PortDirection dir;
+    bool          unipolar = false; ///< true → [0,1]; false → [-1,1] (PORT_CONTROL only)
+};
+
+/**
+ * @brief Parameter descriptor (Phase 15).
+ *
+ * Each Processor subclass calls declare_parameter() in its constructor for
+ * every user-controllable parameter it exposes. Queryable via the C API.
+ */
+struct ParameterDescriptor {
+    std::string name;        ///< internal label (e.g. "cutoff")
+    std::string label;       ///< human-readable (e.g. "Cutoff Frequency")
+    float       min  = 0.0f;
+    float       max  = 1.0f;
+    float       def  = 0.0f; ///< default value
+    bool        logarithmic = false;
 };
 
 /**
@@ -143,9 +181,62 @@ public:
     std::string_view tag() const { return tag_; }
 
     /**
-     * @brief Declared output port type for connection validation at bake() time.
+     * @brief Declared output port type for bake() chain-level validation (Phase 14).
+     * Default: PORT_AUDIO. Override to PORT_CONTROL for control-rate generators (e.g. ADSR).
+     *
+     * For named-port validation (Phase 15) use declare_port() instead.
      */
     virtual PortType output_port_type() const { return PortType::PORT_AUDIO; }
+
+    /**
+     * @brief Set the base oscillator frequency (Hz). No-op for non-generator nodes.
+     *
+     * Override in generator processors (e.g. CompositeGenerator, DrawbarOrganProcessor)
+     * so that Voice::note_on() can dispatch without a dynamic_cast.
+     */
+    virtual void set_frequency(double /*freq*/) {}
+
+    /**
+     * @brief Apply a named parameter by string key.
+     *
+     * Returns true if the parameter was recognised and applied.
+     * Default implementation is a no-op (returns false).
+     * Override in module processors (e.g. DrawbarOrganProcessor).
+     */
+    virtual bool apply_parameter(const std::string& /*name*/, float /*value*/) { return false; }
+
+    /**
+     * @brief Declared input port type for bake() chain-level validation (Phase 14).
+     * Default: PORT_AUDIO. Override for processors that consume a control-rate signal.
+     *
+     * For named-port validation (Phase 15) use declare_port() instead.
+     */
+    virtual PortType input_port_type() const { return PortType::PORT_AUDIO; }
+
+    // -----------------------------------------------------------------------
+    // Phase 15: Named port and parameter declaration
+    // -----------------------------------------------------------------------
+
+    /**
+     * @brief All ports declared by this processor instance.
+     * Populated by declare_port() calls in subclass constructors.
+     */
+    const std::vector<PortDescriptor>& ports() const { return ports_; }
+
+    /**
+     * @brief All parameters declared by this processor instance.
+     * Populated by declare_parameter() calls in subclass constructors.
+     */
+    const std::vector<ParameterDescriptor>& parameters() const { return parameters_; }
+
+    /**
+     * @brief Find a declared port by name. Returns nullptr if not found.
+     */
+    const PortDescriptor* find_port(std::string_view name) const {
+        for (const auto& p : ports_)
+            if (p.name == name) return &p;
+        return nullptr;
+    }
 
     /**
      * @brief Get performance metrics.
@@ -170,8 +261,32 @@ protected:
      */
     std::vector<InputSource*> inputs_;
 
+    /**
+     * @brief Register a named port on this processor (call in subclass constructor).
+     *
+     * Example:
+     *   declare_port({"audio_out",    PORT_AUDIO,   OUT});
+     *   declare_port({"envelope_out", PORT_CONTROL, OUT, true}); // unipolar
+     *   declare_port({"gain_cv",      PORT_CONTROL, IN,  true});
+     */
+    void declare_port(PortDescriptor pd) {
+        ports_.push_back(std::move(pd));
+    }
+
+    /**
+     * @brief Register a named parameter on this processor (call in subclass constructor).
+     *
+     * Example:
+     *   declare_parameter({"cutoff", "Cutoff Frequency", 20.0f, 20000.0f, 1000.0f, true});
+     */
+    void declare_parameter(ParameterDescriptor pd) {
+        parameters_.push_back(std::move(pd));
+    }
+
 private:
     std::string tag_;
+    std::vector<PortDescriptor>      ports_;
+    std::vector<ParameterDescriptor> parameters_;
 
     /**
      * @brief Pure virtual method for subclasses to implement actual processing (Mono).

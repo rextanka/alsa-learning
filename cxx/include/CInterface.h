@@ -132,7 +132,7 @@ AUDIO_API int engine_set_delay_enabled(EngineHandle handle, int enabled);
 AUDIO_API int engine_get_xrun_count(EngineHandle handle);
 
 // Modulation Matrix Control
-AUDIO_API int engine_set_modulation(EngineHandle handle, int source, int target, float intensity);
+// engine_set_modulation removed in Phase 15 — use engine_connect_ports() instead.
 AUDIO_API int engine_clear_modulations(EngineHandle handle);
 
 // Patch Management
@@ -151,6 +151,54 @@ AUDIO_API int set_param(void* handle, const char* name, float value);
 AUDIO_API int engine_create_processor(EngineHandle handle, int type);
 AUDIO_API int engine_connect_mod(EngineHandle handle, int source_id, int target_id, int param, float intensity);
 AUDIO_API int engine_get_modulation_report(EngineHandle handle, char* buffer, size_t buffer_size);
+
+// ---------------------------------------------------------------------------
+// Phase 15: Module Registry Query + Chain Construction API
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Number of registered module types in the ModuleRegistry.
+ * Always valid after engine_create().
+ */
+AUDIO_API int engine_get_module_count(EngineHandle handle);
+
+/**
+ * @brief Copy the type name of the module at @p index into @p buffer.
+ * Returns 0 on success, -1 if index is out of range or buffer too small.
+ */
+AUDIO_API int engine_get_module_type(EngineHandle handle, int index,
+                                     char* buffer, size_t buf_size);
+
+/**
+ * @brief Begin building a new voice signal chain.
+ * Append a module of the given registered type with the given tag.
+ * Returns 0 on success, -1 if type_name is not registered.
+ *
+ * Must be called before engine_bake().
+ * Calling engine_add_module() again after engine_bake() starts a new chain.
+ */
+AUDIO_API int engine_add_module(EngineHandle handle,
+                                const char* type_name,
+                                const char* tag);
+
+/**
+ * @brief Register a named port connection in the pending chain.
+ * The connection is validated when engine_bake() is called.
+ * Returns 0 always (validation deferred to bake).
+ */
+AUDIO_API int engine_connect_ports(EngineHandle handle,
+                                   const char* from_tag,
+                                   const char* from_port,
+                                   const char* to_tag,
+                                   const char* to_port);
+
+/**
+ * @brief Validate the pending chain and rebuild all voices.
+ * Must be called before engine_start() and after all engine_add_module()
+ * and engine_connect_ports() calls.
+ * Returns 0 on success, -1 if validation fails.
+ */
+AUDIO_API int engine_bake(EngineHandle handle);
 
 // AudioTap API
 AUDIO_API int engine_audiotap_reset(EngineHandle handle);

@@ -52,7 +52,7 @@ public:
     /**
      * @brief Set frequency (instant change).
      */
-    void set_frequency(double freq) {
+    void set_frequency(double freq) override {
         current_freq_ = freq;
         target_freq_ = freq;
         transitioning_ = false;
@@ -189,7 +189,7 @@ protected:
     /**
      * @brief Pull Model: Generate block of samples (Stereo).
      */
-    void do_pull(AudioBuffer& output, const VoiceContext* voice_context = nullptr) override {
+    void do_pull(AudioBuffer& output, const VoiceContext* /* voice_context */ = nullptr) override {
         for (size_t i = 0; i < output.frames(); ++i) {
             update_frequency_ramp();
             float sample = static_cast<float>(generate_sample());
