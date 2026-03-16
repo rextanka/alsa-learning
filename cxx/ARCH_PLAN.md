@@ -22,6 +22,10 @@ To maintain the high reliability required for professional-grade audio software,
 ### Philosophy
 Create a portable, lightweight **'Musical Toolbox'** for creative exploration and **'Sound Toy'** development. The library is designed to be approachable and educational, allowing developers to easily build small musical programs and understand core DSP concepts.
 
+Target use cases include: signal generators, MIDI file players, and classic subtractive synthesizer architectures (SH-101, MS-20, TB-303, Juno-60 style).
+
+The library is consumed via a stable C API, enabling host integration in native frameworks (Swift on macOS, Tauri/React on desktop) without exposing C++ internals.
+
 ### Target Platforms
 - **macOS**: Tahoe 26.3+ (CoreAudio)
 - **Linux**: Fedora 42+ (ALSA)
@@ -30,13 +34,17 @@ Create a portable, lightweight **'Musical Toolbox'** for creative exploration an
 ### Technical Pillars
 - **Pull-Based Heartbeat**: Sample-accurate timing driven by the `AudioDriver`. Output pulls from the graph; processors pull from their inputs.
 - **Modular Routing Vision**: Moving from fixed-function blocks to a dynamic graph of:
-    - **Sources**: Oscillators, Wavetables, File Players.
+    - **Sources**: Oscillators, Wavetables, MIDI File Players.
     - **Processors**: Filters, Envelopes, FX (Reverb, Delay).
     - **Sinks**: Audio Output (HAL), Non-Intrusive Loggers, Visualizers.
+    - All nodes declare typed ports (`PORT_AUDIO` or `PORT_CONTROL`). Both run at audio rate (`std::span<float>` per block). Connections are validated at `bake()` — `PORT_AUDIO` outputs may only connect to `PORT_AUDIO` inputs, and `PORT_CONTROL` outputs may only connect to `PORT_CONTROL` inputs. See [cxx/docs/MODULE_DESC.md](cxx/docs/MODULE_DESC.md) for per-module port specifications.
 - **Mono-until-Stereo**: Keep signal paths mono for CPU efficiency until spatial effects or stereo-specific processing (panners/reverb) are required. All internal Voice components (VCO, VCF, VCA) must operate on a single mono `std::span<float>`.
-- **MPE & Microtonality**: Per-voice independence with a modular `TuningSystem` for cross-platform musical flexibility.
-- **Centralized Zipper-Free Control**: A dedicated `ParameterManager` handles all ramping and smoothing "magic."
+- **Voice Groups**: Voices are partitioned into named groups, each with an independent signal chain topology and patch. This enables keyboard splits (e.g. below middle C → SH-101 group, above → Juno group) and layering (a single MIDI note triggers voices from multiple groups simultaneously).
+- **Centralized Zipper-Free Control**: A dedicated `ParameterManager` will handle all parameter ramping and smoothing. See Phase 19 in the migration table.
 - **HAL-Only Interaction**: High-level DSP logic and tests interact ONLY with the `hal::AudioDriver` base class. Platform parity is maintained by swapping the HAL implementation (ALSA vs. CoreAudio) while keeping core C++ logic identical.
+
+### Future Roadmap (Not Currently Planned)
+- **MPE & Microtonality**: Per-voice pitch independence with a modular `TuningSystem` for cross-platform musical flexibility. Deferred until core dynamic routing is stable.
 
 ---
 
@@ -49,16 +57,17 @@ Create a portable, lightweight **'Musical Toolbox'** for creative exploration an
 └──────────────────────┬──────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────┐
-│              VoiceManager (Polyphony)                   │
-│         ┌──────────────┐  ┌──────────────┐              │
-│         │    Voice 1   │  │    Voice N   │              │
-│         │  Mono Graph  │  │  Mono Graph  │              │
-│         └──────────────┘  └──────────────┘              │
-│                       │                                 │
-│         ┌─────────────▼──────────────┐                  │
-│         │    Mono → Stereo Mixer     │                  │
-│         │  (Panning & Voice Spread)  │                  │
-│         └────────────────────────────┘                  │
+│              VoiceManager (Polyphony + Voice Groups)    │
+│  ┌──────────────────────┐  ┌──────────────────────┐     │
+│  │    Voice Group A     │  │    Voice Group B     │     │
+│  │    Voices 1-8        │  │    Voices 9-16       │     │
+│  │  (e.g. SH-101 patch) │  │  (e.g. Juno patch)  │     │
+│  └──────────┬───────────┘  └──────────┬───────────┘     │
+│             │                         │                  │
+│         ┌───▼─────────────────────────▼───┐              │
+│         │       Mono → Stereo Mixer       │              │
+│         │    (Panning & Voice Spread)     │              │
+│         └─────────────────────────────────┘              │
 └──────────────────────┬──────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────┐
@@ -115,10 +124,22 @@ cxx/
 
 ## Cross-Platform Strategy
 
-The project maintains a strict separation between **Platform HAL** and **Core DSP**. 
+The project maintains a strict separation between **Platform HAL** and **Core DSP**.
 - **Fedora (ALSA)**: Primary development environment for high-priority RT-hardening.
 - **macOS (CoreAudio)**: Target for Swift/Bridge interop and creative UI development.
-- **Portability Guard**: The `CInterface` ensures that regardless of the underlying OS or HAL, the binary contract remains stable for host applications (Swift, .NET, or C++ GUIs).
+- **Tauri/React**: Desktop UI target consuming the C API via Tauri's native bridge. No WebAssembly compilation required; the native HAL (ALSA or CoreAudio) is used directly.
+- **Portability Guard**: The `CInterface` ensures that regardless of the underlying OS or HAL, the binary contract remains stable for host applications (Swift, Tauri/React, or C++ GUIs).
+
+---
+
+## Block Size Policy
+
+Block size is **runtime-configurable** and must be chosen by the host at engine creation time based on hardware capability queries. There is no hardcoded default — the appropriate size is platform and hardware dependent (e.g. 512 samples on a modern ARM laptop for minimum latency; 1024 samples on older x86 hardware for stability).
+
+- Query available block sizes via `host_get_device_block_sizes()` (Phase 16).
+- Pass the chosen size to `engine_create(sample_rate, block_size)`.
+- All internal buffers are allocated at engine creation time to accommodate the chosen size.
+- `MAX_BLOCK_SIZE` in `Voice.hpp` defines the compile-time upper bound for stack buffer allocation.
 
 ---
 
@@ -126,14 +147,17 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1-11  | Core DSP, Factory, Polyphony, Musical Clock, Dual-Layer Testing | 100% Complete |
-| 12    | **MIDI Integration**: Creation of `MidiHAL` and `MidiParser` feeding into `VoiceManager`. | 100% Complete |
-| 13    | **Golden Era Expansion**: SH-101 & Juno-60 building blocks (Sub-Osc, Source Mixer, Chorus, JSON Persistence). | In Progress |
-| 14    | **Spatial & Stereo FX**: Reverb, Chorus, Flanger, and Delay. | Planned |
-| 15    | **Host Interrogation & Enumeration**: Safely query device list and hardware sample rates via UTF-8 C-Bridge. | Planned |
-| 16    | **Non-Intrusive Logger**: RT-safe lock-free logging. | 100% Complete |
-| 17    | **Unit & Integration Strategy**: GUnit vs. standalone API tests. | 100% Complete |
-| 18    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation. | Planned |
+| 1-11  | Core DSP, Factory, Polyphony, Musical Clock, Dual-Layer Testing | Complete |
+| 12    | **MIDI Integration**: `MidiParser` and `MidiEvent` feeding into `VoiceManager`. | Complete |
+| 13    | **Golden Era Expansion**: SH-101 & Juno-60 building blocks (Sub-Osc, Source Mixer, Chorus, JSON Persistence). | Complete |
+| 14    | **Dynamic Signal Chain**: (a) Extend `Processor` with typed port declarations (`PORT_AUDIO`/`PORT_CONTROL`) and per-port tagging. (b) Separate `AdsrEnvelopeProcessor` from VCA into distinct nodes. (c) Refactor `Voice` to `signal_chain_` vector with `add_processor()`, named port connections, and `bake()` validation. (d) Implement `VoiceFactory` with correct topologies. (e) Add Voice Groups to `VoiceManager`. | In Progress |
+| 15    | **Spatial & Stereo FX**: Reverb, Chorus, Flanger, and Delay. | Planned |
+| 16    | **Host Interrogation & Enumeration**: Safely query device list, hardware sample rates, and supported block sizes via UTF-8 C-Bridge. | Planned |
+| 17    | **Non-Intrusive Logger**: RT-safe lock-free logging. | Complete |
+| 18    | **Unit & Integration Strategy**: GUnit vs. standalone API tests. | Complete |
+| 19    | **ParameterManager**: Centralized zipper-free parameter ramping and smoothing for all audio-rate parameter changes. | Planned |
+| 20    | **MIDI File Player**: `MidiFilePlayer` Source module for sequenced playback. | Planned |
+| 21    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation. | Planned |
 
 ---
 
@@ -162,11 +186,12 @@ m_write_index = (m_write_index + 1) & (m_buffer_size - 1);
 
 ## Key Design Decisions
 
-- **Block size**: Configurable (not hardcoded); default 1024.
+- **Block size**: Runtime-configurable; chosen by the host at engine creation time based on hardware capability queries. No hardcoded default. See Block Size Policy section below.
 - **Format**: Float (-1..1) internally; convert at HAL boundary.
 - **Buffer ownership**: Graph owns buffers; nodes use spans (zero-copy).
 - **Polyphony**: Compile-time `AUDIO_MAX_VOICES` (e.g. 16); runtime cap optional.
-- **Voice stealing**: Prefer releasing voice (longest first), else active (e.g. lowest note).
+- **Voice Groups**: Voices are partitioned into named groups, each with an independent `VoiceFactory`-configured topology. Enables keyboard splits and layering via the C API.
+- **Voice stealing**: Prefer releasing voice (longest first), else active (e.g. lowest note). Applied within a voice group.
 - **Per-voice params**: Velocity and aftertouch via **query pattern** (VoiceContext in `pull()`).
 - **Wavetable**: Single `WavetableOscillatorProcessor` class; shape selected at create.
 - **10ms MMA Latency Target**: Optimize buffer sizes and processing for consistent real-time response.
@@ -178,7 +203,7 @@ m_write_index = (m_write_index + 1) & (m_buffer_size - 1);
         - **The "Generator-First" Rule (Topological Validation)**:
             - **Rule**: Every `signal_chain_` must begin with a **Generator** node (Oscillator or SourceMixer).
             - **Reason**: The first node is responsible for clearing the buffer (initialization); subsequent nodes are Processors that perform in-place modification.
-            - **Validation**: `add_processor` or a final `bake()` step must verify that `signal_chain_[0]` is a Generator.
+            - **Validation**: A `bake()` call must be made after chain construction. `bake()` verifies that `signal_chain_[0]` is a Generator before the voice becomes active.
         - **Node Tagging & Discovery**:
             - **Tagging**: Each node in the chain can be assigned a unique string tag (e.g., "Filter_HP", "SubOsc").
             - **Discovery**: The `Voice` implements a discovery method. When a user sends a parameter update (e.g., "Cutoff"), the `Voice` uses the tag or processor type to find the target node(s) in its current chain.
@@ -245,34 +270,34 @@ The `ModulationMatrix` is a RT-safe central hub within each `Voice` that manages
 To bridge the gap between the C-compatible public API and the internal Flexible Topology, the engine implements a **Tag-based Parameter Mapping protocol**.
 
 ### The Mapping Contract
-- **Discovery Strategy**: Client labels (strings) are mapped to **Global Parameter IDs**.
+- **Discovery Strategy**: Client labels (strings) are mapped to **Global Parameter IDs** (enums). Both forms are accepted by the C API and resolve through the same registry.
 - **Resolution**: The `VoiceManager` and `Voice` resolve these Global IDs using a lookup table that maps to a `{Node Tag, Internal Node ID}` pair.
 - **Node Tags**: Standardized tags ensure consistent targeting across different voice topologies.
   - `"VCO"`: Primary Oscillators (Sine, Saw, Pulse, Sub).
   - `"VCF"`: Filter section.
   - `"VCA"`: Amplifier and main amplitude envelope.
 
-### Global Parameter Registry (Legacy & Flexible Sync)
-| Global ID | String Label | Target Tag | Internal ID | Description |
-|-----------|--------------|------------|-------------|-------------|
-| 1 | `vcf_cutoff` | `VCF` | 1 | Filter cutoff frequency |
-| 2 | `vcf_res` | `VCF` | 2 | Filter resonance |
-| 3 | `vcf_env_amount` | `VCF` | 3 | Envelope to Filter modulation depth |
-| 4 | `amp_attack` | `VCA` | 4 | VCA Envelope Attack |
-| 5 | `amp_decay` | `VCA` | 5 | VCA Envelope Decay |
-| 6 | `amp_sustain` | `VCA` | 6 | VCA Envelope Sustain |
-| 7 | `amp_release` | `VCA` | 7 | VCA Envelope Release |
-| 10 | `osc_pw` | `VCO` | 14 | Pulse Width (Legacy Alias) |
-| 11 | `sub_gain` | `VCO` | 11 | Sub-oscillator level |
-| 12 | `saw_gain` | `VCO` | 12 | Sawtooth level |
-| 13 | `pulse_gain` | `VCO` | 13 | Pulse level |
-| 14 | `pulse_width` | `VCO` | 14 | Pulse Width (Native) |
+### Global Parameter Registry
+| Global ID | String Label | Target Tag | Description | Range |
+|-----------|--------------|------------|-------------|-------|
+| 1 | `vcf_cutoff` | `VCF` | Filter cutoff frequency | Log (20Hz–20kHz) |
+| 2 | `vcf_res` | `VCF` | Filter resonance | 0.0–1.0 |
+| 3 | `vcf_env_amount` | `VCF` | Envelope to Filter modulation depth | Bipolar |
+| 4 | `amp_attack` | `VCA` | VCA Envelope Attack | Time (s) |
+| 5 | `amp_decay` | `VCA` | VCA Envelope Decay | Time (s) |
+| 6 | `amp_sustain` | `VCA` | VCA Envelope Sustain | 0.0–1.0 |
+| 7 | `amp_release` | `VCA` | VCA Envelope Release | Time (s) |
+| 10 | `osc_pw` | `VCO` | Pulse Width (legacy alias for `pulse_width`) | 0.0–0.5 |
+| 11 | `sub_gain` | `VCO` | Sub-oscillator level | 0.0–1.0 |
+| 12 | `saw_gain` | `VCO` | Sawtooth level | 0.0–1.0 |
+| 13 | `pulse_gain` | `VCO` | Pulse level | 0.0–1.0 |
+| 14 | `pulse_width` | `VCO` | Pulse Width (native) | 0.0–0.5 |
+| 15 | `noise_gain` | `VCO` | White noise level | 0.0–1.0 |
 
 ### Future Architectural Roadmap
 
-1. **Typed Port Protocol**: Replace raw buffer passing with metadata-aware connections (`PORT_AUDIO`, `PORT_CONTROL`) to prevent illegal signal routing and ensure deterministic validation at the Bridge level.
-2. **Global Modulation Bus**: Shift from per-voice matrices to a centralized bus where global sources (e.g., Vibrato LFO) write to synchronized slots, improving phase coherency and reducing CPU overhead via a subscription model.
-3. **BaseOscillator Hierarchy**: Consolidate redundant logic (gain, fine-tuning, pitch-bend) into a polymorphic collection, allowing the `Voice` to manage generators as a dynamic list rather than hardcoded pointers.
+1. **Global Modulation Bus**: Shift from per-voice matrices to a centralized bus where global sources (e.g., Vibrato LFO) write to synchronized slots, improving phase coherency and reducing CPU overhead via a subscription model.
+2. **BaseOscillator Hierarchy**: Consolidate redundant logic (gain, fine-tuning, pitch-bend) into a polymorphic collection, allowing the `Voice` to manage generators as a dynamic list rather than hardcoded pointers.
 
 ### Implementation Rules
 1. **Test Source of Truth**: All testing standards, including the "Golden Lifecycle" and mandatory modular routing protocols, are defined in [cxx/docs/TESTING.md](cxx/docs/TESTING.md).
@@ -287,6 +312,7 @@ To bridge the gap between the C-compatible public API and the internal Flexible 
 - **Functional Testing**: cxx/docs/TESTING.md
 - **C-Bridge Contract**: cxx/docs/BRIDGE_GUIDE.md
 - **Processor Specifications**: cxx/docs/MODULE_DESC.md
+- **Patch Format**: cxx/docs/PATCH_SPEC.md
 
 ## References
 - Git workflow: [cxx/docs/GIT_POLICY.md](cxx/docs/GIT_POLICY.md) (branch naming, PR process, commit standards).

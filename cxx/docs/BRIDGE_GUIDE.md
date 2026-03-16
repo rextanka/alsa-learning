@@ -67,6 +67,7 @@ Use these labels with `engine_set_param(handle, "label", value)`:
 | `saw_gain` | `VCO` | Sawtooth level | 0.0 - 1.0 |
 | `pulse_gain` | `VCO` | Pulse level | 0.0 - 1.0 |
 | `pulse_width` | `VCO` | Pulse width duty cycle | 0.0 - 0.5 |
+| `noise_gain` | `VCO` | White noise level | 0.0 - 1.0 |
 
 ## 4. Modular Routing (Dynamic Graph)
 
@@ -82,12 +83,17 @@ The engine supports dynamic modular connections between processors.
 
 ### Creating and Linking
 
+The `engine_connect_mod` function accepts either a string label or a `MOD_TGT_*` enum for the target parameter. Both resolve through the same registry defined in ARCH_PLAN.md.
+
 ```c
 // Create a standalone LFO
 int lfo_id = engine_create_processor(engine, PROC_LFO);
 
-// Connect LFO to modulate filter cutoff of ALL voices
+// Connect using string label
 engine_connect_mod(engine, lfo_id, ALL_VOICES, "vcf_cutoff", 0.02f);
+
+// Connect using enum (equivalent)
+engine_connect_mod(engine, MOD_SRC_LFO, ALL_VOICES, MOD_TGT_CUTOFF, 0.02f);
 
 ```
 
@@ -96,8 +102,11 @@ engine_connect_mod(engine, lfo_id, ALL_VOICES, "vcf_cutoff", 0.02f);
 Modulation intensity supports negative values for inversion (e.g., closing a filter).
 
 ```c
-// Set modulation (Source ID -> Target, Intensity)
-int status = engine_set_modulation(engine, source_id, target_id, intensity);
+// DEPRECATED: engine_set_modulation is deprecated. Use engine_connect_mod instead.
+// int status = engine_set_modulation(engine, source_id, target_id, intensity);
+
+// Preferred: engine_connect_mod (string label or enum target)
+engine_connect_mod(engine, MOD_SRC_ENVELOPE, ALL_VOICES, MOD_TGT_AMPLITUDE, 1.0f);
 
 // Audit modular graph
 char report[1024];
