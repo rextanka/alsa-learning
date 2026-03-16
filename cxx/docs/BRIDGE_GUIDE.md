@@ -69,11 +69,7 @@ Use these labels with `set_param(handle, "label", value)`:
 | `saw_gain` | `VCO` | Sawtooth level | 0.0 - 1.0 |
 | `pulse_gain` | `VCO` | Pulse level | 0.0 - 1.0 |
 | `pulse_width` | `VCO` | Pulse width duty cycle | 0.0 - 0.5 |
-| `sine_gain` | `VCO` | Sine oscillator level | 0.0 - 1.0 |
-| `triangle_gain` | `VCO` | Triangle oscillator level | 0.0 - 1.0 |
-| `wavetable_gain` | `VCO` | Wavetable oscillator level | 0.0 - 1.0 |
 | `noise_gain` | `VCO` | White noise level | 0.0 - 1.0 |
-| `wavetable_type` | `VCO` | Wavetable waveform type | 0–N (enum) |
 
 **Note**: This registry is a transitional compatibility layer. In Phase 15 and beyond, parameters are declared on modules and queryable via `engine_get_module_parameter`. The string label table above will be generated from module declarations rather than maintained manually.
 

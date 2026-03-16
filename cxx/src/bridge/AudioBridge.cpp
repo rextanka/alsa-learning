@@ -148,7 +148,6 @@ struct EngineHandleImpl : public HandleBase {
         param_name_to_id["sine_gain"] = 15;
         param_name_to_id["triangle_gain"] = 16;
         param_name_to_id["wavetable_gain"] = 17;
-        param_name_to_id["noise_gain"] = 18;
     }
 };
 
@@ -530,7 +529,7 @@ void engine_print_graph(EngineHandle handle) {
             slot.voice->borrow_buffer(); // Just to access graph implicitly via Voice
         }
     }
-    audio::AudioLogger::instance().log_message("GraphPrint", "requested");
+    std::cout << "Engine Graph Print Requested (implementation in progress)" << std::endl;
 }
 
 void engine_flush_logs(EngineHandle /* handle */) {
@@ -542,7 +541,9 @@ int engine_set_filter_type(EngineHandle handle, int type) {
     if (!handle) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
     
-    audio::AudioLogger::instance().log_event("FilterTypeSwitch", static_cast<float>(type));
+    // LOG: Confirm swap
+    std::cout << "BRIDGE: Switching Filter Type to ID " << type << std::endl;
+    
     impl->voice_manager->set_filter_type(type);
     return 0;
 }

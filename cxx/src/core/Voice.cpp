@@ -120,11 +120,7 @@ void Voice::set_parameter(int param, float value) {
             if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->mixer().set_gain(5, value);
             break;
         }
-        case 18: { // NOISE_GAIN
-            if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->mixer().set_gain(6, value);
-            break;
-        }
-        case 19: { // WAVETABLE_TYPE
+        case 18: { // WAVETABLE_TYPE
             auto wtype = static_cast<WaveType>(static_cast<int>(value));
             if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->wavetable_osc().setWaveType(wtype);
             break;
@@ -324,24 +320,6 @@ void Voice::bake() {
     if (signal_chain_[0].node->output_port_type() != PortType::PORT_AUDIO) {
         throw std::logic_error(
             "Voice::bake() failed: signal_chain_[0] must be an audio generator (PORT_AUDIO output)");
-    }
-    // Port-Type Rules:
-    //   1. Last node must output PORT_AUDIO (chain output is always audio).
-    //   2. No two consecutive PORT_CONTROL nodes (control after control is meaningless).
-    auto port_of = [](const ChainEntry& e) {
-        return e.node->output_port_type();
-    };
-    if (port_of(signal_chain_.back()) != PortType::PORT_AUDIO) {
-        throw std::logic_error(
-            "Voice::bake() failed: last node in signal_chain_ must output PORT_AUDIO");
-    }
-    for (size_t i = 1; i < signal_chain_.size(); ++i) {
-        if (port_of(signal_chain_[i - 1]) == PortType::PORT_CONTROL &&
-            port_of(signal_chain_[i])     == PortType::PORT_CONTROL) {
-            throw std::logic_error(
-                "Voice::bake() failed: consecutive PORT_CONTROL nodes at positions "
-                + std::to_string(i - 1) + " and " + std::to_string(i));
-        }
     }
     // Port-Type Rules:
     //   1. Last node must output PORT_AUDIO (chain output is always audio).
