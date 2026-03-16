@@ -23,9 +23,13 @@ int main() {
 
     test::EngineWrapper engine(sample_rate);
 
-    // Set Up Signal Chain
-    set_param(engine.get(), "saw_gain", 1.0f);
-    set_param(engine.get(), "amp_sustain", 1.0f);
+    // Set Up Signal Chain: isolate sawtooth — zero all defaults first
+    set_param(engine.get(), "pulse_gain",    0.0f);
+    set_param(engine.get(), "sub_gain",      0.0f);
+    set_param(engine.get(), "sine_gain",     0.0f);
+    set_param(engine.get(), "triangle_gain", 0.0f);
+    set_param(engine.get(), "saw_gain",      1.0f);
+    set_param(engine.get(), "amp_sustain",   1.0f);
 
     if (engine_start(engine.get()) != 0) {
         std::cerr << "Failed to start engine" << std::endl;

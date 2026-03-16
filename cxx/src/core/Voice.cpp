@@ -35,8 +35,9 @@ Voice::Voice(int sample_rate)
     source_mixer_->set_gain(1, 1.0f); // Default main pulse gain
     source_mixer_->set_gain(2, 0.5f); // Default sub-osc gain
     
-    // 2. ADSR: Default settings
+    // 2. ADSR + VCA: Envelope produces PORT_CONTROL signal; VCA applies it to audio.
     envelope_ = std::make_unique<AdsrEnvelopeProcessor>(sample_rate);
+    vca_ = std::make_unique<VcaProcessor>();
     envelope_->set_attack_time(0.05f);
     envelope_->set_decay_time(0.1f);
     envelope_->set_sustain_level(0.7f);
@@ -349,17 +350,20 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
         inputs[5] = w_sample;
         
         output[i] = source_mixer_->mix(inputs);
-        
-        // Final amplitude scaling (RT-Safe)
-        output[i] *= current_amplitude_;
     }
 
-    // 3. PROCESS THROUGH MODIFIERS (Manual Serial Processing)
-    // Filter and Envelope process in-place on the oscillator mix
+    // 3. FILTER: process in-place on the oscillator mix
     if (filter_) {
         filter_->pull(output, context);
     }
-    envelope_->pull(output, context);
+
+    // 4. VCA: envelope produces a PORT_CONTROL buffer; VcaProcessor multiplies audio by it.
+    // This is the architecturally correct VCA/Envelope separation (MODULE_DESC §3).
+    // RT-SAFE: borrow_buffer() is a pool allocation.
+    auto env_block = graph_->borrow_buffer();
+    std::span<float> env_span(env_block->left.data(), output.size());
+    envelope_->pull(env_span, context);                    // fills env_span with [0,1] levels
+    VcaProcessor::apply(output, env_span, base_amplitude_); // audio *= envelope * base_amplitude
 
     // Audit Trace: Confirm signal is produced AFTER all processing
     float peak = 0.0f;

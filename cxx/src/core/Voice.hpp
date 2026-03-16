@@ -7,6 +7,7 @@
 #define AUDIO_VOICE_HPP
 
 #include "Processor.hpp"
+#include "VcaProcessor.hpp"
 #include "oscillator/OscillatorProcessor.hpp"
 #include "oscillator/SawtoothOscillatorProcessor.hpp"
 #include "oscillator/SineOscillatorProcessor.hpp"
@@ -85,6 +86,7 @@ private:
     std::unique_ptr<WavetableOscillatorProcessor> wavetable_oscillator_;
     std::unique_ptr<SourceMixer> source_mixer_;
     std::unique_ptr<AdsrEnvelopeProcessor> envelope_;
+    std::unique_ptr<VcaProcessor> vca_;
     std::unique_ptr<FilterProcessor> filter_;
     std::unique_ptr<LfoProcessor> lfo_;
     std::unique_ptr<AudioGraph> graph_;
