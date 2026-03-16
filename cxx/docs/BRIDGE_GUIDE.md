@@ -67,7 +67,11 @@ Use these labels with `engine_set_param(handle, "label", value)`:
 | `saw_gain` | `VCO` | Sawtooth level | 0.0 - 1.0 |
 | `pulse_gain` | `VCO` | Pulse level | 0.0 - 1.0 |
 | `pulse_width` | `VCO` | Pulse width duty cycle | 0.0 - 0.5 |
+| `sine_gain` | `VCO` | Sine oscillator level | 0.0 - 1.0 |
+| `triangle_gain` | `VCO` | Triangle oscillator level | 0.0 - 1.0 |
+| `wavetable_gain` | `VCO` | Wavetable oscillator level | 0.0 - 1.0 |
 | `noise_gain` | `VCO` | White noise level | 0.0 - 1.0 |
+| `wavetable_type` | `VCO` | Wavetable waveform type | 0–N (enum) |
 
 ## 4. Modular Routing (Dynamic Graph)
 
