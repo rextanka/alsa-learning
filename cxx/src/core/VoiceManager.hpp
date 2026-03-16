@@ -39,13 +39,20 @@ public:
     explicit VoiceManager(int sample_rate);
 
     /**
-     * @brief Trigger a note on.
-     * 
+     * @brief Trigger a note on (group 0).
+     *
      * @param note MIDI note number.
      * @param velocity Note velocity (0.0 to 1.0).
      * @param frequency Optional frequency (if <= 0, calculated from MIDI note).
      */
     void note_on(int note, float velocity, double frequency = 0.0);
+
+    /**
+     * @brief Trigger a note on in a specific voice group.
+     *
+     * Voice stealing considers only voices belonging to @p group_id.
+     */
+    void note_on(int note, float velocity, int group_id, double frequency);
 
     /**
      * @brief Trigger a note on with specific panning.
@@ -70,14 +77,32 @@ public:
     void set_parameter_by_name(const std::string& name, float value);
 
     /**
-     * @brief Set a parameter by ID across all voices.
+     * @brief Set a parameter by ID across all voices (all groups).
      */
     void set_parameter(int param_id, float value);
 
     /**
-     * @brief Set filter type across all voices.
+     * @brief Set a parameter by ID across all voices in a specific group.
+     */
+    void set_group_parameter(int group_id, int param_id, float value);
+
+    /**
+     * @brief Set filter type across all voices (all groups).
      */
     void set_filter_type(int type);
+
+    /**
+     * @brief Set filter type for all voices in a specific group.
+     */
+    void set_group_filter_type(int group_id, int type);
+
+    /**
+     * @brief Assign a voice slot to a voice group.
+     *
+     * @param voice_idx Index into the voice pool [0, MAX_VOICES).
+     * @param group_id  Group identifier (arbitrary non-negative integer).
+     */
+    void assign_group(int voice_idx, int group_id);
 
     /**
      * @brief Handle a MIDI event.
@@ -158,6 +183,7 @@ private:
         int current_note = -1;
         bool active = false;
         uint64_t last_note_on_time = 0; // For LRU stealing
+        int group_id = 0;               // Voice group (0 = default)
     };
 
     std::array<VoiceSlot, MAX_VOICES> voices_;

@@ -8,20 +8,17 @@
 
 #include "Processor.hpp"
 #include "VcaProcessor.hpp"
-#include "oscillator/OscillatorProcessor.hpp"
-#include "oscillator/SawtoothOscillatorProcessor.hpp"
-#include "oscillator/SineOscillatorProcessor.hpp"
-#include "oscillator/TriangleOscillatorProcessor.hpp"
-#include "oscillator/WavetableOscillatorProcessor.hpp"
-#include "envelope/AdsrEnvelopeProcessor.hpp"
 #include "filter/FilterProcessor.hpp"
 #include "oscillator/LfoProcessor.hpp"
-#include "oscillator/SubOscillator.hpp"
-#include "routing/SourceMixer.hpp"
+#include "routing/CompositeGenerator.hpp"
+#include "envelope/AdsrEnvelopeProcessor.hpp"
 #include "AudioGraph.hpp"
 #include "ModulationMatrix.hpp"
 #include <memory>
 #include <array>
+#include <vector>
+#include <string>
+#include <string_view>
 
 namespace audio {
 
@@ -35,13 +32,9 @@ public:
     void note_on(double frequency);
     void note_off();
 
-    SourceMixer& source_mixer() { return *source_mixer_; }
-    SubOscillator& sub_oscillator() { return *sub_oscillator_; }
     bool is_active() const;
     void reset() override;
 
-    OscillatorProcessor& oscillator() { return *oscillator_; }
-    EnvelopeProcessor& envelope() { return *envelope_; }
     FilterProcessor* filter() { return filter_.get(); }
     LfoProcessor& lfo() { return *lfo_; }
     ModulationMatrix& matrix() { return matrix_; }
@@ -63,6 +56,34 @@ public:
      */
     bool is_releasing() const;
 
+    // -------------------------------------------------------------------------
+    // Phase 14: Dynamic Signal Chain API
+    // -------------------------------------------------------------------------
+
+    /**
+     * @brief Append a node to the signal chain and assign it a tag.
+     *
+     * Must only be called when the voice is Idle (not on the audio thread).
+     * Invalidates the baked state — call bake() again before playing.
+     */
+    void add_processor(std::unique_ptr<Processor> p, std::string tag);
+
+    /**
+     * @brief Validate the chain and mark it ready for audio-thread use.
+     *
+     * Verifies that signal_chain_[0] is a Generator (CompositeGenerator).
+     * Throws std::logic_error if validation fails.
+     * Must be called after all add_processor() calls and before note_on().
+     */
+    void bake();
+
+    /**
+     * @brief Find the first chain node with the given tag. Returns nullptr if not found.
+     *
+     * Linear scan — O(n) on chain length. Called from control thread only.
+     */
+    Processor* find_by_tag(std::string_view tag);
+
 protected:
     void do_pull(std::span<float> output, const VoiceContext* context = nullptr) override;
 
@@ -73,18 +94,8 @@ public:
     void pull_mono(std::span<float> output, const VoiceContext* context = nullptr);
 
 private:
-    void rebuild_graph();
     void apply_modulation();
 
-    std::unique_ptr<OscillatorProcessor> oscillator_;
-    std::unique_ptr<SubOscillator> sub_oscillator_;
-    std::unique_ptr<SawtoothOscillatorProcessor> saw_oscillator_;
-    std::unique_ptr<SineOscillatorProcessor> sine_oscillator_;
-    std::unique_ptr<TriangleOscillatorProcessor> triangle_oscillator_;
-    std::unique_ptr<WavetableOscillatorProcessor> wavetable_oscillator_;
-    std::unique_ptr<SourceMixer> source_mixer_;
-    std::unique_ptr<AdsrEnvelopeProcessor> envelope_;
-    std::unique_ptr<VcaProcessor> vca_;
     std::unique_ptr<FilterProcessor> filter_;
     std::unique_ptr<LfoProcessor> lfo_;
     std::unique_ptr<AudioGraph> graph_;
@@ -109,6 +120,16 @@ private:
 
     uint32_t log_counter_;
     bool active_;
+
+    // -------------------------------------------------------------------------
+    // Phase 14: signal chain (populated by VoiceFactory via add_processor/bake)
+    // -------------------------------------------------------------------------
+    struct ChainEntry {
+        std::unique_ptr<Processor> node;
+        std::string tag;
+    };
+    std::vector<ChainEntry> signal_chain_;
+    bool baked_ = false;
 };
 
 } // namespace audio
