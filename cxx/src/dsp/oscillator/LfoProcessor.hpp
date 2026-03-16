@@ -32,9 +32,11 @@ public:
         , frequency_(1.0)
         , intensity_(1.0)
         , smoothed_intensity_(1.0)
+        , smoothing_time_(0.01)
+        , last_block_size_(0)
         , waveform_(Waveform::Sine)
     {
-        update_smoothing_coeff(0.01); // 10ms default smoothing
+        smoothing_coeff_ = 1.0f; // will be computed on first do_pull
     }
 
     void set_frequency(double freq) {
@@ -50,7 +52,8 @@ public:
     }
 
     void set_smoothing_time(double seconds) {
-        update_smoothing_coeff(seconds);
+        smoothing_time_ = seconds;
+        last_block_size_ = 0; // force recompute on next do_pull
     }
 
     void reset() override {
@@ -60,22 +63,28 @@ public:
 
 protected:
     void do_pull(std::span<float> output, const VoiceContext* /* context */ = nullptr) override {
+        // Recompute smoothing coefficient if block size has changed (rare after first call).
+        if (output.size() != last_block_size_) {
+            last_block_size_ = output.size();
+            update_smoothing_coeff(smoothing_time_, output.size());
+        }
+
         // Block-rate update
         const double phase_inc = frequency_ / sample_rate_;
         const size_t frames = output.size();
-        
+
         // Calculate LFO value once per block
         float lfo_val = calculate_waveform();
-        
+
         // Apply smoothing to intensity
         smoothed_intensity_ = smoothed_intensity_ + smoothing_coeff_ * (intensity_ - smoothed_intensity_);
-        
+
         float final_val = lfo_val * smoothed_intensity_;
-        
+
         for (auto& sample : output) {
             sample = final_val;
         }
-        
+
         // Advance phase for next block
         phase_ = std::fmod(phase_ + phase_inc * frames, 1.0);
     }
@@ -102,14 +111,13 @@ private:
         }
     }
 
-    void update_smoothing_coeff(double seconds) {
-        if (seconds <= 0.0) {
+    void update_smoothing_coeff(double seconds, size_t block_size) {
+        if (seconds <= 0.0 || block_size == 0) {
             smoothing_coeff_ = 1.0f;
         } else {
-            // Simple one-pole alpha calculation
-            // For block-rate, we use 1.0 - exp(-block_duration / tau)
-            // But we can simplify to a fixed alpha per pull() for LFO intensity
-            smoothing_coeff_ = static_cast<float>(1.0 - std::exp(-1.0 / (seconds * (sample_rate_ / 512.0)))); // Approx for 512 block size
+            // α = 1 - exp(-block_duration / τ) for exact one-pole at block rate
+            const double block_duration = static_cast<double>(block_size) / sample_rate_;
+            smoothing_coeff_ = static_cast<float>(1.0 - std::exp(-block_duration / seconds));
         }
     }
 
@@ -118,6 +126,8 @@ private:
     double frequency_;
     float intensity_;
     float smoothed_intensity_;
+    double smoothing_time_;
+    size_t last_block_size_;
     float smoothing_coeff_;
     Waveform waveform_;
 };

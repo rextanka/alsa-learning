@@ -17,7 +17,7 @@ int main() {
         "Validate ADSR envelope articulation and voice lifecycle.",
         "Triangle Oscillator -> VCA (ADSR) -> Output.",
         "Four distinct clean beeps with audible attack/decay and no clicks.",
-        "4 distinct ADSR-shaped tones (C4, B3, A3, G3), 1 second apart.",
+        "4 distinct ADSR-shaped tones (D3, G3, B3, E4) matching guitar strings 4-1.",
         sample_rate
     );
 
@@ -52,8 +52,8 @@ int main() {
         return 1;
     }
 
-    // 2. Define descending notes (C4, B3, A3, G3)
-    const char* notes[] = {"C4", "B3", "A3", "G3"};
+    // 2. Guitar strings 4-1: D3, G3, B3, E4 — tuner-friendly pitches
+    const char* notes[] = {"D3", "G3", "B3", "E4"};
     
     for (int i = 0; i < 4; ++i) {
         std::cout << "[BEEP " << (i + 1) << "] Playing " << notes[i] << "..." << std::endl;
@@ -61,15 +61,15 @@ int main() {
         // Trigger Note On
         engine_note_on_name(engine.get(), notes[i], 0.8f);
         
-        // Hold for 0.5 seconds
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        
+        // Hold for 0.75 seconds
+        std::this_thread::sleep_for(std::chrono::milliseconds(750));
+
         // Trigger Note Off (Triggers Release phase)
         engine_note_off_name(engine.get(), notes[i]);
-        
-        // Wait for the remainder of the 1-second interval
+
+        // Wait for the remainder of the 1.5-second interval
         if (i < 3) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            std::this_thread::sleep_for(std::chrono::milliseconds(750));
         }
     }
 
