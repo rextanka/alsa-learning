@@ -6,8 +6,10 @@
 #include "Voice.hpp"
 #include "filter/MoogLadderProcessor.hpp"
 #include "filter/DiodeLadderProcessor.hpp"
+#include "routing/CompositeGenerator.hpp"
 #include <cmath>
 #include <stdexcept>
+#include <numeric>
 
 namespace audio {
 
@@ -16,22 +18,11 @@ Voice::Voice(int sample_rate)
     , base_cutoff_(20000.0f)
     , base_resonance_(0.4f)
     , base_amplitude_(1.0f)
-    , current_frequency_(440.0)
-    , current_amplitude_(1.0f)
     , sample_rate_(sample_rate)
     , pan_(0.0f)
     , active_(false)
 {
-    lfo_ = std::make_unique<LfoProcessor>(sample_rate);
-    lfo_->set_frequency(5.0);
-    lfo_->set_intensity(0.0f);
-
     graph_ = std::make_unique<AudioGraph>();
-
-    matrix_.clear_all();
-    matrix_.set_connection(ModulationSource::Envelope, ModulationTarget::Amplitude, 1.0f);
-
-    current_source_values_.fill(0.0f);
     log_counter_ = 0;
     AudioLogger::instance().log_event("SR_CHECK", static_cast<float>(sample_rate_));
 }
@@ -152,7 +143,6 @@ void Voice::note_on(double frequency) {
     active_ = true;
     base_frequency_ = frequency;
     for (auto& entry : signal_chain_) entry.node->reset();
-    lfo_->reset();
     if (filter_) filter_->reset();
     // Dispatch frequency to the first chain node via the virtual Processor::set_frequency().
     // This works for CompositeGenerator, DrawbarOrganProcessor, or any future generator.
@@ -196,37 +186,7 @@ bool Voice::is_releasing() const {
 
 void Voice::reset() {
     for (auto& entry : signal_chain_) entry.node->reset();
-    lfo_->reset();
     if (filter_) filter_->reset();
-}
-
-void Voice::apply_modulation() {
-    auto* env_node = dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV"));
-    float env_val = env_node ? env_node->get_level() : 0.0f;
-
-    float l_buf[1];
-    std::span<float> l_span(l_buf, 1);
-    lfo_->pull(l_span);
-
-    current_source_values_[static_cast<size_t>(ModulationSource::Envelope)] = env_val;
-    current_source_values_[static_cast<size_t>(ModulationSource::LFO)] = l_buf[0];
-
-    float pitch_mod = matrix_.sum_for_target(ModulationTarget::Pitch, current_source_values_);
-    current_frequency_ = base_frequency_ * std::pow(2.0, static_cast<double>(pitch_mod));
-    if (current_frequency_ < 20.0) current_frequency_ = base_frequency_;
-
-    if (!signal_chain_.empty()) {
-        signal_chain_[0].node->set_frequency(current_frequency_);
-    }
-
-    if (filter_) {
-        float cutoff_mod = matrix_.sum_for_target(ModulationTarget::Cutoff, current_source_values_);
-        float mod_cutoff = base_cutoff_ * std::pow(2.0f, cutoff_mod);
-        if (mod_cutoff < 20.0f) mod_cutoff = 20.0f;
-        filter_->set_cutoff(mod_cutoff);
-        float res_mod = matrix_.sum_for_target(ModulationTarget::Resonance, current_source_values_);
-        filter_->set_resonance(std::clamp(base_resonance_ + res_mod, 0.0f, 0.99f));
-    }
 }
 
 void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
@@ -234,22 +194,19 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
 }
 
 void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
-    apply_modulation();
-
-    // --- Phase 15 graph executor (RT-SAFE: pool-borrowed buffers, no heap alloc) ---
+    // --- Phase 16 graph executor (RT-SAFE: pool-borrowed buffers, no heap alloc) ---
     //
-    // Each PORT_CONTROL node gets its own scratch buffer (borrowed from the
-    // graph's BufferPool).  Audio nodes write in-place into `output`.  The
-    // VCA step looks up its gain_cv source via connections_ (explicit) or by
-    // falling back to the first PORT_CONTROL buffer encountered (legacy).
-    //
-    // Maximum simultaneously live control buffers equals the number of
-    // PORT_CONTROL nodes in the chain — typically 1.
+    // Pass 1: allocate scratch buffers for every PORT_CONTROL node in the chain.
+    // Pass 2: execute chain in order:
+    //   - PORT_CONTROL nodes are pulled into their scratch spans.
+    //   - Before pulling each PORT_AUDIO node, any named PORT_CONTROL connections
+    //     targeting it are applied (pitch_cv, pwm_cv; gain_cv is handled by VCA).
+    //   - VCA resolves gain_cv via explicit connection or falls back to ctrl_spans[0].
 
-    static constexpr size_t kMaxCtrl = 8; // generous upper bound
+    static constexpr size_t kMaxCtrl = 8;
     BufferPool::BufferPtr ctrl_ptrs[kMaxCtrl];
     std::span<float>      ctrl_spans[kMaxCtrl];
-    const char*           ctrl_tags_arr[kMaxCtrl]; // raw pointer: entry.tag is stable
+    const char*           ctrl_tags_arr[kMaxCtrl];
     size_t                num_ctrl = 0;
 
     // Pass 1: allocate scratch buffers for every PORT_CONTROL node.
@@ -264,20 +221,26 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
         }
     }
 
-    // Helper: find the span for a given tag (linear scan, chain is tiny).
+    // Helper: find the ctrl span for a given source tag.
     auto find_ctrl = [&](const std::string& tag) -> std::span<float> {
         for (size_t i = 0; i < num_ctrl; ++i)
             if (tag == ctrl_tags_arr[i]) return ctrl_spans[i];
         return {};
     };
 
+    // Helper: mean value of a span (block-rate modulation).
+    auto cv_mean = [](std::span<const float> s) -> float {
+        if (s.empty()) return 0.0f;
+        return std::accumulate(s.begin(), s.end(), 0.0f) / static_cast<float>(s.size());
+    };
+
     // Pass 2: execute chain in order.
     bool audio_generated = false;
-    size_t ctrl_pull_idx = 0; // which ctrl slot to fill next (matches chain order)
+    size_t ctrl_pull_idx = 0;
 
     for (auto& entry : signal_chain_) {
         if ([[maybe_unused]] auto* vca = dynamic_cast<VcaProcessor*>(entry.node.get()); vca != nullptr) {
-            // Resolve gain_cv: use explicit connection if declared, else legacy fallback.
+            // Resolve gain_cv via explicit connection or fallback to first ctrl buffer.
             std::span<float> gain_cv;
             for (const auto& conn : connections_) {
                 if (conn.to_tag == entry.tag && conn.to_port == "gain_cv") {
@@ -285,18 +248,40 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
                     break;
                 }
             }
-            if (gain_cv.empty() && num_ctrl > 0) {
-                gain_cv = ctrl_spans[0]; // legacy: first control buffer is the envelope
-            }
-            // Filter sits between the last audio node and the VCA.
+            if (gain_cv.empty() && num_ctrl > 0)
+                gain_cv = ctrl_spans[0];
+
             if (audio_generated && filter_) filter_->pull(output, context);
-            if (!gain_cv.empty()) {
+            if (!gain_cv.empty())
                 VcaProcessor::apply(output, gain_cv, base_amplitude_);
-            }
+
         } else if (entry.node->output_port_type() == PortType::PORT_CONTROL) {
             entry.node->pull(ctrl_spans[ctrl_pull_idx], context);
             ++ctrl_pull_idx;
+
         } else {
+            // PORT_AUDIO node: apply any incoming PORT_CONTROL connections first.
+            for (const auto& conn : connections_) {
+                if (conn.to_tag != entry.tag) continue;
+                auto cv = find_ctrl(conn.from_tag);
+                if (cv.empty()) continue;
+
+                if (conn.to_port == "pitch_cv") {
+                    const float mod = cv_mean(cv);
+                    const double mod_freq = base_frequency_ * std::pow(2.0, static_cast<double>(mod));
+                    entry.node->set_frequency(mod_freq > 20.0 ? mod_freq : base_frequency_);
+
+                } else if (conn.to_port == "pwm_cv") {
+                    const float pw = std::clamp(0.5f + cv_mean(cv) * 0.5f, 0.01f, 0.49f);
+                    if (auto* vco = dynamic_cast<CompositeGenerator*>(entry.node.get()))
+                        vco->pulse_osc().set_pulse_width(pw);
+
+                } else if (conn.to_port == "cutoff_cv" && filter_) {
+                    const float mod_cutoff = std::max(20.0f,
+                        base_cutoff_ * std::pow(2.0f, cv_mean(cv)));
+                    filter_->set_cutoff(mod_cutoff);
+                }
+            }
             entry.node->pull(output, context);
             audio_generated = true;
         }
@@ -324,28 +309,11 @@ void Voice::bake() {
     if (signal_chain_.empty()) {
         throw std::logic_error("Voice::bake() called on empty signal_chain_");
     }
-    // Generator-First Rule: first node must output PORT_AUDIO (it is the audio source).
-    if (signal_chain_[0].node->output_port_type() != PortType::PORT_AUDIO) {
-        throw std::logic_error(
-            "Voice::bake() failed: signal_chain_[0] must be an audio generator (PORT_AUDIO output)");
-    }
-    // Port-Type Rules:
-    //   1. Last node must output PORT_AUDIO (chain output is always audio).
-    //   2. No two consecutive PORT_CONTROL nodes (control after control is meaningless).
-    auto port_of = [](const ChainEntry& e) {
-        return e.node->output_port_type();
-    };
-    if (port_of(signal_chain_.back()) != PortType::PORT_AUDIO) {
+    // Port-Type Rule: last node must output PORT_AUDIO (chain output is always audio).
+    // Note: PORT_CONTROL nodes (LFO, etc.) may appear before the first PORT_AUDIO generator.
+    if (signal_chain_.back().node->output_port_type() != PortType::PORT_AUDIO) {
         throw std::logic_error(
             "Voice::bake() failed: last node in signal_chain_ must output PORT_AUDIO");
-    }
-    for (size_t i = 1; i < signal_chain_.size(); ++i) {
-        if (port_of(signal_chain_[i - 1]) == PortType::PORT_CONTROL &&
-            port_of(signal_chain_[i])     == PortType::PORT_CONTROL) {
-            throw std::logic_error(
-                "Voice::bake() failed: consecutive PORT_CONTROL nodes at positions "
-                + std::to_string(i - 1) + " and " + std::to_string(i));
-        }
     }
     // Phase 15: validate named port connections
     static constexpr std::string_view kLifecyclePorts[] = {"gate_in", "trigger_in"};

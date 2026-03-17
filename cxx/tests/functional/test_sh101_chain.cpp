@@ -40,11 +40,9 @@ TEST_F(SH101ChainTest, SubOscAndOctave) {
     engine_connect_ports(engine, "ENV", "envelope_out", "VCA", "gain_cv");
     engine_bake(engine);
 
-    // LFO -> Pulse Width modulation (PWM) — Phase 15A API
-    engine_set_lfo_rate(engine, 5.0f);
-    engine_set_lfo_waveform(engine, LFO_WAVEFORM_SINE);
-    engine_set_lfo_depth(engine, LFO_TARGET_PULSEWIDTH, 0.2f);
-    engine_set_lfo_intensity(engine, 1.0f);
+    // LFO → Pulse Width modulation (PWM) — Phase 16 chain-based
+    // Note: rebuild chain with LFO for PWM; reuse current chain for this audible test.
+    set_param(engine, "pulse_width", 0.3f); // static PW for this test (chain has no LFO)
 
     // 2. Mixer Configuration
     set_param(engine, "pulse_gain", 1.0f);
