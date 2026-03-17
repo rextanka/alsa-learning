@@ -40,8 +40,11 @@ TEST_F(SH101ChainTest, SubOscAndOctave) {
     engine_connect_ports(engine, "ENV", "envelope_out", "VCA", "gain_cv");
     engine_bake(engine);
 
-    // LFO -> Pulse Width modulation (PWM)
-    engine_connect_mod(engine, MOD_SRC_LFO, ALL_VOICES, MOD_TGT_PULSEWIDTH, 0.2f);
+    // LFO -> Pulse Width modulation (PWM) — Phase 15A API
+    engine_set_lfo_rate(engine, 5.0f);
+    engine_set_lfo_waveform(engine, LFO_WAVEFORM_SINE);
+    engine_set_lfo_depth(engine, LFO_TARGET_PULSEWIDTH, 0.2f);
+    engine_set_lfo_intensity(engine, 1.0f);
 
     // 2. Mixer Configuration
     set_param(engine, "pulse_gain", 1.0f);
@@ -69,19 +72,9 @@ TEST_F(SH101ChainTest, SubOscAndOctave) {
     std::cout << "[SH101Chain] Playback complete." << std::endl;
 }
 
-TEST_F(SH101ChainTest, PatchPersistence) {
-    EngineHandle engine = engine_wrapper->get();
-    
-    const char* patch_path = "sh101_test_temp.json";
-    int result = engine_save_patch(engine, patch_path);
-    // engine_save_patch returns 0 on success (simulated)
-    EXPECT_EQ(result, 0); 
-
-    // For now, load might fail if file IO isn't fully implemented in the bridge
-    // but we expect the API call to at least exist and handle the path.
-    result = engine_load_patch(engine, patch_path);
-    // If it fails, it might return -1.
-}
+// PatchPersistence: engine_save_patch was removed (unimplemented stub, Phase 15).
+// Patch round-trip testing is deferred until a serialiser is implemented.
+// The load-only path is exercised by the dedicated patch_sequence_test binary.
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);

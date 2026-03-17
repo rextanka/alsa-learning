@@ -1,16 +1,18 @@
 /**
  * @file test_voice_factory.cpp
- * @brief Unit tests for VoiceFactory (Phase 14 Checkpoint E).
+ * @brief Unit tests for Voice chain construction and bake() validation.
  *
- * Verifies that factory-built voices are baked, produce audio, and honour
- * the basic note lifecycle without touching the audio hardware.
+ * Originally tested VoiceFactory (Phase 14). VoiceFactory was retired in
+ * Phase 15 — chains are now built via add_processor / connect / bake.
+ * The fixture SetUp was updated to build the chain directly; all test logic
+ * is unchanged.
  */
 
 #include <gtest/gtest.h>
-#include "VoiceFactory.hpp"
-#include "routing/CompositeGenerator.hpp"
-#include "envelope/AdsrEnvelopeProcessor.hpp"
-#include "VcaProcessor.hpp"
+#include "../../src/core/Voice.hpp"
+#include "../../src/dsp/routing/CompositeGenerator.hpp"
+#include "../../src/dsp/envelope/AdsrEnvelopeProcessor.hpp"
+#include "../../src/dsp/VcaProcessor.hpp"
 #include <vector>
 #include <cmath>
 
@@ -24,12 +26,24 @@ protected:
     std::unique_ptr<Voice> voice;
 
     void SetUp() override {
-        voice = VoiceFactory::createSH101(kSR);
+        voice = std::make_unique<Voice>(kSR);
+        auto gen = std::make_unique<CompositeGenerator>(kSR);
+        gen->mixer().set_gain(1, 1.0f); // pulse
+        gen->mixer().set_gain(2, 0.5f); // sub
+        voice->add_processor(std::move(gen), "VCO");
+        auto env = std::make_unique<AdsrEnvelopeProcessor>(kSR);
+        env->set_attack_time(0.05f);
+        env->set_decay_time(0.10f);
+        env->set_sustain_level(0.7f);
+        env->set_release_time(0.10f);
+        voice->add_processor(std::move(env), "ENV");
+        voice->add_processor(std::make_unique<VcaProcessor>(), "VCA");
+        voice->connect("ENV", "envelope_out", "VCA", "gain_cv");
+        voice->bake();
     }
 };
 
 TEST_F(VoiceFactoryTest, VoiceIsBakedAfterCreation) {
-    // find_by_tag only works on baked voices; if bake() failed it would throw.
     EXPECT_NE(voice->find_by_tag("VCO"), nullptr);
     EXPECT_NE(voice->find_by_tag("ENV"), nullptr);
     EXPECT_NE(voice->find_by_tag("VCA"), nullptr);
@@ -68,7 +82,6 @@ TEST_F(VoiceFactoryTest, ProducesNonZeroAudioAfterNoteOn) {
 
 TEST_F(VoiceFactoryTest, ReleasingAfterNoteOff) {
     voice->note_on(440.0);
-    // Pull one block to advance the envelope out of Attack
     std::vector<float> buf(kBlock, 0.0f);
     voice->pull_mono(std::span<float>(buf));
 
@@ -82,7 +95,6 @@ TEST_F(VoiceFactoryTest, BakeFailsOnEmptyChain) {
 }
 
 TEST_F(VoiceFactoryTest, BakeFailsWhenLastNodeIsPortControl) {
-    // Chain ending with a PORT_CONTROL node (ADSR outputs control) is invalid.
     Voice bad(kSR);
     bad.add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
     bad.add_processor(std::make_unique<AdsrEnvelopeProcessor>(kSR), "ENV");
@@ -90,7 +102,6 @@ TEST_F(VoiceFactoryTest, BakeFailsWhenLastNodeIsPortControl) {
 }
 
 TEST_F(VoiceFactoryTest, BakeFailsOnConsecutivePortControlNodes) {
-    // Two consecutive PORT_CONTROL nodes are nonsensical.
     Voice bad(kSR);
     bad.add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
     bad.add_processor(std::make_unique<AdsrEnvelopeProcessor>(kSR), "ENV1");
@@ -102,7 +113,6 @@ TEST_F(VoiceFactoryTest, BakeFailsOnConsecutivePortControlNodes) {
 // --- Phase 15: PortConnection / bake() validation ---
 
 TEST_F(VoiceFactoryTest, ConnectAndBakeSucceedsWithValidPorts) {
-    // Manually build the SH-101 chain and wire ENV->VCA.
     Voice v(kSR);
     v.add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
     v.add_processor(std::make_unique<AdsrEnvelopeProcessor>(kSR), "ENV");

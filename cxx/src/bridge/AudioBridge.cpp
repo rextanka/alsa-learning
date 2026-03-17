@@ -33,6 +33,8 @@
 #include <fstream>
 #include "PatchStore.hpp"
 #include "SummingBus.hpp"
+#include "SmfParser.hpp"
+#include "MidiFilePlayer.hpp"
 #include <memory>
 #include <span>
 #include <cstring>
@@ -94,6 +96,9 @@ struct EngineHandleImpl : public HandleBase {
     std::vector<ModuleSpec> pending_modules;
     std::vector<audio::Voice::PortConnection> pending_connections;
 
+    // Phase 22A: SMF file sequencer
+    audio::MidiFilePlayer midi_player;
+
     // Scratch buffers for engine_process stereo path (avoids per-call allocation).
     std::vector<float> process_left;
     std::vector<float> process_right;
@@ -121,9 +126,13 @@ struct EngineHandleImpl : public HandleBase {
     driver->set_stereo_callback([this](audio::AudioBuffer& buffer) {
         if (!voice_manager) return;
         
-        // Advanced clock by frames
-        clock.advance(static_cast<int32_t>(buffer.frames()));
-        
+        // Advance clock and SMF sequencer by this block's frame count.
+        const uint32_t block_frames = static_cast<uint32_t>(buffer.frames());
+        clock.advance(static_cast<int32_t>(block_frames));
+        midi_player.advance(block_frames,
+                            static_cast<uint32_t>(sample_rate),
+                            *voice_manager);
+
         // Pull with diagnostic tap
         voice_manager->pull_with_tap(buffer, tap.get());
         
@@ -418,8 +427,11 @@ int engine_process(EngineHandle handle, float* output, size_t frames) {
         buffer.left  = std::span<float>(impl->process_left.data(),  frames);
         buffer.right = std::span<float>(impl->process_right.data(), frames);
 
-        // Sample-accurate clock advance
+        // Sample-accurate clock and SMF sequencer advance.
         impl->clock.advance(static_cast<int32_t>(frames));
+        impl->midi_player.advance(static_cast<uint32_t>(frames),
+                                  static_cast<uint32_t>(impl->sample_rate),
+                                  *impl->voice_manager);
 
         // Stereo pull: applies voice panning via SummingBus, same path as the HAL callback.
         impl->voice_manager->pull_with_tap(buffer, impl->tap.get());
@@ -557,24 +569,83 @@ int engine_get_xrun_count(EngineHandle handle) {
     return impl->driver->get_xrun_count();
 }
 
-// engine_set_modulation removed in Phase 15 — use engine_connect_ports instead.
+// ---------------------------------------------------------------------------
+// Phase 15A: LFO API — configures the internal per-voice LFO and ModulationMatrix.
+// All functions iterate every voice slot via for_each_voice(); the audio thread
+// reads these settings at the next block boundary (no lock needed — the writes
+// are float/enum assignments which are naturally atomic on any LP64 platform).
+// ---------------------------------------------------------------------------
+
+int engine_set_lfo_rate(EngineHandle handle, float hz) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->voice_manager->for_each_voice([hz](audio::Voice& v) {
+        v.lfo().set_frequency(static_cast<double>(hz));
+    });
+    return 0;
+}
+
+int engine_set_lfo_intensity(EngineHandle handle, float intensity) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->voice_manager->for_each_voice([intensity](audio::Voice& v) {
+        v.lfo().set_intensity(intensity);
+    });
+    return 0;
+}
+
+int engine_set_lfo_waveform(EngineHandle handle, int waveform) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    audio::LfoProcessor::Waveform w;
+    switch (waveform) {
+        case LFO_WAVEFORM_SINE:     w = audio::LfoProcessor::Waveform::Sine;     break;
+        case LFO_WAVEFORM_TRIANGLE: w = audio::LfoProcessor::Waveform::Triangle; break;
+        case LFO_WAVEFORM_SQUARE:   w = audio::LfoProcessor::Waveform::Square;   break;
+        case LFO_WAVEFORM_SAW:      w = audio::LfoProcessor::Waveform::Saw;      break;
+        default: return -1;
+    }
+    impl->voice_manager->for_each_voice([w](audio::Voice& v) {
+        v.lfo().set_waveform(w);
+    });
+    return 0;
+}
+
+int engine_set_lfo_depth(EngineHandle handle, int target, float depth) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    audio::ModulationTarget t;
+    switch (target) {
+        case LFO_TARGET_PITCH:      t = audio::ModulationTarget::Pitch;      break;
+        case LFO_TARGET_CUTOFF:     t = audio::ModulationTarget::Cutoff;     break;
+        case LFO_TARGET_RESONANCE:  t = audio::ModulationTarget::Resonance;  break;
+        case LFO_TARGET_AMPLITUDE:  t = audio::ModulationTarget::Amplitude;  break;
+        case LFO_TARGET_PULSEWIDTH: t = audio::ModulationTarget::PulseWidth; break;
+        default: return -1;
+    }
+    impl->voice_manager->for_each_voice([t, depth](audio::Voice& v) {
+        v.matrix().set_connection(audio::ModulationSource::LFO, t, depth);
+    });
+    return 0;
+}
+
+// engine_set_modulation removed in Phase 15 — use engine_set_lfo_* instead.
 
 int engine_clear_modulations(EngineHandle handle) {
     if (!handle) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
-    for (auto& slot : impl->voice_manager->get_voices()) {
-        if (slot.voice) {
-            slot.voice->matrix().clear_all();
-        }
-    }
+    impl->voice_manager->for_each_voice([](audio::Voice& v) {
+        v.matrix().clear_all();
+        v.lfo().set_intensity(0.0f);
+        // Re-apply the default envelope→amplitude connection that Voice::Voice() sets up.
+        v.matrix().set_connection(
+            audio::ModulationSource::Envelope,
+            audio::ModulationTarget::Amplitude,
+            1.0f);
+    });
     return 0;
 }
 
-int engine_save_patch(EngineHandle handle, const char* path) {
-    if (!handle || !path) return -1;
-    // Implementation of saving from current engine state...
-    return 0;
-}
 
 /**
  * @brief Load a patch from a JSON file.
@@ -731,7 +802,7 @@ int set_param(void* handle, const char* name, float value) {
                 // Apply to all voices
                 for (auto& slot : engine->voice_manager->get_voices()) {
                     if (slot.voice) {
-                        slot.voice->set_parameter(18, static_cast<float>(type_idx));
+                        slot.voice->set_parameter(19, static_cast<float>(type_idx));
                     }
                 }
                 return 0;
@@ -950,6 +1021,49 @@ int engine_bake(EngineHandle handle) {
     // Clear pending spec so a new chain can be described after this.
     impl->pending_modules.clear();
     impl->pending_connections.clear();
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 22A: SMF File Playback
+// ---------------------------------------------------------------------------
+
+int engine_load_midi(EngineHandle handle, const char* path) {
+    if (!handle || !path) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    try {
+        auto data = audio::SmfParser::load(path);
+        impl->midi_player.load(std::move(data));
+        return 0;
+    } catch (const std::exception& e) {
+        audio::AudioLogger::instance().log_message("engine_load_midi", e.what());
+        return -1;
+    }
+}
+
+int engine_midi_play(EngineHandle handle) {
+    if (!handle) return -1;
+    static_cast<EngineHandleImpl*>(handle)->midi_player.play();
+    return 0;
+}
+
+int engine_midi_stop(EngineHandle handle) {
+    if (!handle) return -1;
+    static_cast<EngineHandleImpl*>(handle)->midi_player.stop();
+    return 0;
+}
+
+int engine_midi_rewind(EngineHandle handle) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->midi_player.stop();
+    impl->midi_player.rewind();
+    return 0;
+}
+
+int engine_midi_get_position(EngineHandle handle, uint64_t* tick) {
+    if (!handle || !tick) return -1;
+    *tick = static_cast<EngineHandleImpl*>(handle)->midi_player.position_ticks();
     return 0;
 }
 

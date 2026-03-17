@@ -7,7 +7,11 @@
  */
 
 #include <gtest/gtest.h>
-#include "VoiceManager.hpp"
+#include "../../src/core/VoiceManager.hpp"
+#include "../../src/core/Voice.hpp"
+#include "../../src/dsp/routing/CompositeGenerator.hpp"
+#include "../../src/dsp/envelope/AdsrEnvelopeProcessor.hpp"
+#include "../../src/dsp/VcaProcessor.hpp"
 
 using namespace audio;
 
@@ -18,6 +22,20 @@ protected:
     VoiceManager vm{kSR};
 
     void SetUp() override {
+        // Build a minimal VCO → ENV → VCA chain on every voice so that
+        // find_by_tag("ENV") and set_group_parameter work correctly.
+        vm.rebuild_all_voices([&]() {
+            auto v = std::make_unique<Voice>(kSR);
+            v->add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
+            auto env = std::make_unique<AdsrEnvelopeProcessor>(kSR);
+            env->set_sustain_level(0.7f);
+            v->add_processor(std::move(env), "ENV");
+            v->add_processor(std::make_unique<VcaProcessor>(), "VCA");
+            v->connect("ENV", "envelope_out", "VCA", "gain_cv");
+            v->bake();
+            return v;
+        });
+
         // Assign voices 0-7 to group 0, voices 8-15 to group 1.
         for (int i = 0; i < 8; ++i)  vm.assign_group(i, 0);
         for (int i = 8; i < 16; ++i) vm.assign_group(i, 1);

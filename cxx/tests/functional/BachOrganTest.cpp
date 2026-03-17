@@ -90,7 +90,7 @@ TEST_F(BachOrganTest, BWV578_Subject_Audible) {
 
     EngineHandle engine = engine_wrapper->get();
 
-    const double note_duration_ms = 100.0;
+    const double note_duration_ms = 200.0;
     const double ticks_per_event  = note_duration_ms * ticks_per_ms;
 
     int64_t target_tick = 0;

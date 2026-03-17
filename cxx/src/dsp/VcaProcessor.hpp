@@ -33,6 +33,11 @@ public:
         declare_port({"audio_out",       PORT_AUDIO,   PortDirection::OUT});
         declare_port({"gain_cv",         PORT_CONTROL, PortDirection::IN,  true}); // unipolar [0,1]
         declare_port({"initial_gain_cv", PORT_CONTROL, PortDirection::IN,  true}); // unipolar [0,1]
+
+        // initial_gain is queryable via the registry but the initial_gain_cv port is not
+        // yet wired in the graph executor. Full tremolo-with-DC-offset requires Phase 16
+        // full port routing so the executor can pull initial_gain_cv and pass it as scale.
+        declare_parameter({"initial_gain", "Initial Gain", 0.0f, 1.0f, 1.0f});
     }
 
     /**

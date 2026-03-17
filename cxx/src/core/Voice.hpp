@@ -165,7 +165,7 @@ private:
     bool active_;
 
     // -------------------------------------------------------------------------
-    // Phase 14: signal chain (populated by VoiceFactory via add_processor/bake)
+    // Phase 15: signal chain (populated via engine_add_module / add_processor / bake)
     // -------------------------------------------------------------------------
     struct ChainEntry {
         std::unique_ptr<Processor> node;

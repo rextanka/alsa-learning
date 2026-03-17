@@ -61,20 +61,40 @@ typedef void* EngineHandle;
 #define PARAM_AMPLITUDE 2
 #define PARAM_RESONANCE 3
 
-// Modulation Sources (Modular Matrix)
+// ---------------------------------------------------------------------------
+// LFO API (Phase 15A — internal Voice LFO, musically correct path)
+// ---------------------------------------------------------------------------
+
+// LFO waveform constants (match LfoProcessor::Waveform enum order)
+#define LFO_WAVEFORM_SINE     0
+#define LFO_WAVEFORM_TRIANGLE 1
+#define LFO_WAVEFORM_SQUARE   2
+#define LFO_WAVEFORM_SAW      3
+
+// LFO modulation depth targets (match ModulationTarget enum order)
+// depth unit:
+//   PITCH / CUTOFF : octaves (bipolar) — 0.05 = ±5% pitch, 1.0 = ±1 octave filter sweep
+//   RESONANCE      : linear offset [0, 1]
+//   AMPLITUDE      : linear gain factor [0, 1]
+//   PULSEWIDTH     : linear offset [0, 1]
+#define LFO_TARGET_PITCH      0
+#define LFO_TARGET_CUTOFF     1
+#define LFO_TARGET_RESONANCE  2
+#define LFO_TARGET_AMPLITUDE  3
+#define LFO_TARGET_PULSEWIDTH 4
+
+// Deprecated Modular Matrix identifiers — retained for source compatibility only.
+// The external integer-ID matrix (engine_connect_mod) is superseded by engine_set_lfo_*.
+// Will be removed in Phase 16 when full port-based control routing is implemented.
 #define MOD_SRC_ENVELOPE  0
 #define MOD_SRC_LFO       1
 #define MOD_SRC_VELOCITY  2
 #define MOD_SRC_AFTERTOUCH 3
-
-// Modulation Targets (Modular Matrix)
 #define MOD_TGT_PITCH     0
 #define MOD_TGT_CUTOFF    1
 #define MOD_TGT_RESONANCE 2
 #define MOD_TGT_AMPLITUDE 3
 #define MOD_TGT_PULSEWIDTH 4
-
-// Special IDs
 #define ALL_VOICES -1
 
 /**
@@ -131,13 +151,63 @@ AUDIO_API int engine_set_filter_type(EngineHandle handle, int type);
 AUDIO_API int engine_set_delay_enabled(EngineHandle handle, int enabled);
 AUDIO_API int engine_get_xrun_count(EngineHandle handle);
 
+// ---------------------------------------------------------------------------
+// LFO API (Phase 15A)
+// Configure the per-voice LFO and its modulation depth on the internal matrix.
+// All four engine voices are updated atomically.
+//
+// engine_set_lfo_rate(handle, hz)           — set LFO rate in Hz [0.01, 20]
+// engine_set_lfo_intensity(handle, 0..1)    — master intensity (scales all outputs)
+// engine_set_lfo_waveform(handle, waveform) — LFO_WAVEFORM_* constant
+// engine_set_lfo_depth(handle, target, d)   — depth for LFO_TARGET_* in octaves or
+//                                             linear units (see constant comments)
+// ---------------------------------------------------------------------------
+AUDIO_API int engine_set_lfo_rate(EngineHandle handle, float hz);
+AUDIO_API int engine_set_lfo_intensity(EngineHandle handle, float intensity);
+AUDIO_API int engine_set_lfo_waveform(EngineHandle handle, int waveform);
+AUDIO_API int engine_set_lfo_depth(EngineHandle handle, int target, float depth);
+
 // Modulation Matrix Control
-// engine_set_modulation removed in Phase 15 — use engine_connect_ports() instead.
+// engine_set_modulation removed in Phase 15 — use engine_set_lfo_* instead.
+// engine_clear_modulations resets the internal Voice LFO matrix to defaults.
 AUDIO_API int engine_clear_modulations(EngineHandle handle);
 
 // Patch Management
-AUDIO_API int engine_save_patch(EngineHandle handle, const char* path);
+// engine_save_patch removed — patch serialisation is not implemented (Phase 15 patches are
+// authored by hand and loaded via engine_load_patch; there is no round-trip save path).
 AUDIO_API int engine_load_patch(EngineHandle handle, const char* path);
+
+// ---------------------------------------------------------------------------
+// Phase 22A: SMF File Playback (channel-blind polyphonic)
+// ---------------------------------------------------------------------------
+// Load a Standard MIDI File (.mid) and play it back sample-accurately through
+// the engine's VoiceManager.  All tracks are merged; MIDI channel is ignored
+// at dispatch — all voices use the patch loaded via engine_load_patch /
+// engine_add_module + engine_bake.  Phase 22B will add per-channel routing.
+//
+// Typical usage:
+//   engine_load_patch(h, "patches/organ_drawbar.json"); // choose your timbre
+//   engine_load_midi(h,  "midi/bwv578.mid");
+//   engine_start(h);
+//   engine_midi_play(h);
+//   // … audio renders sample-accurately …
+//   engine_midi_stop(h);
+// ---------------------------------------------------------------------------
+
+/** Load and parse a .mid file.  Returns 0 on success, -1 on parse error. */
+AUDIO_API int engine_load_midi(EngineHandle handle, const char* path);
+
+/** Start (or resume) MIDI file playback from the current playhead position. */
+AUDIO_API int engine_midi_play(EngineHandle handle);
+
+/** Pause MIDI file playback.  Playhead stays at its current position. */
+AUDIO_API int engine_midi_stop(EngineHandle handle);
+
+/** Rewind and stop.  Playhead returns to the start of the file. */
+AUDIO_API int engine_midi_rewind(EngineHandle handle);
+
+/** Query current playhead position in SMF ticks. */
+AUDIO_API int engine_midi_get_position(EngineHandle handle, uint64_t* tick);
 
 // Host & Device API
 AUDIO_API int host_get_device_count();
@@ -147,9 +217,16 @@ AUDIO_API int host_get_device_sample_rate(int index);
 // Generic Parameter API
 AUDIO_API int set_param(void* handle, const char* name, float value);
 
-// Modular Routing API
+// Modular Routing API — DEPRECATED
+// engine_create_processor / engine_connect_mod used an integer-ID external matrix
+// with fundamental design issues (absolute-value SET semantics, ID-constant mismatch).
+// Superseded by engine_set_lfo_* (Phase 15A) and will be removed in Phase 16
+// when full port-based control routing replaces the matrix entirely.
+[[deprecated("Use engine_add_module / engine_connect_ports / engine_bake instead. Removed in Phase 16.")]]
 AUDIO_API int engine_create_processor(EngineHandle handle, int type);
+[[deprecated("Use engine_set_lfo_depth / engine_set_lfo_rate instead. Removed in Phase 16.")]]
 AUDIO_API int engine_connect_mod(EngineHandle handle, int source_id, int target_id, int param, float intensity);
+[[deprecated("No replacement. Removed in Phase 16.")]]
 AUDIO_API int engine_get_modulation_report(EngineHandle handle, char* buffer, size_t buffer_size);
 
 // ---------------------------------------------------------------------------

@@ -52,13 +52,13 @@ static void test_musical_logic(int sample_rate) {
     // Note-name playback
     std::cout << "Playing 'C4'..." << std::endl;
     assert(engine_note_on_name(engine.get(), "C4", 0.8f) == 0);
-    test::wait_while_running(1);
+    test::wait_while_running(2);
     engine_note_off_name(engine.get(), "C4");
 
-    std::cout << "Playing 'A#2'..." << std::endl;
-    assert(engine_note_on_name(engine.get(), "A#2", 0.8f) == 0);
-    test::wait_while_running(1);
-    engine_note_off_name(engine.get(), "A#2");
+    std::cout << "Playing 'A#3'..." << std::endl;
+    assert(engine_note_on_name(engine.get(), "A#3", 0.8f) == 0);
+    test::wait_while_running(2);
+    engine_note_off_name(engine.get(), "A#3");
 
     // Invalid note
     std::cout << "Testing invalid note 'XYZ'..." << std::endl;

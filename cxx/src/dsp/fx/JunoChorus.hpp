@@ -45,7 +45,9 @@ public:
         declare_port({"audio_in",  PORT_AUDIO, PortDirection::IN});
         declare_port({"audio_out", PORT_AUDIO, PortDirection::OUT});
 
-        declare_parameter({"mode", "Chorus Mode", 0.0f, 3.0f, 0.0f});
+        declare_parameter({"mode",  "Chorus Mode",  0.0f,  3.0f, 0.0f});
+        declare_parameter({"rate",  "Chorus Rate",  0.1f, 10.0f, 0.5f});
+        declare_parameter({"depth", "Chorus Depth", 0.0f,  1.0f, 0.5f});
     }
 
     void set_mode(Mode mode) {

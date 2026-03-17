@@ -53,13 +53,13 @@ Voice N  (mono) ──┘  (panning)
 
 > **Rule**: never set gain, filter, or pan parameters inside a voice chain for stereo width. Pan is set per-voice via `engine_set_note_pan(handle, note, pan)` where `pan ∈ [-1.0, +1.0]`. The default `voice_spread` is 0.5 (voices alternate ±0.5 pan on each note-on).
 
-- **Tier 1 (Direct Path)**: `Oscillator -> Output`.
-  - Required: `engine_start`, `set_param` (Gain).
-- **Tier 2 (Modulated Path)**: `COMPOSITE_GENERATOR -> ADSR_ENVELOPE -> VCA -> Output`.
-  - Required: Phase 15 chain (`engine_add_module` / `engine_connect_ports("ENV", "envelope_out", "VCA", "gain_cv")` / `engine_bake`).
-  - Optional matrix routes: `engine_connect_mod` (e.g., LFO → pitch, LFO → cutoff).
-- **Tier 3 (Complex Path)**: `Oscillator -> VCF -> VCA -> Output`.
-  - Required: Tier 2 requirements + `engine_set_filter_type` + Filter/Resonance params.
+- **Tier 1 (Basic Path)**: `COMPOSITE_GENERATOR -> ADSR_ENVELOPE -> VCA -> Output`.
+  - The minimum viable chain. All tests require this — there is no shorter path.
+  - Required: `engine_add_module` (VCO, ENV, VCA) / `engine_connect_ports("ENV", "envelope_out", "VCA", "gain_cv")` / `engine_bake` / `engine_start` / `set_param` (oscillator gain + `amp_sustain`).
+- **Tier 2 (Modulated Path)**: Tier 1 chain with optional LFO modulation.
+  - Optional LFO routes (Phase 15A): `engine_set_lfo_rate` / `engine_set_lfo_waveform` / `engine_set_lfo_depth(LFO_TARGET_*)` / `engine_set_lfo_intensity`.
+- **Tier 3 (Complex Path)**: `COMPOSITE_GENERATOR -> MOOG_FILTER/DIODE_FILTER -> ADSR_ENVELOPE -> VCA -> Output`.
+  - Required: Tier 1 requirements + `MOOG_FILTER` or `DIODE_FILTER` module in chain + filter/resonance params.
 
 ---
 
@@ -67,7 +67,7 @@ Voice N  (mono) ──┘  (panning)
 Before a test is executed, the developer (or Cline) must confirm:
 1. **Graph Definition**: Is the signal path documented in the `PRINT_TEST_HEADER`?
 2. **Lifecycle State**: Has `engine_start()` been called for this specific configuration?
-3. **Connectivity**: Is the audio signal path wired via `engine_connect_ports` + `engine_bake`? If optional modulation matrix routes (LFO→pitch, LFO→cutoff) are needed, has `engine_connect_mod` also been called?
+3. **Connectivity**: Is the audio signal path wired via `engine_connect_ports` + `engine_bake`? If optional LFO modulation (LFO→pitch, LFO→cutoff) is needed, have `engine_set_lfo_*` calls been made (Phase 15A API)?
 4. **Gain Stage**: Is the gain stage of every module in the graph explicitly initialized to a non-zero value?
 
 ---
@@ -101,12 +101,15 @@ If a test produces no audio, follow this binary search path — do not guess:
 | `Phase10Tests.cpp` | 2 | BPM/clock and note-name API |
 | `stereo_poly_test.cpp` | 2 | Polyphonic voice panning |
 | `test_sh101_chain.cpp` | 3 | SH-101 bass chain + LFO PWM |
-| `test_tremulant_preset.cpp` | 2 | LFO → pitch vibrato |
+| `test_tremulant_preset.cpp` | 2 | Phase 15A LFO→pitch vibrato via `engine_set_lfo_*` |
+| `test_lfo_modulation.cpp` | 2 | LFO API error codes, vibrato variance, cutoff modulation, clear-reset |
 | `test_juno_chorus.cpp` | 2 | Juno chorus stereo separation |
 | `Functional_BachMidi.cpp` | 3 | MIDI polyphony, DrawbarOrgan |
 | `BachOrganTest.cpp` | 3 | DrawbarOrgan register blend |
 | `Functional_SH101_Live.cpp` | 3 | Patch load + live pluck seq |
 | `patch_sequence_test.cpp` | 3 | Four reference patches: SH-101 ostinato, TB-303 acid sweep, Juno pad melody, Drawbar Organ chorale |
+| `processor_check.cpp` | 2 | Oscillator frequency fidelity via hysteresis zero-crossing and symmetry analysis |
+| `TimingValidation.cpp` | 1 | Callback jitter measurement and sample-accurate clock drift verification |
 
 ---
 
@@ -174,7 +177,7 @@ To maintain the **10ms MMA Latency Target**, all functional tests follow this dy
     1. Query hardware using `host_get_device_sample_rate(0)`.
     2. Use `test::get_safe_sample_rate()` fallback logic to handle "Device Busy" or "No Device" scenarios.
     3. Initialize engine via `engine_create(sample_rate)`.
-- **Buffer Size**: Queried from hardware via `host_get_device_block_size()` (Phase 17). Until Phase 17 lands, 512 samples is used as a temporary default — do not hardcode it in new tests.
+- **Buffer Size**: Queried from hardware via `host_get_device_block_size()` (Phase 18). Until Phase 18 lands, 512 frames is used as a temporary default — do not hardcode it in new tests.
   - Latency is calculated dynamically: `(block_size / sample_rate) * 1000 ms`.
 - **Platform-Agnostic HAL**: Tests must use `EngineHandle` and `CInterface.h`.
 
@@ -191,7 +194,7 @@ Every functional test in `cxx/tests/functional/` MUST include a standardized hea
     Intent:   [Clear statement of intent]
     Chain:    [Signal path description, e.g., VCO -> VCF -> VCA]
     Expected: [Expected audible or logged result]
-    Hardware: [Detected Sample Rate] | ~[Calculated Latency]ms (512 samples)
+    Hardware: [Detected Sample Rate] | ~[Calculated Latency]ms (512 frames)
     ================================================================
     ```
 

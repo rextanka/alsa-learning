@@ -36,15 +36,15 @@ The engine supports 16-voice polyphony with LRU (Least Recently Used) voice stea
 // Trigger a note (MIDI note number, velocity 0.0–1.0)
 engine_note_on(engine, 60, 0.8f);
 
-// Trigger a note into a specific voice group (for splits/layers)
-engine_note_on_group(engine, 60, 0.8f, /*group_id=*/1);
-
-// Trigger a note with specific stereo placement (-1.0 Left to 1.0 Right)
+// Override stereo placement for a note (-1.0 Left to 1.0 Right)
+// Call before or after note_on — takes effect on next engine_process
 engine_set_note_pan(engine, 60, 0.5f);
 
 // Release a note
 engine_note_off(engine, 60);
 ```
+
+> **Note**: `engine_note_on_group` (voice group splits/layers) and `engine_all_notes_off` / `engine_is_idle` are planned for Phase 17. Use `engine_stop` + `engine_start` to silence all voices between patch loads.
 
 ---
 
@@ -74,8 +74,21 @@ Use these labels with `set_param(handle, "label", value)`:
 | `wavetable_gain` | `VCO` | Wavetable oscillator level | 0.0–1.0 |
 | `noise_gain` | `VCO` | White noise level | 0.0–1.0 |
 | `wavetable_type` | `VCO` | Wavetable waveform type | 0–N (enum) |
+| `osc_pw` | `VCO` | Pulse width (legacy alias for `pulse_width`) | 0.0–0.5 |
+| `osc_frequency` | `VCO` | Override oscillator base frequency directly | Hz |
+| `drawbar_16` | `ORGAN` | 16' Sub-Octave drawbar | 0.0–8.0 |
+| `drawbar_513` | `ORGAN` | 5⅓' Quint drawbar | 0.0–8.0 |
+| `drawbar_8` | `ORGAN` | 8' Principal drawbar | 0.0–8.0 |
+| `drawbar_4` | `ORGAN` | 4' Octave drawbar | 0.0–8.0 |
+| `drawbar_223` | `ORGAN` | 2⅔' Nazard drawbar | 0.0–8.0 |
+| `drawbar_2` | `ORGAN` | 2' Super-Octave drawbar | 0.0–8.0 |
+| `drawbar_135` | `ORGAN` | 1⅗' Tierce drawbar | 0.0–8.0 |
+| `drawbar_113` | `ORGAN` | 1⅓' Larigot drawbar | 0.0–8.0 |
+| `drawbar_1` | `ORGAN` | 1' Sifflöte drawbar | 0.0–8.0 |
 
-**Note**: This registry is a transitional compatibility layer. In Phase 15 and beyond, parameters are declared on modules and queryable via `engine_get_module_parameter`. The string label table above will be generated from module declarations rather than maintained manually.
+**Implementation note**: `set_param` resolves labels via two paths. Core synthesis parameters (`vcf_*`, `amp_*`, oscillator gains, `osc_pw`, `osc_frequency`, `wavetable_type`) are in a hardcoded fast-path map and bypass the module registry. Organ drawbar labels (`drawbar_*`) go through a `set_parameter_by_name` fallback that queries the ModuleRegistry. Both paths are functionally equivalent from the caller's perspective.
+
+**Roadmap note**: This registry is a transitional compatibility layer. In Phase 15 and beyond, parameters are declared on modules and queryable via `engine_get_module_parameter`. The string label table above will be generated from module declarations rather than maintained manually.
 
 ---
 
@@ -120,28 +133,23 @@ engine_get_module_parameter(engine, type_name, param_index,
 
 ## 5. Chain Construction (Phase 15)
 
-Signal chains are built from the C API. Chain construction must complete before notes are played. All 16 voices in a group share the same topology.
+Signal chains are built from the C API. Chain construction must complete before notes are played. All 16 voices share the same topology.
 
 ```c
-int group_id = 0;
-
 // Add modules in signal-chain order (generator first)
-engine_add_module(engine, group_id, "COMPOSITE_GENERATOR", "VCO");
-engine_add_module(engine, group_id, "MOOG_FILTER",         "VCF");
-engine_add_module(engine, group_id, "ADSR_ENVELOPE",       "ENV");
-engine_add_module(engine, group_id, "VCA",                 "VCA");
+engine_add_module(engine, "COMPOSITE_GENERATOR", "VCO");
+engine_add_module(engine, "MOOG_FILTER",         "VCF");
+engine_add_module(engine, "ADSR_ENVELOPE",       "ENV");
+engine_add_module(engine, "VCA",                 "VCA");
 
 // Declare explicit port connections (audio + CV)
-engine_connect_ports(engine, group_id,
-                     "VCO", "audio_out",    "VCF", "audio_in",   1.0f);
-engine_connect_ports(engine, group_id,
-                     "VCF", "audio_out",    "VCA", "audio_in",   1.0f);
-engine_connect_ports(engine, group_id,
-                     "ENV", "envelope_out", "VCA", "gain_cv",    1.0f);
+engine_connect_ports(engine, "VCO", "audio_out",    "VCF", "audio_in");
+engine_connect_ports(engine, "VCF", "audio_out",    "VCA", "audio_in");
+engine_connect_ports(engine, "ENV", "envelope_out", "VCA", "gain_cv");
 
 // Validate topology and activate
-int result = engine_bake(engine, group_id);
-// result == 0 on success, negative on validation failure
+int result = engine_bake(engine);
+// result == 0 on success, -1 if validation fails
 ```
 
 `engine_bake` validates:
@@ -149,7 +157,10 @@ int result = engine_bake(engine, group_id);
 - Last node outputs `PORT_AUDIO`
 - No consecutive `PORT_CONTROL` nodes
 - All named ports exist on declared modules
-- All connection port types match
+- All connection port types match (`PORT_AUDIO`→`PORT_AUDIO`, `PORT_CONTROL`→`PORT_CONTROL`)
+- All referenced module tags exist in the chain
+- Port directions are correct (output → input only)
+- Lifecycle ports (`gate_in`, `trigger_in`) may not be used in explicit connections
 
 ---
 
@@ -162,7 +173,7 @@ A patch file describes one or more voice group topologies, their connections, an
   "version": 2,
   "groups": [
     {
-      "group_id": 0,
+      "id": 0,
       "chain": [
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
         { "type": "MOOG_FILTER",         "tag": "VCF" },
@@ -170,9 +181,9 @@ A patch file describes one or more voice group topologies, their connections, an
         { "type": "VCA",                 "tag": "VCA" }
       ],
       "connections": [
-        { "src_node": "VCO", "src_port": "audio_out",    "dst_node": "VCF", "dst_port": "audio_in",   "intensity": 1.0 },
-        { "src_node": "VCF", "src_port": "audio_out",    "dst_node": "VCA", "dst_port": "audio_in",   "intensity": 1.0 },
-        { "src_node": "ENV", "src_port": "envelope_out", "dst_node": "VCA", "dst_port": "gain_cv",    "intensity": 1.0 }
+        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"  },
+        { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"  },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"   }
       ],
       "parameters": {
         "vcf_cutoff": 800.0,
@@ -190,40 +201,48 @@ A patch file describes one or more voice group topologies, their connections, an
 Delay feedback must be marked explicitly:
 
 ```json
-{ "src_node": "DELAY", "src_port": "audio_out", "dst_node": "DELAY", "dst_port": "audio_in", "intensity": 0.4, "feedback": true }
+{ "from_tag": "DELAY", "from_port": "audio_out", "to_tag": "DELAY", "to_port": "audio_in", "intensity": 0.4, "feedback": true }
 ```
 
 ### Loading a Patch
 
 ```c
-// Load patch — returns 0 on success, ERR_VOICES_ACTIVE if any group has active voices
+// Load patch — returns 0 on success, -1 on file/parse error
 int result = engine_load_patch(engine, "/path/to/sh_bass.json");
-
-// If voices are active, silence them first then retry
-if (result == ERR_VOICES_ACTIVE) {
-    engine_all_notes_off(engine);
-    // wait for voices to become idle (poll engine_is_idle or use a timeout)
-    engine_load_patch(engine, "/path/to/sh_bass.json");
-}
 ```
 
 If the patch topology for a group matches the current chain (same module types and tags in the same order), the chain is **not rebuilt** — only parameters and connections are updated. This avoids audio interruption when switching between patches that share a topology.
 
 ---
 
-## 7. Runtime Modulation Connections (Phase 15)
+## 7. Runtime Modulation (Phase 15A LFO API)
 
-Named port connections can be added and removed at runtime (outside the audio thread):
+LFO modulation routes are configured via the `engine_set_lfo_*` family of functions (Phase 15A). These drive the per-voice internal LFO and ModulationMatrix directly.
 
 ```c
-// Add a modulation connection (e.g. LFO → filter cutoff)
-engine_connect_ports(engine, group_id,
-                     "LFO", "control_out", "VCF", "cutoff_cv", 0.3f);
+// Configure LFO: 5 Hz sine wave with vibrato (±0.05 octave ≈ ±3 semitones)
+engine_set_lfo_rate(engine, 5.0f);
+engine_set_lfo_waveform(engine, LFO_WAVEFORM_SINE);
+engine_set_lfo_depth(engine, LFO_TARGET_PITCH, 0.05f);
+engine_set_lfo_intensity(engine, 1.0f);
 
-// Remove a connection
-engine_disconnect_ports(engine, group_id,
-                        "LFO", "control_out", "VCF", "cutoff_cv");
+// LFO → filter cutoff
+engine_set_lfo_depth(engine, LFO_TARGET_CUTOFF, 0.3f);
+
+// LFO → pulse width
+engine_set_lfo_depth(engine, LFO_TARGET_PULSEWIDTH, 0.2f);
+
+// Clear all LFO routes (restores default Envelope→Amplitude connection)
+engine_clear_modulations(engine);
 ```
+
+**Waveform constants** (`LFO_WAVEFORM_*`): `SINE=0`, `TRIANGLE=1`, `SQUARE=2`, `SAW=3`.
+
+**Target constants** (`LFO_TARGET_*`): `PITCH=0`, `CUTOFF=1`, `RESONANCE=2`, `AMPLITUDE=3`, `PULSEWIDTH=4`.
+
+`engine_set_lfo_depth` may be called multiple times with different targets to route the LFO to several destinations simultaneously. `engine_clear_modulations` resets all routes and LFO intensity to zero, then re-instates the mandatory `Envelope→Amplitude` connection.
+
+> **Phase 16**: The integer-ID external modulation matrix (`engine_connect_mod`, `MOD_SRC_*`, `MOD_TGT_*`) is deprecated in Phase 15A and will be removed in Phase 16, when all modulation routes become first-class named port connections in the patch graph.
 
 ---
 
@@ -238,11 +257,14 @@ engine_disconnect_ports(engine, group_id,
 
 ---
 
-## 9. Removed API
+## 9. Removed / Deprecated API
 
-The following functions are **removed** in Phase 15 and must not be used:
-
-| Removed function | Replacement |
-|-----------------|-------------|
-| `engine_set_modulation(source_int, target_int, intensity)` | `engine_connect_ports(src_node, src_port, dst_node, dst_port, intensity)` |
-| `VoiceFactory::createSH101()` (C++ internal) | `engine_load_patch` or `engine_add_module` / `engine_connect_ports` / `engine_bake` |
+| Function | Status | Replacement |
+|----------|--------|-------------|
+| `engine_set_modulation(source_int, target_int, intensity)` | **Removed** (Phase 15) | `engine_connect_ports(from_tag, from_port, to_tag, to_port)` |
+| `VoiceFactory::createSH101()` (C++ internal) | **Removed** (Phase 15) | `engine_load_patch` or `engine_add_module` / `engine_connect_ports` / `engine_bake` |
+| `engine_save_patch(handle, path)` | **Removed** (Phase 15) | No replacement — patch serialisation is not implemented. Patches are authored by hand and loaded via `engine_load_patch`. |
+| `engine_connect_mod(handle, src, voices, tgt, intensity)` | **Deprecated** (Phase 15A) — remove in Phase 16 | `engine_set_lfo_depth(handle, LFO_TARGET_*, depth)` |
+| `engine_create_processor(handle, type)` | **Deprecated** (Phase 15A) — remove in Phase 16 | `engine_add_module(handle, type, tag)` |
+| `engine_get_modulation_report(handle, buf, size)` | **Deprecated** (Phase 15A) — remove in Phase 16 | No replacement; use `engine_set_lfo_*` and structured patch files. |
+| `MOD_SRC_*` / `MOD_TGT_*` / `ALL_VOICES` constants | **Deprecated** (Phase 15A) — remove in Phase 16 | `LFO_TARGET_*` constants |

@@ -28,7 +28,7 @@ Each port descriptor includes a `unipolar` flag. Mismatching a unipolar source t
 
 ### Lifecycle Ports (Gate & Trigger)
 
-Certain port names are **reserved lifecycle ports**. They are driven by the `VoiceContext` (note_on/note_off events) and must not be wired via `connections_`. `bake()` recognises and skips validation for these ports:
+Certain port names are **reserved lifecycle ports**. They are driven by the `VoiceContext` (note_on/note_off events) and must not be wired via `connections_`. `bake()` **rejects** (throws `std::logic_error`) any explicit connection that references these port names:
 
 | Reserved port name | Signal |
 |--------------------|--------|
@@ -37,7 +37,9 @@ Certain port names are **reserved lifecycle ports**. They are driven by the `Voi
 
 ### Feedback Connections
 
-A connection that forms a cycle in the signal graph (e.g. delay feedback) must be marked `"feedback": true` in the patch. The graph executor uses the **previous block's output** for feedback connections, breaking the cycle without aliasing. Non-feedback connections form a DAG validated by `bake()`.
+A connection that forms a cycle in the signal graph (e.g. delay feedback) must be marked `"feedback": true` in the patch. Non-feedback connections form a DAG validated by `bake()`.
+
+> **Current status**: Feedback execution is **not yet implemented**. The `"feedback": true` flag is parsed and stored but the graph executor does not maintain a previous-block output buffer. Feedback routing will be activated when `ECHO_DELAY` lands (Phase 17).
 
 ### Port Declaration in C++
 
@@ -107,7 +109,7 @@ The registry is queryable via the C API (`engine_get_module_count`, `engine_get_
   - `PORT_CONTROL` in `rate_cv` (unipolar)
   - `PORT_CONTROL` in `reset` (unipolar, lifecycle-style trigger)
   - `PORT_CONTROL` out `control_out` (bipolar)
-- **Parameters**: `rate` (0.01–20 Hz), `intensity` (0.0–1.0), `waveform` (enum: Sine, Triangle, Saw, Square, S&H)
+- **Parameters**: `rate` (0.01–20 Hz), `intensity` (0.0–1.0), `waveform` (enum: Sine=0, Triangle=1, Square=2, Saw=3; S&H planned)
 - **Note**: Output is `PORT_CONTROL`. Must not be patched directly into an audio mix.
 
 ### Noise Generator
@@ -124,7 +126,7 @@ The registry is queryable via the C API (`engine_get_module_count`, `engine_get_
 - **Ports**:
   - `PORT_CONTROL` in `pitch_cv` (bipolar, 1V/oct)
   - `PORT_AUDIO` out `audio_out`
-- **Parameters**: `drawbar_16`, `drawbar_8`, `drawbar_4`, `drawbar_267`, `drawbar_2`, `drawbar_135`, `drawbar_113`, `drawbar_1` (all 0.0–1.0, unipolar), `percussion` (bool), `percussion_decay` (0.0–2.0s)
+- **Parameters**: `drawbar_16` (16'), `drawbar_513` (5⅓'), `drawbar_8` (8'), `drawbar_4` (4'), `drawbar_223` (2⅔'), `drawbar_2` (2'), `drawbar_135` (1⅗'), `drawbar_113` (1⅓'), `drawbar_1` (1') — all 0.0–8.0 (Hammond 9-step scale, not normalised 0–1). `percussion` (bool) and `percussion_decay` (0.0–2.0s) are **planned** (Phase 16+, deferred until percussion chiff feature lands)
 - **Note**: Gate-through operation is achieved by setting ADSR attack=0, decay=0, sustain=1.0, release short. Verified by Bach organ tests.
 
 ---
@@ -171,7 +173,7 @@ The registry is queryable via the C API (`engine_get_module_count`, `engine_get_
   - `PORT_CONTROL` in `gain_cv` (unipolar)
   - `PORT_CONTROL` in `initial_gain_cv` (unipolar)
 - **Parameters**: `initial_gain` (0.0–1.0)
-- **Behaviour**: Linear gain by default. `initial_gain_cv` sets resting DC level so a bipolar LFO can produce tremolo without fully closing the VCA on negative half-cycles.
+- **Behaviour**: Linear gain by default. `initial_gain_cv` is intended to set a resting DC level so a bipolar LFO can produce tremolo without fully closing the VCA on negative half-cycles. **Current status**: `initial_gain_cv` port and `initial_gain` parameter are declared and registry-queryable, but the graph executor does not yet pull `initial_gain_cv` — full wiring is a Phase 16 item.
 
 ### Envelope Generator (ADSR)
 - **Type name**: `ADSR_ENVELOPE`
@@ -237,7 +239,7 @@ These modules operate entirely in the control domain.
   - `PORT_AUDIO` in `audio_in`
   - `PORT_AUDIO` out `audio_out`
 - **Parameters**: `mode` (enum: Off, I, II, I+II), `rate` (0.1–10 Hz), `depth` (0.0–1.0)
-- **Note**: Architecturally a **global FX module** — one instance processes the summed voice output, not a per-voice chain node. Per-voice instantiation is a temporary workaround pending global FX chain support (Phase 16).
+- **Note**: Architecturally a **global FX module** — one instance processes the summed voice output, not a per-voice chain node. Per-voice instantiation is a temporary workaround pending global FX chain support (Phase 17).
 
 ### Spatial Processor
 - **Type name**: `SPATIAL`
@@ -288,7 +290,7 @@ These modules operate entirely in the control domain.
 - **Purpose**: Interface for external audio signals (e.g. side-chain, vocoder source).
 - **Ports**:
   - `PORT_AUDIO` out `audio_out`
-- **Note**: Requires audio driver input buffer support. Pending audio driver input capability (Phase 16).
+- **Note**: Requires audio driver input buffer support. Pending audio driver input capability (Phase 18).
 - **Status**: Planned.
 
 ---

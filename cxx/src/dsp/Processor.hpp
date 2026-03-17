@@ -174,7 +174,7 @@ public:
     /**
      * @brief Node tag for signal chain discovery (Phase 14).
      *
-     * Tags are assigned by VoiceFactory (e.g. "VCO", "VCF", "ENV", "VCA").
+     * Tags are assigned by engine_add_module() (e.g. "VCO", "VCF", "ENV", "VCA").
      * Used by Voice::find_by_tag() to locate nodes for parameter routing.
      */
     void set_tag(std::string_view tag) { tag_ = tag; }
