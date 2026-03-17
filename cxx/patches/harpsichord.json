@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "name": "Harpsichord",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
+        { "type": "INVERTER",            "tag": "INV" },
+        { "type": "VCA",                 "tag": "VCA" }
+      ],
+      "connections": [
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"   },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "INV", "to_port": "cv_in"     },
+        { "from_tag": "INV", "from_port": "cv_out",       "to_tag": "VCF", "to_port": "cutoff_cv" }
+      ],
+      "parameters": {
+        "VCO": { "pulse_gain": 1.0, "pulse_width": 0.35 },
+        "ENV": { "attack": 0.001, "decay": 0.5, "sustain": 0.0, "release": 0.1 },
+        "INV": { "scale": -0.6 },
+        "VCF": { "cutoff": 1200.0, "res": 0.3 }
+      }
+    }
+  ]
+}

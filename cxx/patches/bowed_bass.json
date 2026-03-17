@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "name": "Bowed Bass",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
+        { "type": "VCA",                 "tag": "VCA" }
+      ],
+      "connections": [
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv" }
+      ],
+      "parameters": {
+        "VCO": { "saw_gain": 0.6, "triangle_gain": 0.8, "sub_gain": 0.3 },
+        "ENV": { "attack": 0.25, "decay": 0.0, "sustain": 1.0, "release": 0.5 },
+        "VCF": { "cutoff": 420.0, "res": 0.38, "filter_type": 1 }
+      }
+    }
+  ]
+}

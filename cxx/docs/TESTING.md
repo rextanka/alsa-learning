@@ -217,5 +217,5 @@ Every functional test in `cxx/tests/functional/` MUST include a standardized hea
 3. **Chain Construction**: Use `engine_load_patch` or `engine_add_module` / `engine_connect_ports` / `engine_bake`. Do not use `VoiceFactory` or `engine_set_modulation`.
 4. **Diagnostic Audit**: When adding a TEE point (AudioTap), verify the tap is a non-destructive push (`tap->write()`).
 5. **Silence-Check**: If a functional test fails with "Empty Buffer," the first audit point is the `AudioBridge` callback.
-6. **Implementation Requirement**: Before adding new components, verify compatibility against ARCH_PLAN.md.
+6. **Implementation Requirement**: Before adding new components, verify port declarations, parameter ranges, and connection rules against MODULE_DESC.md.
 7. **SOP**: Any C-API changes require an immediate update to BRIDGE_GUIDE.md and MODULE_DESC.md (if a new module type is involved).
