@@ -144,10 +144,13 @@ void Voice::note_on(double frequency) {
     base_frequency_ = frequency;
     for (auto& entry : signal_chain_) entry.node->reset();
     if (filter_) filter_->reset();
-    // Dispatch frequency to the first chain node via the virtual Processor::set_frequency().
-    // This works for CompositeGenerator, DrawbarOrganProcessor, or any future generator.
-    if (!signal_chain_.empty()) {
-        signal_chain_[0].node->set_frequency(frequency);
+    // Dispatch frequency to the first PORT_AUDIO node (the audio generator).
+    // PORT_CONTROL nodes (LFO etc.) may precede it in the chain — skip them.
+    for (auto& entry : signal_chain_) {
+        if (entry.node->output_port_type() == PortType::PORT_AUDIO) {
+            entry.node->set_frequency(frequency);
+            break;
+        }
     }
     if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV"))) {
         env->gate_on();

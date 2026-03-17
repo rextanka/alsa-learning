@@ -29,7 +29,7 @@
         "vcf_cutoff":   2000.0,
         "vcf_res":      0.1,
         "rate":         0.5,
-        "intensity":    0.03
+        "intensity":    0.004
       }
     }
   ]
