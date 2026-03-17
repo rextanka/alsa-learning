@@ -67,7 +67,7 @@ public:
     }
 
     void gate_on() override {
-        AudioLogger::instance().log_message("ADSR", "Gate On");
+        AudioLogger::instance().log_event("ADSR", 1.0f); // RT-safe: no format string
         state_ = State::Attack;
         // Start from current level to avoid clicks if re-triggered
         update_rates();

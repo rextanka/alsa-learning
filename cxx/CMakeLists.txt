@@ -62,11 +62,12 @@ endif()
 set(ENGINE_SOURCES
     src/bridge/AudioBridge.cpp
     src/core/Voice.cpp
-    src/core/VoiceFactory.cpp
     src/core/VoiceManager.cpp
     src/core/MidiParser.cpp
     src/core/PatchStore.cpp
     src/core/ProcessorRegistrations.cpp
+    src/core/SmfParser.cpp
+    src/core/MidiFilePlayer.cpp
 )
 
 if(APPLE)
@@ -155,6 +156,7 @@ if(BUILD_TESTING)
         tests/unit/test_signal_chain.cpp
         tests/unit/test_voice_factory.cpp
         tests/unit/test_voice_groups.cpp
+        tests/unit/test_lfo.cpp
     )
     target_include_directories(unit_tests PRIVATE tests/unit tests)
     target_link_libraries(unit_tests PRIVATE audio_engine gtest_main)
@@ -201,15 +203,19 @@ if(BUILD_TESTING)
     add_functional_gtest(Functional_BachMidi Functional_BachMidi.cpp)
     add_functional_gtest(BachOrganTest BachOrganTest.cpp)
     add_functional_gtest(tremulant_tests test_tremulant_preset.cpp)
+    add_functional_gtest(lfo_modulation_tests test_lfo_modulation.cpp)
     add_functional_gtest(sh101_chain_tests test_sh101_chain.cpp)
     add_functional_gtest(juno_chorus_tests test_juno_chorus.cpp)
     add_functional_gtest(stereo_poly_tests stereo_poly_test.cpp)
     add_functional_test(Functional_SH101_Live Functional_SH101_Live.cpp)
     add_functional_test(patch_sequence_test patch_sequence_test.cpp)
+    add_functional_gtest(midi_file_playback_tests test_midi_file_playback.cpp)
 
-    # Copy patch JSON files to the binary output directory so tests can be run
-    # directly from build/bin without specifying -p.
+    # Copy patch JSON files and MIDI test data to the binary output directory
+    # so tests can be run directly from build/bin without extra arguments.
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/patches
+         DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/midi
          DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
     add_test(NAME Functional_Phase10 COMMAND Phase10Tests)

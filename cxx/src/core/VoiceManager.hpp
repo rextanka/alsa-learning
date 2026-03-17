@@ -224,6 +224,16 @@ private:
 
 public:
     const std::array<VoiceSlot, MAX_VOICES>& get_voices() const { return voices_; }
+
+    /**
+     * @brief Apply a function to every voice in the pool (control thread only).
+     *
+     * Used by the LFO C API to configure per-voice LFO and modulation matrix
+     * without exposing the full VoiceSlot internals.
+     */
+    void for_each_voice(const std::function<void(Voice&)>& fn) {
+        for (auto& slot : voices_) { fn(*slot.voice); }
+    }
 };
 
 } // namespace audio

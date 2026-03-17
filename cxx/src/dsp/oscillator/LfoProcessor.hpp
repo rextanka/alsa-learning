@@ -39,9 +39,11 @@ public:
         smoothing_coeff_ = 1.0f; // will be computed on first do_pull
 
         // Phase 15: named port declarations
-        declare_port({"lfo_out", PORT_CONTROL, PortDirection::OUT, false}); // bipolar [-1,1]
+        declare_port({"rate_cv",     PORT_CONTROL, PortDirection::IN,  true});  // unipolar, scales frequency
+        declare_port({"reset",       PORT_CONTROL, PortDirection::IN,  true});  // lifecycle-style trigger
+        declare_port({"control_out", PORT_CONTROL, PortDirection::OUT, false}); // bipolar [-1,1]
 
-        declare_parameter({"frequency", "LFO Rate",      0.01f, 20.0f, 1.0f, true});
+        declare_parameter({"rate",      "LFO Rate",      0.01f, 20.0f, 1.0f, true});
         declare_parameter({"intensity", "LFO Intensity", 0.0f,   1.0f, 1.0f});
         declare_parameter({"waveform",  "LFO Waveform",  0.0f,   3.0f, 0.0f});
     }
@@ -67,6 +69,8 @@ public:
         phase_ = 0.0;
         smoothed_intensity_ = intensity_;
     }
+
+    PortType output_port_type() const override { return PortType::PORT_CONTROL; }
 
 protected:
     void do_pull(std::span<float> output, const VoiceContext* /* context */ = nullptr) override {

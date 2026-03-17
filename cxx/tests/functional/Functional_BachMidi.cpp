@@ -101,9 +101,10 @@ TEST_F(FunctionalBachMidi, BWV846_Arpeggio_Clarity) {
     const std::vector<uint8_t> pattern = {60, 64, 67, 72, 76};
 
     EngineHandle engine = engine_wrapper->get();
+    std::this_thread::sleep_for(std::chrono::milliseconds(300)); // allow HAL to settle after restart
     for (int repeat = 0; repeat < 2; ++repeat) {
         for (uint8_t pitch : pattern) {
-            engine_note_on(engine, pitch, 0.6f);
+            engine_note_on(engine, pitch, 0.8f);
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
             engine_note_off(engine, pitch);
             std::this_thread::sleep_for(std::chrono::milliseconds(20));

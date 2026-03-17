@@ -29,7 +29,6 @@ The library is consumed via a stable C API, enabling host integration in native 
 ### Target Platforms
 - **macOS**: Tahoe 26.3+ (CoreAudio)
 - **Linux**: Fedora 42+ (ALSA)
-- **Windows**: 11 (WASAPI)
 
 ### Technical Pillars
 - **Pull-Based Heartbeat**: Sample-accurate timing driven by the `AudioDriver`. Output pulls from the graph; processors pull from their inputs.
@@ -44,6 +43,7 @@ The library is consumed via a stable C API, enabling host integration in native 
 - **HAL-Only Interaction**: High-level DSP logic and tests interact ONLY with the `hal::AudioDriver` base class. Platform parity is maintained by swapping the HAL implementation (ALSA vs. CoreAudio) while keeping core C++ logic identical.
 
 ### Future Roadmap (Not Currently Planned)
+- **Windows (WASAPI)**: Windows 11 via WASAPI HAL. No implementation exists yet; deferred until macOS and Linux HALs are fully hardened.
 - **MPE & Microtonality**: Per-voice pitch independence with a modular `TuningSystem` for cross-platform musical flexibility. Deferred until core dynamic routing is stable.
 
 ---
@@ -109,7 +109,7 @@ cxx/
 │   │   ├── filter/            # Moog, Diode Ladder
 │   │   ├── fx/                # Juno Chorus, Delay
 │   │   ├── oscillator/        # Sine, Saw, Pulse, Sub, LFO
-│   │   └── routing/           # SourceMixer, SummingMixer
+│   │   └── routing/           # CompositeGenerator, SummingBus, DrawbarOrganProcessor
 │   └── hal/
 │       ├── AudioDriver.hpp    # Cross-platform HAL interface
 │       ├── alsa/              # Linux/Fedora implementation
@@ -128,6 +128,7 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
 - **Fedora (ALSA)**: Primary development environment for high-priority RT-hardening.
 - **macOS (CoreAudio)**: Target for Swift/Bridge interop and creative UI development.
 - **Tauri/React**: Desktop UI target consuming the C API via Tauri's native bridge. No WebAssembly compilation required; the native HAL (ALSA or CoreAudio) is used directly.
+- **Windows (WASAPI)**: Deferred — see Future Roadmap.
 - **Portability Guard**: The `CInterface` ensures that regardless of the underlying OS or HAL, the binary contract remains stable for host applications (Swift, Tauri/React, or C++ GUIs).
 
 ---
@@ -156,6 +157,8 @@ A **block** (or **processing block**) is a contiguous sequence of *N* frames pro
 ### API Contract for `engine_process`
 `engine_process(handle, float* output, size_t frames)` — the `frames` parameter is a **frame count**, not a sample count. The function produces **stereo interleaved** output via the same `SummingBus` path as the HAL callback, including voice panning and global FX (Chorus). The caller must provide a buffer of at least `frames × 2` floats.
 
+> **Internal vs external format**: Internally, `AudioBuffer` stores channels as separate non-interleaved `std::vector<float>` planes (`channel[0]` = L, `channel[1]` = R). The interleaving into the caller's `float*` output buffer happens at the `AudioBridge` boundary inside `engine_process`. Tests and internal DSP code should never assume a flat interleaved layout when working with `AudioBuffer` objects directly.
+
 ```c
 const size_t FRAMES = 512;
 float output[FRAMES * 2]; // stereo interleaved: 1024 floats
@@ -172,9 +175,9 @@ This guarantees that offline test analysis and live HAL rendering are driven by 
 
 Block size is **runtime-configurable** and must be chosen by the host at engine creation time based on hardware capability queries. There is no hardcoded default — the appropriate size is platform and hardware dependent (e.g. 512 samples on a modern ARM laptop for minimum latency; 1024 samples on older x86 hardware for stability).
 
-- Query available block sizes via `host_get_device_block_sizes()` (Phase 17).
-- Pass the chosen size to `engine_create(sample_rate, block_size)`.
-- All internal buffers are allocated at engine creation time to accommodate the chosen block size.
+- Query available block sizes via `host_get_device_block_size()` (Phase 18).
+- Pass the chosen size to `engine_create(sample_rate)` (block_size parameter planned for Phase 18 when the query API lands).
+- **Current interim behaviour**: block size is fixed at 512 frames, hardcoded at engine creation. This will be replaced by the Phase 18 hardware query.
 
 ---
 
@@ -182,7 +185,7 @@ Block size is **runtime-configurable** and must be chosen by the host at engine 
 
 The engine supports **44100 Hz and 48000 Hz** exclusively. These are the two rates common to consumer and professional computer audio interfaces, including USB interfaces.
 
-- **Rate negotiation**: `engine_create` queries the hardware via `host_get_device_sample_rate()`. If the hardware reports a rate above 48000 Hz (e.g. 96000, 192000), the engine negotiates down to 48000 Hz. If the hardware rate is below 44100 Hz the engine returns an error.
+- **Rate negotiation**: The caller is responsible for querying `host_get_device_sample_rate()` and passing the result to `engine_create(sample_rate)`. **Current interim behaviour**: `host_get_device_sample_rate()` is a stub that returns 48000 — real hardware enumeration is planned for Phase 18. The engine accepts whatever rate is passed; enforcing the >48kHz cap is the caller's responsibility until Phase 18 lands.
 - **No hardcoded rates**: All internal timing — ADSR curves, LFO rates, delay times, metronome — must derive from the runtime `sample_rate_` stored at engine creation. No source file may contain the literals `44100` or `48000` for timing logic.
 - **USB interfaces**: USB audio interfaces may report stricter latency constraints and non-standard preferred block sizes. Block size must come from the hardware query (Phase 17), not assumed.
 - **Processing budget**: Rates above 48000 Hz double or quadruple processing cost for 16-voice polyphony. 48000 Hz is the practical ceiling for this engine's target hardware.
@@ -195,16 +198,57 @@ The engine supports **44100 Hz and 48000 Hz** exclusively. These are the two rat
 |-------|-------------|--------|
 | 1-11  | Core DSP, Factory, Polyphony, Musical Clock, Dual-Layer Testing | Complete |
 | 12    | **MIDI Integration**: `MidiParser` and `MidiEvent` feeding into `VoiceManager`. | Complete |
-| 13    | **Golden Era Expansion**: SH-101 & Juno-60 building blocks (Sub-Osc, Source Mixer, Chorus, JSON Persistence). | Complete |
+| 13    | **Golden Era Expansion**: SH-101 & Juno-60 building blocks (Sub-Osc, Source Mixer, Chorus, JSON Patch Loading). | Complete |
 | 14    | **Dynamic Signal Chain**: (a) `Processor` typed port declarations (`PORT_AUDIO`/`PORT_CONTROL`) and `input_port_type()`. (b) Separate `AdsrEnvelopeProcessor` from VCA into distinct nodes. (c) `Voice` `signal_chain_` vector with `add_processor()`, `bake()` Generator-First and port-type validation. (d) Voice Groups in `VoiceManager`. | Partial — (a)(b)(c)(d) structurally complete; named `PortConnection` graph and data-driven `pull_mono` complete in Phase 15 |
-| 15    | **Module Registry, Named Port Connections & Patch v2**: (a) `ModuleRegistry` — self-registration via static initializers, queryable via C API. (b) `declare_port()` / `declare_parameter()` on `Processor`. (c) Explicit `PortConnection` graph in `Voice`; `bake()` validates named connections. (d) Data-driven `pull_mono` — full graph executor (audio + CV, multi-input, feedback). (e) Patch format v2 — multi-group JSON with named connections. (f) `engine_add_module` / `engine_connect_ports` / `engine_bake` / `engine_load_patch` C API. (g) `engine_set_modulation` removed; `VoiceFactory` retired. (h) `DrawbarOrgan` generator module. (i) Four reference patches: `sh_bass`, `tb_bass`, `organ`, `juno_pad`. | In Progress |
-| 16    | **Spatial & Stereo FX**: Global FX chain (post voice-summing bus). Reverb, Chorus, Flanger, Delay as global modules. | Planned |
-| 17    | **Host Interrogation & Enumeration**: Query device list, hardware sample rates, and supported block sizes via C-Bridge. | Planned |
-| 18    | **Non-Intrusive Logger**: RT-safe lock-free logging. | Complete |
-| 19    | **Unit & Integration Strategy**: GUnit vs. standalone API tests. | Complete |
-| 20    | **ParameterManager**: Centralized zipper-free parameter ramping and smoothing for all audio-rate parameter changes. | Planned |
-| 21    | **MIDI File Player**: `MidiFilePlayer` Source module for sequenced playback. | Planned |
-| 22    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation. | Planned |
+| 15    | **Module Registry, Named Port Connections & Patch v2**: (a) `ModuleRegistry` — self-registration via static initializers, queryable via C API. (b) `declare_port()` / `declare_parameter()` on `Processor`. (c) Explicit `PortConnection` graph in `Voice`; `bake()` validates named connections. (d) Data-driven `pull_mono` — full graph executor (audio + CV, multi-input, feedback). (e) Patch format v2 — single-group JSON with named connections. (f) `engine_add_module` / `engine_connect_ports` / `engine_bake` / `engine_load_patch` C API. (g) `engine_set_modulation` removed; `VoiceFactory` retired. (h) `DrawbarOrganProcessor` generator module. (i) Four reference patches: `sh_bass`, `tb_bass`, `organ_drawbar`, `juno_pad`. (j) True stereo `engine_process` via `SummingBus`/`AudioBuffer` path. (k) Full functional test migration to Phase 15 chain. (l) Phase 15A: `engine_set_lfo_*` C API exposing internal Voice LFO + `ModulationMatrix`; external integer-ID mod matrix deprecated. | Complete |
+| 16    | **Full Control-Rate Port Routing**: Retire the deprecated integer-ID external modulation matrix entirely. Extend the `Voice::pull_mono` graph executor so that every `PORT_CONTROL` connection declared via `engine_connect_ports` is live-routed at block rate — not just `gain_cv`→VCA. Concrete targets: (a) A `PORT_CONTROL` source (e.g. LFO module tagged `"LFO1"`) whose `control_out` is wired to a sink port (e.g. `"VCO" / "pitch_cv"`, `"VCF" / "cutoff_cv"`, `"VCO" / "pwm_cv"`) has its output buffer applied each block via the destination processor's `set_parameter_by_name` or a typed CV-input callback. (b) The `VoiceContext` carries a per-port CV map so that any processor can query incoming CV values without hard-coded names in the executor. (c) Remove `engine_create_processor`, `engine_connect_mod`, `engine_get_modulation_report`, and the `MOD_SRC_*`/`MOD_TGT_*`/`ALL_VOICES` constants from `CInterface.h`. (d) The internal per-voice `lfo_` and `ModulationMatrix` are retired; all modulation routes become first-class named port connections in the patch graph. (e) Patch v2 format extended: LFO nodes appear in the chain like any other module; LFO rate, waveform, and depth are declared as patch parameters. | Partial — named port declarations, PortConnection graph, declare_port(), and bake() validation are complete. Full CV routing in pull_mono (all targets beyond gain_cv) and removal of deprecated integer-ID API remain. |
+| 17    | **Spatial & Stereo FX**: Global FX chain (post voice-summing bus). Reverb, Chorus, Flanger, Delay as global modules. | Planned |
+| 18    | **Host Interrogation & Enumeration**: Query device list, hardware sample rates, and supported block sizes via C-Bridge. | Planned |
+| 19    | **Non-Intrusive Logger**: RT-safe lock-free logging. | Complete |
+| 20    | **Unit & Integration Strategy**: GUnit vs. standalone API tests. | Complete |
+| 21    | **ParameterManager**: Centralized zipper-free parameter ramping and smoothing for all audio-rate parameter changes. | Planned |
+| 22    | **SMF Playback — Phase A (Rudimentary)**: `SmfParser` + `MidiFilePlayer` — sample-accurate SMF Format 0/1 playback. All tracks merged; MIDI channel ignored (channel-blind). All voices use the single loaded patch. `engine_load_midi` / `engine_midi_play` / `engine_midi_stop` / `engine_midi_rewind` / `engine_midi_get_position` C API. Tempo map support (FF 51). Note On velocity-0 normalised to Note Off. Running status. SysEx skipped. | Complete |
+| 23    | **SMF Playback — Phase B (Multi-timbral)**: Extend `MidiFilePlayer` with a MIDI-channel-to-VoiceGroup routing table. Each channel maps to a VoiceGroup with its own patch. `engine_midi_set_channel_patch(ch, patch_path)` C API. Requires Phase 16 VoiceGroup/patch-per-group support. Program Change events (`0xC0`) trigger live patch swaps on the target channel's group. | Planned |
+| 24    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation. | Planned |
+
+---
+
+## MIDI Architecture
+
+The engine supports two independent MIDI input paths:
+
+### Path 1 — Real-Time Byte Stream (Phase 12)
+
+External MIDI hardware or host DAW events arrive as raw byte streams via `engine_process_midi_bytes(handle, data, size, sampleOffset)`. The `MidiParser` state machine reconstructs messages (including Running Status) and dispatches `MidiEvent` structs to `VoiceManager`. The `sampleOffset` field places each event at a precise sample position within the current audio block.
+
+### Path 2 — SMF File Playback (Phase 22A/22B)
+
+`SmfParser::load()` pre-parses a Standard MIDI File into a `MidiFileData` struct:
+
+- **Tempo map**: sorted list of `(abs_tick, µs_per_beat)` entries built from FF 51 meta-events. Always has a tick-0 entry (default 120 BPM).
+- **Event list**: all tracks merged and stable-sorted by absolute SMF tick. Channel bits are preserved in the status byte.
+
+`MidiFilePlayer::advance(frames, sr, vm)` is called once per audio block from both the HAL callback and `engine_process`. It converts each pending event's SMF tick to a fractional sample offset using the tempo map, dispatches it via `vm.processMidiBytes()` with the correct sub-buffer `sampleOffset`, and advances the internal playhead by `frames` samples. No `sleep()` or wall-clock timing is used.
+
+#### Tick-to-Sample Conversion
+
+```
+tick_to_sample(T):
+  walk tempo_map segments [last_tick, te.abs_tick) left-to-right
+  accumulate: samples += seg_ticks × (µs_per_beat / ppq / 1e6) × sample_rate
+  final segment: remaining ticks at current µs_per_beat
+```
+
+The formula is exact — no rounding or approximation beyond `double` precision.
+
+#### Two-Phase SMF Rollout
+
+| Phase | MIDI Channel Handling | Routing |
+|---|---|---|
+| 22A (current) | Ignored — all events go to one VoiceManager | All voices share the single loaded patch |
+| 22B (planned) | Channel maps to a VoiceGroup | Per-channel patch assignment; Program Change triggers live patch swap |
+
+Phase 22B depends on Phase 16 per-group patch support and is tracked separately.
 
 ---
 
@@ -237,8 +281,8 @@ m_write_index = (m_write_index + 1) & (m_buffer_size - 1);
 - **Format**: Float (-1..1) internally; convert at HAL boundary.
 - **Buffer ownership**: Graph owns buffers; nodes use spans (zero-copy).
 - **Polyphony**: Compile-time `AUDIO_MAX_VOICES` (e.g. 16); runtime cap optional.
-- **Voice Groups**: Voices are partitioned into named groups, each with an independent `VoiceFactory`-configured topology. Enables keyboard splits and layering via the C API.
-- **Voice stealing**: Prefer releasing voice (longest first), else active (e.g. lowest note). Applied within a voice group.
+- **Voice Groups**: Voices are partitioned into named groups, each with an independent signal chain topology defined via `engine_add_module` / `engine_connect_ports` / `engine_bake` or `engine_load_patch`. Enables keyboard splits and layering via the C API. `VoiceFactory` is retired.
+- **Voice stealing**: LRU — prefer releasing voice with oldest note-on timestamp first; if no releasing voice, steal the active voice with the oldest note-on timestamp. Applied within a voice group.
 - **Per-voice params**: Velocity and aftertouch via **query pattern** (VoiceContext in `pull()`).
 - **Wavetable**: Single `WavetableOscillatorProcessor` class; shape selected at create.
 - **10ms MMA Latency Target**: Optimize buffer sizes and processing for consistent real-time response.
@@ -282,7 +326,7 @@ m_write_index = (m_write_index + 1) & (m_buffer_size - 1);
 
 For reliable polyphony and voice stealing, every `Voice` must adhere to the following contract:
 
-- **is_active() Check**: A voice is considered "active" as long as its VCA envelope is in any stage other than IDLE or its output amplitude is above a noise floor threshold. The `VoiceManager` relies on this state to decide when a voice can be reassigned.
+- **is_active() Check**: A voice is considered "active" as long as its `active_` flag is set or any `AdsrEnvelopeProcessor` in its signal chain reports a non-idle state. The `VoiceManager` relies on this state to decide when a voice can be reassigned.
 - **Lifecycle States**:
     - **Gate ON**: Triggers envelopes and resets oscillators (if sync is enabled).
     - **Gate OFF**: Transitions envelopes to the Release stage.
@@ -325,25 +369,33 @@ To bridge the gap between the C-compatible public API and the internal Flexible 
   - `"VCA"`: Amplifier and main amplitude envelope.
 
 ### Global Parameter Registry
-| Global ID | String Label | Target Tag | Description | Range |
-|-----------|--------------|------------|-------------|-------|
-| 1 | `vcf_cutoff` | `VCF` | Filter cutoff frequency | Log (20Hz–20kHz) |
-| 2 | `vcf_res` | `VCF` | Filter resonance | 0.0–1.0 |
-| 3 | `vcf_env_amount` | `VCF` | Envelope to Filter modulation depth | Bipolar |
-| 4 | `amp_attack` | `VCA` | VCA Envelope Attack | Time (s) |
-| 5 | `amp_decay` | `VCA` | VCA Envelope Decay | Time (s) |
-| 6 | `amp_sustain` | `VCA` | VCA Envelope Sustain | 0.0–1.0 |
-| 7 | `amp_release` | `VCA` | VCA Envelope Release | Time (s) |
-| 10 | `osc_pw` | `VCO` | Pulse Width (legacy alias for `pulse_width`) | 0.0–0.5 |
-| 11 | `sub_gain` | `VCO` | Sub-oscillator level | 0.0–1.0 |
-| 12 | `saw_gain` | `VCO` | Sawtooth level | 0.0–1.0 |
-| 13 | `pulse_gain` | `VCO` | Pulse level | 0.0–1.0 |
-| 14 | `pulse_width` | `VCO` | Pulse Width (native) | 0.0–0.5 |
-| 15 | `sine_gain` | `VCO` | Sine oscillator level | 0.0–1.0 |
-| 16 | `triangle_gain` | `VCO` | Triangle oscillator level | 0.0–1.0 |
-| 17 | `wavetable_gain` | `VCO` | Wavetable oscillator level | 0.0–1.0 |
-| 18 | `noise_gain` | `VCO` | White noise level | 0.0–1.0 |
-| 19 | `wavetable_type` | `VCO` | Wavetable waveform type | 0–N (enum) |
+
+> **Note**: String labels in this table are the **bridge-facing** labels used with `set_param(handle, "label", value)` and stored in `AudioBridge::param_name_to_id`. They are intentionally different from the module-native parameter names declared by each `Processor` via `declare_parameter()` (e.g. the filter module declares `"cutoff"` and `"resonance"`, but the bridge labels are `"vcf_cutoff"` and `"vcf_res"`). The string label table is the transitional compatibility layer; Phase 16 will unify these via named port connections.
+>
+> Drawbar parameters (`drawbar_16`, `drawbar_513`, etc.) and `wavetable_type` are routed through the `set_parameter_by_name` fallback path (not this integer-ID table) and are therefore not listed here. See BRIDGE_GUIDE.md §3 for the full string label set.
+
+| Global ID | String Label | Target Tag | Description | Range | Status |
+|-----------|--------------|------------|-------------|-------|--------|
+| 0 | `osc_frequency` | `VCO` | Override oscillator base frequency | Hz | Special case in bridge |
+| 1 | `vcf_cutoff` | `VCF` | Filter cutoff frequency | Log (20Hz–20kHz) | Active |
+| 2 | `vcf_res` | `VCF` | Filter resonance | 0.0–1.0 | Active |
+| 3 | `vcf_env_amount` | `VCF` | Envelope to Filter modulation depth | Bipolar | **Stub** — no-op pending Phase 16 |
+| 4 | `amp_attack` | `ENV` | Envelope Attack | Time (s) | Active |
+| 5 | `amp_decay` | `ENV` | Envelope Decay | Time (s) | Active |
+| 6 | `amp_sustain` | `ENV` | Envelope Sustain | 0.0–1.0 | Active |
+| 7 | `amp_release` | `ENV` | Envelope Release | Time (s) | Active |
+| 8 | *(internal)* | `Voice` | Base amplitude scale (beep/test use only) | 0.0–1.0 | Internal |
+| 9 | *(reserved)* | — | Unused — gap in legacy numbering | — | Reserved |
+| 10 | `osc_pw` | `VCO` | Pulse Width (legacy alias for `pulse_width`) | 0.0–0.5 | Active |
+| 11 | `sub_gain` | `VCO` | Sub-oscillator level | 0.0–1.0 | Active |
+| 12 | `saw_gain` | `VCO` | Sawtooth level | 0.0–1.0 | Active |
+| 13 | `pulse_gain` | `VCO` | Pulse level | 0.0–1.0 | Active |
+| 14 | `pulse_width` | `VCO` | Pulse Width (native) | 0.0–0.5 | Active |
+| 15 | `sine_gain` | `VCO` | Sine oscillator level | 0.0–1.0 | Active |
+| 16 | `triangle_gain` | `VCO` | Triangle oscillator level | 0.0–1.0 | Active |
+| 17 | `wavetable_gain` | `VCO` | Wavetable oscillator level | 0.0–1.0 | Active |
+| 18 | `noise_gain` | `VCO` | White noise level | 0.0–1.0 | Active |
+| 19 | `wavetable_type` | `VCO` | Wavetable waveform type | 0–N (enum) | Active |
 
 ### Future Architectural Roadmap
 

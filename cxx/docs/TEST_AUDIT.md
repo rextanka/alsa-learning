@@ -1,7 +1,9 @@
 # Functional Test Audit Log
-Last Performed: 2026-03-10
+Last Performed: 2026-03-16 (updated post-audit 2026-03-16)
 
-This document tracks the sanity and utility of functional tests following the protocol defined in TEST_DESC.md.
+This document tracks the sanity and utility of functional tests following the protocol defined in TESTING.md.
+
+> **Naming convention**: Test names in this table use CMake build target names (e.g. `sh101_chain_tests`). The corresponding source files are named `test_<name>.cpp` or `<name>.cpp` as listed in TESTING.md §5.
 
 | Test Name | Status | Compliance | Sanity Result |
 | :--- | :--- | :--- | :--- |
@@ -22,7 +24,38 @@ This document tracks the sanity and utility of functional tests following the pr
 | `sh101_chain_tests` | PASS | Adheres to Tier 3 protocol | Refactored for real-time audibility; verified SH-101 signal path |
 | `processor_check` | PASS | Fidelity Audit | Verified oscillator frequency accuracy via hysteresis zero-crossing |
 | `test_juno_chorus` | PASS | Stereo Verification | Verified stereo separation from mode-based chorus processing |
-| `test_tremulant_preset` | PASS | Adheres to Tier 2 protocol | Verified LFO -> Pitch modulation via Matrix (Fixed VCA binding) |
+| `test_tremulant_preset` | PASS | Adheres to Tier 2 protocol | Rewritten for Phase 15A: verified LFO→Pitch via engine_set_lfo_* API; verified clear resets modulation |
+| `lfo_modulation_tests` | PASS | Adheres to Tier 2 protocol | 8 tests: API error codes, vibrato block variance, cutoff LFO amplitude variation, clear-modulations reset |
 | `TimingValidation` | PASS | Driver Stability | Verified callback jitter and sample-accurate clock drift |
 | `SummingBus` | PASS | Unit Test Validation | Verified constant-power panning and 16-voice headroom |
-| **OVERALL** | **PASS** | **100% GREEN** | **Functional and Unit test suites are fully verified (20 functional tests).** |
+| `patch_sequence_test` | PASS | Adheres to Tier 3 protocol | Verified four 8-bar musical phrases (SH-101, TB-303, Juno Pad, Drawbar Organ) |
+| `stereo_poly_tests` | PASS | Stereo Verification | Verified L≠R for panned voices, L=R for centre-panned note |
+| **OVERALL** | **PASS** | **100% GREEN** | **Functional and Unit test suites are fully verified (23 functional tests + 11 new LFO unit tests).** |
+
+---
+
+## Audit Items — Phase 15 (2026-03-16)
+
+All HIGH and MEDIUM items resolved. One LOW item deferred to future feature work.
+
+### Resolved
+
+| ID | Priority | Resolution |
+|----|----------|-----------|
+| A1 | HIGH | `engine_save_patch` stub removed from `AudioBridge.cpp`; `PatchPersistence` test replaced with a comment noting deferral. |
+| A2 | HIGH | `engine_save_patch` declaration removed from `CInterface.h`; `PatchStore` v1 save path left in place but not exposed via API. |
+| A3 | MEDIUM | External integer-ID mod matrix (`engine_connect_mod`, `engine_create_processor`) deprecated in comments. New `engine_set_lfo_*` API (Phase 15A) is the canonical LFO path. Full removal deferred to Phase 16. |
+| B1 | HIGH | `MoogLadderProcessor` and `DiodeLadderProcessor`: `resonance_cv` → `res_cv`. |
+| B2 | HIGH | `MoogLadderProcessor` and `DiodeLadderProcessor`: `kybd_cv` port declaration added. |
+| B3 | HIGH | `LfoProcessor`: `lfo_out` → `control_out`. |
+| B4 | HIGH | `LfoProcessor`: `output_port_type()` override added returning `PORT_CONTROL`. |
+| B5 | MEDIUM | `LfoProcessor`: `rate_cv` and `reset` input port declarations added. |
+| C1 | HIGH | `VoiceManager` constructor: `VoiceFactory::createSH101()` replaced with `std::make_unique<Voice>(sample_rate)`. `#include "VoiceFactory.hpp"` removed. |
+| D1 | HIGH | `MoogLadderProcessor::do_pull`: `snprintf` + `log_message` block removed entirely. |
+| D2 | MEDIUM | `AdsrEnvelopeProcessor::gate_on`: `log_message("ADSR", "Gate On")` replaced with RT-safe `log_event("ADSR", 1.0f)`. |
+
+### Deferred
+
+| ID | Priority | Item | Deferred To |
+|----|----------|------|-------------|
+| B6 | LOW | `DrawbarOrganProcessor`: `percussion` and `percussion_decay` parameters not declared. | Phase 16+ — implement when percussion chiff feature lands. |

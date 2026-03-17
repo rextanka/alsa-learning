@@ -173,6 +173,10 @@ void Voice::note_off() {
 
 bool Voice::is_active() const {
     if (active_) return true;
+    // RT-SAFETY WARNING: dynamic_cast on the audio thread violates the no-RTTI policy
+    // for the hot path. This is a known policy exception — VoiceManager calls is_active()
+    // from the audio callback to determine voice stealing candidates. A Phase 16 fix
+    // would replace this with a typed active_state enum cached on the Voice.
     for (const auto& entry : signal_chain_) {
         if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(entry.node.get())) {
             return env->is_active();

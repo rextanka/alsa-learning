@@ -32,10 +32,11 @@ public:
         update_coefficients();
 
         // Phase 15: named port declarations
-        declare_port({"audio_in",     PORT_AUDIO,   PortDirection::IN});
-        declare_port({"audio_out",    PORT_AUDIO,   PortDirection::OUT});
-        declare_port({"cutoff_cv",    PORT_CONTROL, PortDirection::IN,  false}); // bipolar [-1,1]
-        declare_port({"resonance_cv", PORT_CONTROL, PortDirection::IN,  true});  // unipolar [0,1]
+        declare_port({"audio_in",  PORT_AUDIO,   PortDirection::IN});
+        declare_port({"audio_out", PORT_AUDIO,   PortDirection::OUT});
+        declare_port({"cutoff_cv", PORT_CONTROL, PortDirection::IN, false}); // bipolar [-1,1]
+        declare_port({"res_cv",    PORT_CONTROL, PortDirection::IN, true});  // unipolar [0,1]
+        declare_port({"kybd_cv",   PORT_CONTROL, PortDirection::IN, false}); // bipolar, 1V/oct keyboard tracking
 
         declare_parameter({"cutoff",    "Cutoff Frequency", 20.0f, 20000.0f, 20000.0f, true});
         declare_parameter({"resonance", "Resonance",         0.0f,     1.0f,     0.0f});
@@ -59,14 +60,6 @@ protected:
     void do_pull(std::span<float> output, const VoiceContext* /* voice_context */ = nullptr) override {
         for (auto& sample : output) {
             process_sample(sample);
-        }
-        
-        // Safety Cutoff Logging (instrumentation)
-        static int log_throttle = 0;
-        if (log_throttle++ % 100 == 0) {
-             char buf[128];
-             std::snprintf(buf, sizeof(buf), "[Filter Audit] Cutoff: %.1f Hz, g: %.4f", cutoff_, g_);
-             audio::AudioLogger::instance().log_message("Filter", buf);
         }
     }
 
