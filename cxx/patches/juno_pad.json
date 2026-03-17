@@ -5,13 +5,16 @@
     {
       "id": 0,
       "chain": [
-        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
-        { "type": "ADSR_ENVELOPE",        "tag": "ENV" },
-        { "type": "VCA",                  "tag": "VCA" }
+        { "type": "LFO",                  "tag": "LFO1" },
+        { "type": "COMPOSITE_GENERATOR",  "tag": "VCO"  },
+        { "type": "ADSR_ENVELOPE",        "tag": "ENV"  },
+        { "type": "VCA",                  "tag": "VCA"  }
       ],
       "connections": [
-        { "from_tag": "ENV", "from_port": "envelope_out",
-          "to_tag":   "VCA", "to_port":   "gain_cv" }
+        { "from_tag": "LFO1", "from_port": "control_out",
+          "to_tag":   "VCO",  "to_port":   "pitch_cv" },
+        { "from_tag": "ENV",  "from_port": "envelope_out",
+          "to_tag":   "VCA",  "to_port":   "gain_cv" }
       ],
       "parameters": {
         "saw_gain":      1.0,
@@ -24,7 +27,9 @@
         "amp_sustain":  0.8,
         "amp_release":  0.6,
         "vcf_cutoff":   2000.0,
-        "vcf_res":      0.1
+        "vcf_res":      0.1,
+        "rate":         0.5,
+        "intensity":    0.004
       }
     }
   ]

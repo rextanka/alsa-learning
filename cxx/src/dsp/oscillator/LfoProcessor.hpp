@@ -60,6 +60,26 @@ public:
         waveform_ = wave;
     }
 
+    bool apply_parameter(const std::string& name, float value) override {
+        if (name == "rate") {
+            frequency_ = static_cast<double>(value);
+            return true;
+        }
+        if (name == "intensity") {
+            intensity_ = value;
+            return true;
+        }
+        if (name == "waveform") {
+            int w = static_cast<int>(value);
+            if (w >= 0 && w <= 3) {
+                waveform_ = static_cast<Waveform>(w);
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
+
     void set_smoothing_time(double seconds) {
         smoothing_time_ = seconds;
         last_block_size_ = 0; // force recompute on next do_pull

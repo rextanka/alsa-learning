@@ -139,21 +139,6 @@ public:
     void rebuild_all_voices(const std::function<std::unique_ptr<Voice>()>& factory);
 
     /**
-     * @brief Clear all modulation connections for a specific processor ID.
-     */
-    void clear_connections(int id);
-
-    /**
-     * @brief Add a modulation connection.
-     */
-    void add_connection(int source_id, int target_id, int param, float intensity);
-
-    /**
-     * @brief Set a modulation source processor.
-     */
-    void set_mod_source(int id, std::shared_ptr<Processor> processor);
-
-    /**
      * @brief Set the diagnostic tap to monitor mono output.
      */
     void set_diagnostic_tap(AudioTap* tap) { diagnostic_tap_ = tap; }
@@ -203,37 +188,11 @@ private:
     MidiParser midi_parser_;
     int sample_rate_;
     std::unique_ptr<SummingBus> summing_bus_;
-
-public:
-    struct Connection {
-        int source_id;
-        int target_id;
-        int param;
-        float intensity;
-    };
-
-    const std::vector<Connection>& get_connections() const { return connections_; }
-    const std::unordered_map<int, std::shared_ptr<Processor>>& get_mod_sources() const { return mod_sources_; }
-
-private:
-    std::vector<Connection> connections_;
-    std::unordered_map<int, std::shared_ptr<Processor>> mod_sources_;
-    std::vector<float> mod_buffer_;
-    float voice_spread_ = 0.5f; // Default 50% spread
+    float voice_spread_ = 0.5f;
     AudioTap* diagnostic_tap_ = nullptr;
 
 public:
     const std::array<VoiceSlot, MAX_VOICES>& get_voices() const { return voices_; }
-
-    /**
-     * @brief Apply a function to every voice in the pool (control thread only).
-     *
-     * Used by the LFO C API to configure per-voice LFO and modulation matrix
-     * without exposing the full VoiceSlot internals.
-     */
-    void for_each_voice(const std::function<void(Voice&)>& fn) {
-        for (auto& slot : voices_) { fn(*slot.voice); }
-    }
 };
 
 } // namespace audio

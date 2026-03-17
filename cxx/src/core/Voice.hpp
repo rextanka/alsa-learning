@@ -9,13 +9,10 @@
 #include "Processor.hpp"
 #include "VcaProcessor.hpp"
 #include "filter/FilterProcessor.hpp"
-#include "oscillator/LfoProcessor.hpp"
 #include "routing/CompositeGenerator.hpp"
 #include "envelope/AdsrEnvelopeProcessor.hpp"
 #include "AudioGraph.hpp"
-#include "ModulationMatrix.hpp"
 #include <memory>
-#include <array>
 #include <vector>
 #include <string>
 #include <string_view>
@@ -36,8 +33,6 @@ public:
     void reset() override;
 
     FilterProcessor* filter() { return filter_.get(); }
-    LfoProcessor& lfo() { return *lfo_; }
-    ModulationMatrix& matrix() { return matrix_; }
 
     void set_filter_type(std::unique_ptr<FilterProcessor> filter);
     void set_filter_type(int type); // 0: Moog, 1: Diode
@@ -137,29 +132,17 @@ public:
     void pull_mono(std::span<float> output, const VoiceContext* context = nullptr);
 
 private:
-    void apply_modulation();
-
     std::unique_ptr<FilterProcessor> filter_;
-    std::unique_ptr<LfoProcessor> lfo_;
     std::unique_ptr<AudioGraph> graph_;
-    
-    ModulationMatrix matrix_;
-    
-    // Base parameters (anchors for modulation)
+
+    // Base parameters (anchors for CV modulation)
     double base_frequency_;
     float base_cutoff_;
     float base_resonance_;
     float base_amplitude_;
 
-    // Current modulated parameters
-    double current_frequency_;
-    [[maybe_unused]] float current_amplitude_; // reserved for amplitude modulation routing
-
     int sample_rate_;
     float pan_; // -1.0 to 1.0
-
-    // Temporary buffers for modulation sources
-    std::array<float, static_cast<size_t>(ModulationSource::Count)> current_source_values_;
 
     uint32_t log_counter_;
     bool active_;

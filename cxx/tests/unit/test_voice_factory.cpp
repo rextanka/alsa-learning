@@ -101,14 +101,7 @@ TEST_F(VoiceFactoryTest, BakeFailsWhenLastNodeIsPortControl) {
     EXPECT_THROW(bad.bake(), std::logic_error);
 }
 
-TEST_F(VoiceFactoryTest, BakeFailsOnConsecutivePortControlNodes) {
-    Voice bad(kSR);
-    bad.add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
-    bad.add_processor(std::make_unique<AdsrEnvelopeProcessor>(kSR), "ENV1");
-    bad.add_processor(std::make_unique<AdsrEnvelopeProcessor>(kSR), "ENV2");
-    bad.add_processor(std::make_unique<VcaProcessor>(), "VCA");
-    EXPECT_THROW(bad.bake(), std::logic_error);
-}
+// Phase 16: consecutive PORT_CONTROL nodes are now valid (e.g. LFO + ENV before VCA).
 
 // --- Phase 15: PortConnection / bake() validation ---
 

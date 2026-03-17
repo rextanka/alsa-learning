@@ -10,7 +10,6 @@
 #include "SawtoothOscillatorProcessor.hpp"
 #include "TriangleOscillatorProcessor.hpp"
 #include "WavetableOscillatorProcessor.hpp"
-#include "LfoProcessor.hpp"
 #include "AdsrEnvelopeProcessor.hpp"
 #include "ADEnvelopeProcessor.hpp"
 #include "MoogLadderProcessor.hpp"
@@ -89,8 +88,6 @@ struct EngineHandleImpl : public HandleBase {
     audio::TwelveToneEqual tuning;
     std::unordered_map<std::string, int> param_name_to_id;
     int sample_rate;
-    int next_processor_id = 100; // Start at 100 to avoid confusion with voice indices
-
     // Phase 15: pending chain spec (built up by engine_add_module / engine_connect_ports)
     struct ModuleSpec { std::string type_name; std::string tag; };
     std::vector<ModuleSpec> pending_modules;
@@ -378,7 +375,21 @@ int envelope_is_active(EnvelopeHandle handle) {
 
 EngineHandle engine_create(unsigned int sample_rate) {
     audio::register_builtin_processors();
-    try { return static_cast<EngineHandle>(new EngineHandleImpl(sample_rate)); } catch (...) { return nullptr; }
+    EngineHandle handle = nullptr;
+    try {
+        handle = static_cast<EngineHandle>(new EngineHandleImpl(sample_rate));
+    } catch (...) { return nullptr; }
+
+    // Bootstrap a default VCO → ENV → VCA chain so the engine produces audio
+    // immediately after engine_create() without requiring an explicit engine_bake().
+    // Callers that invoke engine_add_module() + engine_bake() will replace this chain.
+    engine_add_module(handle, "COMPOSITE_GENERATOR", "VCO");
+    engine_add_module(handle, "ADSR_ENVELOPE",       "ENV");
+    engine_add_module(handle, "VCA",                 "VCA");
+    engine_connect_ports(handle, "ENV", "envelope_out", "VCA", "gain_cv");
+    engine_bake(handle);
+    set_param(handle, "sine_gain", 1.0f); // default: sine oscillator active
+    return handle;
 }
 
 void engine_destroy(EngineHandle handle) {
@@ -569,84 +580,6 @@ int engine_get_xrun_count(EngineHandle handle) {
     return impl->driver->get_xrun_count();
 }
 
-// ---------------------------------------------------------------------------
-// Phase 15A: LFO API — configures the internal per-voice LFO and ModulationMatrix.
-// All functions iterate every voice slot via for_each_voice(); the audio thread
-// reads these settings at the next block boundary (no lock needed — the writes
-// are float/enum assignments which are naturally atomic on any LP64 platform).
-// ---------------------------------------------------------------------------
-
-int engine_set_lfo_rate(EngineHandle handle, float hz) {
-    if (!handle) return -1;
-    auto* impl = static_cast<EngineHandleImpl*>(handle);
-    impl->voice_manager->for_each_voice([hz](audio::Voice& v) {
-        v.lfo().set_frequency(static_cast<double>(hz));
-    });
-    return 0;
-}
-
-int engine_set_lfo_intensity(EngineHandle handle, float intensity) {
-    if (!handle) return -1;
-    auto* impl = static_cast<EngineHandleImpl*>(handle);
-    impl->voice_manager->for_each_voice([intensity](audio::Voice& v) {
-        v.lfo().set_intensity(intensity);
-    });
-    return 0;
-}
-
-int engine_set_lfo_waveform(EngineHandle handle, int waveform) {
-    if (!handle) return -1;
-    auto* impl = static_cast<EngineHandleImpl*>(handle);
-    audio::LfoProcessor::Waveform w;
-    switch (waveform) {
-        case LFO_WAVEFORM_SINE:     w = audio::LfoProcessor::Waveform::Sine;     break;
-        case LFO_WAVEFORM_TRIANGLE: w = audio::LfoProcessor::Waveform::Triangle; break;
-        case LFO_WAVEFORM_SQUARE:   w = audio::LfoProcessor::Waveform::Square;   break;
-        case LFO_WAVEFORM_SAW:      w = audio::LfoProcessor::Waveform::Saw;      break;
-        default: return -1;
-    }
-    impl->voice_manager->for_each_voice([w](audio::Voice& v) {
-        v.lfo().set_waveform(w);
-    });
-    return 0;
-}
-
-int engine_set_lfo_depth(EngineHandle handle, int target, float depth) {
-    if (!handle) return -1;
-    auto* impl = static_cast<EngineHandleImpl*>(handle);
-    audio::ModulationTarget t;
-    switch (target) {
-        case LFO_TARGET_PITCH:      t = audio::ModulationTarget::Pitch;      break;
-        case LFO_TARGET_CUTOFF:     t = audio::ModulationTarget::Cutoff;     break;
-        case LFO_TARGET_RESONANCE:  t = audio::ModulationTarget::Resonance;  break;
-        case LFO_TARGET_AMPLITUDE:  t = audio::ModulationTarget::Amplitude;  break;
-        case LFO_TARGET_PULSEWIDTH: t = audio::ModulationTarget::PulseWidth; break;
-        default: return -1;
-    }
-    impl->voice_manager->for_each_voice([t, depth](audio::Voice& v) {
-        v.matrix().set_connection(audio::ModulationSource::LFO, t, depth);
-    });
-    return 0;
-}
-
-// engine_set_modulation removed in Phase 15 — use engine_set_lfo_* instead.
-
-int engine_clear_modulations(EngineHandle handle) {
-    if (!handle) return -1;
-    auto* impl = static_cast<EngineHandleImpl*>(handle);
-    impl->voice_manager->for_each_voice([](audio::Voice& v) {
-        v.matrix().clear_all();
-        v.lfo().set_intensity(0.0f);
-        // Re-apply the default envelope→amplitude connection that Voice::Voice() sets up.
-        v.matrix().set_connection(
-            audio::ModulationSource::Envelope,
-            audio::ModulationTarget::Amplitude,
-            1.0f);
-    });
-    return 0;
-}
-
-
 /**
  * @brief Load a patch from a JSON file.
  *
@@ -753,7 +686,6 @@ int engine_load_patch(EngineHandle handle, const char* path) {
             float s = patch.parameters.count("sustain") ? patch.parameters.at("sustain") : 0.5f;
             float r = patch.parameters.count("release") ? patch.parameters.at("release") : 0.2f;
             engine_set_adsr(handle, a, d, s, r);
-            engine_clear_modulations(handle);
             return 0;
         }
     } catch (const std::exception& e) {
@@ -836,62 +768,6 @@ int set_param(void* handle, const char* name, float value) {
 
         return -1;
     } catch (...) { return -1; }
-}
-
-int engine_create_processor(EngineHandle handle, int type) {
-    if (!handle) return -1;
-    auto* impl = static_cast<EngineHandleImpl*>(handle);
-    
-    int id = impl->next_processor_id++;
-    std::shared_ptr<audio::Processor> processor;
-
-    switch (type) {
-        case PROC_LFO:
-            processor = std::make_shared<audio::LfoProcessor>(impl->sample_rate);
-            break;
-        case PROC_OSCILLATOR:
-            processor = std::make_shared<audio::SineOscillatorProcessor>(impl->sample_rate);
-            break;
-        case PROC_FILTER:
-            processor = std::make_shared<audio::MoogLadderProcessor>(impl->sample_rate);
-            break;
-        default:
-            return -1;
-    }
-
-    impl->voice_manager->set_mod_source(id, processor);
-    return id;
-}
-
-int engine_connect_mod(EngineHandle handle, int source_id, int target_id, int param, float intensity) {
-    if (!handle) return -1;
-    auto* impl = static_cast<EngineHandleImpl*>(handle);
-    impl->voice_manager->add_connection(source_id, target_id, param, intensity);
-    return 0;
-}
-
-int engine_get_modulation_report(EngineHandle handle, char* buffer, size_t buffer_size) {
-    if (!handle || !buffer || buffer_size == 0) return -1;
-    auto* impl = static_cast<EngineHandleImpl*>(handle);
-    
-    std::string report = "Modulation Report:\n";
-    report += "------------------\n";
-    
-    auto& conns = impl->voice_manager->get_connections();
-    for (const auto& c : conns) {
-        report += "Src: " + std::to_string(c.source_id);
-        report += " -> Tgt: " + std::to_string(c.target_id);
-        report += " (Param: " + std::to_string(c.param);
-        report += ") @ " + std::to_string(c.intensity) + "\n";
-    }
-    
-    if (conns.empty()) {
-        report += "No active connections.\n";
-    }
-    
-    std::strncpy(buffer, report.c_str(), buffer_size - 1);
-    buffer[buffer_size - 1] = '\0';
-    return 0;
 }
 
 int engine_audiotap_reset(EngineHandle handle) {
