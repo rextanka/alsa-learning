@@ -65,7 +65,10 @@ public:
     // -------------------------------------------------------------------------
 
     /**
-     * @brief Append a node to the signal chain and assign it a tag.
+     * @brief Append a node and assign it a tag.
+     *
+     * PORT_AUDIO nodes are appended to signal_chain_ (the audio path).
+     * PORT_CONTROL nodes are appended to mod_sources_ (the CV/modulation path).
      *
      * Must only be called when the voice is Idle (not on the audio thread).
      * Invalidates the baked state — call bake() again before playing.
@@ -75,16 +78,16 @@ public:
     /**
      * @brief Validate the chain and mark it ready for audio-thread use.
      *
-     * Verifies that signal_chain_[0] is a Generator (CompositeGenerator).
-     * Throws std::logic_error if validation fails.
+     * Verifies that signal_chain_ is non-empty, that the first node outputs
+     * PORT_AUDIO (the audio generator), and that the last node outputs PORT_AUDIO
+     * (the chain sink). Throws std::logic_error if validation fails.
      * Must be called after all add_processor() calls and before note_on().
      */
     void bake();
 
     /**
-     * @brief Find the first chain node with the given tag. Returns nullptr if not found.
-     *
-     * Linear scan — O(n) on chain length. Called from control thread only.
+     * @brief Find a node with the given tag in signal_chain_ or mod_sources_.
+     * Returns nullptr if not found. Linear scan — O(n). Control thread only.
      */
     Processor* find_by_tag(std::string_view tag);
 
@@ -148,14 +151,21 @@ private:
     bool active_;
 
     // -------------------------------------------------------------------------
-    // Phase 15: signal chain (populated via engine_add_module / add_processor / bake)
+    // Phase 15+: audio chain and modulation sources
+    //
+    // signal_chain_ — ordered list of PORT_AUDIO nodes (VCO → [VCF] → VCA).
+    //                 The first node is the audio generator; the last is the sink.
+    // mod_sources_  — unordered set of PORT_CONTROL generators (LFO, ADSR, …).
+    //                 Pulled first each block; their output is routed to named
+    //                 input ports on signal_chain_ nodes via connections_.
     // -------------------------------------------------------------------------
     struct ChainEntry {
         std::unique_ptr<Processor> node;
         std::string tag;
     };
     std::vector<ChainEntry> signal_chain_;
-    std::vector<PortConnection> connections_; // Phase 15: named port wiring
+    std::vector<ChainEntry> mod_sources_;
+    std::vector<PortConnection> connections_;
     bool baked_ = false;
 };
 
