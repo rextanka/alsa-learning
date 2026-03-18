@@ -220,9 +220,36 @@ AUDIO_API int engine_bake(EngineHandle handle);
 AUDIO_API int engine_audiotap_reset(EngineHandle handle);
 AUDIO_API int engine_audiotap_read(EngineHandle handle, float* buffer, size_t frames);
 
-// FX API
+// FX API (per-voice chorus)
 AUDIO_API int engine_set_chorus_mode(EngineHandle handle, int mode); // 0=Off, 1=I, 2=II, 3=I+II
 AUDIO_API int engine_set_chorus_enabled(EngineHandle handle, int enabled);
+
+// ---------------------------------------------------------------------------
+// Phase 19: Global Post-Processing Chain
+//
+// Effects are appended in order after voice summing and chorus.
+// Supported type_name values: "REVERB_FREEVERB", "REVERB_FDN", "PHASER"
+//
+// Typical usage:
+//   int idx = engine_post_chain_push(h, "REVERB_FDN");
+//   engine_post_chain_set_param(h, idx, "decay",  2.5f);
+//   engine_post_chain_set_param(h, idx, "wet",    0.4f);
+//   engine_post_chain_set_param(h, idx, "damping", 0.3f);
+//   // ... play notes ...
+//   engine_post_chain_clear(h);
+// ---------------------------------------------------------------------------
+
+/** Append an effect to the global post-processing chain.
+ *  Returns the 0-based index of the new effect, or -1 on unknown type. */
+AUDIO_API int engine_post_chain_push(EngineHandle handle, const char* type_name);
+
+/** Set a parameter on the effect at fx_index in the post chain.
+ *  Returns 0 on success, -1 if index is out of range or name is unknown. */
+AUDIO_API int engine_post_chain_set_param(EngineHandle handle, int fx_index,
+                                          const char* name, float value);
+
+/** Remove all effects from the post chain. */
+AUDIO_API int engine_post_chain_clear(EngineHandle handle);
 
 // Logging API
 AUDIO_API void audio_log_message(const char* tag, const char* message);

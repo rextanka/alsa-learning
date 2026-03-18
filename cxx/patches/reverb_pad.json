@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "name": "reverb_pad",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
+        { "type": "VCA",                 "tag": "VCA" }
+      ],
+      "connections": [
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv" }
+      ],
+      "parameters": {
+        "VCO": { "sine_gain": 0.7, "triangle_gain": 0.3 },
+        "ENV": { "attack": 0.05, "decay": 0.3, "sustain": 0.8, "release": 2.0 }
+      }
+    }
+  ]
+}
