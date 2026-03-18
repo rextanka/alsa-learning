@@ -219,6 +219,19 @@ public:
     virtual void inject_cv(std::string_view /*port_name*/, std::span<const float> /*cv*/) {}
 
     /**
+     * @brief Inject a named audio input span before the next do_pull() call.
+     *
+     * Called by the Voice graph executor for multi-audio-input nodes (RING_MOD,
+     * filter fm_in, VCO fm_in). The injected span is valid for the current block
+     * only — processors must not store the span pointer across blocks.
+     *
+     * Default: no-op. Override in processors that consume secondary audio inputs
+     * (RING_MOD audio_in_a/audio_in_b, COMPOSITE_GENERATOR fm_in,
+     *  MOOG_FILTER/DIODE_FILTER fm_in, AUDIO_SPLITTER audio_in).
+     */
+    virtual void inject_audio(std::string_view /*port_name*/, std::span<const float> /*audio*/) {}
+
+    /**
      * @brief Notification that a note-on event has occurred.
      *
      * Called by Voice::note_on() for all mod_sources before audio processing.

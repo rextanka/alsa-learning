@@ -158,19 +158,47 @@ public:
 
     PortType output_port_type() const override { return PortType::PORT_AUDIO; }
 
+    /**
+     * @brief Inject the fm_in audio buffer for audio-rate frequency modulation.
+     *
+     * Called by Voice::pull_mono before do_pull() when VCO2.audio_out is
+     * connected to VCO1.fm_in. The span is valid for the current block only.
+     */
+    void inject_audio(std::string_view port_name,
+                      std::span<const float> audio) override {
+        if (port_name == "fm_in") fm_in_ = audio;
+    }
+
 protected:
     /**
      * @brief RT-SAFE: per-sample tick loop.
      *
      * Fills output with the soft-saturated mix of all oscillators weighted
-     * by the SourceMixer gains. No allocations.
+     * by the SourceMixer gains. When fm_in_ is non-empty, each oscillator's
+     * frequency is shifted by fm_depth_ * fm_in[i] octaves before the sample
+     * is generated, then restored — giving audio-rate VCO-to-VCO FM.
      */
     void do_pull(std::span<float> output,
                  const VoiceContext* context = nullptr) override {
         auto* pulse = pulse_osc_.get();
         auto* sub   = sub_osc_.get();
+        const bool has_fm = !fm_in_.empty() && fm_depth_ > 0.0f;
 
         for (size_t i = 0; i < output.size(); ++i) {
+            if (has_fm) {
+                // Apply per-sample FM: shift frequency by fm_depth * fm_in[i] octaves.
+                const double fm_oct = static_cast<double>(fm_depth_ * fm_in_[i]);
+                const double f_mod  = base_freq_
+                    * std::pow(2.0, transpose_ / 12.0)
+                    * std::pow(2.0, static_cast<double>(detune_cents_) / 1200.0)
+                    * std::pow(2.0, fm_oct);
+                pulse_osc_->set_frequency(f_mod);
+                saw_osc_->set_frequency(f_mod);
+                sine_osc_->set_frequency(f_mod);
+                tri_osc_->set_frequency(f_mod);
+                wavetable_osc_->setFrequency(f_mod);
+            }
+
             float p_sample    = static_cast<float>(pulse->tick());
             float s_sample    = static_cast<float>(sub->generate_sample(pulse->get_phase()));
             float sine_sample = static_cast<float>(sine_osc_->tick());
@@ -193,6 +221,7 @@ protected:
 
             output[i] = mixer_->mix(inputs);
         }
+        fm_in_ = {}; // clear after use — injected spans are per-block only
     }
 
 private:
@@ -200,7 +229,8 @@ private:
     double base_freq_    = 440.0; // last frequency set via set_frequency() before offsets
     double transpose_    = 0.0;   // semitones (−24–+24)
     float  detune_cents_ = 0.0f;  // cents (−100–+100)
-    float  fm_depth_     = 0.0f;  // 0.0–1.0, fm_in scaling (Phase 17)
+    float  fm_depth_     = 0.0f;  // 0.0–1.0, fm_in scaling
+    std::span<const float> fm_in_; // injected audio-rate FM signal (per-block, cleared after use)
 
     std::unique_ptr<PulseOscillatorProcessor>    pulse_osc_;
     std::unique_ptr<SubOscillator>               sub_osc_;

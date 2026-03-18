@@ -32,9 +32,26 @@ public:
         for (int i = 0; i < 4; ++i) stage_[i] = 0.0f;
 
         declare_port({"fm_in", PORT_AUDIO, PortDirection::IN}); // audio-rate cutoff FM
+        declare_parameter({"fm_depth", "FM Depth", 0.0f, 1.0f, 0.0f});
 
         // Initialise g_ from the default base_cutoff_
         update_cutoff_coefficient(base_cutoff_);
+    }
+
+    /**
+     * @brief Inject the fm_in audio buffer for audio-rate cutoff modulation.
+     *
+     * When connected, the signed audio signal is scaled by fm_depth_ and
+     * added to the effective cutoff (in octaves) per sample in do_pull.
+     */
+    void inject_audio(std::string_view port_name,
+                      std::span<const float> audio) override {
+        if (port_name == "fm_in") fm_in_ = audio;
+    }
+
+    bool apply_parameter(const std::string& name, float value) override {
+        if (name == "fm_depth") { fm_depth_ = std::clamp(value, 0.0f, 1.0f); return true; }
+        return VcfBase::apply_parameter(name, value);
     }
 
 protected:
@@ -48,8 +65,30 @@ protected:
         for (int i = 0; i < 4; ++i) stage_[i] = 0.0f;
     }
 
+    // Override do_pull to handle per-sample audio-rate FM when fm_in_ is present.
+    void do_pull(std::span<float> output,
+                 const VoiceContext* ctx = nullptr) override {
+        if (fm_in_.empty() || fm_depth_ == 0.0f) {
+            VcfBase::do_pull(output, ctx);
+        } else {
+            for (size_t i = 0; i < output.size(); ++i) {
+                const float eff_cv = cutoff_cv_ + kybd_cv_ + fm_depth_ * fm_in_[i];
+                const float fc = std::max(20.0f, base_cutoff_ * std::pow(2.0f, eff_cv));
+                update_cutoff_coefficient(fc);
+                process_sample(output[i]);
+            }
+            // Restore coefficient to block-rate value after FM loop.
+            update_effective_cutoff();
+            fm_in_ = {};
+        }
+    }
+
     float stage_[4];
     float g_ = 0.0f; ///< frequency coefficient (pre-warped via tan)
+
+private:
+    std::span<const float> fm_in_;   ///< injected audio-rate FM signal (per-block)
+    float fm_depth_ = 0.0f;          ///< 0–1 scale factor on fm_in
 };
 
 } // namespace audio

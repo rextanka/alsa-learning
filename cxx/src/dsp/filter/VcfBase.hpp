@@ -49,6 +49,7 @@ public:
         declare_port({"cutoff_cv", PORT_CONTROL, PortDirection::IN, false}); // bipolar 1V/oct
         declare_port({"res_cv",    PORT_CONTROL, PortDirection::IN, true});  // unipolar additive
         declare_port({"kybd_cv",   PORT_CONTROL, PortDirection::IN, false}); // bipolar 1V/oct
+        // fm_in declared in LadderVcfBase for MOOG_FILTER and DIODE_FILTER only
 
         declare_parameter({"cutoff",    "Cutoff Frequency", 20.0f, 20000.0f, 20000.0f, true});
         declare_parameter({"resonance", "Resonance",         0.0f,     1.0f,     0.0f});

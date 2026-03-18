@@ -178,6 +178,49 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
             node->apply_parameter("kybd_cv", kybd_cv);
     }
 
+    // --- Audio bus: pre-pull audio nodes that supply secondary audio inputs.
+    //
+    // An audio_source is any signal_chain_ node whose audio_out is explicitly
+    // connected to a non-primary audio input on another node (i.e., to_port is
+    // not "audio_in" — covers audio_in_a, audio_in_b, fm_in, etc.).
+    // Those nodes pull into their own borrowed buffer so the receiving node can
+    // inject the correct signal via inject_audio() before its own do_pull().
+    // -------------------------------------------------------------------------
+    static constexpr size_t kMaxAudioBus = 8;
+    BufferPool::BufferPtr audio_bus_ptrs[kMaxAudioBus];
+    std::span<float>      audio_bus_spans[kMaxAudioBus];
+    const char*           audio_bus_tags[kMaxAudioBus];
+    size_t                num_audio_bus = 0;
+
+    auto is_audio_source = [&](const std::string& tag) -> bool {
+        for (const auto& conn : connections_) {
+            if (conn.from_tag == tag
+                && conn.from_port.size() >= 9
+                && conn.from_port.compare(0, 9, "audio_out") == 0
+                && conn.to_port != "audio_in") {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    auto find_audio_bus = [&](const std::string& tag) -> std::span<float> {
+        for (size_t i = 0; i < num_audio_bus; ++i)
+            if (tag == audio_bus_tags[i]) return audio_bus_spans[i];
+        return {};
+    };
+
+    for (auto& entry : signal_chain_) {
+        if (num_audio_bus >= kMaxAudioBus) break;
+        if (is_audio_source(entry.tag)) {
+            audio_bus_ptrs[num_audio_bus]  = graph_->borrow_buffer();
+            audio_bus_spans[num_audio_bus] = std::span<float>(
+                audio_bus_ptrs[num_audio_bus]->left.data(), output.size());
+            audio_bus_tags[num_audio_bus]  = entry.tag.c_str();
+            ++num_audio_bus;
+        }
+    }
+
     // Pass 2: execute audio chain. signal_chain_ contains only PORT_AUDIO nodes.
     for (auto& entry : signal_chain_) {
         if ([[maybe_unused]] auto* vca = dynamic_cast<VcaProcessor*>(entry.node.get()); vca != nullptr) {
@@ -199,6 +242,26 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
             }
 
         } else {
+            // Before pulling: inject any explicit audio inputs from the audio bus.
+            // This handles RING_MOD (audio_in_a/audio_in_b), fm_in on VCO/filters, etc.
+            for (const auto& conn : connections_) {
+                if (conn.to_tag != entry.tag) continue;
+                if (conn.to_port == "audio_in") continue; // primary inline — skip
+                if (conn.to_port.size() < 8 || conn.to_port.compare(0, 8, "audio_in") != 0) continue;
+                // Named secondary audio input (audio_in_a, audio_in_b, fm_in skipped below)
+                auto abus = find_audio_bus(conn.from_tag);
+                if (!abus.empty())
+                    entry.node->inject_audio(conn.to_port, std::span<const float>(abus));
+            }
+            // Inject fm_in connections separately (port name doesn't start with "audio_in")
+            for (const auto& conn : connections_) {
+                if (conn.to_tag != entry.tag) continue;
+                if (conn.to_port != "fm_in") continue;
+                auto abus = find_audio_bus(conn.from_tag);
+                if (!abus.empty())
+                    entry.node->inject_audio(conn.to_port, std::span<const float>(abus));
+            }
+
             // PORT_AUDIO node: apply any incoming CV connections first.
             for (const auto& conn : connections_) {
                 if (conn.to_tag != entry.tag) continue;
@@ -223,7 +286,14 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
                     if (target) target->apply_parameter(conn.to_port, cv_mean(cv));
                 }
             }
-            entry.node->pull(output, context);
+
+            // Pull into audio_bus if this node is an audio source; else inline.
+            auto abus = find_audio_bus(entry.tag);
+            if (!abus.empty()) {
+                entry.node->pull(abus, context);
+            } else {
+                entry.node->pull(output, context);
+            }
         }
     }
 }
