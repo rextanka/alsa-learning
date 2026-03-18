@@ -17,6 +17,9 @@
 #include "DelayLine.hpp"
 #include "AudioTap.hpp"
 #include "JunoChorus.hpp"
+#include "../dsp/fx/FreeverbProcessor.hpp"
+#include "../dsp/fx/FdnReverbProcessor.hpp"
+#include "../dsp/fx/PhaserProcessor.hpp"
 #include "VoiceManager.hpp"
 #include "AudioDriver.hpp"
 #ifdef __APPLE__
@@ -95,6 +98,10 @@ struct EngineHandleImpl : public HandleBase {
     // Phase 22A: SMF file sequencer
     audio::MidiFilePlayer midi_player;
 
+    // Phase 19: global post-processing chain (applied after voice summing + chorus).
+    // Each element is a stereo Processor driven via pull(AudioBuffer&).
+    std::vector<std::unique_ptr<audio::Processor>> post_chain;
+
     // Scratch buffers for engine_process stereo path (avoids per-call allocation).
     std::vector<float> process_left;
     std::vector<float> process_right;
@@ -131,9 +138,13 @@ struct EngineHandleImpl : public HandleBase {
 
         // Pull with diagnostic tap
         voice_manager->pull_with_tap(buffer, tap.get());
-        
+
         if (chorus_enabled && chorus) {
             chorus->pull(buffer);
+        }
+
+        for (auto& fx : post_chain) {
+            fx->pull(buffer);
         }
     });
 
@@ -431,6 +442,10 @@ int engine_process(EngineHandle handle, float* output, size_t frames) {
 
         if (impl->chorus_enabled && impl->chorus) {
             impl->chorus->pull(buffer);
+        }
+
+        for (auto& fx : impl->post_chain) {
+            fx->pull(buffer);
         }
 
         // Interleave L/R into the caller's stereo buffer: [L0, R0, L1, R1, ...]
@@ -892,6 +907,40 @@ int engine_midi_rewind(EngineHandle handle) {
 int engine_midi_get_position(EngineHandle handle, uint64_t* tick) {
     if (!handle || !tick) return -1;
     *tick = static_cast<EngineHandleImpl*>(handle)->midi_player.position_ticks();
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 19: Global Post-Processing Chain
+// ---------------------------------------------------------------------------
+
+int engine_post_chain_push(EngineHandle handle, const char* type_name) {
+    if (!handle || !type_name) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    const int sr = impl->sample_rate;
+
+    std::unique_ptr<audio::Processor> fx;
+    const std::string t(type_name);
+    if      (t == "REVERB_FREEVERB") fx = std::make_unique<audio::FreeverbProcessor>(sr);
+    else if (t == "REVERB_FDN")      fx = std::make_unique<audio::FdnReverbProcessor>(sr);
+    else if (t == "PHASER")          fx = std::make_unique<audio::PhaserProcessor>(sr);
+    else return -1;
+
+    impl->post_chain.push_back(std::move(fx));
+    return static_cast<int>(impl->post_chain.size()) - 1;
+}
+
+int engine_post_chain_set_param(EngineHandle handle, int fx_index,
+                                const char* name, float value) {
+    if (!handle || !name || fx_index < 0) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    if (static_cast<size_t>(fx_index) >= impl->post_chain.size()) return -1;
+    return impl->post_chain[static_cast<size_t>(fx_index)]->apply_parameter(name, value) ? 0 : -1;
+}
+
+int engine_post_chain_clear(EngineHandle handle) {
+    if (!handle) return -1;
+    static_cast<EngineHandleImpl*>(handle)->post_chain.clear();
     return 0;
 }
 

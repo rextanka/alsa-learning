@@ -38,6 +38,9 @@
 #include "../dsp/routing/AudioSplitterProcessor.hpp"
 #include "../dsp/dynamics/NoiseGateProcessor.hpp"
 #include "../dsp/dynamics/EnvelopeFollowerProcessor.hpp"
+#include "../dsp/fx/FreeverbProcessor.hpp"
+#include "../dsp/fx/FdnReverbProcessor.hpp"
+#include "../dsp/fx/PhaserProcessor.hpp"
 
 namespace audio {
 
@@ -163,6 +166,21 @@ void register_builtin_processors() {
         "ENVELOPE_FOLLOWER",
         "Extracts a dynamic control signal (RMS envelope) from the audio input",
         [](int sr) { return std::make_unique<EnvelopeFollowerProcessor>(sr); }
+    );
+    reg.register_module(
+        "REVERB_FREEVERB",
+        "Schroeder/Freeverb stereo reverb: 8 parallel combs + 4 series all-pass per channel",
+        [](int sr) { return std::make_unique<FreeverbProcessor>(sr); }
+    );
+    reg.register_module(
+        "REVERB_FDN",
+        "Jean-Marc Jot FDN reverb: 8-line Householder network with exact T60 feedback gains",
+        [](int sr) { return std::make_unique<FdnReverbProcessor>(sr); }
+    );
+    reg.register_module(
+        "PHASER",
+        "4/8-stage all-pass phaser with stereo quadrature LFO and feedback comb",
+        [](int sr) { return std::make_unique<PhaserProcessor>(sr); }
     );
 }
 
