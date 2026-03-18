@@ -27,6 +27,7 @@ public:
     void set_stereo_callback(StereoAudioCallback callback) override;
     int sample_rate() const override { return sample_rate_; }
     int block_size() const override { return block_size_; }
+    std::string device_name() const override;
 
 private:
     static OSStatus render_callback(

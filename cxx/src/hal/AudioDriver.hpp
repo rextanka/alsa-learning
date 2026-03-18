@@ -13,7 +13,10 @@
 
 #include <functional>
 #include <span>
+#include <string>
+#include <vector>
 #include "AudioBuffer.hpp"
+#include "HostDeviceInfo.hpp"
 
 namespace hal {
 
@@ -78,6 +81,24 @@ public:
      * @return int Xrun count (default 0 if unsupported).
      */
     virtual int get_xrun_count() const { return 0; }
+
+    /**
+     * @brief Name of the currently open hardware device.
+     * Returns a human-readable string (e.g. "MacBook Pro Speakers",
+     * "HDA Intel PCH: ALC256 Analog").
+     */
+    virtual std::string device_name() const { return "Unknown"; }
+
+    /**
+     * @brief Enumerate all output-capable audio devices on this host.
+     *
+     * Declared here; defined in the platform-specific .cpp (CoreAudioDriver.cpp
+     * on Apple, AlsaDriver.cpp on Linux). No platform headers are required by
+     * callers — the bridge calls this without any OS-specific includes.
+     *
+     * Returns an empty vector if enumeration fails or no devices are found.
+     */
+    static std::vector<HostDeviceInfo> enumerate_devices();
 };
 
 } // namespace hal
