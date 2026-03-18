@@ -30,13 +30,17 @@
 #define RING_MOD_PROCESSOR_HPP
 
 #include "../Processor.hpp"
+#include "../SmoothedParam.hpp"
 #include <algorithm>
 
 namespace audio {
 
 class RingModProcessor : public Processor {
 public:
-    RingModProcessor() {
+    static constexpr float kRampSeconds = 0.010f; // 10 ms
+
+    explicit RingModProcessor(int sample_rate = 48000) {
+        ramp_samples_ = static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds);
         declare_port({"audio_in_a", PORT_AUDIO,   PortDirection::IN});
         declare_port({"audio_in_b", PORT_AUDIO,   PortDirection::IN});
         declare_port({"audio_out",  PORT_AUDIO,   PortDirection::OUT});
@@ -52,7 +56,7 @@ public:
     }
 
     bool apply_parameter(const std::string& name, float value) override {
-        if (name == "mix") { mix_ = std::clamp(value, 0.0f, 1.0f); return true; }
+        if (name == "mix") { mix_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_); return true; }
         return false;
     }
 
@@ -84,14 +88,16 @@ public:
 protected:
     void do_pull(std::span<float> output,
                  const VoiceContext* /*ctx*/ = nullptr) override {
-        const float dry = 1.0f - mix_;
+        mix_.advance(static_cast<int>(output.size()));
+        const float mix_val = mix_.get();
+        const float dry = 1.0f - mix_val;
 
         if (!audio_in_a_.empty() && !audio_in_b_.empty()) {
             // Full ring mod: A × B
             const size_t n = std::min({output.size(), audio_in_a_.size(), audio_in_b_.size()});
             for (size_t i = 0; i < n; ++i) {
                 const float wet = audio_in_a_[i] * audio_in_b_[i];
-                output[i] = dry * audio_in_a_[i] + mix_ * wet;
+                output[i] = dry * audio_in_a_[i] + mix_val * wet;
             }
         } else if (!audio_in_a_.empty()) {
             // Only A injected: apply mod_cv as AM (or self-square if mod_cv=1)
@@ -99,7 +105,7 @@ protected:
             const size_t n = std::min(output.size(), audio_in_a_.size());
             for (size_t i = 0; i < n; ++i) {
                 const float wet = audio_in_a_[i] * mod;
-                output[i] = dry * audio_in_a_[i] + mix_ * wet;
+                output[i] = dry * audio_in_a_[i] + mix_val * wet;
             }
         }
         // If neither injected, output is left as-is (silent / previous content).
@@ -111,10 +117,11 @@ protected:
     }
 
 private:
+    int ramp_samples_ = 480; // default ~10ms at 48kHz
     std::span<const float> audio_in_a_; ///< first VCO audio (injected per-block)
     std::span<const float> audio_in_b_; ///< second VCO audio (injected per-block)
     float mod_cv_  = 0.0f;              ///< LFO modulator (from inject_cv)
-    float mix_     = 1.0f;              ///< 0=dry, 1=wet ring-mod
+    SmoothedParam mix_{1.0f};           ///< 0=dry, 1=wet ring-mod
 };
 
 } // namespace audio

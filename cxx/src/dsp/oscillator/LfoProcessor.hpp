@@ -1,5 +1,5 @@
 /**
- * @file LfoProcessor.hpp 
+ * @file LfoProcessor.hpp
  * @brief Low Frequency Oscillator with block-rate calculation and smoothing.
  */
 
@@ -7,13 +7,14 @@
 #define LFO_PROCESSOR_HPP
 
 #include "../Processor.hpp"
+#include "../SmoothedParam.hpp"
 #include <cmath>
 
 namespace audio {
 
 /**
  * @brief LFO Processor for modulation.
- * 
+ *
  * Supports Sine, Triangle, Square, and Saw waveforms.
  * Implementation is optimized for block-rate calculation.
  */
@@ -26,18 +27,14 @@ public:
         Saw
     };
 
+    static constexpr float kRampSeconds = 0.010f; // 10 ms
+
     explicit LfoProcessor(int sample_rate)
         : sample_rate_(sample_rate)
+        , ramp_samples_(static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds))
         , phase_(0.0)
-        , frequency_(1.0)
-        , intensity_(1.0)
-        , smoothed_intensity_(1.0)
-        , smoothing_time_(0.01)
-        , last_block_size_(0)
         , waveform_(Waveform::Sine)
     {
-        smoothing_coeff_ = 1.0f; // will be computed on first do_pull
-
         // Phase 15: named port declarations
         declare_port({"rate_cv",     PORT_CONTROL, PortDirection::IN,  true});  // unipolar, scales frequency
         declare_port({"reset",       PORT_CONTROL, PortDirection::IN,  true});  // lifecycle-style trigger
@@ -50,11 +47,11 @@ public:
     }
 
     void set_frequency(double freq) override {
-        frequency_ = freq;
+        rate_.set_target(static_cast<float>(freq), ramp_samples_);
     }
 
     void set_intensity(float intensity) {
-        intensity_ = intensity;
+        intensity_.set_target(intensity, ramp_samples_);
     }
 
     void set_waveform(Waveform wave) {
@@ -63,14 +60,15 @@ public:
 
     bool apply_parameter(const std::string& name, float value) override {
         if (name == "rate") {
-            frequency_ = static_cast<double>(value);
+            rate_.set_target(static_cast<float>(std::max(0.01f, value)), ramp_samples_);
             return true;
         }
         if (name == "intensity") {
-            intensity_ = value;
+            intensity_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_);
             return true;
         }
         if (name == "waveform") {
+            // snap — discrete selector
             int w = static_cast<int>(value);
             if (w >= 0 && w <= 3) {
                 waveform_ = static_cast<Waveform>(w);
@@ -79,34 +77,32 @@ public:
             return false;
         }
         if (name == "delay") {
-            delay_time_ = std::max(0.0f, value);
-            delay_samples_remaining_ = static_cast<size_t>(delay_time_ * sample_rate_);
+            delay_time_.set_target(std::max(0.0f, value), ramp_samples_);
+            delay_samples_remaining_ = static_cast<size_t>(delay_time_.get() * static_cast<float>(sample_rate_));
             return true;
         }
         return false;
     }
 
-    void set_smoothing_time(double seconds) {
-        smoothing_time_ = seconds;
-        last_block_size_ = 0; // force recompute on next do_pull
-    }
-
     void reset() override {
         phase_ = 0.0;
-        smoothed_intensity_ = intensity_;
+        // Snap intensity to target immediately (matches pre-Phase-21 behavior where
+        // reset() set smoothed_intensity_ = intensity_ to bypass the ramp).
+        intensity_.snap();
+        rate_.snap();
+        delay_time_.snap();
         // Reset delay countdown on note-on
-        delay_samples_remaining_ = static_cast<size_t>(delay_time_ * sample_rate_);
+        delay_samples_remaining_ = static_cast<size_t>(delay_time_.get() * static_cast<float>(sample_rate_));
     }
 
     PortType output_port_type() const override { return PortType::PORT_CONTROL; }
 
 protected:
     void do_pull(std::span<float> output, const VoiceContext* /* context */ = nullptr) override {
-        // Recompute smoothing coefficient if block size has changed (rare after first call).
-        if (output.size() != last_block_size_) {
-            last_block_size_ = output.size();
-            update_smoothing_coeff(smoothing_time_, output.size());
-        }
+        const int n = static_cast<int>(output.size());
+        rate_.advance(n);
+        intensity_.advance(n);
+        delay_time_.advance(n);
 
         // During delay window, output zero and do not advance phase.
         if (delay_samples_remaining_ > 0) {
@@ -117,23 +113,20 @@ protected:
         }
 
         // Block-rate update
-        const double phase_inc = frequency_ / sample_rate_;
+        const double frequency = static_cast<double>(rate_.get());
+        const double phase_inc = frequency / static_cast<double>(sample_rate_);
         const size_t frames = output.size();
 
         // Calculate LFO value once per block
         float lfo_val = calculate_waveform();
-
-        // Apply smoothing to intensity
-        smoothed_intensity_ = smoothed_intensity_ + smoothing_coeff_ * (intensity_ - smoothed_intensity_);
-
-        float final_val = lfo_val * smoothed_intensity_;
+        float final_val = lfo_val * intensity_.get();
 
         for (auto& sample : output) {
             sample = final_val;
         }
 
         // Advance phase for next block
-        phase_ = std::fmod(phase_ + phase_inc * frames, 1.0);
+        phase_ = std::fmod(phase_ + phase_inc * static_cast<double>(frames), 1.0);
     }
 
     void do_pull(AudioBuffer& output, const VoiceContext* context = nullptr) override {
@@ -146,7 +139,7 @@ private:
     float calculate_waveform() const {
         switch (waveform_) {
             case Waveform::Sine:
-                return std::sin(2.0 * M_PI * phase_);
+                return static_cast<float>(std::sin(2.0 * M_PI * phase_));
             case Waveform::Triangle:
                 return 2.0f * std::abs(2.0f * static_cast<float>(phase_) - 1.0f) - 1.0f;
             case Waveform::Square:
@@ -158,27 +151,16 @@ private:
         }
     }
 
-    void update_smoothing_coeff(double seconds, size_t block_size) {
-        if (seconds <= 0.0 || block_size == 0) {
-            smoothing_coeff_ = 1.0f;
-        } else {
-            // α = 1 - exp(-block_duration / τ) for exact one-pole at block rate
-            const double block_duration = static_cast<double>(block_size) / sample_rate_;
-            smoothing_coeff_ = static_cast<float>(1.0 - std::exp(-block_duration / seconds));
-        }
-    }
-
     int sample_rate_;
+    int ramp_samples_;
     double phase_;
-    double frequency_;
-    float intensity_;
-    float smoothed_intensity_;
-    double smoothing_time_;
-    size_t last_block_size_;
-    float smoothing_coeff_;
     Waveform waveform_;
-    float  delay_time_             = 0.0f; // seconds before modulation onset
-    size_t delay_samples_remaining_ = 0;   // countdown in samples
+
+    SmoothedParam rate_{1.0f};
+    SmoothedParam intensity_{1.0f};
+    SmoothedParam delay_time_{0.0f};
+
+    size_t delay_samples_remaining_ = 0; // countdown in samples
 };
 
 } // namespace audio

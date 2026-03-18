@@ -8,6 +8,7 @@
 
 #include "Processor.hpp"
 #include "AudioGraph.hpp"
+#include "../dsp/SmoothedParam.hpp"
 #include <memory>
 #include <vector>
 #include <string>
@@ -51,7 +52,7 @@ public:
     bool set_tag_parameter(const std::string& tag, const std::string& name, float value);
 
     void set_pan(float pan);
-    float pan() const { return pan_; }
+    float pan() const { return pan_param_.get(); }
 
     /**
      * @brief Check if the voice is in the release stage.
@@ -140,7 +141,7 @@ private:
     float base_amplitude_;
 
     int sample_rate_;
-    float pan_; // -1.0 to 1.0
+    audio::SmoothedParam pan_param_{0.f}; // -1.0 to 1.0
 
     uint32_t log_counter_;
     bool active_;

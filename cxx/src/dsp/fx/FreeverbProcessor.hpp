@@ -19,6 +19,7 @@
 #define FREEVERB_PROCESSOR_HPP
 
 #include "../Processor.hpp"
+#include "../SmoothedParam.hpp"
 #include <vector>
 #include <algorithm>
 #include <cmath>
@@ -28,7 +29,10 @@ namespace audio {
 
 class FreeverbProcessor : public Processor {
 public:
+    static constexpr float kRampSeconds = 0.010f; // 10 ms
+
     explicit FreeverbProcessor(int sample_rate) : sample_rate_(sample_rate) {
+        ramp_samples_ = static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds);
         declare_port({"audio_in",  PORT_AUDIO, PortDirection::IN});
         declare_port({"audio_out", PORT_AUDIO, PortDirection::OUT});
         declare_parameter({"room_size", "Room Size",  0.0f, 1.0f, 0.5f});
@@ -44,10 +48,10 @@ public:
     }
 
     bool apply_parameter(const std::string& name, float value) override {
-        if (name == "room_size") { room_size_ = std::clamp(value, 0.0f, 1.0f); update_params(); return true; }
-        if (name == "damping")   { damping_   = std::clamp(value, 0.0f, 1.0f); update_params(); return true; }
-        if (name == "width")     { width_     = std::clamp(value, 0.0f, 1.0f); return true; }
-        if (name == "wet")       { wet_       = std::clamp(value, 0.0f, 1.0f); return true; }
+        if (name == "room_size") { room_size_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_); update_params(); return true; }
+        if (name == "damping")   { damping_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_); update_params(); return true; }
+        if (name == "width")     { width_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_); return true; }
+        if (name == "wet")       { wet_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_); return true; }
         return false;
     }
 
@@ -57,9 +61,21 @@ protected:
     void do_pull(std::span<float>, const VoiceContext* = nullptr) override {}
 
     void do_pull(AudioBuffer& buf, const VoiceContext* = nullptr) override {
-        const float wet1 = wet_ * (width_ * 0.5f + 0.5f);
-        const float wet2 = wet_ * (0.5f - width_ * 0.5f);
-        const float dry  = 1.0f - wet_;
+        const int n = static_cast<int>(buf.frames());
+        room_size_.advance(n);
+        damping_.advance(n);
+        width_.advance(n);
+        wet_.advance(n);
+        // Recompute comb filter parameters if room_size or damping changed
+        if (room_size_.is_ramping() || damping_.is_ramping()) {
+            update_params();
+        }
+
+        const float wet_val  = wet_.get();
+        const float width_val = width_.get();
+        const float wet1 = wet_val * (width_val * 0.5f + 0.5f);
+        const float wet2 = wet_val * (0.5f - width_val * 0.5f);
+        const float dry  = 1.0f - wet_val;
         const size_t frames = buf.frames();
 
         for (size_t i = 0; i < frames; ++i) {
@@ -153,8 +169,8 @@ private:
     }
 
     void update_params() {
-        const float fb   = room_size_ * 0.28f + 0.70f;  // 0.70..0.98
-        const float damp = damping_;
+        const float fb   = room_size_.get() * 0.28f + 0.70f;  // 0.70..0.98
+        const float damp = damping_.get();
         for (int i = 0; i < N_COMB; ++i) {
             comb_l_[i].set_feedback(fb);
             comb_r_[i].set_feedback(fb);
@@ -164,10 +180,12 @@ private:
     }
 
     int sample_rate_;
-    float room_size_ = 0.5f;
-    float damping_   = 0.5f;
-    float width_     = 1.0f;
-    float wet_       = 0.33f;
+    int ramp_samples_;
+
+    SmoothedParam room_size_{0.5f};
+    SmoothedParam damping_{0.5f};
+    SmoothedParam width_{1.0f};
+    SmoothedParam wet_{0.33f};
 
     CombFilter comb_l_[N_COMB], comb_r_[N_COMB];
     AllPass    ap_l_[N_AP],     ap_r_[N_AP];

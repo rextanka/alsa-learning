@@ -1,7 +1,7 @@
 /**
- * @file AdsrEnvelopeProcessor.hpp 
+ * @file AdsrEnvelopeProcessor.hpp
  * @brief Concrete implementation of an ADSR (Attack, Decay, Sustain, Release) envelope.
- * 
+ *
  * This file follows the project rules defined in .cursorrules:
  * - Separation of Concerns: Core DSP logic separated from hardware/OS audio code.
  * - Modern C++: Target C++20/23 for all new code.
@@ -48,10 +48,6 @@ public:
         : sample_rate_(sample_rate)
         , state_(State::Idle)
         , current_level_(0.0f)
-        , attack_time_(0.01f)
-        , decay_time_(0.1f)
-        , sustain_level_(0.7f)
-        , release_time_(0.2f)
     {
         update_rates();
 
@@ -127,10 +123,13 @@ public:
         return false;
     }
 
-    // Setters for envelope parameters
-    void set_attack_time(float seconds) { attack_time_ = std::max(0.001f, seconds); update_rates(); }
-    void set_decay_time(float seconds) { decay_time_ = std::max(0.001f, seconds); update_rates(); }
-    void set_sustain_level(float level) { sustain_level_ = std::clamp(level, 0.0f, 1.0f); update_rates(); }
+    // Setters for envelope parameters — update immediately (no SmoothedParam ramp).
+    // Exponential IIR curves provide inherent smoothing; abrupt time changes don't
+    // produce zipper noise because the coeff update affects the rate of change, not
+    // the instantaneous output level.
+    void set_attack_time(float seconds)  { attack_time_  = std::max(0.001f, seconds); update_rates(); }
+    void set_decay_time(float seconds)   { decay_time_   = std::max(0.001f, seconds); update_rates(); }
+    void set_sustain_level(float level)  { sustain_level_ = std::clamp(level, 0.0f, 1.0f); }
     void set_release_time(float seconds) { release_time_ = std::max(0.001f, seconds); update_rates(); }
 
     /**
@@ -201,23 +200,26 @@ private:
     // This ensures the stage reaches ~99% of its target in `time` seconds.
     void update_rates() {
         static constexpr float kLog9 = 2.197224577f; // log(9)
-        attack_coeff_  = std::exp(-kLog9 / (attack_time_  * static_cast<float>(sample_rate_)));
-        decay_coeff_   = std::exp(-kLog9 / (decay_time_   * static_cast<float>(sample_rate_)));
-        release_coeff_ = std::exp(-kLog9 / (release_time_ * static_cast<float>(sample_rate_)));
+        const float sr = static_cast<float>(sample_rate_);
+        attack_coeff_  = std::exp(-kLog9 / (attack_time_  * sr));
+        decay_coeff_   = std::exp(-kLog9 / (decay_time_   * sr));
+        release_coeff_ = std::exp(-kLog9 / (release_time_ * sr));
     }
 
     int sample_rate_;
     State state_;
     float current_level_;
 
-    float attack_time_;
-    float decay_time_;
-    float sustain_level_;
-    float release_time_;
+    // Plain floats — no SmoothedParam. Exponential IIR curves already provide
+    // smooth transitions; changing time constants mid-envelope causes no click.
+    float attack_time_   = 0.01f;
+    float decay_time_    = 0.1f;
+    float sustain_level_ = 0.7f;
+    float release_time_  = 0.2f;
 
-    float attack_coeff_;
-    float decay_coeff_;
-    float release_coeff_;
+    float attack_coeff_  = 0.0f;
+    float decay_coeff_   = 0.0f;
+    float release_coeff_ = 0.0f;
 
     bool ext_gate_high_ = false; // last known state of ext_gate_in for edge detection
 };

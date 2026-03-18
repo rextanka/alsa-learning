@@ -26,6 +26,7 @@
 #define ECHO_DELAY_PROCESSOR_HPP
 
 #include "../Processor.hpp"
+#include "../SmoothedParam.hpp"
 #include "../DelayLine.hpp"
 #include <algorithm>
 #include <cmath>
@@ -38,14 +39,17 @@ namespace audio {
 
 class EchoDelayProcessor : public Processor {
 public:
+    static constexpr float kRampSeconds = 0.010f; // 10 ms
+
     explicit EchoDelayProcessor(int sample_rate)
         : sample_rate_(sample_rate)
+        , ramp_samples_(static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds))
         , delay_(sample_rate, 5.0f) // 5-second maximum
         , lfo_phase_(0.0)
     {
-        delay_.set_delay_time(delay_time_);
-        delay_.set_feedback(feedback_);
-        delay_.set_mix(mix_);
+        delay_.set_delay_time(delay_time_.get());
+        delay_.set_feedback(feedback_.get());
+        delay_.set_mix(mix_.get());
 
         declare_port({"audio_in",  PORT_AUDIO, PortDirection::IN});
         declare_port({"audio_out", PORT_AUDIO, PortDirection::OUT});
@@ -64,26 +68,28 @@ public:
 
     bool apply_parameter(const std::string& name, float value) override {
         if (name == "time") {
-            delay_time_ = std::clamp(value, 0.001f, 5.0f);
-            delay_.set_delay_time(delay_time_);
+            // Snap immediately — delay time is a patch-configuration value set before
+            // audio starts. A gradual ramp would use the wrong initial delay time.
+            delay_time_.set_target(std::clamp(value, 0.001f, 5.0f), 0);
+            delay_.set_delay_time(delay_time_.get());
             return true;
         }
         if (name == "feedback") {
-            feedback_ = std::clamp(value, 0.0f, 0.95f);
-            delay_.set_feedback(feedback_);
+            feedback_.set_target(std::clamp(value, 0.0f, 0.95f), ramp_samples_);
+            delay_.set_feedback(feedback_.get());
             return true;
         }
         if (name == "mix") {
-            mix_ = std::clamp(value, 0.0f, 1.0f);
-            delay_.set_mix(mix_);
+            mix_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_);
+            delay_.set_mix(mix_.get());
             return true;
         }
         if (name == "mod_rate") {
-            mod_rate_ = std::max(0.0f, value);
+            mod_rate_.set_target(std::max(0.0f, value), ramp_samples_);
             return true;
         }
         if (name == "mod_intensity") {
-            mod_intensity_ = std::clamp(value, 0.0f, 1.0f);
+            mod_intensity_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_);
             return true;
         }
         return false;
@@ -92,16 +98,30 @@ public:
 protected:
     void do_pull(std::span<float> output,
                  const VoiceContext* /*ctx*/ = nullptr) override {
-        const double phase_inc = (sample_rate_ > 0 && mod_rate_ > 0.0f)
-            ? static_cast<double>(mod_rate_) / sample_rate_
+        const int n = static_cast<int>(output.size());
+        delay_time_.advance(n);
+        feedback_.advance(n);
+        mix_.advance(n);
+        mod_rate_.advance(n);
+        mod_intensity_.advance(n);
+
+        // Push smoothed feedback/mix to delay line if changed
+        if (feedback_.is_ramping()) delay_.set_feedback(feedback_.get());
+        if (mix_.is_ramping())      delay_.set_mix(mix_.get());
+
+        const float dt_val  = delay_time_.get();
+        const float mr_val  = mod_rate_.get();
+        const float mi_val  = mod_intensity_.get();
+        const double phase_inc = (sample_rate_ > 0 && mr_val > 0.0f)
+            ? static_cast<double>(mr_val) / static_cast<double>(sample_rate_)
             : 0.0;
 
         for (auto& sample : output) {
             // Modulate delay time with LFO
-            if (mod_rate_ > 0.0f && mod_intensity_ > 0.0f) {
+            if (mr_val > 0.0f && mi_val > 0.0f) {
                 float lfo = static_cast<float>(std::sin(2.0 * M_PI * lfo_phase_));
-                float mod = delay_time_ * mod_intensity_ * lfo;
-                delay_.set_delay_time(std::max(0.001f, delay_time_ + mod));
+                float mod = dt_val * mi_val * lfo;
+                delay_.set_delay_time(std::max(0.001f, dt_val + mod));
                 lfo_phase_ += phase_inc;
                 if (lfo_phase_ >= 1.0) lfo_phase_ -= 1.0;
             }
@@ -109,20 +129,21 @@ protected:
         }
 
         // Restore nominal delay time after block (so feedback path is consistent)
-        if (mod_rate_ > 0.0f && mod_intensity_ > 0.0f) {
-            delay_.set_delay_time(delay_time_);
+        if (mr_val > 0.0f && mi_val > 0.0f) {
+            delay_.set_delay_time(dt_val);
         }
     }
 
 private:
     int sample_rate_;
+    int ramp_samples_;
     DelayLine delay_;
 
-    float  delay_time_    = 0.25f;
-    float  feedback_      = 0.3f;
-    float  mix_           = 0.5f;
-    float  mod_rate_      = 0.0f;
-    float  mod_intensity_ = 0.0f;
+    SmoothedParam delay_time_{0.25f};
+    SmoothedParam feedback_{0.3f};
+    SmoothedParam mix_{0.5f};
+    SmoothedParam mod_rate_{0.0f};
+    SmoothedParam mod_intensity_{0.0f};
     double lfo_phase_;
 };
 

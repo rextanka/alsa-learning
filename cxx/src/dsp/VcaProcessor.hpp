@@ -20,6 +20,7 @@
 #define VCA_PROCESSOR_HPP
 
 #include "Processor.hpp"
+#include "SmoothedParam.hpp"
 #include <algorithm>
 #include <span>
 
@@ -27,7 +28,10 @@ namespace audio {
 
 class VcaProcessor : public Processor {
 public:
-    VcaProcessor() {
+    static constexpr float kRampSeconds = 0.010f; // 10 ms
+
+    explicit VcaProcessor(int sample_rate = 48000) {
+        ramp_samples_ = static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds);
         // Phase 15: named port declarations
         declare_port({"audio_in",        PORT_AUDIO,   PortDirection::IN});
         declare_port({"audio_out",       PORT_AUDIO,   PortDirection::OUT});
@@ -42,7 +46,7 @@ public:
     }
 
     bool apply_parameter(const std::string& name, float value) override {
-        if (name == "initial_gain")   { initial_gain_   = std::clamp(value, 0.0f, 1.0f); return true; }
+        if (name == "initial_gain")   { initial_gain_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_); return true; }
         if (name == "response_curve") { response_curve_ = std::clamp(value, 0.0f, 1.0f); return true; }
         return false;
     }
@@ -69,7 +73,7 @@ public:
 
     void reset() override {}
 
-    float initial_gain()   const { return initial_gain_; }
+    float initial_gain()   const { return initial_gain_.get(); }
     float response_curve() const { return response_curve_; }
 
     // VcaProcessor consumes a PORT_CONTROL gain signal (from AdsrEnvelopeProcessor).
@@ -84,7 +88,8 @@ protected:
     }
 
 private:
-    float initial_gain_   = 1.0f;
+    int ramp_samples_             = 480; // default ~10ms at 48kHz
+    SmoothedParam initial_gain_{1.0f};
     float response_curve_ = 0.0f; // 0=linear, 1=exponential (Phase 17)
 };
 

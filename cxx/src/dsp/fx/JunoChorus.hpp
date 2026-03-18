@@ -7,6 +7,7 @@
 #define JUNO_CHORUS_HPP
 
 #include "Processor.hpp"
+#include "SmoothedParam.hpp"
 #include "DelayLine.hpp"
 #include <cmath>
 #include <vector>
@@ -31,8 +32,11 @@ public:
         I_II
     };
 
+    static constexpr float kRampSeconds = 0.010f; // 10 ms
+
     explicit JunoChorus(int sample_rate)
         : sample_rate_(sample_rate)
+        , ramp_samples_(static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds))
         , delay_l_(sample_rate, 0.01) // 10ms max delay
         , delay_r_(sample_rate, 0.01)
     {
@@ -52,28 +56,28 @@ public:
 
     bool apply_parameter(const std::string& name, float value) override {
         if (name == "mode") {
-            set_mode(static_cast<Mode>(static_cast<int>(std::round(value))));
+            set_mode(static_cast<Mode>(static_cast<int>(std::round(value)))); // snap
             return true;
         }
         if (name == "rate") {
-            lfo_rate_ = static_cast<double>(value);
+            lfo_rate_.set_target(static_cast<float>(value), ramp_samples_);
             return true;
         }
         if (name == "depth") {
             // depth [0,1] → modulation depth in seconds (max ≈ 3ms)
-            lfo_depth_ = static_cast<double>(value) * 0.003;
+            lfo_depth_.set_target(static_cast<float>(value) * 0.003f, ramp_samples_);
             return true;
         }
         return false;
     }
 
     void set_mode(Mode mode) {
-        mode_ = mode;
+        mode_ = mode; // snap — no smoothing on mode switch
         switch (mode) {
-            case Mode::I:    lfo_rate_ = 0.4; lfo_depth_ = 0.002; break; // 2ms depth
-            case Mode::II:   lfo_rate_ = 0.6; lfo_depth_ = 0.002; break;
-            case Mode::I_II: lfo_rate_ = 1.0; lfo_depth_ = 0.003; break;
-            default:         lfo_rate_ = 0.0; lfo_depth_ = 0.0; break;
+            case Mode::I:    lfo_rate_.set_target(0.4f, 0); lfo_depth_.set_target(0.002f, 0); break;
+            case Mode::II:   lfo_rate_.set_target(0.6f, 0); lfo_depth_.set_target(0.002f, 0); break;
+            case Mode::I_II: lfo_rate_.set_target(1.0f, 0); lfo_depth_.set_target(0.003f, 0); break;
+            default:         lfo_rate_.set_target(0.0f, 0); lfo_depth_.set_target(0.0f, 0); break;
         }
     }
 
@@ -87,8 +91,13 @@ protected:
     void do_pull(AudioBuffer& output, const VoiceContext* /* context */ = nullptr) override {
         if (mode_ == Mode::Off) return;
 
+        const int n = static_cast<int>(output.frames());
+        lfo_rate_.advance(n);
+        lfo_depth_.advance(n);
+
         const size_t frames = output.frames();
-        const double phase_inc = lfo_rate_ / sample_rate_;
+        const double phase_inc = static_cast<double>(lfo_rate_.get()) / static_cast<double>(sample_rate_);
+        const double depth_val = static_cast<double>(lfo_depth_.get());
 
         for (size_t i = 0; i < frames; ++i) {
             // LFO is a sine
@@ -97,8 +106,8 @@ protected:
             if (lfo_phase_ >= 1.0) lfo_phase_ -= 1.0;
 
             // Stereo width is achieved by inverting the LFO for one channel
-            float delay_ms_l = static_cast<float>(0.0035 + mod * lfo_depth_); // 3.5ms base
-            float delay_ms_r = static_cast<float>(0.0035 - mod * lfo_depth_);
+            float delay_ms_l = static_cast<float>(0.0035 + mod * depth_val); // 3.5ms base
+            float delay_ms_r = static_cast<float>(0.0035 - mod * depth_val);
 
             delay_l_.set_delay_time(delay_ms_l);
             delay_r_.set_delay_time(delay_ms_r);
@@ -130,11 +139,12 @@ protected:
 
 private:
     int sample_rate_;
+    int ramp_samples_;
     DelayLine delay_l_;
     DelayLine delay_r_;
     Mode mode_ = Mode::Off;
-    double lfo_rate_ = 0.4;
-    double lfo_depth_ = 0.002;
+    SmoothedParam lfo_rate_{0.4f};
+    SmoothedParam lfo_depth_{0.002f};
     double lfo_phase_ = 0.0;
 };
 

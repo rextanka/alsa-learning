@@ -25,13 +25,17 @@
 #define AUDIO_SPLITTER_PROCESSOR_HPP
 
 #include "../Processor.hpp"
+#include "../SmoothedParam.hpp"
 #include <algorithm>
 
 namespace audio {
 
 class AudioSplitterProcessor : public Processor {
 public:
-    AudioSplitterProcessor() {
+    static constexpr float kRampSeconds = 0.010f; // 10 ms
+
+    explicit AudioSplitterProcessor(int sample_rate = 48000) {
+        ramp_samples_ = static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds);
         declare_port({"audio_in",    PORT_AUDIO, PortDirection::IN});
         declare_port({"audio_out_1", PORT_AUDIO, PortDirection::OUT});
         declare_port({"audio_out_2", PORT_AUDIO, PortDirection::OUT});
@@ -47,10 +51,10 @@ public:
     void reset() override {}
 
     bool apply_parameter(const std::string& name, float value) override {
-        if (name == "gain_1") { gain_[0] = std::clamp(value, 0.0f, 2.0f); return true; }
-        if (name == "gain_2") { gain_[1] = std::clamp(value, 0.0f, 2.0f); return true; }
-        if (name == "gain_3") { gain_[2] = std::clamp(value, 0.0f, 2.0f); return true; }
-        if (name == "gain_4") { gain_[3] = std::clamp(value, 0.0f, 2.0f); return true; }
+        if (name == "gain_1") { gain_[0].set_target(std::clamp(value, 0.0f, 2.0f), ramp_samples_); return true; }
+        if (name == "gain_2") { gain_[1].set_target(std::clamp(value, 0.0f, 2.0f), ramp_samples_); return true; }
+        if (name == "gain_3") { gain_[2].set_target(std::clamp(value, 0.0f, 2.0f), ramp_samples_); return true; }
+        if (name == "gain_4") { gain_[3].set_target(std::clamp(value, 0.0f, 2.0f), ramp_samples_); return true; }
         return false;
     }
 
@@ -71,19 +75,26 @@ public:
 protected:
     void do_pull(std::span<float> output,
                  const VoiceContext* /*ctx*/ = nullptr) override {
+        const int n_frames = static_cast<int>(output.size());
+        gain_[0].advance(n_frames);
+        gain_[1].advance(n_frames);
+        gain_[2].advance(n_frames);
+        gain_[3].advance(n_frames);
+
         // In the serial inline path: `output` contains the input signal.
         // Apply gain_1 to the primary output (in-place).
         // Secondary outputs audio_out_2..4 are served from the audio_bus
         // buffer (which is this node's audio_bus slot) for downstream nodes
         // that injected audio_in_b/fm_in connections referencing this node.
+        const float g0 = gain_[0].get();
         if (!audio_in_.empty()) {
             // Audio_bus path: copy injected input to output with gain_1.
             const size_t n = std::min(output.size(), audio_in_.size());
-            for (size_t i = 0; i < n; ++i) output[i] = audio_in_[i] * gain_[0];
+            for (size_t i = 0; i < n; ++i) output[i] = audio_in_[i] * g0;
             audio_in_ = {};
         } else {
             // Inline path: scale in-place with gain_1.
-            for (auto& s : output) s *= gain_[0];
+            for (auto& s : output) s *= g0;
         }
         // Note: gain_[1..3] are applied when downstream nodes read from audio_bus
         // via inject_audio. For now, all fan-out connections receive the same
@@ -92,7 +103,8 @@ protected:
     }
 
 private:
-    float gain_[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    int ramp_samples_ = 480; // default ~10ms at 48kHz
+    SmoothedParam gain_[4] = {SmoothedParam{1.0f}, SmoothedParam{1.0f}, SmoothedParam{1.0f}, SmoothedParam{1.0f}};
     std::span<const float> audio_in_; ///< injected primary input (audio_bus path)
 };
 

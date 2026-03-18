@@ -345,7 +345,11 @@ int envelope_set_ad(EnvelopeHandle handle, float attack, float decay) {
     auto* impl = static_cast<EnvelopeHandleImpl*>(handle);
     try {
         auto* ad = dynamic_cast<audio::ADEnvelopeProcessor*>(impl->processor.get());
-        if (ad) { ad->set_attack_time(attack); ad->set_decay_time(decay); return 0; }
+        if (ad) {
+            ad->apply_parameter("attack", attack);
+            ad->apply_parameter("decay",  decay);
+            return 0;
+        }
         return -1;
     } catch (...) { return -1; }
 }

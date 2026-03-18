@@ -30,6 +30,7 @@
 #define VCF_BASE_HPP
 
 #include "../Processor.hpp"
+#include "../SmoothedParam.hpp"
 #include <algorithm>
 #include <cmath>
 
@@ -43,6 +44,7 @@ class VcfBase : public Processor {
 public:
     explicit VcfBase(int sample_rate)
         : sample_rate_(sample_rate)
+        , ramp_samples_(static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds))
     {
         declare_port({"audio_in",  PORT_AUDIO,   PortDirection::IN});
         declare_port({"audio_out", PORT_AUDIO,   PortDirection::OUT});
@@ -57,13 +59,15 @@ public:
 
     bool apply_parameter(const std::string& name, float value) override {
         if (name == "cutoff") {
-            base_cutoff_ = std::clamp(value, 20.0f, sample_rate_ * 0.45f);
+            const float clamp = std::clamp(value, 20.0f, static_cast<float>(sample_rate_) * 0.45f);
+            base_cutoff_.set_target(clamp, ramp_samples_);
             update_effective_cutoff();
             return true;
         }
         if (name == "resonance" || name == "res") {
-            base_res_ = std::clamp(value, 0.0f, 1.0f);
-            res_       = base_res_;
+            const float clamp = std::clamp(value, 0.0f, 1.0f);
+            base_res_.set_target(clamp, ramp_samples_);
+            res_ = base_res_.get();
             on_resonance_changed();
             return true;
         }
@@ -78,7 +82,8 @@ public:
             return true;
         }
         if (name == "res_cv") {
-            res_ = std::clamp(base_res_ + value, 0.0f, 1.0f);
+            res_cv_accum_ = value;
+            res_ = std::clamp(base_res_.get() + res_cv_accum_, 0.0f, 1.0f);
             on_resonance_changed();
             return true;
         }
@@ -115,11 +120,12 @@ protected:
         // Guard: skip the std::pow() call when neither the base cutoff nor the
         // combined CV sum has changed since the last coefficient update.
         const float cv_sum = cutoff_cv_ + kybd_cv_;
-        if (base_cutoff_ == last_base_cutoff_ && cv_sum == last_cv_sum_) return;
-        last_base_cutoff_ = base_cutoff_;
+        const float cur_cutoff = base_cutoff_.get();
+        if (cur_cutoff == last_base_cutoff_ && cv_sum == last_cv_sum_) return;
+        last_base_cutoff_ = cur_cutoff;
         last_cv_sum_      = cv_sum;
         // LFO CV and keyboard tracking are additive in the log domain (both 1V/oct).
-        float eff = std::max(20.0f, base_cutoff_ * std::pow(2.0f, cv_sum));
+        float eff = std::max(20.0f, cur_cutoff * std::pow(2.0f, cv_sum));
         update_cutoff_coefficient(eff);
     }
 
@@ -129,11 +135,35 @@ protected:
 
     void do_pull(std::span<float> output,
                  const VoiceContext* /*ctx*/ = nullptr) override {
+        const int n = static_cast<int>(output.size());
+        if (base_cutoff_.is_ramping() || base_res_.is_ramping()) {
+            base_cutoff_.advance(n);
+            base_res_.advance(n);
+            last_base_cutoff_ = -1.f; // force recompute
+            update_effective_cutoff();
+            res_ = std::clamp(base_res_.get() + res_cv_accum_, 0.0f, 1.0f);
+            on_resonance_changed();
+        } else {
+            base_cutoff_.advance(n); // no-op when not ramping
+            base_res_.advance(n);
+        }
         for (auto& s : output) process_sample(s);
     }
 
     void do_pull(AudioBuffer& output,
                  const VoiceContext* /*ctx*/ = nullptr) override {
+        const int n = static_cast<int>(output.frames());
+        if (base_cutoff_.is_ramping() || base_res_.is_ramping()) {
+            base_cutoff_.advance(n);
+            base_res_.advance(n);
+            last_base_cutoff_ = -1.f;
+            update_effective_cutoff();
+            res_ = std::clamp(base_res_.get() + res_cv_accum_, 0.0f, 1.0f);
+            on_resonance_changed();
+        } else {
+            base_cutoff_.advance(n);
+            base_res_.advance(n);
+        }
         for (size_t i = 0; i < output.frames(); ++i) {
             float s = (output.left[i] + output.right[i]) * 0.5f;
             process_sample(s);
@@ -145,12 +175,16 @@ protected:
     // Shared state — accessible to all subclasses
     // -------------------------------------------------------------------
 
+    static constexpr float kRampSeconds = 0.010f; // 10 ms
+
     int   sample_rate_;
-    float base_cutoff_ = 20000.0f; ///< anchor cutoff (Hz), set by "cutoff" parameter
+    int   ramp_samples_;
+    SmoothedParam base_cutoff_{20000.0f}; ///< anchor cutoff (Hz), set by "cutoff" parameter
     float cutoff_cv_   = 0.0f;     ///< LFO/envelope CV (1V/oct, bipolar)
     float kybd_cv_     = 0.0f;     ///< keyboard tracking CV (1V/oct, auto-injected by Voice)
-    float base_res_    = 0.0f;     ///< base resonance, set by "resonance" parameter
+    SmoothedParam base_res_{0.0f}; ///< base resonance, set by "resonance" parameter
     float res_         = 0.0f;     ///< effective resonance (base + res_cv)
+    float res_cv_accum_ = 0.0f;   ///< last res_cv value received via apply_parameter
 
 private:
     // Cache for update_effective_cutoff() — avoids std::pow() when inputs unchanged.

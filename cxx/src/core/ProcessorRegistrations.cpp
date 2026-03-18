@@ -60,7 +60,7 @@ void register_builtin_processors() {
     reg.register_module(
         "VCA",
         "Voltage-controlled amplifier — scales audio by a gain CV signal",
-        [](int /*sr*/) { return std::make_unique<VcaProcessor>(); }
+        [](int sr) { return std::make_unique<VcaProcessor>(sr); }
     );
     reg.register_module(
         "MOOG_FILTER",
@@ -110,17 +110,17 @@ void register_builtin_processors() {
     reg.register_module(
         "INVERTER",
         "CV signal inverter/scaler: cv_out = scale * cv_in",
-        [](int /*sr*/) { return std::make_unique<InverterProcessor>(); }
+        [](int sr) { return std::make_unique<InverterProcessor>(sr); }
     );
     reg.register_module(
         "CV_MIXER",
         "4-input CV mixer/attenuverter with DC offset — sums bipolar control signals",
-        [](int /*sr*/) { return std::make_unique<CvMixerProcessor>(); }
+        [](int sr) { return std::make_unique<CvMixerProcessor>(sr); }
     );
     reg.register_module(
         "CV_SPLITTER",
         "1-to-4 CV fan-out with per-output gain scaling",
-        [](int /*sr*/) { return std::make_unique<CvSplitterProcessor>(); }
+        [](int sr) { return std::make_unique<CvSplitterProcessor>(sr); }
     );
     reg.register_module(
         "MATHS",
@@ -150,12 +150,12 @@ void register_builtin_processors() {
     reg.register_module(
         "RING_MOD",
         "4-quadrant ring modulator: output = audio_in_a × audio_in_b — bell/metallic timbres",
-        [](int /*sr*/) { return std::make_unique<RingModProcessor>(); }
+        [](int sr) { return std::make_unique<RingModProcessor>(sr); }
     );
     reg.register_module(
         "AUDIO_SPLITTER",
         "1-to-4 audio fan-out with per-output gain — routes one source to multiple destinations",
-        [](int /*sr*/) { return std::make_unique<AudioSplitterProcessor>(); }
+        [](int sr) { return std::make_unique<AudioSplitterProcessor>(sr); }
     );
     reg.register_module(
         "NOISE_GATE",
