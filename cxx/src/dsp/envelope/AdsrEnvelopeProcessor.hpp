@@ -81,6 +81,29 @@ public:
         }
     }
 
+    // Processor lifecycle hooks — dispatched by Voice for all mod_sources.
+    void on_note_on(double /*frequency*/) override { gate_on(); }
+    void on_note_off() override { gate_off(); }
+
+    /**
+     * @brief Inject ext_gate_in CV — LFO square wave or other re-trigger source.
+     *
+     * Detects rising/falling edges (threshold 0.5) and calls gate_on/gate_off.
+     * This enables percussion trill (LFO → ADSR ext_gate_in) without requiring
+     * separate note events.
+     */
+    void inject_cv(std::string_view port_name, std::span<const float> cv) override {
+        if (port_name != "ext_gate_in" || cv.empty()) return;
+        // Sample-by-sample edge detection so intra-block transitions are caught
+        // (mean-based detection loses rising edges that occur mid-block).
+        for (float s : cv) {
+            const bool high = (s > 0.5f);
+            if (high && !ext_gate_high_) gate_on();
+            else if (!high && ext_gate_high_) gate_off();
+            ext_gate_high_ = high;
+        }
+    }
+
     bool is_active() const override {
         return state_ != State::Idle;
     }
@@ -195,6 +218,8 @@ private:
     float attack_coeff_;
     float decay_coeff_;
     float release_coeff_;
+
+    bool ext_gate_high_ = false; // last known state of ext_gate_in for edge detection
 };
 
 } // namespace audio

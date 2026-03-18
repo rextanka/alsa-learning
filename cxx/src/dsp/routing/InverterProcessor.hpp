@@ -9,9 +9,9 @@
  * PORT_CONTROL out: cv_out (same convention as input, scaled by `scale`)
  *
  * Note: This processor is a mod_source (output_port_type = PORT_CONTROL) and is
- * placed in Voice::mod_sources_. Inter-mod-source routing (cv_in consuming another
- * mod_source's output) requires graph executor Phase 17 changes. Until then,
- * cv_out is computed from scratch each block using the scale parameter only.
+ * placed in Voice::mod_sources_. cv_in is populated via inject_cv() by the Phase 17
+ * inter-mod routing in Voice::pull_mono — the source mod_source must precede this
+ * node in mod_sources_ (add it first in the patch).
  */
 
 #ifndef INVERTER_PROCESSOR_HPP
@@ -32,7 +32,7 @@ public:
         declare_parameter({"scale", "Scale", -2.0f, 2.0f, -1.0f});
     }
 
-    void reset() override {}
+    void reset() override { injected_ = {}; }
 
     PortType output_port_type() const override { return PortType::PORT_CONTROL; }
 
@@ -41,16 +41,27 @@ public:
         return false;
     }
 
+    void inject_cv(std::string_view port_name, std::span<const float> cv) override {
+        if (port_name == "cv_in") injected_ = cv;
+    }
+
 protected:
     void do_pull(std::span<float> output,
                  const VoiceContext* /*ctx*/ = nullptr) override {
-        // Without Phase 17 inter-mod routing, we have no input to consume here.
-        // Fill with scale * 1.0 (neutral CV) as a placeholder so bake() passes.
-        for (auto& s : output) s = scale_;
+        if (!injected_.empty()) {
+            size_t n = std::min(output.size(), injected_.size());
+            for (size_t i = 0; i < n; ++i) output[i] = scale_ * injected_[i];
+            for (size_t i = n; i < output.size(); ++i) output[i] = 0.0f;
+        } else {
+            // No input connected — output zero (not scale_, which would be a DC bias)
+            for (auto& s : output) s = 0.0f;
+        }
+        injected_ = {}; // clear after use
     }
 
 private:
     float scale_ = -1.0f;
+    std::span<const float> injected_;
 };
 
 } // namespace audio
