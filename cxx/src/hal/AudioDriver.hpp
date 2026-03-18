@@ -99,6 +99,19 @@ public:
      * Returns an empty vector if enumeration fails or no devices are found.
      */
     static std::vector<HostDeviceInfo> enumerate_devices();
+
+    /**
+     * @brief Create the platform-appropriate driver instance.
+     *
+     * Declared here; defined in the platform-specific .cpp. AudioBridge.cpp
+     * calls this factory instead of naming concrete driver types directly,
+     * eliminating all platform #ifdefs from the bridge layer.
+     *
+     * @param sample_rate  Requested sample rate in Hz (e.g. 44100 or 48000).
+     * @param block_size   Requested period size in frames (e.g. 512 or 1024).
+     * @return Owning pointer to the new driver instance.
+     */
+    static std::unique_ptr<AudioDriver> create(int sample_rate, int block_size);
 };
 
 } // namespace hal

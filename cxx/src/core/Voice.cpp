@@ -7,6 +7,7 @@
 #include "VcaProcessor.hpp"
 #include "routing/CompositeGenerator.hpp"
 #include "envelope/AdsrEnvelopeProcessor.hpp" // needed for is_active()/is_releasing() dynamic_cast
+#include "dynamics/EnvelopeFollowerProcessor.hpp" // needed for envelope→ctrl_spans injection in Pass 2
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -296,6 +297,23 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
                 entry.node->pull(abus, context);
             } else {
                 entry.node->pull(output, context);
+            }
+
+            // EnvelopeFollower special case: after pull(), capture the computed
+            // envelope value into ctrl_spans[] so downstream CV consumers (VCA
+            // gain_cv, filter cutoff_cv, etc.) can resolve it via find_ctrl().
+            // The node stays in signal_chain_ as a transparent audio passthrough;
+            // the ctrl entry makes its envelope_out available to the CV dispatch.
+            if (num_ctrl < kMaxCtrl) {
+                if (auto* ef = dynamic_cast<EnvelopeFollowerProcessor*>(entry.node.get())) {
+                    ctrl_ptrs[num_ctrl]  = graph_->borrow_buffer();
+                    ctrl_spans[num_ctrl] = std::span<float>(
+                        ctrl_ptrs[num_ctrl]->left.data(), output.size());
+                    std::fill(ctrl_spans[num_ctrl].begin(), ctrl_spans[num_ctrl].end(),
+                              ef->get_envelope());
+                    ctrl_tags_arr[num_ctrl] = entry.tag.c_str();
+                    ++num_ctrl;
+                }
             }
         }
     }

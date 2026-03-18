@@ -11,9 +11,8 @@
  * produces a PORT_CONTROL signal (filled into a dedicated buffer via pull())
  * which is passed to VcaProcessor::apply() as the gain_cv argument.
  *
- * Until the typed port system (Phase 14a) is in place, callers drive the VCA
- * by invoking the static apply() helper with explicit audio and CV spans.
- * The Processor pull() interface is a no-op stub.
+ * The graph executor handles VCA as a special case: it resolves the gain_cv
+ * connection and calls the static apply() helper directly. do_pull() is unused.
  */
 
 #ifndef VCA_PROCESSOR_HPP

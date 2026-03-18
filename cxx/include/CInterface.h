@@ -48,19 +48,6 @@ typedef void* EngineHandle;
 #define ENV_ADSR 0
 #define ENV_AD 1
 
-// Processor Types for registration
-#define PROC_OSCILLATOR 0
-#define PROC_LFO 1
-#define PROC_FILTER 2
-#define PROC_ENVELOPE 3
-#define PROC_AUDIOTAP 4
-
-// Modulation Parameters
-#define PARAM_PITCH 0
-#define PARAM_CUTOFF 1
-#define PARAM_AMPLITUDE 2
-#define PARAM_RESONANCE 3
-
 
 /**
  * @brief Placeholder for future FFI initialization.
@@ -296,6 +283,42 @@ AUDIO_API int engine_post_chain_clear(EngineHandle handle);
 // Logging API
 AUDIO_API void audio_log_message(const char* tag, const char* message);
 AUDIO_API void audio_log_event(const char* tag, float value);
+
+// ---------------------------------------------------------------------------
+// Spectral Analysis API
+//
+// Production utilities for pitch verification, quality audits, and test code.
+// All functions are stateless and RT-safe (allocate internally — not suitable
+// for calling from the audio thread; intended for offline / test use).
+//
+// Typical usage:
+//   float freq = audio_dct_pitch_hz(tap_buf, frames, sample_rate);
+//   float centroid = audio_spectral_centroid(tap_buf, frames, sample_rate);
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Estimate the dominant pitch of a mono audio window using DCT-II peak-picking
+ *        with parabolic interpolation for sub-bin accuracy.
+ *
+ * @param samples      Mono float PCM buffer.
+ * @param frame_count  Number of samples (power-of-two recommended for accuracy).
+ * @param sample_rate  Sample rate in Hz.
+ * @return Dominant frequency in Hz, or 0.0 if the window is silent.
+ */
+AUDIO_API float audio_dct_pitch_hz(const float* samples, size_t frame_count, int sample_rate);
+
+/**
+ * @brief Compute the DCT-based spectral centroid of a mono audio window.
+ *
+ * The centroid is the frequency-weighted mean of magnitude bins 1..N/2 (Hz).
+ * Useful for characterising the "brightness" of a timbre.
+ *
+ * @param samples      Mono float PCM buffer.
+ * @param frame_count  Number of samples.
+ * @param sample_rate  Sample rate in Hz.
+ * @return Spectral centroid in Hz, or 0.0 if the window is silent.
+ */
+AUDIO_API float audio_spectral_centroid(const float* samples, size_t frame_count, int sample_rate);
 
 #ifdef __cplusplus
 }

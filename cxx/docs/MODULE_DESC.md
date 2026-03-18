@@ -39,7 +39,7 @@ Certain port names are **reserved lifecycle ports**. They are driven by the `Voi
 
 A connection that forms a cycle in the signal graph (e.g. delay feedback) must be marked `"feedback": true` in the patch. Non-feedback connections form a DAG validated by `bake()`.
 
-> **Current status**: Feedback execution is implemented. The graph executor maintains a previous-block output buffer for connections marked `"feedback": true`. `ECHO_DELAY` uses this mechanism for its self-feedback path.
+> **Current status**: Graph-level cross-node feedback is **not implemented**. The `"feedback": true` field in connections is parsed by the patch loader but the graph executor does not maintain a previous-block output buffer for cycle-breaking. `ECHO_DELAY`'s self-feedback is handled internally via a circular delay buffer inside the processor — not via graph executor feedback. Graph-level feedback is a future feature.
 
 ### Port Declaration in C++
 
@@ -418,7 +418,7 @@ These modules operate entirely in the control domain.
   - `PORT_CONTROL` in `time_cv` (unipolar)
   - `PORT_CONTROL` in `feedback_cv` (unipolar)
 - **Parameters**: `time` (0.0–2.0s), `feedback` (0.0–0.99), `mix` (0.0–1.0), `mod_rate` (0.1–20 Hz, default 0.0 — rate of the built-in LFO that sweeps delay time; 0.0 disables modulation), `mod_intensity` (0.0–1.0, default 0.0 — depth of the delay-time sweep; at 1.0 the delay time oscillates ±50% of `time` at `mod_rate`, producing the metallic shimmer used in the Roland Cymbal patch, Vol 2 §3-5, Fig 3-16)
-- **Note**: Feedback connection from `audio_out` back to `audio_in` must be marked `"feedback": true` in the patch. The executor uses the previous block's output to break the cycle.
+- **Note**: `ECHO_DELAY` handles its own feedback via an internal circular delay buffer — no graph-level feedback connection is needed. Graph-level cross-node feedback (`"feedback": true` in connections) is not yet implemented in the executor.
 - **BBD Cymbal usage**: Set `time` ≈ 20–40 ms, `feedback` ≈ 0.5–0.7, `mod_rate` ≈ 5–8 Hz, `mod_intensity` ≈ 0.3–0.6. The wobbling delay time produces the characteristic shimmering metallic decay of a struck cymbal or gong. Combine with `WHITE_NOISE` → `MOOG_FILTER` (high cutoff, moderate resonance) → `ECHO_DELAY` → percussive `VCA`.
 
 ---
@@ -427,12 +427,7 @@ These modules operate entirely in the control domain.
 
 ### Summing Mixer (Source Mixer)
 - **Type name**: `SOURCE_MIXER`
-- **Purpose**: Combines multiple audio signals before processing. Head node for multi-oscillator voices.
-- **Ports**:
-  - `PORT_AUDIO` in `audio_in_1` … `audio_in_N`
-  - `PORT_AUDIO` out `audio_out`
-- **Parameters**: `gain_1` … `gain_N` (0.0–1.0 each)
-- **Note**: Embedded inside `COMPOSITE_GENERATOR`. Also available as a standalone node.
+- **Purpose**: Internal multi-waveform summing for legacy use. **Not registered in the ModuleRegistry** — cannot be used via `engine_add_module`. Multi-waveform blending (sawtooth, pulse, sine, sub, noise) is provided by `COMPOSITE_GENERATOR`, which embeds a SourceMixer internally and exposes per-waveform gain parameters (`saw_gain`, `sine_gain`, etc.) directly.
 
 ### Audio Splitter
 - **Type name**: `AUDIO_SPLITTER`
@@ -475,14 +470,14 @@ These modules operate entirely in the control domain.
 - **Generator-first rule**: `bake()` must verify that the first node in `signal_chain_` outputs `PORT_AUDIO`.
 - **VCA/Envelope separation**: `AdsrEnvelopeProcessor` produces `PORT_CONTROL` output only. A separate `VcaProcessor` node performs audio multiplication via its `gain_cv` input. They must not be merged.
 - **Lifecycle ports**: `gate_in` and `trigger_in` are injected by `VoiceContext`, not wired via `connections_`. `bake()` skips connection validation for these port names.
-- **Feedback connections**: Must be marked `"feedback": true`. The executor uses the previous block's output for these connections.
-- **Multiple inputs**: A node with multiple input ports (Ring Modulator, CV Mixer, SourceMixer) has all inputs gathered before `pull()` is called. The executor resolves all inputs before executing any node via `inject_audio()` / `inject_cv()` in `Voice::pull_mono` (implemented Phase 18).
+- **Feedback connections**: Graph-level cross-node feedback (`"feedback": true` in connections) is parsed but **not executed** by the graph executor. Per-processor internal feedback (e.g. `ECHO_DELAY` internal delay line) is supported.
+- **Multiple inputs**: A node with multiple input ports (Ring Modulator, CV Mixer) has all inputs gathered before `pull()` is called. The executor resolves all inputs before executing any node via `inject_audio()` / `inject_cv()` in `Voice::pull_mono` (implemented Phase 18).
 - **Dynamic routing**: Modules are not hardcoded in `Voice`. `Voice` manages two lists — `signal_chain_` (PORT_AUDIO nodes) and `mod_sources_` (PORT_CONTROL generators) — with instance tags (e.g. `"VCO"`, `"ENV"`, `"LFO1"`) for parameter targeting and port connection. `add_processor()` routes each node automatically based on its output port type.
 - **Global vs per-voice**: Per-voice modules live in `signal_chain_` or `mod_sources_`. Global modules (chorus, reverb, master bus) live in a separate global FX chain applied after voice summing. Do not instantiate global modules per-voice.
 - **Sample rate**: All internal timing (ADSR curves, LFO rates, delay times) must derive from the runtime `sample_rate_` passed at construction. No hardcoded sample rate assumptions. Supported rates: 44100 Hz and 48000 Hz. If hardware reports a rate above 48000, the engine negotiates down to 48000.
 - **Filter chain placement**: All four filter types (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`) are first-class chain nodes. Add them via `engine_add_module("MOOG_FILTER", "VCF")` and wire audio with `engine_connect_ports`. `Voice` no longer contains an internal `filter_` member — the hardcoded fallback path has been removed. Minimum filter chain: `COMPOSITE_GENERATOR → MOOG_FILTER → ADSR_ENVELOPE → VCA`.
 - **Per-tag parameter addressing**: Parameters are addressed by tag in the patch JSON using a nested object per tag (see PATCH_SPEC.md §Parameters Object). At runtime, `set_named_parameter` must be extended to accept an optional tag scope so that two nodes of the same type (e.g. `"VCO1"` and `"VCO2"`) can be addressed independently. The patch loader maps `parameters["VCO2"]["detune"]` to `voice.find_by_tag("VCO2")->apply_parameter("detune", value)`. Full centralised ramping is Phase 21 (ParameterManager); tag-scoped direct addressing should land with multi-oscillator support.
-- **Parallel signal paths**: Not yet supported. The current `Voice` has a single `signal_chain_`. For now, multiple oscillators share a `SOURCE_MIXER` node before a common filter+VCA. Independent per-oscillator filter chains are a future architecture goal.
+- **Parallel signal paths**: Not yet supported. The current `Voice` has a single `signal_chain_`. Multi-waveform mixing is handled by `COMPOSITE_GENERATOR` internally. Independent per-oscillator filter chains are a future architecture goal.
 
 ---
 

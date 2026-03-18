@@ -22,11 +22,6 @@
 #include "../dsp/fx/PhaserProcessor.hpp"
 #include "VoiceManager.hpp"
 #include "AudioDriver.hpp"
-#ifdef __APPLE__
-#include "coreaudio/CoreAudioDriver.hpp"
-#else
-#include "alsa/AlsaDriver.hpp"
-#endif
 #include "MusicalClock.hpp"
 #include "TuningSystem.hpp"
 #include "Logger.hpp"
@@ -35,6 +30,9 @@
 #include <fstream>
 #include "SummingBus.hpp"
 #include "SmfParser.hpp"
+#include "../dsp/analysis/DctProcessor.hpp"
+#include "../dsp/analysis/PitchDetector.hpp"
+#include "../dsp/analysis/SpectralAnalysis.hpp"
 #include "MidiFilePlayer.hpp"
 #include <memory>
 #include <span>
@@ -120,11 +118,7 @@ struct EngineHandleImpl : public HandleBase {
         , sample_rate(sr)
     {
 
-#ifdef __APPLE__
-        driver = std::make_unique<hal::CoreAudioDriver>(sr, 512);
-#else
-        driver = std::make_unique<hal::AlsaDriver>(sr, 512);
-#endif
+        driver = hal::AudioDriver::create(sr, 512);
     // Link the driver to the voice manager (which uses SummingBus)
     driver->set_stereo_callback([this](audio::AudioBuffer& buffer) {
         if (!voice_manager) return;
@@ -991,6 +985,24 @@ int engine_post_chain_clear(EngineHandle handle) {
     if (!handle) return -1;
     static_cast<EngineHandleImpl*>(handle)->post_chain.clear();
     return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Spectral Analysis API
+// ---------------------------------------------------------------------------
+
+float audio_dct_pitch_hz(const float* samples, size_t frame_count, int sample_rate) {
+    if (!samples || frame_count < 3) return 0.0f;
+    audio::DctProcessor dct(frame_count, frame_count);
+    std::vector<float> mags(frame_count);
+    dct.process(std::span<const float>(samples, frame_count), mags);
+    return audio::PitchDetector::detect(mags, static_cast<float>(sample_rate));
+}
+
+float audio_spectral_centroid(const float* samples, size_t frame_count, int sample_rate) {
+    if (!samples || frame_count < 2) return 0.0f;
+    const std::vector<float> window(samples, samples + frame_count);
+    return audio::spectral_centroid(window, sample_rate);
 }
 
 } // extern "C"

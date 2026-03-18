@@ -114,8 +114,8 @@ protected:
 TEST_F(ModuleRegistryTest, RegistryContainsAllBuiltinTypes) {
     auto& reg = ModuleRegistry::instance();
     const std::vector<std::string> expected = {
-        "COMPOSITE_GENERATOR", "ADSR_ENVELOPE", "VCA",
-        "MOOG_FILTER", "DIODE_FILTER", "LFO", "WHITE_NOISE", "JUNO_CHORUS",
+        "COMPOSITE_GENERATOR", "ADSR_ENVELOPE", "AD_ENVELOPE", "VCA",
+        "MOOG_FILTER", "DIODE_FILTER", "LFO", "WHITE_NOISE",
         "DRAWBAR_ORGAN"
     };
     for (const auto& name : expected) {
