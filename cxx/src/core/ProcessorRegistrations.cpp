@@ -19,6 +19,8 @@
 #include "../dsp/VcaProcessor.hpp"
 #include "../dsp/filter/MoogLadderProcessor.hpp"
 #include "../dsp/filter/DiodeLadderProcessor.hpp"
+#include "../dsp/filter/CemFilterProcessor.hpp"
+#include "../dsp/filter/Ms20FilterProcessor.hpp"
 #include "../dsp/oscillator/LfoProcessor.hpp"
 #include "../dsp/oscillator/WhiteNoiseProcessor.hpp"
 #include "../dsp/fx/JunoChorus.hpp"
@@ -48,13 +50,23 @@ void register_builtin_processors() {
     );
     reg.register_module(
         "MOOG_FILTER",
-        "4-pole Moog transistor ladder low-pass filter",
+        "4-pole Moog transistor ladder LP (24 dB/oct) — smooth, creamy, thick",
         [](int sr) { return std::make_unique<MoogLadderProcessor>(sr); }
     );
     reg.register_module(
         "DIODE_FILTER",
-        "TB-303 style diode ladder filter with non-linear saturation",
+        "TB-style diode ladder LP — 3/4-pole blend gives 18–24 dB/oct rubbery acid character",
         [](int sr) { return std::make_unique<DiodeLadderProcessor>(sr); }
+    );
+    reg.register_module(
+        "SH_FILTER",
+        "SH-style / CEM / IR3109 4-pole ladder LP (24 dB/oct) — clean, liquid, resonant",
+        [](int sr) { return std::make_unique<CemFilterProcessor>(sr); }
+    );
+    reg.register_module(
+        "MS20_FILTER",
+        "MS-style dual 2-pole HP+LP SVF (12 dB/oct each) — aggressive, gritty, screaming",
+        [](int sr) { return std::make_unique<Ms20FilterProcessor>(sr); }
     );
     reg.register_module(
         "LFO",

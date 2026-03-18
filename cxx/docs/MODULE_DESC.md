@@ -147,28 +147,42 @@ The registry is queryable via the C API (`engine_get_module_count`, `engine_get_
 
 ## 2. Filters (Timbre Shaping)
 
+All four filter types are **first-class chain nodes** — inserted into `signal_chain_` via `engine_add_module` exactly like VCO or VCA. No filter is a hardcoded `Voice` member. CV routing is fully live: `cutoff_cv` connections apply 1V/oct exponential modulation each block without altering the base cutoff anchor.
+
+### Common filter ports (all four types)
+- `PORT_AUDIO` in `audio_in`
+- `PORT_AUDIO` out `audio_out`
+- `PORT_CONTROL` in `cutoff_cv` (bipolar, 1V/oct — applies `actual = base_cutoff × 2^cv` each block)
+- `PORT_CONTROL` in `res_cv` (unipolar — additive resonance boost)
+- `PORT_CONTROL` in `kybd_cv` (bipolar, 1V/oct keyboard tracking)
+
 ### VCF — Moog Ladder
 - **Type name**: `MOOG_FILTER`
-- **Purpose**: 4-pole Moog ladder low-pass filter (−24dB/octave slope). Self-oscillates at max resonance.
-- **Ports**:
-  - `PORT_AUDIO` in `audio_in`
-  - `PORT_AUDIO` in `fm_in` (audio-rate frequency modulation — signal applied to the cutoff frequency at audio rate, enabling VCO-to-filter FM as used in Tom Tom, Cow Bell, and Bongo patches)
-  - `PORT_AUDIO` out `audio_out`
-  - `PORT_CONTROL` in `cutoff_cv` (bipolar)
-  - `PORT_CONTROL` in `res_cv` (unipolar)
-  - `PORT_CONTROL` in `kybd_cv` (bipolar, 1V/oct keyboard tracking)
-- **Parameters**: `cutoff` (20–20000 Hz, log), `resonance` (0.0–1.0), `hpf_cutoff` (enum: Off=0, ~75Hz=1, ~150Hz=2, ~300Hz=3; default 0 — stepped high-pass filter stage inline with the LPF output, equivalent to the Roland System 100M HPF switch)
-- **Behavioral Logic**:
-  - **Resonance (Q)**: Must be induced via positive feedback. High resonance levels should cause self-oscillation at the cutoff frequency.
-  - **Transient Ringing**: When processing fast transients (e.g. square waves) at high resonance, the filter must exhibit ringing — an overshoot and wavering effect as the filter attempts to settle.
-  - **Keyboard Tracking (`kybd_cv`)**: To maintain constant harmonic content across the keyboard, the filter's cutoff frequency must follow the pitch at an exponential 1V/octave rate.
+- **Purpose**: 4-pole transistor ladder low-pass (−24 dB/oct). Smooth, creamy, thick — the gold standard for fat bass.
+- **Additional ports**: `PORT_AUDIO` in `fm_in` (audio-rate cutoff FM)
+- **Parameters**: `cutoff` (20–20000 Hz, log), `resonance` (0.0–1.0), `hpf_cutoff` (0–3 stepped HPF stage)
+- **Character**: Full `tanh` saturation in feedback path and stage updates. Self-oscillates at `resonance ≈ 1.0`. Ringing transients at high resonance.
 
-### VCF — Diode Ladder
+### VCF — TB-303 Diode Ladder
 - **Type name**: `DIODE_FILTER`
-- **Purpose**: Diode ladder filter with a characteristically aggressive resonance. −24dB/octave slope (4-pole).
-- **Ports**: same as `MOOG_FILTER` (including `fm_in` and `kybd_cv`)
-- **Parameters**: same as `MOOG_FILTER` (including `hpf_cutoff`)
-- **Behavioral Logic**: Same resonance, ringing, and keyboard tracking rules as `MOOG_FILTER`.
+- **Purpose**: TB-303 acid character — rubbery, squelchy, the "mistake" that launched a genre.
+- **Additional ports**: `PORT_AUDIO` in `fm_in` (audio-rate cutoff FM)
+- **Parameters**: `cutoff` (20–20000 Hz, log), `resonance` (0.0–1.0), `hpf_cutoff` (0–3 stepped HPF stage)
+- **Character**: 3/4-pole blend — at full resonance the 3-pole (stage[2]) output dominates, giving an effective ~18 dB/oct rolloff. Per-stage `tanh` saturation adds the characteristic harmonic distortion. The blend shifts continuously from ~4-pole at zero resonance to ~3-pole at maximum, matching the 303's measured behaviour.
+
+### VCF — SH-101 CEM / IR3109
+- **Type name**: `SH_FILTER`
+- **Purpose**: Roland SH-101 character — clean, liquid, resonant. Stable self-oscillation.
+- **Additional ports**: `PORT_AUDIO` in `fm_in` (audio-rate cutoff FM)
+- **Parameters**: `cutoff` (20–20000 Hz, log), `resonance` (0.0–1.0)
+- **Character**: 4-pole ladder (24 dB/oct) with algebraic soft-clip `x/(1+|x|)` in the feedback path (gentler than Moog `tanh`) and fully linear stage updates. More open high-end at moderate resonance; very stable self-oscillation sine tone at `resonance = 1.0`. Suits solid, punchy lead lines and bass patches where Moog weight would be excessive.
+
+### VCF — Korg MS-20
+- **Type name**: `MS20_FILTER`
+- **Purpose**: Korg MS-20 character — aggressive, screaming, gritty. Two 2-pole (12 dB/oct) sections.
+- **Parameters**: `cutoff` (20–20000 Hz, log — LP section), `cutoff_hp` (20–2000 Hz, log — HP section, default 80 Hz), `resonance` (0.0–1.0)
+- **Character**: Chamberlin SVF HP section (cutoff_hp) followed by SVF LP section (cutoff). Each section is 12 dB/oct (2-pole). The shallow slope means more harmonics bleed through than a 4-pole filter — contributing to the characteristic dirtiness. LP self-oscillates at `resonance ≈ 0.9`. `cutoff_hp` removes low-end mud and reinforces the perceived aggression.
+- **Topology**: `input → HP (2-pole, cutoff_hp) → LP (2-pole, cutoff) → output`
 
 ### Band Pass Filter
 - **Type name**: `BAND_PASS_FILTER`
@@ -442,7 +456,7 @@ These modules operate entirely in the control domain.
 - **Dynamic routing**: Modules are not hardcoded in `Voice`. `Voice` manages two lists — `signal_chain_` (PORT_AUDIO nodes) and `mod_sources_` (PORT_CONTROL generators) — with instance tags (e.g. `"VCO"`, `"ENV"`, `"LFO1"`) for parameter targeting and port connection. `add_processor()` routes each node automatically based on its output port type.
 - **Global vs per-voice**: Per-voice modules live in `signal_chain_` or `mod_sources_`. Global modules (chorus, reverb, master bus) live in a separate global FX chain applied after voice summing. Do not instantiate global modules per-voice.
 - **Sample rate**: All internal timing (ADSR curves, LFO rates, delay times) must derive from the runtime `sample_rate_` passed at construction. No hardcoded sample rate assumptions. Supported rates: 44100 Hz and 48000 Hz. If hardware reports a rate above 48000, the engine negotiates down to 48000.
-- **Filter chain placement**: `MOOG_FILTER` and `DIODE_FILTER` are currently implemented as an internal `filter_` member on `Voice`, not as pluggable chain nodes. The filter is applied implicitly in `pull_mono()` before the VCA. A patch selects filter type via a `filter_type` parameter (`0`=Moog, `1`=Diode) rather than by adding the filter to the chain. Full chain-pluggable filter support (adding `MOOG_FILTER` to the chain via `add_processor`) is a planned refactor.
+- **Filter chain placement**: All four filter types (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`) are first-class chain nodes. Add them via `engine_add_module("MOOG_FILTER", "VCF")` and wire audio with `engine_connect_ports`. `Voice` no longer contains an internal `filter_` member — the hardcoded fallback path has been removed. Minimum filter chain: `COMPOSITE_GENERATOR → MOOG_FILTER → ADSR_ENVELOPE → VCA`.
 - **Per-tag parameter addressing**: Parameters are addressed by tag in the patch JSON using a nested object per tag (see PATCH_SPEC.md §Parameters Object). At runtime, `set_named_parameter` must be extended to accept an optional tag scope so that two nodes of the same type (e.g. `"VCO1"` and `"VCO2"`) can be addressed independently. The patch loader maps `parameters["VCO2"]["detune"]` to `voice.find_by_tag("VCO2")->apply_parameter("detune", value)`. Full centralised ramping is Phase 21 (ParameterManager); tag-scoped direct addressing should land with multi-oscillator support.
 - **Parallel signal paths**: Not yet supported. The current `Voice` has a single `signal_chain_`. For now, multiple oscillators share a `SOURCE_MIXER` node before a common filter+VCA. Independent per-oscillator filter chains are a future architecture goal.
 
@@ -461,7 +475,7 @@ The following capabilities are demonstrated in Roland's *Practical Synthesis* do
 | Pink noise | Wind, surf, rain patches | `WHITE_NOISE` `color` parameter is declared but implementation is planned | Implement −3dB/octave shelving filter chain in `WHITE_NOISE` |
 | Gate delay (wolf-whistle) | Specialty pitch effects | `GATE_DELAY` module is now specified above; no implementation yet | Implement `GATE_DELAY` as a simple block-level countdown timer |
 | Ring modulator | Bell, metallic, choral patches | `RING_MOD` is now specified above with behavioral logic; no implementation yet | Implement as sample-by-sample `A[n] * B[n]` in `RingModProcessor`; multi-input execution in `Voice` graph not yet wired |
-| Filter as chain node | Pizzicato strings, two-VCF percussion, VCF self-oscillation, separate filter type per patch | `MOOG_FILTER` and `DIODE_FILTER` are internal `Voice` members, not pluggable chain nodes; `cutoff_cv` connections to the implicit filter are not yet wired; patches cannot instantiate the filter as a named chain step | Refactor `MOOG_FILTER` / `DIODE_FILTER` into chain-pluggable `PORT_AUDIO` processors that can appear in `signal_chain_` like any other node; enables envelope → VCF cutoff connections, series filter stages, and VCF self-oscillation as a sound source |
+| Filter as chain node | Pizzicato strings, two-VCF percussion, VCF self-oscillation, separate filter type per patch | ~~RESOLVED~~ All four filter types (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`) are now first-class chain nodes; `cutoff_cv` CV is routed via `apply_parameter` in `pull_mono`; `Voice::filter_` removed | — |
 | Audio-rate filter FM | Tom Tom, Cow Bell, Bongo Drums patches | VCO `audio_out` → VCF cutoff modulation requires connecting a `PORT_AUDIO` output to a `PORT_CONTROL`-style cutoff input; current architecture rejects PORT_AUDIO→PORT_CONTROL connections at bake time | Add a dedicated `fm_in` PORT_AUDIO input to `MOOG_FILTER` and `DIODE_FILTER`; `fm_in` is summed into the cutoff frequency at audio rate with a configurable depth; already declared above |
 | LFO as envelope gate source | Percussion Trill (Vol 2, Fig 3-13) | LFO square wave → ADSR `gate_in` is blocked because `gate_in` is a lifecycle port reserved for `VoiceContext` | Add `ext_gate_in` non-lifecycle PORT_CONTROL input to `ADSR_ENVELOPE`; OR'd with lifecycle `gate_in`; already declared above |
 | Two VCAs in series | Percussion amplitude shaping (linear dynamics + exponential decay) | No known architecture gap — the chain model already supports sequential audio processors; a patch may include two `VCA` nodes in `chain` with different `response_curve` values; executor must process them in order | Verify executor handles multiple VCA nodes in `signal_chain_` correctly; no new module needed |

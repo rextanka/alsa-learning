@@ -124,9 +124,7 @@ static void run_tb303(int sample_rate, const std::string& patch_dir)
         std::cerr << "[TB303] Failed to load patch.\n"; return;
     }
 
-    // Diode Ladder is the closer approximation to the 303 transistor ladder.
-    engine_set_filter_type(engine.get(), 1);
-
+    // Filter type is specified in tb_bass.json (DIODE_FILTER chain node).
     engine_start(engine.get());
 
     // 16th note grid: on=78 ms, gap=33 ms (very staccato, classic 303 pluck)

@@ -7,10 +7,6 @@
 #define AUDIO_VOICE_HPP
 
 #include "Processor.hpp"
-#include "VcaProcessor.hpp"
-#include "filter/FilterProcessor.hpp"
-#include "routing/CompositeGenerator.hpp"
-#include "envelope/AdsrEnvelopeProcessor.hpp"
 #include "AudioGraph.hpp"
 #include <memory>
 #include <vector>
@@ -32,23 +28,16 @@ public:
     bool is_active() const;
     void reset() override;
 
-    FilterProcessor* filter() { return filter_.get(); }
-
-    void set_filter_type(std::unique_ptr<FilterProcessor> filter);
-    void set_filter_type(int type); // 0: Moog, 1: Diode
     BufferPool::BufferPtr borrow_buffer() { return graph_->borrow_buffer(); }
-
-    /**
-     * @brief Set a modulation parameter (legacy integer-ID API).
-     */
-    void set_parameter(int param, float value);
 
     /**
      * @brief Set a named parameter on any chain node that recognises it.
      *
-     * Tries all nodes in order via Processor::set_parameter(name, value).
-     * Returns true if at least one node accepted the parameter.
-     * Falls back to the legacy integer-ID table for well-known names.
+     * Handles Voice-level parameters ("osc_frequency", "amp_base") directly.
+     * Routes bridge aliases ("vcf_cutoff", "amp_attack", etc.) to the tagged
+     * node. Falls through to a general scan of all chain nodes via
+     * apply_parameter for any other name.
+     * Returns true if the parameter was accepted.
      */
     bool set_named_parameter(const std::string& name, float value);
 
@@ -144,13 +133,10 @@ public:
     void pull_mono(std::span<float> output, const VoiceContext* context = nullptr);
 
 private:
-    std::unique_ptr<FilterProcessor> filter_;
     std::unique_ptr<AudioGraph> graph_;
 
     // Base parameters (anchors for CV modulation)
     double base_frequency_;
-    float base_cutoff_;
-    float base_resonance_;
     float base_amplitude_;
 
     int sample_rate_;

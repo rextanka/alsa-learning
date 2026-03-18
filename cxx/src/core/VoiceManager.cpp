@@ -231,60 +231,18 @@ void VoiceManager::set_tag_parameter(const std::string& tag, const std::string& 
 }
 
 void VoiceManager::set_parameter_by_name(const std::string& name, float value) {
-    // Map names to Phase 13 Global IDs
-    int param_id = -1;
-    if (name == "vcf_cutoff") param_id = 1;
-    else if (name == "vcf_res") param_id = 2;
-    else if (name == "vcf_env_amount") param_id = 3;
-    else if (name == "amp_attack") param_id = 4;
-    else if (name == "amp_decay") param_id = 5;
-    else if (name == "amp_sustain") param_id = 6;
-    else if (name == "amp_release") param_id = 7;
-    else if (name == "osc_pw") param_id = 10;
-    else if (name == "sub_gain") param_id = 11;
-    else if (name == "saw_gain") param_id = 12;
-    else if (name == "pulse_gain") param_id = 13;
-    else if (name == "pulse_width")    param_id = 14;
-    else if (name == "sine_gain")      param_id = 15;
-    else if (name == "triangle_gain")  param_id = 16;
-    else if (name == "wavetable_gain") param_id = 17;
-    else if (name == "noise_gain")     param_id = 18;
-    else if (name == "wavetable_type") param_id = 19;
-
-    if (param_id != -1) {
-        set_parameter(param_id, value);
-    } else {
-        // Unknown to the legacy table — try each voice's named-parameter dispatch
-        // (handles DrawbarOrgan drawbar_* and any future module-specific params).
-        for (auto& slot : voices_) {
-            if (slot.voice) slot.voice->set_named_parameter(name, value);
-        }
-    }
-}
-
-void VoiceManager::set_parameter(int param_id, float value) {
     for (auto& slot : voices_) {
-        if (slot.voice) slot.voice->set_parameter(param_id, value);
+        if (slot.voice) slot.voice->set_named_parameter(name, value);
     }
 }
 
-void VoiceManager::set_group_parameter(int group_id, int param_id, float value) {
+void VoiceManager::set_group_parameter(int group_id, const std::string& name, float value) {
     for (auto& slot : voices_) {
-        if (slot.voice && slot.group_id == group_id) slot.voice->set_parameter(param_id, value);
+        if (slot.voice && slot.group_id == group_id)
+            slot.voice->set_named_parameter(name, value);
     }
 }
 
-void VoiceManager::set_filter_type(int type) {
-    for (auto& slot : voices_) {
-        if (slot.voice) slot.voice->set_filter_type(type);
-    }
-}
-
-void VoiceManager::set_group_filter_type(int group_id, int type) {
-    for (auto& slot : voices_) {
-        if (slot.voice && slot.group_id == group_id) slot.voice->set_filter_type(type);
-    }
-}
 
 void VoiceManager::assign_group(int voice_idx, int group_id) {
     if (voice_idx >= 0 && voice_idx < MAX_VOICES) {

@@ -15,7 +15,7 @@ namespace audio {
  * @brief Phase-locked square wave generator.
  * 
  * Instead of having its own phase accumulator, it tracks a parent's phase.
- * This ensures zero-drift alignment, essential for classic Roland emulations.
+ * This ensures zero-drift alignment, essential for classic synth emulations.
  */
 class SubOscillator : public Processor {
 public:

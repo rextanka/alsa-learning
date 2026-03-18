@@ -69,7 +69,7 @@ TEST_F(VoiceGroupTest, SetGroupParameterOnlyAffectsTargetGroup) {
     vm.note_on(61, 1.0f, 1, 550.0);
 
     // Set sustain to 0.0 on group 1 only — group 0 voices should be unaffected.
-    vm.set_group_parameter(1, 6 /* amp_sustain */, 0.0f);
+    vm.set_group_parameter(1, "amp_sustain", 0.0f);
 
     // Verify via the chain: group 0 voice ENV sustain != 0.
     const auto& voices = vm.get_voices();
@@ -85,17 +85,13 @@ TEST_F(VoiceGroupTest, SetGroupParameterOnlyAffectsTargetGroup) {
     SUCCEED(); // Main assertion: no cross-contamination crash
 }
 
-TEST_F(VoiceGroupTest, SetGroupFilterTypeOnlyAffectsTargetGroup) {
-    // Apply Moog filter to group 0 only; group 1 voices should have no filter.
-    vm.set_group_filter_type(0, 0 /* Moog */);
-
+TEST_F(VoiceGroupTest, VoiceChainsIntactAcrossGroups) {
+    // Verify all voice chains are intact after group assignment.
+    // (set_filter_type / set_group_filter_type are removed — filters are chain nodes.)
     const auto& voices = vm.get_voices();
     for (const auto& slot : voices) {
-        if (slot.group_id == 0) {
-            EXPECT_NE(slot.voice->filter(), nullptr) << "Group 0 voice should have filter";
-        } else {
-            EXPECT_EQ(slot.voice->filter(), nullptr) << "Group 1 voice should have no filter";
-        }
+        ASSERT_NE(slot.voice.get(), nullptr);
+        EXPECT_NE(slot.voice->find_by_tag("VCO"), nullptr) << "VCO tag must still be present";
     }
 }
 

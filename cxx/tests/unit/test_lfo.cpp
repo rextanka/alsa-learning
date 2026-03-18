@@ -7,13 +7,10 @@
  *  - Frequency accuracy: phase advances at the correct sample rate
  *  - Intensity scaling
  *  - Smoothing (intensity ramp does not produce a step)
- *  - Integration with Voice::lfo() and Voice::matrix() to verify that
- *    LFO→Pitch and LFO→Cutoff modulation applies octave-scaling correctly
  */
 
 #include <gtest/gtest.h>
 #include "../../src/dsp/oscillator/LfoProcessor.hpp"
-#include "../../src/core/ModulationMatrix.hpp"
 #include "../../src/core/Voice.hpp"
 #include "../../src/core/ModuleRegistry.hpp"
 #include <cmath>
@@ -212,66 +209,3 @@ TEST(LfoIntensityTest, HalfIntensityHalvesPeak) {
     EXPECT_NEAR(half_max, full_max * 0.5f, 0.05f);
 }
 
-// ---------------------------------------------------------------------------
-// Voice integration: LFO→Pitch and LFO→Cutoff via ModulationMatrix
-// ---------------------------------------------------------------------------
-
-class VoiceLfoModulationTest : public ::testing::Test {
-protected:
-    void SetUp() override {
-        register_builtin_processors();
-    }
-};
-
-TEST_F(VoiceLfoModulationTest, PitchModulationOctaveScaling) {
-    // Verify that ModulationMatrix octave formula is applied:
-    //   current_frequency = base_frequency * 2^(lfo_value * depth)
-    // We test this directly on the matrix without a full engine.
-    ModulationMatrix matrix;
-    matrix.clear_all();
-
-    // LFO source value of +1.0 with depth 1.0 should double the frequency.
-    matrix.set_connection(ModulationSource::LFO, ModulationTarget::Pitch, 1.0f);
-
-    std::array<float, static_cast<size_t>(ModulationSource::Count)> sources{};
-    sources[static_cast<size_t>(ModulationSource::LFO)] = 1.0f;
-
-    float sum = matrix.sum_for_target(ModulationTarget::Pitch, sources);
-    double base = 440.0;
-    double result = base * std::pow(2.0, static_cast<double>(sum));
-
-    EXPECT_NEAR(result, 880.0, 0.1) << "LFO depth=1.0, value=1.0 should double pitch";
-}
-
-TEST_F(VoiceLfoModulationTest, CutoffModulationOctaveScaling) {
-    ModulationMatrix matrix;
-    matrix.clear_all();
-
-    // LFO depth -1.0 with source value 1.0 → halve the cutoff.
-    matrix.set_connection(ModulationSource::LFO, ModulationTarget::Cutoff, -1.0f);
-
-    std::array<float, static_cast<size_t>(ModulationSource::Count)> sources{};
-    sources[static_cast<size_t>(ModulationSource::LFO)] = 1.0f;
-
-    float sum = matrix.sum_for_target(ModulationTarget::Cutoff, sources);
-    float base_cutoff = 2000.0f;
-    float result = base_cutoff * std::pow(2.0f, sum);
-
-    EXPECT_NEAR(result, 1000.0f, 1.0f) << "LFO depth=-1.0, value=1.0 should halve cutoff";
-}
-
-TEST_F(VoiceLfoModulationTest, NegativeLfoValueWithPositiveDepth) {
-    // LFO sine dips to -1.0. With positive depth the pitch should go below base.
-    ModulationMatrix matrix;
-    matrix.clear_all();
-    matrix.set_connection(ModulationSource::LFO, ModulationTarget::Pitch, 1.0f);
-
-    std::array<float, static_cast<size_t>(ModulationSource::Count)> sources{};
-    sources[static_cast<size_t>(ModulationSource::LFO)] = -1.0f; // LFO trough
-
-    float sum = matrix.sum_for_target(ModulationTarget::Pitch, sources);
-    double base = 440.0;
-    double result = base * std::pow(2.0, static_cast<double>(sum));
-
-    EXPECT_NEAR(result, 220.0, 0.1) << "LFO trough with depth=1.0 should halve pitch";
-}

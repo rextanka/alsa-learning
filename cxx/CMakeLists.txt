@@ -64,7 +64,6 @@ set(ENGINE_SOURCES
     src/core/Voice.cpp
     src/core/VoiceManager.cpp
     src/core/MidiParser.cpp
-    src/core/PatchStore.cpp
     src/core/ProcessorRegistrations.cpp
     src/core/SmfParser.cpp
     src/core/MidiFilePlayer.cpp
@@ -151,7 +150,6 @@ if(BUILD_TESTING)
         tests/unit/test_voice_stress.cpp
         tests/unit/test_logger.cpp
         tests/unit/test_clock_logic.cpp
-        tests/unit/test_modulation_matrix.cpp
         tests/unit/test_bus_headroom.cpp
         tests/unit/test_signal_chain.cpp
         tests/unit/test_voice_factory.cpp
@@ -215,7 +213,7 @@ if(BUILD_TESTING)
     # so tests can be run directly from build/bin without extra arguments.
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/patches
          DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/midi
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets/midi
          DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
     add_test(NAME Functional_Phase10 COMMAND Phase10Tests)

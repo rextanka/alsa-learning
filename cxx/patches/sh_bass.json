@@ -1,22 +1,24 @@
 {
   "version": 2,
-  "name": "SH-101 Bass",
+  "name": "SH-Style Bass",
   "groups": [
     {
       "id": 0,
       "chain": [
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
+        { "type": "SH_FILTER",           "tag": "VCF" },
         { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
         { "type": "VCA",                 "tag": "VCA" }
       ],
       "connections": [
-        { "from_tag": "ENV", "from_port": "envelope_out",
-          "to_tag":   "VCA", "to_port":   "gain_cv" }
+        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"  },
+        { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"  },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"   }
       ],
       "parameters": {
         "VCO": { "saw_gain": 1.0, "sub_gain": 0.5 },
-        "ENV": { "attack": 0.005, "decay": 0.15, "sustain": 0.6, "release": 0.25 },
-        "VCF": { "cutoff": 800.0, "res": 0.35 }
+        "VCF": { "cutoff": 800.0, "resonance": 0.35 },
+        "ENV": { "attack": 0.005, "decay": 0.15, "sustain": 0.6, "release": 0.25 }
       }
     }
   ]
