@@ -440,10 +440,10 @@ TEST_F(MidiFilePlaybackTest, BWV772InventionAudible) {
         sample_rate
     );
 
-    // File is copied to the binary output directory by CMake.
-    const char* midi_path = "midi/bwv772_invention1.mid";
+    // File lives in assets/midi/bach/ and is copied to midi/bach/ in the build output.
+    const char* midi_path = "midi/bach/bwv772_invention1.mid";
     if (std::ifstream test_open(midi_path); !test_open.good()) {
-        GTEST_SKIP() << "midi/bwv772_invention1.mid not found — skipping audible test";
+        GTEST_SKIP() << "midi/bach/bwv772_invention1.mid not found — skipping audible test";
     }
 
     load_organ_chain();

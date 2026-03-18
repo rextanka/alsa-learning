@@ -1,17 +1,23 @@
 /**
- * @file MoogLadderProcessor.hpp
- * @brief 4-pole transistor ladder filter (Moog style), 24 dB/oct low-pass.
+ * @file CemFilterProcessor.hpp
+ * @brief SH-style CEM/IR3109 4-pole low-pass filter, 24 dB/oct.
  *
  * RT-SAFE chain node: PORT_AUDIO in → PORT_AUDIO out.
  * CV routing: apply_parameter("cutoff_cv", delta) applies 1V/oct exponential
  * modulation each block — base_cutoff_ is preserved; g_ is updated in-place.
  *
- * Character: smooth, creamy, "thick" — full tanh saturation in the feedback
- * path and linear-but-warm stage updates give the classic Moog-style growl.
+ * Type name: SH_FILTER
+ *
+ * Character: "resonant and liquid-like" — this SH-style filter uses the
+ * IR3109 (CEM3340-era) chip. Unlike the Moog-style heavy tanh saturation in
+ * the feedback path, the CEM chip operates with a softer algebraic clip in
+ * feedback and fully linear stage updates. The result is a cleaner, more
+ * stable self-oscillation and a characteristically open high end at moderate
+ * resonance — the solid punchy quality preferred for lead lines and bass patches.
  */
 
-#ifndef AUDIO_MOOG_LADDER_PROCESSOR_HPP
-#define AUDIO_MOOG_LADDER_PROCESSOR_HPP
+#ifndef CEM_FILTER_PROCESSOR_HPP
+#define CEM_FILTER_PROCESSOR_HPP
 
 #include "../Processor.hpp"
 #include <cmath>
@@ -24,15 +30,15 @@
 namespace audio {
 
 /**
- * @brief Moog-style 4-pole transistor ladder low-pass filter (24 dB/oct).
+ * @brief SH-style / CEM / IR3109 4-pole ladder low-pass (24 dB/oct).
  *
- * Uses 4 cascaded 1-pole stages with a tanh-saturated feedback path.
- * Self-oscillates at resonance ≈ 1.0. g_ is pre-warped via tan() for accurate
- * frequency response up to fs/4.
+ * Topology: 4 linear 1-pole stages; feedback uses a soft algebraic clip
+ * `x / (1 + |x|)` — this saturates more gently than tanh, preserving more
+ * high-frequency content in the feedback and giving the cleaner CEM character.
  */
-class MoogLadderProcessor : public Processor {
+class CemFilterProcessor : public Processor {
 public:
-    explicit MoogLadderProcessor(int sample_rate)
+    explicit CemFilterProcessor(int sample_rate)
         : sample_rate_(sample_rate)
         , base_cutoff_(20000.0f)
         , base_res_(0.0f)
@@ -47,9 +53,8 @@ public:
         declare_port({"kybd_cv",   PORT_CONTROL, PortDirection::IN, false}); // bipolar, 1V/oct
         declare_port({"fm_in",     PORT_AUDIO,   PortDirection::IN});        // audio-rate FM
 
-        declare_parameter({"cutoff",     "Cutoff Frequency", 20.0f, 20000.0f, 20000.0f, true});
-        declare_parameter({"resonance",  "Resonance",         0.0f,     1.0f,     0.0f});
-        declare_parameter({"hpf_cutoff", "HPF Stage (0-3)",   0.0f,     3.0f,     0.0f});
+        declare_parameter({"cutoff",    "Cutoff Frequency", 20.0f, 20000.0f, 20000.0f, true});
+        declare_parameter({"resonance", "Resonance",         0.0f,     1.0f,     0.0f});
     }
 
     bool apply_parameter(const std::string& name, float value) override {
@@ -64,17 +69,14 @@ public:
             return true;
         }
         if (name == "cutoff_cv") {
-            // 1V/oct exponential modulation — does not alter base_cutoff_
             float eff = std::max(20.0f, base_cutoff_ * std::pow(2.0f, value));
             update_g(eff);
             return true;
         }
         if (name == "res_cv") {
-            // Unipolar additive resonance boost
             res_ = std::clamp(base_res_ + value, 0.0f, 1.0f);
             return true;
         }
-        if (name == "hpf_cutoff") { hpf_cutoff_ = value; return true; }
         return false;
     }
 
@@ -99,10 +101,12 @@ protected:
 
 private:
     inline void process_sample(float& sample) {
-        // Tanh-saturated feedback — the Moog-style signature
+        // Algebraic soft-clip feedback: x/(1+|x|) — gentler than tanh, cleaner CEM character
         float feedback = stage_[3] * res_ * 4.0f;
-        float input = sample - std::tanh(feedback);
+        float soft_fb  = feedback / (1.0f + std::abs(feedback));
+        float input    = sample - soft_fb;
 
+        // Linear stage updates (no per-stage saturation — CEM/IR3109 characteristic)
         stage_[0] += g_ * (input     - stage_[0]);
         stage_[1] += g_ * (stage_[0] - stage_[1]);
         stage_[2] += g_ * (stage_[1] - stage_[2]);
@@ -112,20 +116,18 @@ private:
     }
 
     void update_g(float cutoff) {
-        // Bilinear pre-warp: g = tan(pi * fc / fs), clamped for numerical safety
         g_ = std::tan(static_cast<float>(M_PI) * cutoff / static_cast<float>(sample_rate_));
         g_ = std::clamp(g_, 0.0001f, 0.9999f);
     }
 
     int   sample_rate_;
-    float base_cutoff_;   // anchor — set by "cutoff" parameter
-    float base_res_;      // anchor — set by "resonance" parameter
-    float res_ = 0.0f;    // effective resonance (base + res_cv)
-    float g_   = 0.0f;    // frequency coefficient (updated from effective cutoff)
+    float base_cutoff_;
+    float base_res_;
+    float res_ = 0.0f;
+    float g_   = 0.0f;
     float stage_[4];
-    float hpf_cutoff_ = 0.0f;
 };
 
 } // namespace audio
 
-#endif // AUDIO_MOOG_LADDER_PROCESSOR_HPP
+#endif // CEM_FILTER_PROCESSOR_HPP

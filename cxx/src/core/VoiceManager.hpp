@@ -73,7 +73,9 @@ public:
     void note_off(int note);
 
     /**
-     * @brief Set a parameter by name across all voices.
+     * @brief Set a named parameter across all voices.
+     *
+     * Delegates to Voice::set_named_parameter on every voice slot.
      */
     void set_parameter_by_name(const std::string& name, float value);
 
@@ -86,24 +88,9 @@ public:
     void set_tag_parameter(const std::string& tag, const std::string& name, float value);
 
     /**
-     * @brief Set a parameter by ID across all voices (all groups).
+     * @brief Set a named parameter across all voices in a specific group.
      */
-    void set_parameter(int param_id, float value);
-
-    /**
-     * @brief Set a parameter by ID across all voices in a specific group.
-     */
-    void set_group_parameter(int group_id, int param_id, float value);
-
-    /**
-     * @brief Set filter type across all voices (all groups).
-     */
-    void set_filter_type(int type);
-
-    /**
-     * @brief Set filter type for all voices in a specific group.
-     */
-    void set_group_filter_type(int group_id, int type);
+    void set_group_parameter(int group_id, const std::string& name, float value);
 
     /**
      * @brief Assign a voice slot to a voice group.

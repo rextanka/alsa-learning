@@ -1,22 +1,24 @@
 {
   "version": 2,
-  "name": "TB-303 Bass",
+  "name": "TB-Style Bass",
   "groups": [
     {
       "id": 0,
       "chain": [
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
+        { "type": "DIODE_FILTER",        "tag": "VCF" },
         { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
         { "type": "VCA",                 "tag": "VCA" }
       ],
       "connections": [
-        { "from_tag": "ENV", "from_port": "envelope_out",
-          "to_tag":   "VCA", "to_port":   "gain_cv" }
+        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"  },
+        { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"  },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"   }
       ],
       "parameters": {
         "VCO": { "pulse_gain": 1.0, "pulse_width": 0.5 },
-        "ENV": { "attack": 0.002, "decay": 0.08, "sustain": 0.0, "release": 0.05 },
-        "VCF": { "cutoff": 600.0, "res": 0.75 }
+        "VCF": { "cutoff": 600.0, "resonance": 0.75 },
+        "ENV": { "attack": 0.002, "decay": 0.08, "sustain": 0.0, "release": 0.05 }
       }
     }
   ]

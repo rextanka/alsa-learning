@@ -4,9 +4,10 @@
  */
 
 #include "Voice.hpp"
-#include "filter/MoogLadderProcessor.hpp"
-#include "filter/DiodeLadderProcessor.hpp"
+#include "VcaProcessor.hpp"
 #include "routing/CompositeGenerator.hpp"
+#include "envelope/AdsrEnvelopeProcessor.hpp"
+#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 #include <numeric>
@@ -15,8 +16,6 @@ namespace audio {
 
 Voice::Voice(int sample_rate)
     : base_frequency_(440.0)
-    , base_cutoff_(20000.0f)
-    , base_resonance_(0.4f)
     , base_amplitude_(1.0f)
     , sample_rate_(sample_rate)
     , pan_(0.0f)
@@ -27,111 +26,30 @@ Voice::Voice(int sample_rate)
     AudioLogger::instance().log_event("SR_CHECK", static_cast<float>(sample_rate_));
 }
 
-void Voice::set_filter_type(std::unique_ptr<FilterProcessor> filter) {
-    filter_ = std::move(filter);
-}
-
-void Voice::set_filter_type(int type) {
-    std::unique_ptr<FilterProcessor> new_filter;
-    if (type == 0) {
-        new_filter = std::make_unique<MoogLadderProcessor>(sample_rate_);
-    } else if (type == 1) {
-        new_filter = std::make_unique<DiodeLadderProcessor>(sample_rate_);
-    }
-
-    if (new_filter) {
-        new_filter->set_cutoff(base_cutoff_);
-        new_filter->set_resonance(base_resonance_);
-        filter_ = std::move(new_filter);
-    } else {
-        filter_ = nullptr;
-    }
-}
-
 void Voice::set_pan(float pan) {
     pan_ = std::clamp(pan, -1.0f, 1.0f);
 }
 
-void Voice::set_parameter(int param, float value) {
-    // Map string-based parameters (sent via AudioBridge) to internal components
-    switch (param) {
-        case 0: // PITCH
-            base_frequency_ = static_cast<double>(value);
-            break;
-        case 8: // AMP_BASE (Internal routing for beep tests)
-            base_amplitude_ = std::clamp(value, 0.0f, 1.0f);
-            break;
-        case 1: // CUTOFF
-            base_cutoff_ = std::max(20.0f, value);
-            if (filter_) filter_->set_cutoff(base_cutoff_);
-            break;
-        case 2: // RESONANCE
-            base_resonance_ = std::clamp(value, 0.0f, 1.0f);
-            if (filter_) filter_->set_resonance(base_resonance_);
-            break;
-        case 3: // VCF_ENV_AMOUNT (Tag VCF, Internal ID 3)
-            break;
-        case 4: { // VCA Attack
-            if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV"))) env->set_attack_time(value);
-            break;
-        }
-        case 5: { // VCA Decay
-            if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV"))) env->set_decay_time(value);
-            break;
-        }
-        case 6: { // VCA Sustain
-            if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV"))) env->set_sustain_level(value);
-            break;
-        }
-        case 7: { // VCA Release
-            if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV"))) env->set_release_time(value);
-            break;
-        }
-        case 11: { // SUB_GAIN
-            if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->mixer().set_gain(2, value);
-            break;
-        }
-        case 12: { // SAW_GAIN
-            if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->mixer().set_gain(0, value);
-            break;
-        }
-        case 13: { // PULSE_GAIN
-            if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->mixer().set_gain(1, value);
-            break;
-        }
-        case 15: { // SINE_GAIN
-            if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->mixer().set_gain(3, value);
-            break;
-        }
-        case 16: { // TRIANGLE_GAIN
-            if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->mixer().set_gain(4, value);
-            break;
-        }
-        case 17: { // WAVETABLE_GAIN
-            if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->mixer().set_gain(5, value);
-            break;
-        }
-        case 18: { // NOISE_GAIN
-            if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->mixer().set_gain(6, value);
-            break;
-        }
-        case 19: { // WAVETABLE_TYPE
-            auto wtype = static_cast<WaveType>(static_cast<int>(value));
-            if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->wavetable_osc().setWaveType(wtype);
-            break;
-        }
-        case 10: // PULSE_WIDTH (alias)
-            [[fallthrough]];
-        case 14: { // PULSE_WIDTH
-            if (auto* vco = dynamic_cast<CompositeGenerator*>(find_by_tag("VCO"))) vco->pulse_osc().set_pulse_width(value);
-            break;
-        }
-        default:
-            break;
-    }
-}
-
 bool Voice::set_named_parameter(const std::string& name, float value) {
+    // Voice-level parameters (not stored on any processor node)
+    if (name == "osc_frequency") {
+        base_frequency_ = static_cast<double>(value);
+        if (!signal_chain_.empty())
+            signal_chain_.front().node->set_frequency(base_frequency_);
+        return true;
+    }
+    if (name == "amp_base") {
+        base_amplitude_ = std::clamp(value, 0.0f, 1.0f);
+        return true;
+    }
+    // Bridge parameter aliases: route to specific tagged nodes
+    if (name == "vcf_cutoff")  return set_tag_parameter("VCF", "cutoff",    std::max(20.0f, value));
+    if (name == "vcf_res")     return set_tag_parameter("VCF", "resonance", std::clamp(value, 0.0f, 1.0f));
+    if (name == "amp_attack")  return set_tag_parameter("ENV", "attack",    value);
+    if (name == "amp_decay")   return set_tag_parameter("ENV", "decay",     value);
+    if (name == "amp_sustain") return set_tag_parameter("ENV", "sustain",   value);
+    if (name == "amp_release") return set_tag_parameter("ENV", "release",   value);
+    // General dispatch: try each node in order
     for (auto& entry : signal_chain_) {
         if (entry.node->apply_parameter(name, value)) return true;
     }
@@ -152,7 +70,6 @@ void Voice::note_on(double frequency) {
     base_frequency_ = frequency;
     for (auto& entry : signal_chain_) entry.node->reset();
     for (auto& entry : mod_sources_) entry.node->reset();
-    if (filter_) filter_->reset();
     // signal_chain_[0] is guaranteed by bake() to be the audio generator.
     if (!signal_chain_.empty()) {
         signal_chain_.front().node->set_frequency(frequency);
@@ -194,7 +111,6 @@ bool Voice::is_releasing() const {
 void Voice::reset() {
     for (auto& entry : signal_chain_) entry.node->reset();
     for (auto& entry : mod_sources_) entry.node->reset();
-    if (filter_) filter_->reset();
 }
 
 void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
@@ -241,8 +157,6 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
     };
 
     // Pass 2: execute audio chain. signal_chain_ contains only PORT_AUDIO nodes.
-    bool audio_generated = false;
-
     for (auto& entry : signal_chain_) {
         if ([[maybe_unused]] auto* vca = dynamic_cast<VcaProcessor*>(entry.node.get()); vca != nullptr) {
             // Resolve gain_cv via explicit connection only — no implicit fallback.
@@ -254,7 +168,6 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
                 }
             }
 
-            if (audio_generated && filter_) filter_->pull(output, context);
             if (!gain_cv.empty()) {
                 VcaProcessor::apply(output, gain_cv, base_amplitude_);
             } else {
@@ -280,14 +193,15 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
                     if (auto* vco = dynamic_cast<CompositeGenerator*>(entry.node.get()))
                         vco->pulse_osc().set_pulse_width(pw);
 
-                } else if (conn.to_port == "cutoff_cv" && filter_) {
-                    const float mod_cutoff = std::max(20.0f,
-                        base_cutoff_ * std::pow(2.0f, cv_mean(cv)));
-                    filter_->set_cutoff(mod_cutoff);
+                } else {
+                    // General CV dispatch: route any named port to the target node
+                    // via apply_parameter. Filters handle cutoff_cv / res_cv internally
+                    // (exponential scaling, base preservation, etc.).
+                    auto* target = find_by_tag(conn.to_tag);
+                    if (target) target->apply_parameter(conn.to_port, cv_mean(cv));
                 }
             }
             entry.node->pull(output, context);
-            audio_generated = true;
         }
     }
 }

@@ -30,12 +30,12 @@
 #include "ModuleRegistry.hpp"
 #include <nlohmann/json.hpp>
 #include <fstream>
-#include "PatchStore.hpp"
 #include "SummingBus.hpp"
 #include "SmfParser.hpp"
 #include "MidiFilePlayer.hpp"
 #include <memory>
 #include <span>
+#include <cassert>
 #include <cstring>
 
 // Handle type discrimination for tag-based safety
@@ -86,7 +86,6 @@ struct EngineHandleImpl : public HandleBase {
     bool chorus_enabled = false;
     audio::MusicalClock clock;
     audio::TwelveToneEqual tuning;
-    std::unordered_map<std::string, int> param_name_to_id;
     int sample_rate;
     // Phase 15: pending chain spec (built up by engine_add_module / engine_connect_ports)
     struct ModuleSpec { std::string type_name; std::string tag; };
@@ -138,23 +137,6 @@ struct EngineHandleImpl : public HandleBase {
         }
     });
 
-        // Initialize parameter mapping for fast UI reflection
-        param_name_to_id["vcf_cutoff"] = 1;
-        param_name_to_id["vcf_res"] = 2;
-        param_name_to_id["vcf_env_amount"] = 3;
-        param_name_to_id["amp_attack"] = 4;
-        param_name_to_id["amp_decay"] = 5;
-        param_name_to_id["amp_sustain"] = 6;
-        param_name_to_id["amp_release"] = 7;
-        param_name_to_id["osc_pw"] = 10;
-        param_name_to_id["sub_gain"] = 11;
-        param_name_to_id["saw_gain"] = 12;
-        param_name_to_id["pulse_gain"] = 13;
-        param_name_to_id["pulse_width"] = 14;
-        param_name_to_id["sine_gain"] = 15;
-        param_name_to_id["triangle_gain"] = 16;
-        param_name_to_id["wavetable_gain"] = 17;
-        param_name_to_id["noise_gain"] = 18;
     }
 };
 
@@ -417,10 +399,10 @@ void engine_set_note_pan(EngineHandle handle, int note, float pan) {
 int engine_set_adsr(EngineHandle handle, float attack, float decay, float sustain, float release) {
     if (!handle) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
-    impl->voice_manager->set_parameter(4, attack);
-    impl->voice_manager->set_parameter(5, decay);
-    impl->voice_manager->set_parameter(6, sustain);
-    impl->voice_manager->set_parameter(7, release);
+    impl->voice_manager->set_parameter_by_name("amp_attack",  attack);
+    impl->voice_manager->set_parameter_by_name("amp_decay",   decay);
+    impl->voice_manager->set_parameter_by_name("amp_sustain", sustain);
+    impl->voice_manager->set_parameter_by_name("amp_release", release);
     return 0;
 }
 
@@ -561,14 +543,6 @@ void engine_flush_logs(EngineHandle /* handle */) {
     audio::AudioLogger::instance().flush();
 }
 
-int engine_set_filter_type(EngineHandle handle, int type) {
-    if (!handle) return -1;
-    auto* impl = static_cast<EngineHandleImpl*>(handle);
-    
-    audio::AudioLogger::instance().log_event("FilterTypeSwitch", static_cast<float>(type));
-    impl->voice_manager->set_filter_type(type);
-    return 0;
-}
 
 int engine_set_delay_enabled(EngineHandle /* handle */, int /* enabled */) {
     return 0;
@@ -687,18 +661,8 @@ int engine_load_patch(EngineHandle handle, const char* path) {
             return 0;
 
         } else {
-            // --- Patch v1: legacy parameter-map format ---
-            audio::PatchData patch;
-            if (!audio::PatchStore::load_from_file(patch, path)) return -1;
-            for (auto const& [name, value] : patch.parameters) {
-                impl->voice_manager->set_parameter_by_name(name, value);
-            }
-            float a = patch.parameters.count("attack")  ? patch.parameters.at("attack")  : 0.01f;
-            float d = patch.parameters.count("decay")   ? patch.parameters.at("decay")   : 0.1f;
-            float s = patch.parameters.count("sustain") ? patch.parameters.at("sustain") : 0.5f;
-            float r = patch.parameters.count("release") ? patch.parameters.at("release") : 0.2f;
-            engine_set_adsr(handle, a, d, s, r);
-            return 0;
+            log.log_message("engine_load_patch", "v1 patch format is not supported — use v2");
+            return -1;
         }
     } catch (const std::exception& e) {
         log.log_message("engine_load_patch", e.what());
@@ -739,30 +703,6 @@ int set_param(void* handle, const char* name, float value) {
         
         if (base->type == HandleType::Engine) {
             auto* engine = static_cast<EngineHandleImpl*>(handle);
-
-            // SPECIAL MAPPING: wavetable_type
-            if (std::strcmp(name, "wavetable_type") == 0) {
-                int type_idx = static_cast<int>(value);
-                // Apply to all voices
-                for (auto& slot : engine->voice_manager->get_voices()) {
-                    if (slot.voice) {
-                        slot.voice->set_parameter(19, static_cast<float>(type_idx));
-                    }
-                }
-                return 0;
-            }
-
-            // SPECIAL MAPPING: osc_frequency
-            if (std::strcmp(name, "osc_frequency") == 0) {
-                engine->voice_manager->set_parameter(0, value); // 0 = PITCH/FREQ
-                return 0;
-            }
-
-            if (engine->param_name_to_id.count(name)) {
-                int id = engine->param_name_to_id[name];
-                engine->voice_manager->set_parameter(id, value);
-                return 0;
-            }
             engine->voice_manager->set_parameter_by_name(name, value);
             return 0;
         }

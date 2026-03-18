@@ -57,7 +57,8 @@ Voice N  (mono) ──┘  (panning)
   - The minimum viable chain. All tests require this — there is no shorter path.
   - Required: `engine_add_module` (VCO, ENV, VCA) / `engine_connect_ports("ENV", "envelope_out", "VCA", "gain_cv")` / `engine_bake` / `engine_start` / `set_param` (oscillator gain + `amp_sustain`).
 - **Tier 2 (Modulated Path)**: Tier 1 chain with optional LFO modulation.
-  - Optional LFO routes (Phase 15A): `engine_set_lfo_rate` / `engine_set_lfo_waveform` / `engine_set_lfo_depth(LFO_TARGET_*)` / `engine_set_lfo_intensity`.
+  - Add LFO via `engine_add_module("LFO", "LFO")` then wire with `engine_connect_ports("LFO", "cv_out", "<target>", "<port>")`.
+  - `engine_set_lfo_*` (Phase 15A) is retired — do not use it in new tests.
 - **Tier 3 (Complex Path)**: `COMPOSITE_GENERATOR -> MOOG_FILTER/DIODE_FILTER -> ADSR_ENVELOPE -> VCA -> Output`.
   - Required: Tier 1 requirements + `MOOG_FILTER` or `DIODE_FILTER` module in chain + filter/resonance params.
 
@@ -67,7 +68,7 @@ Voice N  (mono) ──┘  (panning)
 Before a test is executed, the developer (or Cline) must confirm:
 1. **Graph Definition**: Is the signal path documented in the `PRINT_TEST_HEADER`?
 2. **Lifecycle State**: Has `engine_start()` been called for this specific configuration?
-3. **Connectivity**: Is the audio signal path wired via `engine_connect_ports` + `engine_bake`? If optional LFO modulation (LFO→pitch, LFO→cutoff) is needed, have `engine_set_lfo_*` calls been made (Phase 15A API)?
+3. **Connectivity**: Is the audio signal path wired via `engine_connect_ports` + `engine_bake`? If optional LFO modulation (LFO→pitch, LFO→cutoff) is needed, use `engine_add_module("LFO", ...)` + `engine_connect_ports` (Phase 16 API). `engine_set_lfo_*` is retired.
 4. **Gain Stage**: Is the gain stage of every module in the graph explicitly initialized to a non-zero value?
 
 ---
@@ -101,8 +102,8 @@ If a test produces no audio, follow this binary search path — do not guess:
 | `Phase10Tests.cpp` | 2 | BPM/clock and note-name API |
 | `stereo_poly_test.cpp` | 2 | Polyphonic voice panning |
 | `test_sh101_chain.cpp` | 3 | SH-101 bass chain + LFO PWM |
-| `test_tremulant_preset.cpp` | 2 | Phase 15A LFO→pitch vibrato via `engine_set_lfo_*` |
-| `test_lfo_modulation.cpp` | 2 | LFO API error codes, vibrato variance, cutoff modulation, clear-reset |
+| `test_tremulant_preset.cpp` | 2 | LFO→pitch vibrato via chain-placed LFO node |
+| `test_lfo_modulation.cpp` | 2 | LFO chain node: vibrato variance, cutoff modulation |
 | `test_juno_chorus.cpp` | 2 | Juno chorus stereo separation |
 | `Functional_BachMidi.cpp` | 3 | MIDI polyphony, DrawbarOrgan |
 | `BachOrganTest.cpp` | 3 | DrawbarOrgan register blend |
