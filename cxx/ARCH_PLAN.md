@@ -6,10 +6,12 @@
 
 ## Development Policy
 
+> **For AI agents**: When context is refreshed or a new session begins, read this file in full, then read each document listed in the **Documentation Map** (bottom of this file). All rules from all documents are active simultaneously. Do not proceed with any implementation until you have read the relevant governing documents.
+
 To maintain the high reliability required for professional-grade audio software, the following policies are strictly enforced:
 
-1.  **Git Policy**: Branch naming, commit standards, PR process, and documentation sync rules are defined in [cxx/docs/GIT_POLICY.md](cxx/docs/GIT_POLICY.md).
-1.  **Test Source of Truth**: All testing standards, including the "Golden Lifecycle" and mandatory modular routing protocols, are defined in [cxx/docs/TESTING.md](cxx/docs/TESTING.md).
+1.  **Git Policy**: Branch naming (timestamp prefix required; optional descriptive suffix), commit standards, PR process, and documentation sync rules are defined in [docs/GIT_POLICY.md](docs/GIT_POLICY.md). **Violating branch naming policy is not acceptable** — always check GIT_POLICY.md before creating a branch.
+1.  **Test Source of Truth**: All testing standards, including the "Golden Lifecycle" and mandatory modular routing protocols, are defined in [docs/TESTING.md](docs/TESTING.md).
 1.  **Green Build Requirement**: All existing tests must pass (`ctest` or `./bin/unit_tests`) before a Pull Request is created or merged.
 2.  **Test-First Features**: Every new feature or architectural change MUST be accompanied by at least one unit test or integration test.
 3.  **Regression Testing**: Every bug fix MUST include a corresponding regression test that fails without the fix and passes with it.
@@ -39,7 +41,7 @@ The library is consumed via a stable C API, enabling host integration in native 
     - All nodes declare typed ports (`PORT_AUDIO` or `PORT_CONTROL`). Both run at audio rate (`std::span<float>` per block). Connections are validated at `bake()` — `PORT_AUDIO` outputs may only connect to `PORT_AUDIO` inputs, and `PORT_CONTROL` outputs may only connect to `PORT_CONTROL` inputs. See [cxx/docs/MODULE_DESC.md](cxx/docs/MODULE_DESC.md) for per-module port specifications.
 - **Mono-until-Stereo**: Keep signal paths mono for CPU efficiency until spatial effects or stereo-specific processing (panners/reverb) are required. All internal Voice components (VCO, VCF, VCA) must operate on a single mono `std::span<float>`.
 - **Voice Groups**: Voices are partitioned into named groups, each with an independent signal chain topology and patch. This enables keyboard splits (e.g. below middle C → SH-101 group, above → Juno group) and layering (a single MIDI note triggers voices from multiple groups simultaneously).
-- **Centralized Zipper-Free Control**: A dedicated `ParameterManager` will handle all parameter ramping and smoothing. See Phase 19 in the migration table.
+- **Centralized Zipper-Free Control**: `SmoothedParam` (Phase 21) handles per-processor parameter ramping and smoothing. Each opted-in processor owns `SmoothedParam` member variables. Linear interpolation runs at block boundaries with a 10ms default ramp. Discrete/patch-config parameters use snap mode (`current = target` immediately). See `src/dsp/SmoothedParam.hpp` and Phase 21 in the migration table.
 - **HAL-Only Interaction**: High-level DSP logic and tests interact ONLY with the `hal::AudioDriver` base class. Platform parity is maintained by swapping the HAL implementation (ALSA vs. CoreAudio) while keeping core C++ logic identical.
 
 ### Future Roadmap (Not Currently Planned)
@@ -97,21 +99,24 @@ cxx/
 │   │   ├── AudioGraph.hpp     # Dynamic routing graph
 │   │   ├── Logger.hpp         # RT-Safe Non-Intrusive Logging
 │   │   ├── MidiParser.hpp     # MIDI event handling
-│   │   ├── ModulationMatrix.hpp # Bipolar signal routing
+│   │   ├── MidiFilePlayer.hpp # SMF playback engine (Phase 22A)
 │   │   ├── MusicalClock.hpp   # Sample-accurate timing logic
 │   │   ├── PatchStore.hpp     # JSON patch management
+│   │   ├── SmfParser.hpp      # Standard MIDI File parser (Phase 22A)
 │   │   ├── Voice.hpp          # Per-voice graph container
 │   │   └── VoiceManager.hpp   # Polyphony & Voice Stealing
 │   ├── dsp/
 │   │   ├── Processor.hpp      # Base processor class (NVI Pattern)
 │   │   ├── InputSource.hpp    # Pull interface
+│   │   ├── SmoothedParam.hpp  # Per-parameter linear-ramp interpolation (Phase 21)
 │   │   ├── envelope/          # ADSR, AD, Envelope base
-│   │   ├── filter/            # Moog, Diode Ladder
-│   │   ├── fx/                # Juno Chorus, Delay
-│   │   ├── oscillator/        # Sine, Saw, Pulse, Sub, LFO
-│   │   └── routing/           # CompositeGenerator, SummingBus, DrawbarOrganProcessor
+│   │   ├── filter/            # Moog, Diode, SH, MS20, HP, BP ladders; VcfBase
+│   │   ├── fx/                # Juno Chorus, Echo Delay, Freeverb, FDN Reverb, Phaser
+│   │   ├── oscillator/        # Sine, Saw, Pulse, Sub, LFO, White/Pink Noise
+│   │   └── routing/           # CompositeGenerator, DrawbarOrgan, CV/Audio utilities
 │   └── hal/
-│       ├── AudioDriver.hpp    # Cross-platform HAL interface
+│       ├── AudioDriver.hpp    # Cross-platform HAL interface (enumerate_devices, device_name)
+│       ├── HostDeviceInfo.hpp # Platform-agnostic device descriptor (Phase 20)
 │       ├── alsa/              # Linux/Fedora implementation
 │       └── coreaudio/         # macOS implementation
 └── tests/
@@ -175,9 +180,9 @@ This guarantees that offline test analysis and live HAL rendering are driven by 
 
 Block size is **runtime-configurable** and must be chosen by the host at engine creation time based on hardware capability queries. There is no hardcoded default — the appropriate size is platform and hardware dependent (e.g. 512 samples on a modern ARM laptop for minimum latency; 1024 samples on older x86 hardware for stability).
 
-- Query available block sizes via `host_get_device_block_size()` (Phase 18).
-- Pass the chosen size to `engine_create(sample_rate)` (block_size parameter planned for Phase 18 when the query API lands).
-- **Current interim behaviour**: block size is fixed at 512 frames, hardcoded at engine creation. This will be replaced by the Phase 18 hardware query.
+- Query available block sizes via `host_get_device_block_size(device_index)` — implemented in Phase 20.
+- Pass the chosen size to `engine_create(sample_rate)`.
+- Tests must use `test::get_safe_sample_rate()` and never hardcode block sizes. See TESTING.md §8.
 
 ---
 
@@ -185,9 +190,9 @@ Block size is **runtime-configurable** and must be chosen by the host at engine 
 
 The engine supports **44100 Hz and 48000 Hz** exclusively. These are the two rates common to consumer and professional computer audio interfaces, including USB interfaces.
 
-- **Rate negotiation**: The caller is responsible for querying `host_get_device_sample_rate()` and passing the result to `engine_create(sample_rate)`. **Current interim behaviour**: `host_get_device_sample_rate()` is a stub that returns 48000 — real hardware enumeration is planned for Phase 18. The engine accepts whatever rate is passed; enforcing the >48kHz cap is the caller's responsibility until Phase 18 lands.
+- **Rate negotiation**: The caller is responsible for querying `host_get_device_sample_rate(device_index)` (Phase 20 — probes actual hardware via CoreAudio/ALSA) and passing the result to `engine_create(sample_rate)`. The engine accepts whatever rate is passed; enforcing the >48kHz cap is the caller's responsibility.
 - **No hardcoded rates**: All internal timing — ADSR curves, LFO rates, delay times, metronome — must derive from the runtime `sample_rate_` stored at engine creation. No source file may contain the literals `44100` or `48000` for timing logic.
-- **USB interfaces**: USB audio interfaces may report stricter latency constraints and non-standard preferred block sizes. Block size must come from the hardware query (Phase 17), not assumed.
+- **USB interfaces**: USB audio interfaces may report stricter latency constraints and non-standard preferred block sizes. Block size must come from `host_get_device_block_size()` (Phase 20), not assumed.
 - **Processing budget**: Rates above 48000 Hz double or quadruple processing cost for 16-voice polyphony. 48000 Hz is the practical ceiling for this engine's target hardware.
 
 ---
@@ -202,11 +207,11 @@ The engine supports **44100 Hz and 48000 Hz** exclusively. These are the two rat
 | 14    | **Dynamic Signal Chain**: (a) `Processor` typed port declarations (`PORT_AUDIO`/`PORT_CONTROL`) and `input_port_type()`. (b) Separate `AdsrEnvelopeProcessor` from VCA into distinct nodes. (c) `Voice` `signal_chain_` vector with `add_processor()`, `bake()` Generator-First and port-type validation. (d) Voice Groups in `VoiceManager`. | Complete — all items complete; (c) validator relaxed in Phase 16 to allow PORT_CONTROL nodes before the first PORT_AUDIO generator (enables chain-leading LFO) |
 | 15    | **Module Registry, Named Port Connections & Patch v2**: (a) `ModuleRegistry` — self-registration via static initializers, queryable via C API. (b) `declare_port()` / `declare_parameter()` on `Processor`. (c) Explicit `PortConnection` graph in `Voice`; `bake()` validates named connections. (d) Data-driven `pull_mono` — full graph executor (audio + CV, multi-input, feedback). (e) Patch format v2 — single-group JSON with named connections. (f) `engine_add_module` / `engine_connect_ports` / `engine_bake` / `engine_load_patch` C API. (g) `engine_set_modulation` removed; `VoiceFactory` retired. (h) `DrawbarOrganProcessor` generator module. (i) Four reference patches: `sh_bass`, `tb_bass`, `organ_drawbar`, `juno_pad`. (j) True stereo `engine_process` via `SummingBus`/`AudioBuffer` path. (k) Full functional test migration to Phase 15 chain. (l) Phase 15A: `engine_set_lfo_*` C API exposing internal Voice LFO + `ModulationMatrix`; external integer-ID mod matrix deprecated. | Complete |
 | 16    | **Full Control-Rate Port Routing**: Retire the deprecated integer-ID external modulation matrix entirely. Extend the `Voice::pull_mono` graph executor so that every `PORT_CONTROL` connection declared via `engine_connect_ports` is live-routed at block rate — not just `gain_cv`→VCA. Concrete targets: (a) Any `PORT_CONTROL` source (LFO, ENV) wired via named port to `pitch_cv`, `pwm_cv`, or `cutoff_cv` is applied each block. (b) `Voice::lfo_` and `ModulationMatrix` retired; all modulation routes are first-class named port connections. (c) `engine_create_processor`, `engine_connect_mod`, `engine_get_modulation_report`, `MOD_SRC_*`/`MOD_TGT_*`/`ALL_VOICES` removed from `CInterface.h`. (d) `engine_set_lfo_*` / `engine_clear_modulations` removed from bridge and header. (e) VoiceManager global mod matrix (`connections_`, `mod_sources_`, `mod_buffer_`) retired. (f) LFO is a first-class chain module: added via `engine_add_module("LFO", tag)` + `engine_connect_ports`; `juno_pad.json` patch updated. (g) `bake()` validator relaxed — PORT_CONTROL nodes may precede first PORT_AUDIO generator. | Complete |
-| 17    | **Spatial & Stereo FX**: Global FX chain (post voice-summing bus). Reverb, Chorus, Flanger, Delay as global modules. | Planned |
-| 18    | **Host Interrogation & Enumeration**: Query device list, hardware sample rates, and supported block sizes via C-Bridge. | Planned |
-| 19    | **Non-Intrusive Logger**: RT-safe lock-free logging. | Complete |
-| 20    | **Unit & Integration Strategy**: GUnit vs. standalone API tests. | Complete |
-| 21    | **ParameterManager**: Centralized zipper-free parameter ramping and smoothing for all audio-rate parameter changes. | Planned |
+| 17    | **CV & Modulation Utilities + Full Patch Test Suite**: New routing processors (CV_MIXER, CV_SPLITTER, MATHS, GATE_DELAY, SAMPLE_HOLD, INVERTER); `InverterProcessor` fix; `VcfBase` + `LadderVcfBase` extraction; `kybd_cv` hot-path cache; `spectral_centroid()` analysis API; 12-patch × dedicated-test functional suite (40 tests). | Complete |
+| 18    | **Audio Routing & Timbral Completion**: Multi-input graph executor; `Processor::inject_audio()`; RING_MOD, AUDIO_SPLITTER, HIGH_PASS_FILTER, BAND_PASS_FILTER, NOISE_GATE, ENVELOPE_FOLLOWER; VCO `fm_in` / `fm_depth`; Filter audio-rate FM; Pink noise (Paul Kellett 7-pole IIR); `bell.json` patch. Module registry grows to 24 types. | Complete |
+| 19    | **Spatial & Stereo FX**: Global post-summing bus in `VoiceManager`; REVERB_FREEVERB (Schroeder/Freeverb, 8 comb + 4 allpass); REVERB_FDN (Jot FDN, 8-line Householder, exact T60); PHASER (4/8-stage all-pass, LFO-swept); `engine_post_chain_push` / `engine_post_chain_set_param` / `engine_post_chain_clear` C API. | Complete |
+| 20    | **Host Interrogation & Enumeration**: `HostDeviceInfo` struct; `AudioDriver::enumerate_devices()` (CoreAudio + ALSA); `device_name()` virtual; 9 new C-Bridge functions (`host_get_device_*`, `engine_get_driver_*`). HAL is sole source of truth — zero platform `#ifdef`s in Bridge. | Complete |
+| 21    | **ParameterManager (SmoothedParam)**: Per-processor `SmoothedParam` members for all audio-rate continuous parameters. Linear interpolation at block boundaries (10ms default ramp). Snap mode for discrete selectors and patch-config values. `Voice::pan_param_` for click-free pan transitions. `ADEnvelopeProcessor` fully declared (ports, parameters, `apply_parameter`, `on_note_on`). | Complete |
 | 22    | **SMF Playback — Phase A (Rudimentary)**: `SmfParser` + `MidiFilePlayer` — sample-accurate SMF Format 0/1 playback. All tracks merged; MIDI channel ignored (channel-blind). All voices use the single loaded patch. `engine_load_midi` / `engine_midi_play` / `engine_midi_stop` / `engine_midi_rewind` / `engine_midi_get_position` C API. Tempo map support (FF 51). Note On velocity-0 normalised to Note Off. Running status. SysEx skipped. | Complete |
 | 23    | **SMF Playback — Phase B (Multi-timbral)**: Extend `MidiFilePlayer` with a MIDI-channel-to-VoiceGroup routing table. Each channel maps to a VoiceGroup with its own patch. `engine_midi_set_channel_patch(ch, patch_path)` C API. Requires Phase 16 VoiceGroup/patch-per-group support. Program Change events (`0xC0`) trigger live patch swaps on the target channel's group. | Planned |
 | 24    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation. | Planned |
@@ -340,19 +345,16 @@ For reliable polyphony and voice stealing, every `Voice` must adhere to the foll
 - **Span-Based Modulation**: To achieve true "zipper-free" performance, modulation nodes should provide a full span of modulation data per block. Processors use these spans to smoothly ramp internal parameters (e.g., Cutoff, Pitch) rather than updating once per block.
 - **Target Update**: Modulation targets (Cutoff, Pitch) are recalculated per-block or per-sample using the exponential formula $f_{final} = f_{base} \cdot 2^{mod}$.
 
-## Modular Modulation Matrix
+## ~~Modular Modulation Matrix~~ (RETIRED — Phase 16)
 
-The `ModulationMatrix` is a RT-safe central hub within each `Voice` that manages connections between sources and targets.
+> **This section is historical. `ModulationMatrix` and `Voice::lfo_` were removed in Phase 16.** All modulation routes are now first-class named port connections in the voice graph, declared via `engine_connect_ports` or in the patch JSON `connections` array. There are no integer-ID modulation sources or targets. The description below is retained for context only.
 
-### Architecture
-- **Bipolar Modulation**: Supports negative intensity for inverted envelopes (closing a filter) or phase-flipped LFOs.
-- **Summing Logic**: Multiple sources targeting the same parameter are summed into a single modulation delta before being applied exponentially to the base parameter.
-- **Encapsulation**: Owned by the `Voice`, keeping each instrument instance self-contained.
+The `ModulationMatrix` was a RT-safe central hub within each `Voice` that managed connections between sources and targets. Removed in favour of the direct port-connection graph (Phase 15/16).
 
-### Core Musical Mappings
-- **Chiff**: Refactored as an `Envelope -> Filter Cutoff` modular route with positive intensity (e.g., +1.0 octaves).
-- **90/10 Articulation**: Treated as a modular "Gate-to-Amplitude" link with a specific timing offset, defining the organ's detached feel as a patch setting.
-- **Exponential Formula**: Both Pitch and Filter Cutoff follow $f_{final} = f_{base} \cdot 2^{mod}$ where $mod$ is the sum of modulation in octaves.
+### Former Core Musical Mappings (now expressed as port connections)
+- **Chiff**: `ADSR_ENVELOPE.envelope_out` → VCF `cutoff_cv` with positive scaling.
+- **90/10 Articulation**: ADSR gate-to-amplitude timing as a patch parameter.
+- **Exponential Formula**: Both Pitch and Filter Cutoff follow $f_{final} = f_{base} \cdot 2^{mod}$ where $mod$ is the sum of CV inputs in octaves. This formula is unchanged — it is now applied inside each processor's `do_pull` rather than by a central matrix.
 
 ---
 
@@ -410,15 +412,20 @@ To bridge the gap between the C-compatible public API and the internal Flexible 
 
 ---
 ## Documentation Map
-- **Build/CI**: BUILD.md
-- **Git Policy**: cxx/docs/GIT_POLICY.md
-- **Functional Testing**: cxx/docs/TESTING.md
-- **C-Bridge Contract**: cxx/docs/BRIDGE_GUIDE.md
-- **Processor Specifications**: cxx/docs/MODULE_DESC.md
-- **Patch Format**: cxx/docs/PATCH_SPEC.md
+
+> **Context Refresh Rule**: When resuming work after a context break, read ARCH_PLAN.md (this file) first, then the documents below in order. Each document governs a distinct domain — all rules in all documents are active at all times. ARCH_PLAN.md is the single source of truth for architecture decisions; the other documents are the governing contracts for their respective domains.
+
+| Document | Domain | Key Rules |
+|----------|--------|-----------|
+| [docs/GIT_POLICY.md](docs/GIT_POLICY.md) | Git workflow | Branch naming (`yyyymmddhhmm[-suffix]`), commit format, PR process, post-merge cleanup, documentation sync rule |
+| [docs/TESTING.md](docs/TESTING.md) | Test standards | Golden Lifecycle, tier classification, C-API-only rule for functional tests, silence debugger protocol |
+| [docs/BRIDGE_GUIDE.md](docs/BRIDGE_GUIDE.md) | C-Bridge contract | All `CInterface.h` functions with usage examples; parameter label registry; removed/deprecated API table |
+| [docs/MODULE_DESC.md](docs/MODULE_DESC.md) | Processor specifications | Port names, port types, parameter declarations, connection rules, known gaps for every module type |
+| [docs/PATCH_SPEC.md](docs/PATCH_SPEC.md) | Patch file format | JSON v2 schema, chain/connection/parameter structure, patch library |
+| BUILD.md | Build & CI | CMake targets, dependency setup, ctest invocation |
 
 ## References
-- Git workflow: [cxx/docs/GIT_POLICY.md](cxx/docs/GIT_POLICY.md) (branch naming, PR process, commit standards).
+- Git workflow: [docs/GIT_POLICY.md](docs/GIT_POLICY.md) (branch naming, PR process, commit standards).
 - Coding rules: repo root `.clinerules` (quick-reference; points to canonical docs above).
 
 

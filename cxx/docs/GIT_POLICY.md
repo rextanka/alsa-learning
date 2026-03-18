@@ -6,15 +6,17 @@ This document is the canonical reference for all Git workflow rules in this proj
 
 ## Branch Naming
 
-All feature and task branches **MUST** use a timestamp as the branch name:
+All feature and task branches **MUST** use a timestamp prefix in the branch name. An optional descriptive suffix may follow the timestamp, separated by a hyphen.
 
 ```
 yyyymmddhhmm
+yyyymmddhhmm-descriptive-suffix
 ```
 
-**Example:** `202603151042` (15 March 2026, 10:42)
+**Examples:** `202603151042`, `202603151042-phase21-smoothed-param`
 
-- No separators, no descriptive suffixes.
+- Timestamp prefix is mandatory. No branch may omit it.
+- Descriptive suffix is optional and for human readability only. It carries no semantic meaning in tooling.
 - One branch per task or work session.
 
 ---
@@ -53,6 +55,18 @@ For multi-line messages use multiple `-m` flags to preserve newlines in all shel
 git commit -m "feat: add wavetable interpolation" \
            -m "Adds cubic interpolation to WavetableOscillatorProcessor." \
            -m "Resolves pitch drift at low frequencies."
+```
+
+When using a HEREDOC for multi-line messages:
+
+```bash
+git commit -m "$(cat <<'EOF'
+feat: add wavetable interpolation
+
+Adds cubic interpolation to WavetableOscillatorProcessor.
+Resolves pitch drift at low frequencies.
+EOF
+)"
 ```
 
 ---
@@ -105,7 +119,7 @@ Whenever a function is added to or removed from `include/CInterface.h`, `docs/BR
 
 ```
 [ ] git checkout main && git pull origin main
-[ ] git checkout -b yyyymmddhhmm
+[ ] git checkout -b yyyymmddhhmm[-descriptive-suffix]
 [ ] work, commit using Conventional Commits
 [ ] git push -u origin <branch>
 [ ] create PR on GitHub → squash merge

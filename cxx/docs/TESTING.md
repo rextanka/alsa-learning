@@ -59,8 +59,9 @@ Voice N  (mono) ──┘  (panning)
 - **Tier 2 (Modulated Path)**: Tier 1 chain with optional LFO modulation.
   - Add LFO via `engine_add_module("LFO", "LFO")` then wire with `engine_connect_ports("LFO", "cv_out", "<target>", "<port>")`.
   - `engine_set_lfo_*` (Phase 15A) is retired — do not use it in new tests.
-- **Tier 3 (Complex Path)**: `COMPOSITE_GENERATOR -> MOOG_FILTER/DIODE_FILTER -> ADSR_ENVELOPE -> VCA -> Output`.
-  - Required: Tier 1 requirements + `MOOG_FILTER` or `DIODE_FILTER` module in chain + filter/resonance params.
+- **Tier 3 (Complex Path)**: Complex signal chains — multiple modulators, filters as chain nodes, global post-chain FX.
+  - Examples: `COMPOSITE_GENERATOR → MOOG_FILTER/DIODE_FILTER/SH_FILTER/MS20_FILTER → ADSR_ENVELOPE → VCA`, or chains with `INVERTER`, `CV_MIXER`, `RING_MOD`, or post-chain `REVERB_FDN`/`PHASER`.
+  - Required: Tier 1 requirements + additional module(s) explicitly wired via `engine_connect_ports`.
 
 ---
 
@@ -111,6 +112,26 @@ If a test produces no audio, follow this binary search path — do not guess:
 | `patch_sequence_test.cpp` | 3 | Four reference patches: SH-101 ostinato, TB-303 acid sweep, Juno pad melody, Drawbar Organ chorale |
 | `processor_check.cpp` | 2 | Oscillator frequency fidelity via hysteresis zero-crossing and symmetry analysis |
 | `TimingValidation.cpp` | 1 | Callback jitter measurement and sample-accurate clock drift verification |
+| `Functional_SH101_Live.cpp` | 3 | Patch load + live pluck sequence |
+| `patch_sequence_test.cpp` | 3 | Four reference patches: SH-101 ostinato, TB-303 acid sweep, Juno pad melody, Drawbar Organ chorale |
+| `Functional_BachMidi.cpp` | 3 | MIDI polyphony, DrawbarOrgan |
+| `BachOrganTest.cpp` | 3 | DrawbarOrgan register blend |
+| `test_midi_file_playback.cpp` | 3 | SMF playback tick accuracy, note dispatch (Phase 22A) |
+| `test_host_devices.cpp` | 1 | HAL device enumeration: count, name, sample rate, block size (Phase 20) |
+| `test_harpsichord_patch.cpp` | 3 | Harpsichord patch: INVERTER filter sweep |
+| `test_dog_whistle_patch.cpp` | 3 | Dog whistle patch: pitch sweep via dual ADSR |
+| `test_sh_bass_patch.cpp` | 3 | SH-101 bass patch smoke + envelope assertion |
+| `test_tb_bass_patch.cpp` | 3 | TB-303 bass patch + diode filter character |
+| `test_cymbal_patch.cpp` | 3 | Cymbal: ECHO_DELAY shimmer, echo tail persistence |
+| `test_bowed_bass_patch.cpp` | 3 | Bowed bass: slow attack RMS rise |
+| `test_brass_patch.cpp` | 3 | Brass/horn: fast attack, filter character |
+| `test_flute_patch.cpp` | 3 | Flute: attack ramp, LFO vibrato |
+| `test_juno_pad_patch.cpp` | 3 | Juno pad: slow attack, chorus character |
+| `test_organ_drawbar_patch.cpp` | 3 | Organ drawbar: register blend, Bach chorale |
+| `test_percussion_noise_patch.cpp` | 3 | Percussion noise: percussive decay |
+| `test_violin_vibrato_patch.cpp` | 3 | Violin vibrato: attack swell, pitch modulation |
+| `test_bell_patch.cpp` | 3 | Bell: RING_MOD sidebands, percussive decay |
+| `test_reverb_patch.cpp` | 3 | Reverb FDN/Freeverb: wet energy, stereo correlation |
 
 ---
 
@@ -178,7 +199,7 @@ To maintain the **10ms MMA Latency Target**, all functional tests follow this dy
     1. Query hardware using `host_get_device_sample_rate(0)`.
     2. Use `test::get_safe_sample_rate()` fallback logic to handle "Device Busy" or "No Device" scenarios.
     3. Initialize engine via `engine_create(sample_rate)`.
-- **Buffer Size**: Queried from hardware via `host_get_device_block_size()` (Phase 18). Until Phase 18 lands, 512 frames is used as a temporary default — do not hardcode it in new tests.
+- **Buffer Size**: Queried from hardware via `host_get_device_block_size()` (Phase 20 — implemented). Never hardcode block sizes in tests.
   - Latency is calculated dynamically: `(block_size / sample_rate) * 1000 ms`.
 - **Platform-Agnostic HAL**: Tests must use `EngineHandle` and `CInterface.h`.
 
