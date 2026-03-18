@@ -159,10 +159,52 @@ AUDIO_API int engine_midi_rewind(EngineHandle handle);
 /** Query current playhead position in SMF ticks. */
 AUDIO_API int engine_midi_get_position(EngineHandle handle, uint64_t* tick);
 
-// Host & Device API
+// ---------------------------------------------------------------------------
+// Phase 20: Host Device Enumeration API
+//
+// All information is sourced from the HAL layer (CoreAudio on macOS, ALSA on
+// Linux). No platform-specific knowledge is required by callers.
+//
+// Typical usage:
+//   int n = host_get_device_count();
+//   for (int i = 0; i < n; ++i) {
+//       char name[256];
+//       host_get_device_name(i, name, sizeof(name));
+//       int sr   = host_get_device_sample_rate(i);
+//       int bs   = host_get_device_block_size(i);
+//       int rates[16], rate_count = host_get_supported_sample_rates(i, rates, 16);
+//       int sizes[16], size_count = host_get_supported_block_sizes(i, sizes, 16);
+//   }
+// ---------------------------------------------------------------------------
+
+/** Number of output-capable audio devices on this host. */
 AUDIO_API int host_get_device_count();
+
+/** Copy the name of device at @p index into @p buffer. Returns 0 on success. */
 AUDIO_API int host_get_device_name(int index, char* buffer, size_t buffer_size);
+
+/** Nominal (default) sample rate of device @p index, in Hz. */
 AUDIO_API int host_get_device_sample_rate(int index);
+
+/** Current hardware period size (block size) of device @p index, in frames. */
+AUDIO_API int host_get_device_block_size(int index);
+
+/** Fill @p out_rates with sample rates supported by device @p index.
+ *  Returns the number written (≤ max_count), or -1 on error. */
+AUDIO_API int host_get_supported_sample_rates(int index, int* out_rates, int max_count);
+
+/** Fill @p out_sizes with period sizes supported by device @p index.
+ *  Returns the number written (≤ max_count), or -1 on error. */
+AUDIO_API int host_get_supported_block_sizes(int index, int* out_sizes, int max_count);
+
+/** Sample rate of the driver currently open inside @p handle. */
+AUDIO_API int engine_get_driver_sample_rate(EngineHandle handle);
+
+/** Block size of the driver currently open inside @p handle. */
+AUDIO_API int engine_get_driver_block_size(EngineHandle handle);
+
+/** Name of the device currently open inside @p handle. Returns 0 on success. */
+AUDIO_API int engine_get_driver_name(EngineHandle handle, char* buffer, size_t buffer_size);
 
 // Generic Parameter API
 AUDIO_API int set_param(void* handle, const char* name, float value);

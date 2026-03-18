@@ -265,4 +265,108 @@ void AlsaDriver::recover_pcm(int err) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// AudioDriver::enumerate_devices — ALSA implementation
+// ---------------------------------------------------------------------------
+
+std::vector<HostDeviceInfo> AudioDriver::enumerate_devices() {
+    std::vector<HostDeviceInfo> devices;
+
+#ifdef __linux__
+    // Common sample rates and power-of-2 period sizes to probe
+    static constexpr unsigned int kProbeRates[] = {
+        22050, 32000, 44100, 48000, 88200, 96000, 176400, 192000
+    };
+    static constexpr int kProbeSizes[] = {32, 64, 128, 256, 512, 1024, 2048, 4096};
+
+    int card = -1;
+    int idx  = 0;
+    while (snd_card_next(&card) == 0 && card >= 0) {
+        char ctl_name[32];
+        std::snprintf(ctl_name, sizeof(ctl_name), "hw:%d", card);
+
+        snd_ctl_t* ctl = nullptr;
+        if (snd_ctl_open(&ctl, ctl_name, 0) < 0) continue;
+
+        snd_ctl_card_info_t* card_info = nullptr;
+        snd_ctl_card_info_alloca(&card_info);
+        snd_ctl_card_info(ctl, card_info);
+        const char* card_name = snd_ctl_card_info_get_name(card_info);
+
+        int dev = -1;
+        while (snd_ctl_pcm_next_device(ctl, &dev) == 0 && dev >= 0) {
+            snd_pcm_info_t* pcm_info = nullptr;
+            snd_pcm_info_alloca(&pcm_info);
+            snd_pcm_info_set_device(pcm_info, static_cast<unsigned int>(dev));
+            snd_pcm_info_set_subdevice(pcm_info, 0);
+            snd_pcm_info_set_stream(pcm_info, SND_PCM_STREAM_PLAYBACK);
+            if (snd_ctl_pcm_info(ctl, pcm_info) < 0) continue;
+
+            const char* dev_name = snd_pcm_info_get_name(pcm_info);
+
+            // Probe capabilities via a non-blocking open
+            char pcm_id[64];
+            std::snprintf(pcm_id, sizeof(pcm_id), "hw:%d,%d", card, dev);
+            snd_pcm_t* pcm = nullptr;
+
+            std::vector<int> supported_rates;
+            std::vector<int> supported_sizes;
+            int default_rate = 48000;
+            int default_size = 512;
+
+            if (snd_pcm_open(&pcm, pcm_id, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK) == 0) {
+                snd_pcm_hw_params_t* params = nullptr;
+                snd_pcm_hw_params_alloca(&params);
+                if (snd_pcm_hw_params_any(pcm, params) == 0) {
+                    for (unsigned int rate : kProbeRates) {
+                        if (snd_pcm_hw_params_test_rate(pcm, params, rate, 0) == 0)
+                            supported_rates.push_back(static_cast<int>(rate));
+                    }
+                    for (int sz : kProbeSizes) {
+                        snd_pcm_uframes_t frames = static_cast<snd_pcm_uframes_t>(sz);
+                        if (snd_pcm_hw_params_test_period_size(pcm, params, frames, 0) == 0)
+                            supported_sizes.push_back(sz);
+                    }
+                    // Preferred rate: pick 48000 if supported, else first
+                    if (!supported_rates.empty()) {
+                        default_rate = 48000;
+                        bool has_48k = false;
+                        for (int r : supported_rates) if (r == 48000) { has_48k = true; break; }
+                        if (!has_48k) default_rate = supported_rates.front();
+                    }
+                    if (!supported_sizes.empty()) {
+                        default_size = 512;
+                        bool has_512 = false;
+                        for (int s : supported_sizes) if (s == 512) { has_512 = true; break; }
+                        if (!has_512) default_size = supported_sizes.front();
+                    }
+                }
+                snd_pcm_close(pcm);
+            }
+
+            if (supported_rates.empty()) supported_rates = {44100, 48000};
+            if (supported_sizes.empty()) supported_sizes = {128, 256, 512, 1024};
+
+            std::string full_name = std::string(card_name ? card_name : "Card") + ": "
+                                  + std::string(dev_name  ? dev_name  : "PCM");
+            devices.push_back({idx++, std::move(full_name),
+                                default_rate, default_size,
+                                std::move(supported_rates),
+                                std::move(supported_sizes)});
+        }
+        snd_ctl_close(ctl);
+    }
+
+    // Always include the "default" virtual device (may not have a card entry)
+    if (devices.empty()) {
+        devices.push_back({0, "default", 48000, 512, {44100, 48000}, {128, 256, 512, 1024}});
+    }
+#else
+    // Non-Linux build (shouldn't be reached; platform guard is in CMake)
+    devices.push_back({0, "default", 48000, 512, {44100, 48000}, {128, 256, 512, 1024}});
+#endif
+
+    return devices;
+}
+
 } // namespace hal

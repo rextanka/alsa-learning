@@ -685,30 +685,75 @@ int engine_load_patch(EngineHandle handle, const char* path) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Phase 20: Host Device Enumeration — delegates entirely to the HAL.
+// No platform ifdefs here; all platform knowledge lives in the HAL layer.
+// ---------------------------------------------------------------------------
+
 int host_get_device_count() {
-#ifdef __APPLE__
-    return 1; 
-#else
-    return 0;
-#endif
+    const auto devices = hal::AudioDriver::enumerate_devices();
+    return static_cast<int>(devices.size());
 }
 
 int host_get_device_name(int index, char* buffer, size_t buffer_size) {
-    if (!buffer || buffer_size == 0) return -1;
-    if (index != 0) return -1;
-
-#ifdef __APPLE__
-    const char* name = "Default Output Device";
-    std::strncpy(buffer, name, buffer_size - 1);
+    if (!buffer || buffer_size == 0 || index < 0) return -1;
+    const auto devices = hal::AudioDriver::enumerate_devices();
+    if (static_cast<size_t>(index) >= devices.size()) return -1;
+    std::strncpy(buffer, devices[static_cast<size_t>(index)].name.c_str(), buffer_size - 1);
     buffer[buffer_size - 1] = '\0';
     return 0;
-#else
-    return -1;
-#endif
 }
 
-int host_get_device_sample_rate(int /* index */) {
-    return 48000; 
+int host_get_device_sample_rate(int index) {
+    if (index < 0) return -1;
+    const auto devices = hal::AudioDriver::enumerate_devices();
+    if (static_cast<size_t>(index) >= devices.size()) return -1;
+    return devices[static_cast<size_t>(index)].default_sample_rate;
+}
+
+int host_get_device_block_size(int index) {
+    if (index < 0) return -1;
+    const auto devices = hal::AudioDriver::enumerate_devices();
+    if (static_cast<size_t>(index) >= devices.size()) return -1;
+    return devices[static_cast<size_t>(index)].default_block_size;
+}
+
+int host_get_supported_sample_rates(int index, int* out_rates, int max_count) {
+    if (index < 0 || !out_rates || max_count <= 0) return -1;
+    const auto devices = hal::AudioDriver::enumerate_devices();
+    if (static_cast<size_t>(index) >= devices.size()) return -1;
+    const auto& rates = devices[static_cast<size_t>(index)].supported_sample_rates;
+    const int n = static_cast<int>(std::min(rates.size(), static_cast<size_t>(max_count)));
+    for (int i = 0; i < n; ++i) out_rates[i] = rates[static_cast<size_t>(i)];
+    return n;
+}
+
+int host_get_supported_block_sizes(int index, int* out_sizes, int max_count) {
+    if (index < 0 || !out_sizes || max_count <= 0) return -1;
+    const auto devices = hal::AudioDriver::enumerate_devices();
+    if (static_cast<size_t>(index) >= devices.size()) return -1;
+    const auto& sizes = devices[static_cast<size_t>(index)].supported_block_sizes;
+    const int n = static_cast<int>(std::min(sizes.size(), static_cast<size_t>(max_count)));
+    for (int i = 0; i < n; ++i) out_sizes[i] = sizes[static_cast<size_t>(i)];
+    return n;
+}
+
+int engine_get_driver_sample_rate(EngineHandle handle) {
+    if (!handle) return -1;
+    return static_cast<EngineHandleImpl*>(handle)->driver->sample_rate();
+}
+
+int engine_get_driver_block_size(EngineHandle handle) {
+    if (!handle) return -1;
+    return static_cast<EngineHandleImpl*>(handle)->driver->block_size();
+}
+
+int engine_get_driver_name(EngineHandle handle, char* buffer, size_t buffer_size) {
+    if (!handle || !buffer || buffer_size == 0) return -1;
+    const std::string name = static_cast<EngineHandleImpl*>(handle)->driver->device_name();
+    std::strncpy(buffer, name.c_str(), buffer_size - 1);
+    buffer[buffer_size - 1] = '\0';
+    return 0;
 }
 
 int set_param(void* handle, const char* name, float value) {

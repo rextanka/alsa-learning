@@ -208,4 +208,173 @@ OSStatus CoreAudioDriver::render_callback(
     return noErr;
 }
 
+// ---------------------------------------------------------------------------
+// CoreAudioDriver::device_name — name of the currently open default device
+// ---------------------------------------------------------------------------
+
+std::string CoreAudioDriver::device_name() const {
+    // Ask the HAL for the default output device, then query its name.
+    AudioObjectPropertyAddress defaultAddr{
+        kAudioHardwarePropertyDefaultOutputDevice,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMain
+    };
+    AudioDeviceID deviceId = kAudioObjectUnknown;
+    UInt32 size = sizeof(deviceId);
+    if (AudioObjectGetPropertyData(kAudioObjectSystemObject, &defaultAddr,
+                                   0, nullptr, &size, &deviceId) != noErr
+        || deviceId == kAudioObjectUnknown) {
+        return "Default Output Device";
+    }
+
+    AudioObjectPropertyAddress nameAddr{
+        kAudioDevicePropertyDeviceNameCFString,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMain
+    };
+    CFStringRef cfName = nullptr;
+    size = sizeof(CFStringRef);
+    if (AudioObjectGetPropertyData(deviceId, &nameAddr, 0, nullptr, &size, &cfName) != noErr
+        || !cfName) {
+        return "Default Output Device";
+    }
+    char buf[256]{};
+    CFStringGetCString(cfName, buf, sizeof(buf), kCFStringEncodingUTF8);
+    CFRelease(cfName);
+    return buf;
+}
+
+// ---------------------------------------------------------------------------
+// AudioDriver::enumerate_devices — CoreAudio implementation
+// ---------------------------------------------------------------------------
+
+static std::string ca_device_name(AudioDeviceID deviceId) {
+    AudioObjectPropertyAddress addr{
+        kAudioDevicePropertyDeviceNameCFString,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMain
+    };
+    CFStringRef cfName = nullptr;
+    UInt32 size = sizeof(CFStringRef);
+    if (AudioObjectGetPropertyData(deviceId, &addr, 0, nullptr, &size, &cfName) != noErr
+        || !cfName) {
+        return "Unknown Device";
+    }
+    char buf[256]{};
+    CFStringGetCString(cfName, buf, sizeof(buf), kCFStringEncodingUTF8);
+    CFRelease(cfName);
+    return buf;
+}
+
+static int ca_default_sample_rate(AudioDeviceID deviceId) {
+    AudioObjectPropertyAddress addr{
+        kAudioDevicePropertyNominalSampleRate,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMain
+    };
+    Float64 rate = 44100.0;
+    UInt32 size = sizeof(Float64);
+    AudioObjectGetPropertyData(deviceId, &addr, 0, nullptr, &size, &rate);
+    return static_cast<int>(rate);
+}
+
+static std::vector<int> ca_supported_rates(AudioDeviceID deviceId) {
+    AudioObjectPropertyAddress addr{
+        kAudioDevicePropertyAvailableNominalSampleRates,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMain
+    };
+    UInt32 dataSize = 0;
+    if (AudioObjectGetPropertyDataSize(deviceId, &addr, 0, nullptr, &dataSize) != noErr)
+        return {44100, 48000};
+
+    std::vector<AudioValueRange> ranges(dataSize / sizeof(AudioValueRange));
+    AudioObjectGetPropertyData(deviceId, &addr, 0, nullptr, &dataSize, ranges.data());
+
+    static constexpr int kCommon[] = {22050, 32000, 44100, 48000, 88200, 96000, 176400, 192000};
+    std::vector<int> out;
+    for (int rate : kCommon) {
+        for (const auto& r : ranges) {
+            if (rate >= static_cast<int>(r.mMinimum) && rate <= static_cast<int>(r.mMaximum)) {
+                out.push_back(rate);
+                break;
+            }
+        }
+    }
+    return out.empty() ? std::vector<int>{44100, 48000} : out;
+}
+
+static int ca_default_block_size(AudioDeviceID deviceId) {
+    AudioObjectPropertyAddress addr{
+        kAudioDevicePropertyBufferFrameSize,
+        kAudioObjectPropertyScopeOutput,
+        kAudioObjectPropertyElementMain
+    };
+    UInt32 frames = 512;
+    UInt32 size   = sizeof(UInt32);
+    AudioObjectGetPropertyData(deviceId, &addr, 0, nullptr, &size, &frames);
+    return static_cast<int>(frames);
+}
+
+static std::vector<int> ca_supported_block_sizes(AudioDeviceID deviceId) {
+    AudioObjectPropertyAddress addr{
+        kAudioDevicePropertyBufferFrameSizeRange,
+        kAudioObjectPropertyScopeOutput,
+        kAudioObjectPropertyElementMain
+    };
+    AudioValueRange range{32.0, 4096.0};
+    UInt32 size = sizeof(AudioValueRange);
+    AudioObjectGetPropertyData(deviceId, &addr, 0, nullptr, &size, &range);
+
+    std::vector<int> out;
+    for (int s = 32; s <= 8192; s *= 2) {
+        if (s >= static_cast<int>(range.mMinimum) && s <= static_cast<int>(range.mMaximum))
+            out.push_back(s);
+    }
+    return out.empty() ? std::vector<int>{128, 256, 512, 1024} : out;
+}
+
+std::vector<HostDeviceInfo> AudioDriver::enumerate_devices() {
+    // Retrieve all HAL audio device IDs
+    AudioObjectPropertyAddress listAddr{
+        kAudioHardwarePropertyDevices,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMain
+    };
+    UInt32 dataSize = 0;
+    if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &listAddr,
+                                       0, nullptr, &dataSize) != noErr)
+        return {};
+
+    const int count = static_cast<int>(dataSize / sizeof(AudioDeviceID));
+    std::vector<AudioDeviceID> ids(count);
+    if (AudioObjectGetPropertyData(kAudioObjectSystemObject, &listAddr,
+                                   0, nullptr, &dataSize, ids.data()) != noErr)
+        return {};
+
+    std::vector<HostDeviceInfo> devices;
+    int idx = 0;
+    for (AudioDeviceID deviceId : ids) {
+        // Filter to output-capable devices
+        AudioObjectPropertyAddress outStreams{
+            kAudioDevicePropertyStreams,
+            kAudioObjectPropertyScopeOutput,
+            kAudioObjectPropertyElementMain
+        };
+        UInt32 streamsSize = 0;
+        AudioObjectGetPropertyDataSize(deviceId, &outStreams, 0, nullptr, &streamsSize);
+        if (streamsSize == 0) continue;  // input-only
+
+        HostDeviceInfo info;
+        info.index                 = idx++;
+        info.name                  = ca_device_name(deviceId);
+        info.default_sample_rate   = ca_default_sample_rate(deviceId);
+        info.default_block_size    = ca_default_block_size(deviceId);
+        info.supported_sample_rates = ca_supported_rates(deviceId);
+        info.supported_block_sizes  = ca_supported_block_sizes(deviceId);
+        devices.push_back(std::move(info));
+    }
+    return devices;
+}
+
 } // namespace hal

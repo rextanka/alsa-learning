@@ -16,10 +16,11 @@ if(APPLE)
     # macOS: Link CoreAudio and AudioToolbox
     find_library(COREAUDIO_FRAMEWORK CoreAudio REQUIRED)
     find_library(AUDIOTOOLBOX_FRAMEWORK AudioToolbox REQUIRED)
-    if(NOT COREAUDIO_FRAMEWORK OR NOT AUDIOTOOLBOX_FRAMEWORK)
+    find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
+    if(NOT COREAUDIO_FRAMEWORK OR NOT AUDIOTOOLBOX_FRAMEWORK OR NOT COREFOUNDATION_FRAMEWORK)
         message(FATAL_ERROR "Failed to find CoreAudio or AudioToolbox frameworks")
     endif()
-    set(PLATFORM_LIBS ${COREAUDIO_FRAMEWORK} ${AUDIOTOOLBOX_FRAMEWORK})
+    set(PLATFORM_LIBS ${COREAUDIO_FRAMEWORK} ${AUDIOTOOLBOX_FRAMEWORK} ${COREFOUNDATION_FRAMEWORK})
     message(STATUS "Platform: macOS - Linking CoreAudio and AudioToolbox")
 elseif(UNIX AND NOT APPLE)
     # Linux: Link ALSA
@@ -225,6 +226,7 @@ if(BUILD_TESTING)
     add_functional_gtest(violin_vibrato_patch_tests test_violin_vibrato_patch.cpp)
     add_functional_gtest(bell_patch_tests test_bell_patch.cpp)
     add_functional_gtest(reverb_patch_tests test_reverb_patch.cpp)
+    add_functional_gtest(host_device_tests test_host_devices.cpp)
 
     # Copy patch JSON files and MIDI test data to the binary output directory
     # so tests can be run directly from build/bin without extra arguments.

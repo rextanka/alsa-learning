@@ -52,6 +52,7 @@ public:
     int block_size() const override { return block_size_; }
     int channels() const { return num_channels_; }
     int get_xrun_count() const override { return xrun_count_.load(); }
+    std::string device_name() const override { return device_name_; }
 
 private:
     void thread_loop();
