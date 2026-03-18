@@ -27,6 +27,11 @@
 #include "../dsp/fx/EchoDelayProcessor.hpp"
 #include "../dsp/routing/DrawbarOrganProcessor.hpp"
 #include "../dsp/routing/InverterProcessor.hpp"
+#include "../dsp/routing/CvMixerProcessor.hpp"
+#include "../dsp/routing/CvSplitterProcessor.hpp"
+#include "../dsp/routing/MathsProcessor.hpp"
+#include "../dsp/routing/GateDelayProcessor.hpp"
+#include "../dsp/routing/SampleHoldProcessor.hpp"
 
 namespace audio {
 
@@ -97,6 +102,31 @@ void register_builtin_processors() {
         "INVERTER",
         "CV signal inverter/scaler: cv_out = scale * cv_in",
         [](int /*sr*/) { return std::make_unique<InverterProcessor>(); }
+    );
+    reg.register_module(
+        "CV_MIXER",
+        "4-input CV mixer/attenuverter with DC offset — sums bipolar control signals",
+        [](int /*sr*/) { return std::make_unique<CvMixerProcessor>(); }
+    );
+    reg.register_module(
+        "CV_SPLITTER",
+        "1-to-4 CV fan-out with per-output gain scaling",
+        [](int /*sr*/) { return std::make_unique<CvSplitterProcessor>(); }
+    );
+    reg.register_module(
+        "MATHS",
+        "Slew limiter / portamento: rise/fall time control with linear or exponential curve",
+        [](int sr) { return std::make_unique<MathsProcessor>(sr); }
+    );
+    reg.register_module(
+        "GATE_DELAY",
+        "Gate delay / pulse shaper: delays note-on gate by a fixed time before firing",
+        [](int sr) { return std::make_unique<GateDelayProcessor>(sr); }
+    );
+    reg.register_module(
+        "SAMPLE_HOLD",
+        "Sample & hold: freezes cv_in on each rising clock_in edge for stepped modulation",
+        [](int /*sr*/) { return std::make_unique<SampleHoldProcessor>(); }
     );
 }
 

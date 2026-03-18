@@ -155,6 +155,7 @@ if(BUILD_TESTING)
         tests/unit/test_voice_factory.cpp
         tests/unit/test_voice_groups.cpp
         tests/unit/test_lfo.cpp
+        tests/unit/test_cv_utilities.cpp
     )
     target_include_directories(unit_tests PRIVATE tests/unit tests)
     target_link_libraries(unit_tests PRIVATE audio_engine gtest_main)
@@ -208,6 +209,18 @@ if(BUILD_TESTING)
     add_functional_test(Functional_SH101_Live Functional_SH101_Live.cpp)
     add_functional_test(patch_sequence_test patch_sequence_test.cpp)
     add_functional_gtest(midi_file_playback_tests test_midi_file_playback.cpp)
+    add_functional_gtest(harpsichord_patch_tests test_harpsichord_patch.cpp)
+    add_functional_gtest(dog_whistle_patch_tests test_dog_whistle_patch.cpp)
+    add_functional_gtest(sh_bass_patch_tests test_sh_bass_patch.cpp)
+    add_functional_gtest(tb_bass_patch_tests test_tb_bass_patch.cpp)
+    add_functional_gtest(cymbal_patch_tests test_cymbal_patch.cpp)
+    add_functional_gtest(bowed_bass_patch_tests test_bowed_bass_patch.cpp)
+    add_functional_gtest(brass_patch_tests test_brass_patch.cpp)
+    add_functional_gtest(flute_patch_tests test_flute_patch.cpp)
+    add_functional_gtest(juno_pad_patch_tests test_juno_pad_patch.cpp)
+    add_functional_gtest(organ_drawbar_patch_tests test_organ_drawbar_patch.cpp)
+    add_functional_gtest(percussion_noise_patch_tests test_percussion_noise_patch.cpp)
+    add_functional_gtest(violin_vibrato_patch_tests test_violin_vibrato_patch.cpp)
 
     # Copy patch JSON files and MIDI test data to the binary output directory
     # so tests can be run directly from build/bin without extra arguments.

@@ -6,7 +6,7 @@
 #include "Voice.hpp"
 #include "VcaProcessor.hpp"
 #include "routing/CompositeGenerator.hpp"
-#include "envelope/AdsrEnvelopeProcessor.hpp"
+#include "envelope/AdsrEnvelopeProcessor.hpp" // needed for is_active()/is_releasing() dynamic_cast
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -74,15 +74,11 @@ void Voice::note_on(double frequency) {
     if (!signal_chain_.empty()) {
         signal_chain_.front().node->set_frequency(frequency);
     }
-    if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV"))) {
-        env->gate_on();
-    }
+    for (auto& entry : mod_sources_) entry.node->on_note_on(frequency);
 }
 
 void Voice::note_off() {
-    if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV"))) {
-        env->gate_off();
-    }
+    for (auto& entry : mod_sources_) entry.node->on_note_off();
     active_ = false;
 }
 
@@ -132,18 +128,8 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
     const char*           ctrl_tags_arr[kMaxCtrl];
     size_t                num_ctrl = 0;
 
-    // Pass 1: pull each mod source into its scratch buffer.
-    for (auto& entry : mod_sources_) {
-        if (num_ctrl >= kMaxCtrl) break;
-        ctrl_ptrs[num_ctrl]  = graph_->borrow_buffer();
-        ctrl_spans[num_ctrl] = std::span<float>(
-            ctrl_ptrs[num_ctrl]->left.data(), output.size());
-        ctrl_tags_arr[num_ctrl] = entry.tag.c_str();
-        entry.node->pull(ctrl_spans[num_ctrl], context);
-        ++num_ctrl;
-    }
-
-    // Helper: find the ctrl span for a given source tag.
+    // Helper: find the ctrl span for a given source tag (must be defined before Pass 1
+    // so inter-mod injection can call it while mod_sources_ are being pulled).
     auto find_ctrl = [&](const std::string& tag) -> std::span<float> {
         for (size_t i = 0; i < num_ctrl; ++i)
             if (tag == ctrl_tags_arr[i]) return ctrl_spans[i];
@@ -155,6 +141,42 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
         if (s.empty()) return 0.0f;
         return std::accumulate(s.begin(), s.end(), 0.0f) / static_cast<float>(s.size());
     };
+
+    // Pass 1: pull each mod source into its scratch buffer.
+    // Before pulling, inject any inter-mod CV connections (mod_source → mod_source).
+    // Sources with no incoming inter-mod connections pull cleanly; dependent sources
+    // (CV_MIXER, INVERTER, MATHS, etc.) receive already-computed spans if the source
+    // node was added to mod_sources_ before the consumer (ordering must be correct).
+    for (auto& entry : mod_sources_) {
+        if (num_ctrl >= kMaxCtrl) break;
+        ctrl_ptrs[num_ctrl]  = graph_->borrow_buffer();
+        ctrl_spans[num_ctrl] = std::span<float>(
+            ctrl_ptrs[num_ctrl]->left.data(), output.size());
+        ctrl_tags_arr[num_ctrl] = entry.tag.c_str();
+
+        // Inject inter-mod CV inputs for this node (e.g. LFO → CV_MIXER:cv_in_1).
+        // find_ctrl searches already-pulled sources (num_ctrl doesn't include current entry
+        // yet), so only sources earlier in mod_sources_ are available — ordering matters.
+        for (const auto& conn : connections_) {
+            if (conn.to_tag != entry.tag) continue;
+            auto cv = find_ctrl(conn.from_tag);
+            if (!cv.empty()) entry.node->inject_cv(conn.to_port, cv);
+        }
+
+        entry.node->pull(ctrl_spans[num_ctrl], context);
+        ++num_ctrl;
+    }
+
+    // Auto-inject keyboard tracking CV to cached kybd_cv nodes (populated at bake time).
+    // Computed as 1V/oct relative to C4 (261.63 Hz). Combines additively with cutoff_cv
+    // in the filter's apply_parameter("kybd_cv") handler.
+    if (!kybd_cv_nodes_.empty()) {
+        static constexpr float kC4Hz = 261.63f;
+        const float kybd_cv = static_cast<float>(
+            std::log2(base_frequency_ / static_cast<double>(kC4Hz)));
+        for (auto* node : kybd_cv_nodes_)
+            node->apply_parameter("kybd_cv", kybd_cv);
+    }
 
     // Pass 2: execute audio chain. signal_chain_ contains only PORT_AUDIO nodes.
     for (auto& entry : signal_chain_) {
@@ -278,6 +300,14 @@ void Voice::bake() {
             "Voice::bake() connection: type mismatch between '"
             + conn.from_tag + "::" + conn.from_port + "' and '"
             + conn.to_tag   + "::" + conn.to_port   + "'");
+    }
+
+    // Cache signal_chain_ nodes that declare a "kybd_cv" port so the hot path
+    // can iterate directly without calling find_port() on every block.
+    kybd_cv_nodes_.clear();
+    for (auto& entry : signal_chain_) {
+        if (entry.node->find_port("kybd_cv"))
+            kybd_cv_nodes_.push_back(entry.node.get());
     }
 
     baked_ = true;

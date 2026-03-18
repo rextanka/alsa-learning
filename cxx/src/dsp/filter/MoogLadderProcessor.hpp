@@ -3,105 +3,38 @@
  * @brief 4-pole transistor ladder filter (Moog style), 24 dB/oct low-pass.
  *
  * RT-SAFE chain node: PORT_AUDIO in → PORT_AUDIO out.
- * CV routing: apply_parameter("cutoff_cv", delta) applies 1V/oct exponential
- * modulation each block — base_cutoff_ is preserved; g_ is updated in-place.
+ * Type name: MOOG_FILTER
  *
  * Character: smooth, creamy, "thick" — full tanh saturation in the feedback
  * path and linear-but-warm stage updates give the classic Moog-style growl.
+ * Self-oscillates at resonance ≈ 1.0. Ringing transients at high resonance.
  */
 
 #ifndef AUDIO_MOOG_LADDER_PROCESSOR_HPP
 #define AUDIO_MOOG_LADDER_PROCESSOR_HPP
 
-#include "../Processor.hpp"
-#include <cmath>
-#include <algorithm>
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+#include "LadderVcfBase.hpp"
 
 namespace audio {
 
-/**
- * @brief Moog-style 4-pole transistor ladder low-pass filter (24 dB/oct).
- *
- * Uses 4 cascaded 1-pole stages with a tanh-saturated feedback path.
- * Self-oscillates at resonance ≈ 1.0. g_ is pre-warped via tan() for accurate
- * frequency response up to fs/4.
- */
-class MoogLadderProcessor : public Processor {
+class MoogLadderProcessor : public LadderVcfBase {
 public:
     explicit MoogLadderProcessor(int sample_rate)
-        : sample_rate_(sample_rate)
-        , base_cutoff_(20000.0f)
-        , base_res_(0.0f)
+        : LadderVcfBase(sample_rate)
     {
-        for (int i = 0; i < 4; ++i) stage_[i] = 0.0f;
-        update_g(base_cutoff_);
-
-        declare_port({"audio_in",  PORT_AUDIO,   PortDirection::IN});
-        declare_port({"audio_out", PORT_AUDIO,   PortDirection::OUT});
-        declare_port({"cutoff_cv", PORT_CONTROL, PortDirection::IN, false}); // bipolar, 1V/oct
-        declare_port({"res_cv",    PORT_CONTROL, PortDirection::IN, true});  // unipolar additive
-        declare_port({"kybd_cv",   PORT_CONTROL, PortDirection::IN, false}); // bipolar, 1V/oct
-        declare_port({"fm_in",     PORT_AUDIO,   PortDirection::IN});        // audio-rate FM
-
-        declare_parameter({"cutoff",     "Cutoff Frequency", 20.0f, 20000.0f, 20000.0f, true});
-        declare_parameter({"resonance",  "Resonance",         0.0f,     1.0f,     0.0f});
-        declare_parameter({"hpf_cutoff", "HPF Stage (0-3)",   0.0f,     3.0f,     0.0f});
+        declare_parameter({"hpf_cutoff", "HPF Stage (0-3)", 0.0f, 3.0f, 0.0f});
     }
 
     bool apply_parameter(const std::string& name, float value) override {
-        if (name == "cutoff") {
-            base_cutoff_ = std::clamp(value, 20.0f, sample_rate_ * 0.45f);
-            update_g(base_cutoff_);
-            return true;
-        }
-        if (name == "resonance" || name == "res") {
-            base_res_ = std::clamp(value, 0.0f, 1.0f);
-            res_       = base_res_;
-            return true;
-        }
-        if (name == "cutoff_cv") {
-            // 1V/oct exponential modulation — does not alter base_cutoff_
-            float eff = std::max(20.0f, base_cutoff_ * std::pow(2.0f, value));
-            update_g(eff);
-            return true;
-        }
-        if (name == "res_cv") {
-            // Unipolar additive resonance boost
-            res_ = std::clamp(base_res_ + value, 0.0f, 1.0f);
-            return true;
-        }
         if (name == "hpf_cutoff") { hpf_cutoff_ = value; return true; }
-        return false;
-    }
-
-    void reset() override {
-        for (int i = 0; i < 4; ++i) stage_[i] = 0.0f;
+        return LadderVcfBase::apply_parameter(name, value);
     }
 
 protected:
-    void do_pull(std::span<float> output,
-                 const VoiceContext* /* ctx */ = nullptr) override {
-        for (auto& sample : output) process_sample(sample);
-    }
-
-    void do_pull(AudioBuffer& output,
-                 const VoiceContext* /* ctx */ = nullptr) override {
-        for (size_t i = 0; i < output.frames(); ++i) {
-            float s = (output.left[i] + output.right[i]) * 0.5f;
-            process_sample(s);
-            output.left[i] = output.right[i] = s;
-        }
-    }
-
-private:
-    inline void process_sample(float& sample) {
+    void process_sample(float& sample) override {
         // Tanh-saturated feedback — the Moog-style signature
         float feedback = stage_[3] * res_ * 4.0f;
-        float input = sample - std::tanh(feedback);
+        float input    = sample - std::tanh(feedback);
 
         stage_[0] += g_ * (input     - stage_[0]);
         stage_[1] += g_ * (stage_[0] - stage_[1]);
@@ -111,18 +44,7 @@ private:
         sample = stage_[3];
     }
 
-    void update_g(float cutoff) {
-        // Bilinear pre-warp: g = tan(pi * fc / fs), clamped for numerical safety
-        g_ = std::tan(static_cast<float>(M_PI) * cutoff / static_cast<float>(sample_rate_));
-        g_ = std::clamp(g_, 0.0001f, 0.9999f);
-    }
-
-    int   sample_rate_;
-    float base_cutoff_;   // anchor — set by "cutoff" parameter
-    float base_res_;      // anchor — set by "resonance" parameter
-    float res_ = 0.0f;    // effective resonance (base + res_cv)
-    float g_   = 0.0f;    // frequency coefficient (updated from effective cutoff)
-    float stage_[4];
+private:
     float hpf_cutoff_ = 0.0f;
 };
 

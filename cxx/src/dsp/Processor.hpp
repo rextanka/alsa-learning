@@ -206,6 +206,37 @@ public:
     virtual bool apply_parameter(const std::string& /*name*/, float /*value*/) { return false; }
 
     /**
+     * @brief Inject a named CV input span before the next do_pull() call.
+     *
+     * Called by the Voice graph executor when a mod-to-mod connection routes
+     * another mod_source's output to this processor's named input port.
+     * The injected span is valid for the current block only — processors must
+     * not store the span pointer across blocks.
+     *
+     * Default: no-op. Override in processors that consume CV inputs
+     * (CV_MIXER, CV_SPLITTER, MATHS, SAMPLE_HOLD, INVERTER, ADSR ext_gate_in).
+     */
+    virtual void inject_cv(std::string_view /*port_name*/, std::span<const float> /*cv*/) {}
+
+    /**
+     * @brief Notification that a note-on event has occurred.
+     *
+     * Called by Voice::note_on() for all mod_sources before audio processing.
+     * Replaces scattered dynamic_cast<AdsrEnvelopeProcessor*> gate_on() calls.
+     * Default: no-op. Override in processors that respond to note events
+     * (AdsrEnvelopeProcessor, GateDelayProcessor).
+     */
+    virtual void on_note_on(double /*frequency*/) {}
+
+    /**
+     * @brief Notification that a note-off event has occurred.
+     *
+     * Called by Voice::note_off() for all mod_sources.
+     * Default: no-op. Override in processors that respond to note events.
+     */
+    virtual void on_note_off() {}
+
+    /**
      * @brief Declared input port type for bake() chain-level validation (Phase 14).
      * Default: PORT_AUDIO. Override for processors that consume a control-rate signal.
      *
