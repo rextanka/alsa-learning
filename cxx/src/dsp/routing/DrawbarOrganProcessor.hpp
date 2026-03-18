@@ -23,6 +23,7 @@
 #define DRAWBAR_ORGAN_PROCESSOR_HPP
 
 #include "../Processor.hpp"
+#include "../SmoothedParam.hpp"
 #include "../oscillator/SineOscillatorProcessor.hpp"
 #include <array>
 #include <memory>
@@ -46,15 +47,18 @@ public:
         8.0,  // 1'   sifflöte
     };
 
+    static constexpr float kRampSeconds = 0.010f; // 10 ms
+
     explicit DrawbarOrganProcessor(int sample_rate)
-        : sample_rate_(sample_rate), base_freq_(0.0)
+        : sample_rate_(sample_rate)
+        , ramp_samples_(static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds))
+        , base_freq_(0.0)
     {
         for (size_t i = 0; i < NUM_DRAWBARS; ++i) {
             oscs_[i] = std::make_unique<SineOscillatorProcessor>(sample_rate);
-            drawbar_gains_[i] = 0.0f;
         }
         // Default: 8' drawbar fully open (classic "flute" preset)
-        drawbar_gains_[2] = 8.0f;
+        drawbar_gains_[2].set_target(8.0f, 0); // snap to initial value
 
         set_tag("ORGAN");
 
@@ -81,7 +85,7 @@ public:
 
     void set_drawbar(size_t index, float value) {
         if (index < NUM_DRAWBARS) {
-            drawbar_gains_[index] = value;
+            drawbar_gains_[index].set_target(value, ramp_samples_);
         }
     }
 
@@ -100,7 +104,7 @@ public:
         };
         for (size_t i = 0; i < NUM_DRAWBARS; ++i) {
             if (name == kParamNames[i]) {
-                drawbar_gains_[i] = value;
+                drawbar_gains_[i].set_target(value, ramp_samples_);
                 return true;
             }
         }
@@ -114,12 +118,17 @@ protected:
         // We scale by 1/9 so the output never exceeds unity.
         constexpr float kNorm = 1.0f / 9.0f;
 
+        const int n_frames = static_cast<int>(output.size());
+        for (size_t i = 0; i < NUM_DRAWBARS; ++i) {
+            drawbar_gains_[i].advance(n_frames);
+        }
+
         for (size_t n = 0; n < output.size(); ++n) {
             float sum = 0.0f;
             for (size_t i = 0; i < NUM_DRAWBARS; ++i) {
-                if (drawbar_gains_[i] > 0.0f) {
-                    sum += static_cast<float>(oscs_[i]->tick())
-                           * (drawbar_gains_[i] / 8.0f);
+                const float gain = drawbar_gains_[i].get();
+                if (gain > 0.0f) {
+                    sum += static_cast<float>(oscs_[i]->tick()) * (gain / 8.0f);
                 }
             }
             output[n] = sum * kNorm;
@@ -128,10 +137,11 @@ protected:
 
 private:
     [[maybe_unused]] int sample_rate_;
+    int ramp_samples_;
     double base_freq_;
 
     std::array<std::unique_ptr<SineOscillatorProcessor>, NUM_DRAWBARS> oscs_;
-    std::array<float, NUM_DRAWBARS> drawbar_gains_;
+    std::array<SmoothedParam, NUM_DRAWBARS> drawbar_gains_;
 };
 
 } // namespace audio

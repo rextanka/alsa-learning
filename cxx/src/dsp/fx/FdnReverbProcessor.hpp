@@ -38,6 +38,7 @@
 #define FDN_REVERB_PROCESSOR_HPP
 
 #include "../Processor.hpp"
+#include "../SmoothedParam.hpp"
 #include <vector>
 #include <cmath>
 #include <algorithm>
@@ -56,8 +57,11 @@ public:
      *                      Values for the room_size parameter are clamped to
      *                      this ceiling at runtime.
      */
+    static constexpr float kRampSeconds = 0.010f; // 10 ms
+
     explicit FdnReverbProcessor(int sample_rate, float max_room_size = 1.0f)
         : sample_rate_(sample_rate)
+        , ramp_samples_(static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds))
         , max_room_size_(std::clamp(max_room_size, 0.05f, 1.0f))
     {
         declare_port({"audio_in",  PORT_AUDIO, PortDirection::IN});
@@ -81,11 +85,11 @@ public:
     }
 
     bool apply_parameter(const std::string& name, float value) override {
-        if (name == "decay")     { decay_     = std::max(0.1f, value);           update_gains();         return true; }
-        if (name == "room_size") { room_size_ = std::clamp(value, 0.0f, max_room_size_); update_delay_lengths(); update_gains(); return true; }
-        if (name == "damping")   { damping_   = std::clamp(value, 0.0f, 1.0f);  update_gains();         return true; }
-        if (name == "width")     { width_     = std::clamp(value, 0.0f, 1.0f);  return true; }
-        if (name == "wet")       { wet_       = std::clamp(value, 0.0f, 1.0f);  return true; }
+        if (name == "decay")     { decay_.set_target(std::max(0.1f, value), ramp_samples_);                     update_gains(); return true; }
+        if (name == "room_size") { room_size_ = std::clamp(value, 0.0f, max_room_size_); update_delay_lengths(); update_gains(); return true; } // snap
+        if (name == "damping")   { damping_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_);          update_gains(); return true; }
+        if (name == "width")     { width_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_);            return true; }
+        if (name == "wet")       { wet_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_);              return true; }
         return false;
     }
 
@@ -95,8 +99,19 @@ protected:
     void do_pull(std::span<float>, const VoiceContext* = nullptr) override {}
 
     void do_pull(AudioBuffer& buf, const VoiceContext* = nullptr) override {
-        const float dry      = 1.0f - wet_;
-        const float out_gain = wet_ * kOutGain;
+        const int n = static_cast<int>(buf.frames());
+        decay_.advance(n);
+        damping_.advance(n);
+        width_.advance(n);
+        wet_.advance(n);
+        if (decay_.is_ramping() || damping_.is_ramping()) {
+            update_gains();
+        }
+
+        const float wet_val  = wet_.get();
+        const float dry      = 1.0f - wet_val;
+        const float out_gain = wet_val * kOutGain;
+        const float width_val = width_.get();
         const size_t frames  = buf.frames();
 
         for (size_t f = 0; f < frames; ++f) {
@@ -142,8 +157,8 @@ protected:
 
             // Width blend
             const float mono_mix = (outL + outR) * 0.5f;
-            outL = mono_mix + (outL - mono_mix) * width_;
-            outR = mono_mix + (outR - mono_mix) * width_;
+            outL = mono_mix + (outL - mono_mix) * width_val;
+            outR = mono_mix + (outR - mono_mix) * width_val;
 
             buf.left[f]  = outL * out_gain + inL * dry;
             buf.right[f] = outR * out_gain + inR * dry;
@@ -200,20 +215,21 @@ private:
 
     void update_gains() {
         const float sr    = static_cast<float>(sample_rate_);
-        const float decay = std::max(decay_, 0.01f);
+        const float decay = std::max(decay_.get(), 0.01f);
         for (int i = 0; i < N; ++i) {
             g_[i] = std::pow(10.0f, -3.0f * static_cast<float>(delay_len_[i]) / (decay * sr));
         }
-        lp_coeff_ = 1.0f - damping_ * 0.85f;  // [0.15, 1.0]
+        lp_coeff_ = 1.0f - damping_.get() * 0.85f;  // [0.15, 1.0]
     }
 
     int   sample_rate_;
-    float max_room_size_;      // ceiling for room_size_, set at construction
-    float decay_     = 2.0f;
-    float room_size_ = 0.5f;
-    float damping_   = 0.3f;
-    float width_     = 1.0f;
-    float wet_       = 0.3f;
+    int   ramp_samples_ = 0;
+    float max_room_size_ = 1.0f; // ceiling for room_size_, set at construction
+    SmoothedParam decay_{2.0f};
+    float room_size_ = 0.5f;   // snap — buffer geometry is fixed at construction
+    SmoothedParam damping_{0.3f};
+    SmoothedParam width_{1.0f};
+    SmoothedParam wet_{0.3f};
 
     int   delay_len_[N]{};
     float g_[N]{};

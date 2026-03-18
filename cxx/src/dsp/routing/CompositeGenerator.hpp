@@ -15,6 +15,7 @@
 #define COMPOSITE_GENERATOR_HPP
 
 #include "../Processor.hpp"
+#include "../SmoothedParam.hpp"
 #include "../oscillator/OscillatorProcessor.hpp"
 #include "../oscillator/SawtoothOscillatorProcessor.hpp"
 #include "../oscillator/SineOscillatorProcessor.hpp"
@@ -45,8 +46,11 @@ namespace audio {
  */
 class CompositeGenerator : public Processor {
 public:
+    static constexpr float kRampSeconds = 0.010f; // 10 ms
+
     explicit CompositeGenerator(int sample_rate)
         : sample_rate_(sample_rate)
+        , ramp_samples_(static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds))
     {
         pulse_osc_      = std::make_unique<PulseOscillatorProcessor>(sample_rate);
         sub_osc_        = std::make_unique<SubOscillator>();
@@ -79,6 +83,9 @@ public:
         declare_parameter({"transpose",      "Transpose",      -24.0f, 24.0f,   0.0f});
         declare_parameter({"detune",         "Detune (cents)", -100.f,100.0f,   0.0f});
         declare_parameter({"fm_depth",       "FM Depth",        0.0f,  1.0f,   0.0f});
+
+        // Mixer gains start at 0 — caller sets them via apply_parameter from patch.
+        // (SourceMixer() already initializes all gains to 0.0f.)
     }
 
     // --- Frequency ---
@@ -87,7 +94,7 @@ public:
         base_freq_ = freq;
         double adjusted = freq
             * std::pow(2.0, transpose_ / 12.0)
-            * std::pow(2.0, static_cast<double>(detune_cents_) / 1200.0);
+            * std::pow(2.0, static_cast<double>(detune_.get()) / 1200.0);
         pulse_osc_->set_frequency(adjusted);
         saw_osc_->set_frequency(adjusted);
         sine_osc_->set_frequency(adjusted);
@@ -100,32 +107,34 @@ public:
     // --- Named parameter dispatch ---
 
     bool apply_parameter(const std::string& name, float value) override {
-        if (name == "saw_gain")       { mixer_->set_gain(0, value); return true; }
-        if (name == "pulse_gain")     { mixer_->set_gain(1, value); return true; }
-        if (name == "sub_gain")       { mixer_->set_gain(2, value); return true; }
-        if (name == "sine_gain")      { mixer_->set_gain(3, value); return true; }
-        if (name == "triangle_gain")  { mixer_->set_gain(4, value); return true; }
-        if (name == "wavetable_gain") { mixer_->set_gain(5, value); return true; }
-        if (name == "noise_gain")     { mixer_->set_gain(6, value); return true; }
+        if (name == "saw_gain")       { saw_gain_.set_target(value, ramp_samples_);       gain_set_[0] = true; return true; }
+        if (name == "pulse_gain")     { pulse_gain_.set_target(value, ramp_samples_);     gain_set_[1] = true; return true; }
+        if (name == "sub_gain")       { sub_gain_.set_target(value, ramp_samples_);       gain_set_[2] = true; return true; }
+        if (name == "sine_gain")      { sine_gain_.set_target(value, ramp_samples_);      gain_set_[3] = true; return true; }
+        if (name == "triangle_gain")  { tri_gain_.set_target(value, ramp_samples_);       gain_set_[4] = true; return true; }
+        if (name == "wavetable_gain") { wavetable_gain_.set_target(value, ramp_samples_); gain_set_[5] = true; return true; }
+        if (name == "noise_gain")     { noise_gain_.set_target(value, ramp_samples_);     gain_set_[6] = true; return true; }
         if (name == "pulse_width" || name == "osc_pw") {
-            pulse_osc_->set_pulse_width(value); return true;
+            pulse_width_.set_target(value, ramp_samples_); return true;
         }
         if (name == "wavetable_type") {
+            // snap — discrete selector
             wavetable_osc_->setWaveType(static_cast<WaveType>(static_cast<int>(value)));
             return true;
         }
         if (name == "transpose") {
+            // snap — integer semitone
             transpose_ = static_cast<double>(std::round(value));
             set_frequency(base_freq_); // reapply with new offset
             return true;
         }
         if (name == "detune") {
-            detune_cents_ = value;
+            detune_.set_target(value, ramp_samples_);
             set_frequency(base_freq_); // reapply with new offset
             return true;
         }
         if (name == "fm_depth") {
-            fm_depth_ = value; return true;
+            fm_depth_.set_target(value, ramp_samples_); return true;
         }
         if (name == "osc_frequency") {
             set_frequency(static_cast<double>(value)); return true;
@@ -180,17 +189,44 @@ protected:
      */
     void do_pull(std::span<float> output,
                  const VoiceContext* context = nullptr) override {
+        const int n = static_cast<int>(output.size());
+
+        // Advance all smoothed parameters
+        saw_gain_.advance(n);
+        pulse_gain_.advance(n);
+        sub_gain_.advance(n);
+        sine_gain_.advance(n);
+        tri_gain_.advance(n);
+        wavetable_gain_.advance(n);
+        noise_gain_.advance(n);
+        pulse_width_.advance(n);
+        detune_.advance(n);
+        fm_depth_.advance(n);
+
+        // Push smoothed values to mixer only when set via apply_parameter.
+        // If gain was never explicitly set (gain_set_[ch] == false), leave the
+        // mixer's value alone so that direct mixer().set_gain() calls are respected.
+        if (gain_set_[0]) mixer_->set_gain(0, saw_gain_.get());
+        if (gain_set_[1]) mixer_->set_gain(1, pulse_gain_.get());
+        if (gain_set_[2]) mixer_->set_gain(2, sub_gain_.get());
+        if (gain_set_[3]) mixer_->set_gain(3, sine_gain_.get());
+        if (gain_set_[4]) mixer_->set_gain(4, tri_gain_.get());
+        if (gain_set_[5]) mixer_->set_gain(5, wavetable_gain_.get());
+        if (gain_set_[6]) mixer_->set_gain(6, noise_gain_.get());
+        pulse_osc_->set_pulse_width(pulse_width_.get());
+
         auto* pulse = pulse_osc_.get();
         auto* sub   = sub_osc_.get();
-        const bool has_fm = !fm_in_.empty() && fm_depth_ > 0.0f;
+        const float fm_depth_val = fm_depth_.get();
+        const bool has_fm = !fm_in_.empty() && fm_depth_val > 0.0f;
 
         for (size_t i = 0; i < output.size(); ++i) {
             if (has_fm) {
                 // Apply per-sample FM: shift frequency by fm_depth * fm_in[i] octaves.
-                const double fm_oct = static_cast<double>(fm_depth_ * fm_in_[i]);
+                const double fm_oct = static_cast<double>(fm_depth_val * fm_in_[i]);
                 const double f_mod  = base_freq_
                     * std::pow(2.0, transpose_ / 12.0)
-                    * std::pow(2.0, static_cast<double>(detune_cents_) / 1200.0)
+                    * std::pow(2.0, static_cast<double>(detune_.get()) / 1200.0)
                     * std::pow(2.0, fm_oct);
                 pulse_osc_->set_frequency(f_mod);
                 saw_osc_->set_frequency(f_mod);
@@ -225,11 +261,29 @@ protected:
     }
 
 private:
-    [[maybe_unused]] int sample_rate_; // reserved for future per-sample-rate reconfiguration
-    double base_freq_    = 440.0; // last frequency set via set_frequency() before offsets
-    double transpose_    = 0.0;   // semitones (−24–+24)
-    float  detune_cents_ = 0.0f;  // cents (−100–+100)
-    float  fm_depth_     = 0.0f;  // 0.0–1.0, fm_in scaling
+    // gain_set_[ch]: true once apply_parameter() has explicitly set that gain.
+    // When false, do_pull() leaves the mixer's gain alone so that direct
+    // mixer().set_gain() calls (e.g. from test code or legacy callers) are respected.
+    bool gain_set_[7] = {};
+
+    [[maybe_unused]] int sample_rate_;
+    int ramp_samples_;
+
+    double base_freq_ = 440.0; // last frequency set via set_frequency() before offsets
+    double transpose_ = 0.0;   // semitones (−24–+24), snap
+
+    // Smoothed parameters (all start at 0 — gains set by apply_parameter from patch)
+    SmoothedParam saw_gain_{0.0f};
+    SmoothedParam pulse_gain_{0.0f};
+    SmoothedParam sub_gain_{0.0f};
+    SmoothedParam sine_gain_{0.0f};
+    SmoothedParam tri_gain_{0.0f};
+    SmoothedParam wavetable_gain_{0.0f};
+    SmoothedParam noise_gain_{0.0f};
+    SmoothedParam pulse_width_{0.5f};
+    SmoothedParam detune_{0.0f};      // cents (−100–+100)
+    SmoothedParam fm_depth_{0.0f};    // 0.0–1.0, fm_in scaling
+
     std::span<const float> fm_in_; // injected audio-rate FM signal (per-block, cleared after use)
 
     std::unique_ptr<PulseOscillatorProcessor>    pulse_osc_;

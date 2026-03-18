@@ -35,15 +35,15 @@ public:
         declare_parameter({"cutoff_hp", "HP Cutoff (Hz)", 20.0f, 2000.0f, 80.0f, true});
 
         // Initialise coefficients from defaults
-        update_cutoff_coefficient(base_cutoff_);  // LP section
-        update_hp(base_cutoff_hp_);
+        update_cutoff_coefficient(base_cutoff_.get());  // LP section
+        update_hp(cutoff_hp_.get());
         update_q();
     }
 
     bool apply_parameter(const std::string& name, float value) override {
         if (name == "cutoff_hp") {
-            base_cutoff_hp_ = std::clamp(value, 20.0f, sample_rate_ * 0.45f);
-            update_hp(base_cutoff_hp_);
+            cutoff_hp_.set_target(std::clamp(value, 20.0f, static_cast<float>(sample_rate_) * 0.45f), ramp_samples_);
+            update_hp(cutoff_hp_.get());
             return true;
         }
         // All other params (cutoff, resonance/res, cutoff_cv, kybd_cv, res_cv)
@@ -97,7 +97,7 @@ private:
         q_ = 2.0f * (1.0f - res_ * 0.99f);
     }
 
-    float base_cutoff_hp_ = 80.0f;
+    SmoothedParam cutoff_hp_{80.0f}; ///< HP section cutoff (Hz), smoothed
     float f_lp_ = 0.0f; ///< LP section SVF coefficient
     float f_hp_ = 0.0f; ///< HP section SVF coefficient
     float q_    = 2.0f; ///< shared damping coefficient

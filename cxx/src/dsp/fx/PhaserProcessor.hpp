@@ -28,6 +28,7 @@
 #define PHASER_PROCESSOR_HPP
 
 #include "../Processor.hpp"
+#include "../SmoothedParam.hpp"
 #include <cmath>
 #include <algorithm>
 #include <span>
@@ -42,8 +43,11 @@ class PhaserProcessor : public Processor {
 public:
     static constexpr int kMaxStages = 8;
 
+    static constexpr float kRampSeconds = 0.010f; // 10 ms
+
     explicit PhaserProcessor(int sample_rate)
         : sample_rate_(sample_rate)
+        , ramp_samples_(static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds))
     {
         declare_port({"audio_in",  PORT_AUDIO, PortDirection::IN});
         declare_port({"audio_out", PORT_AUDIO, PortDirection::OUT});
@@ -66,12 +70,12 @@ public:
     }
 
     bool apply_parameter(const std::string& name, float value) override {
-        if (name == "rate")      { rate_      = std::max(0.01f, value);                   return true; }
-        if (name == "depth")     { depth_     = std::clamp(value, 0.0f, 4.0f);            return true; }
-        if (name == "feedback")  { feedback_  = std::clamp(value, -0.95f, 0.95f);         return true; }
-        if (name == "base_freq") { base_freq_ = std::clamp(value, 20.0f, 4000.0f);        return true; }
-        if (name == "stages")    { stages_    = (value >= 6.5f) ? 8 : 4;                  return true; }
-        if (name == "wet")       { wet_       = std::clamp(value, 0.0f, 1.0f);            return true; }
+        if (name == "rate")      { rate_.set_target(std::max(0.01f, value), ramp_samples_);          return true; }
+        if (name == "depth")     { depth_.set_target(std::clamp(value, 0.0f, 4.0f), ramp_samples_); return true; }
+        if (name == "feedback")  { feedback_.set_target(std::clamp(value, -0.95f, 0.95f), ramp_samples_); return true; }
+        if (name == "base_freq") { base_freq_.set_target(std::clamp(value, 20.0f, 4000.0f), ramp_samples_); return true; }
+        if (name == "stages")    { stages_ = (value >= 6.5f) ? 8 : 4;                               return true; } // snap
+        if (name == "wet")       { wet_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_);   return true; }
         return false;
     }
 
@@ -81,9 +85,21 @@ protected:
     void do_pull(std::span<float>, const VoiceContext* = nullptr) override {}
 
     void do_pull(AudioBuffer& buf, const VoiceContext* = nullptr) override {
-        const float dry        = 1.0f - wet_;
-        const float phase_inc  = rate_ / static_cast<float>(sample_rate_);
-        const size_t frames    = buf.frames();
+        const int n = static_cast<int>(buf.frames());
+        rate_.advance(n);
+        depth_.advance(n);
+        feedback_.advance(n);
+        base_freq_.advance(n);
+        wet_.advance(n);
+
+        const float wet_val      = wet_.get();
+        const float dry          = 1.0f - wet_val;
+        const float rate_val     = rate_.get();
+        const float depth_val    = depth_.get();
+        const float feedback_val = feedback_.get();
+        const float base_freq_val = base_freq_.get();
+        const float phase_inc    = rate_val / static_cast<float>(sample_rate_);
+        const size_t frames      = buf.frames();
 
         for (size_t f = 0; f < frames; ++f) {
             // Advance LFO phases
@@ -95,25 +111,25 @@ protected:
             // Modulated pole frequency
             const float lfo_l = static_cast<float>(std::sin(2.0 * M_PI * phase_l_));
             const float lfo_r = static_cast<float>(std::sin(2.0 * M_PI * phase_r_));
-            const float fc_l  = base_freq_ * std::pow(2.0f, depth_ * lfo_l);
-            const float fc_r  = base_freq_ * std::pow(2.0f, depth_ * lfo_r);
+            const float fc_l  = base_freq_val * std::pow(2.0f, depth_val * lfo_l);
+            const float fc_r  = base_freq_val * std::pow(2.0f, depth_val * lfo_r);
 
             // All-pass coefficient
             const float a1_l = allpass_coeff(std::clamp(fc_l, 1.0f, static_cast<float>(sample_rate_) * 0.49f));
             const float a1_r = allpass_coeff(std::clamp(fc_r, 1.0f, static_cast<float>(sample_rate_) * 0.49f));
 
             // Process L: feedback → all-pass cascade
-            float inL = buf.left[f] + fb_l_ * feedback_;
+            float inL = buf.left[f] + fb_l_ * feedback_val;
             float outL = process_cascade(inL, a1_l, xl_prev_, yl_prev_);
             fb_l_ = outL;
 
             // Process R: feedback → all-pass cascade
-            float inR = buf.right[f] + fb_r_ * feedback_;
+            float inR = buf.right[f] + fb_r_ * feedback_val;
             float outR = process_cascade(inR, a1_r, xr_prev_, yr_prev_);
             fb_r_ = outR;
 
-            buf.left[f]  = outL * wet_ + buf.left[f]  * dry;
-            buf.right[f] = outR * wet_ + buf.right[f] * dry;
+            buf.left[f]  = outL * wet_val + buf.left[f]  * dry;
+            buf.right[f] = outR * wet_val + buf.right[f] * dry;
         }
     }
 
@@ -139,12 +155,14 @@ private:
     }
 
     int   sample_rate_;
-    float rate_      = 0.5f;
-    float depth_     = 1.5f;
-    float feedback_  = 0.7f;
-    float base_freq_ = 400.0f;
-    int   stages_    = 4;
-    float wet_       = 0.5f;
+    int   ramp_samples_;
+
+    SmoothedParam rate_{0.5f};
+    SmoothedParam depth_{1.5f};
+    SmoothedParam feedback_{0.7f};
+    SmoothedParam base_freq_{400.0f};
+    int   stages_    = 4;              // snap — discrete (4 or 8)
+    SmoothedParam wet_{0.5f};
 
     double phase_l_ = 0.0;
     double phase_r_ = 0.25;  // 90° quadrature for stereo width

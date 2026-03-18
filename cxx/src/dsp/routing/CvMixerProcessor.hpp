@@ -27,6 +27,7 @@
 #define CV_MIXER_PROCESSOR_HPP
 
 #include "../Processor.hpp"
+#include "../SmoothedParam.hpp"
 #include <algorithm>
 #include <cstring>
 
@@ -34,7 +35,10 @@ namespace audio {
 
 class CvMixerProcessor : public Processor {
 public:
-    CvMixerProcessor() {
+    static constexpr float kRampSeconds = 0.010f; // 10 ms
+
+    explicit CvMixerProcessor(int sample_rate = 48000) {
+        ramp_samples_ = static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds);
         declare_port({"cv_in_1", PORT_CONTROL, PortDirection::IN,  false});
         declare_port({"cv_in_2", PORT_CONTROL, PortDirection::IN,  false});
         declare_port({"cv_in_3", PORT_CONTROL, PortDirection::IN,  false});
@@ -55,11 +59,14 @@ public:
     }
 
     bool apply_parameter(const std::string& name, float value) override {
-        if (name == "gain_1") { gain_[0] = value; return true; }
-        if (name == "gain_2") { gain_[1] = value; return true; }
-        if (name == "gain_3") { gain_[2] = value; return true; }
-        if (name == "gain_4") { gain_[3] = value; return true; }
-        if (name == "offset") { offset_ = value;  return true; }
+        // CV routing gains and offset snap immediately — they are patch-configuration
+        // values set once before audio starts. CV inputs are already smoothed by their
+        // source (LFO/envelope), so per-parameter ramping would add unwanted latency.
+        if (name == "gain_1") { gain_[0].set_target(value, 0); return true; }
+        if (name == "gain_2") { gain_[1].set_target(value, 0); return true; }
+        if (name == "gain_3") { gain_[2].set_target(value, 0); return true; }
+        if (name == "gain_4") { gain_[3].set_target(value, 0); return true; }
+        if (name == "offset") { offset_.set_target(value, 0);  return true; }
         return false;
     }
 
@@ -73,11 +80,18 @@ public:
 protected:
     void do_pull(std::span<float> output,
                  const VoiceContext* /*ctx*/ = nullptr) override {
+        const int n = static_cast<int>(output.size());
+        gain_[0].advance(n);
+        gain_[1].advance(n);
+        gain_[2].advance(n);
+        gain_[3].advance(n);
+        offset_.advance(n);
+
         for (size_t i = 0; i < output.size(); ++i) {
-            float v = offset_;
+            float v = offset_.get();
             for (int s = 0; s < 4; ++s) {
                 if (i < slots_[s].size())
-                    v += gain_[s] * slots_[s][i];
+                    v += gain_[s].get() * slots_[s][i];
             }
             output[i] = std::clamp(v, -1.0f, 1.0f);
         }
@@ -85,8 +99,9 @@ protected:
     }
 
 private:
-    float gain_[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-    float offset_  = 0.0f;
+    int ramp_samples_ = 480; // default ~10ms at 48kHz
+    SmoothedParam gain_[4] = {SmoothedParam{1.0f}, SmoothedParam{1.0f}, SmoothedParam{1.0f}, SmoothedParam{1.0f}};
+    SmoothedParam offset_{0.0f};
     std::span<const float> slots_[4];
 };
 

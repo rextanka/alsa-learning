@@ -18,7 +18,6 @@ Voice::Voice(int sample_rate)
     : base_frequency_(440.0)
     , base_amplitude_(1.0f)
     , sample_rate_(sample_rate)
-    , pan_(0.0f)
     , active_(false)
 {
     graph_ = std::make_unique<AudioGraph>();
@@ -27,7 +26,8 @@ Voice::Voice(int sample_rate)
 }
 
 void Voice::set_pan(float pan) {
-    pan_ = std::clamp(pan, -1.0f, 1.0f);
+    pan_param_.set_target(std::clamp(pan, -1.0f, 1.0f),
+                          static_cast<int>(static_cast<float>(sample_rate_) * 0.010f));
 }
 
 bool Voice::set_named_parameter(const std::string& name, float value) {
@@ -114,6 +114,9 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
 }
 
 void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
+    // Advance pan interpolation so pan() reflects the current ramp position.
+    pan_param_.advance(static_cast<int>(output.size()));
+
     // --- Graph executor (RT-SAFE: pool-borrowed buffers, no heap alloc) ---
     //
     // Pass 1: pull all mod_sources (PORT_CONTROL generators: LFO, ADSR, …) into

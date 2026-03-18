@@ -35,7 +35,7 @@ public:
         declare_parameter({"fm_depth", "FM Depth", 0.0f, 1.0f, 0.0f});
 
         // Initialise g_ from the default base_cutoff_
-        update_cutoff_coefficient(base_cutoff_);
+        update_cutoff_coefficient(base_cutoff_.get());
     }
 
     /**
@@ -50,7 +50,7 @@ public:
     }
 
     bool apply_parameter(const std::string& name, float value) override {
-        if (name == "fm_depth") { fm_depth_ = std::clamp(value, 0.0f, 1.0f); return true; }
+        if (name == "fm_depth") { fm_depth_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_); return true; }
         return VcfBase::apply_parameter(name, value);
     }
 
@@ -68,12 +68,14 @@ protected:
     // Override do_pull to handle per-sample audio-rate FM when fm_in_ is present.
     void do_pull(std::span<float> output,
                  const VoiceContext* ctx = nullptr) override {
-        if (fm_in_.empty() || fm_depth_ == 0.0f) {
+        fm_depth_.advance(static_cast<int>(output.size()));
+        const float fm_depth_val = fm_depth_.get();
+        if (fm_in_.empty() || fm_depth_val == 0.0f) {
             VcfBase::do_pull(output, ctx);
         } else {
             for (size_t i = 0; i < output.size(); ++i) {
-                const float eff_cv = cutoff_cv_ + kybd_cv_ + fm_depth_ * fm_in_[i];
-                const float fc = std::max(20.0f, base_cutoff_ * std::pow(2.0f, eff_cv));
+                const float eff_cv = cutoff_cv_ + kybd_cv_ + fm_depth_val * fm_in_[i];
+                const float fc = std::max(20.0f, base_cutoff_.get() * std::pow(2.0f, eff_cv));
                 update_cutoff_coefficient(fc);
                 process_sample(output[i]);
             }
@@ -87,8 +89,8 @@ protected:
     float g_ = 0.0f; ///< frequency coefficient (pre-warped via tan)
 
 private:
-    std::span<const float> fm_in_;   ///< injected audio-rate FM signal (per-block)
-    float fm_depth_ = 0.0f;          ///< 0–1 scale factor on fm_in
+    std::span<const float> fm_in_;        ///< injected audio-rate FM signal (per-block)
+    SmoothedParam fm_depth_{0.0f};        ///< 0–1 scale factor on fm_in (smoothed)
 };
 
 } // namespace audio

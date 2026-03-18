@@ -29,6 +29,7 @@
 #define GATE_DELAY_PROCESSOR_HPP
 
 #include "../Processor.hpp"
+#include "../SmoothedParam.hpp"
 #include <algorithm>
 
 namespace audio {
@@ -52,7 +53,10 @@ public:
 
     bool apply_parameter(const std::string& name, float value) override {
         if (name == "delay_time") {
-            delay_time_ = std::clamp(value, 0.0f, 2.0f);
+            // Snap immediately — delay_time controls gate-level logic (note_on countdown),
+            // not audio samples. A ramp here would mean the first note_on after setting
+            // the parameter reads a stale (partially-ramped) value.
+            delay_time_.set_target(std::clamp(value, 0.0f, 2.0f), 0);
             return true;
         }
         return false;
@@ -60,12 +64,12 @@ public:
 
     // Lifecycle — dispatched by Voice::note_on() / note_off() for all mod_sources.
     void on_note_on(double /*frequency*/) override {
-        if (delay_time_ <= 0.0f) {
+        if (delay_time_.get() <= 0.0f) {
             state_        = State::High;
             samples_left_ = 0;
         } else {
             state_        = State::Counting;
-            samples_left_ = static_cast<int>(delay_time_ * static_cast<float>(sample_rate_));
+            samples_left_ = static_cast<int>(delay_time_.get() * static_cast<float>(sample_rate_));
         }
     }
 
@@ -77,6 +81,7 @@ public:
 protected:
     void do_pull(std::span<float> output,
                  const VoiceContext* /*ctx*/ = nullptr) override {
+        delay_time_.advance(static_cast<int>(output.size()));
         for (auto& s : output) {
             switch (state_) {
                 case State::Counting:
@@ -98,7 +103,7 @@ private:
     enum class State { Idle, Counting, High };
 
     int   sample_rate_;
-    float delay_time_ = 0.0f;
+    SmoothedParam delay_time_{0.0f};
     State state_        = State::Idle;
     int   samples_left_ = 0;
 };

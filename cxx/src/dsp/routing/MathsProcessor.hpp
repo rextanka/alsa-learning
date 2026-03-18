@@ -29,6 +29,7 @@
 #define MATHS_PROCESSOR_HPP
 
 #include "../Processor.hpp"
+#include "../SmoothedParam.hpp"
 #include <algorithm>
 #include <cmath>
 
@@ -38,8 +39,11 @@ class MathsProcessor : public Processor {
 public:
     enum class Curve { Linear = 0, Exponential = 1 };
 
+    static constexpr float kRampSeconds = 0.010f; // 10 ms
+
     explicit MathsProcessor(int sample_rate)
         : sample_rate_(sample_rate)
+        , ramp_samples_(static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds))
     {
         declare_port({"cv_in",  PORT_CONTROL, PortDirection::IN,  false});
         declare_port({"cv_out", PORT_CONTROL, PortDirection::OUT, false});
@@ -59,8 +63,8 @@ public:
     }
 
     bool apply_parameter(const std::string& name, float value) override {
-        if (name == "rise")  { rise_time_  = std::max(0.0f, value); update_rates(); return true; }
-        if (name == "fall")  { fall_time_  = std::max(0.0f, value); update_rates(); return true; }
+        if (name == "rise")  { rise_time_.set_target(std::max(0.0f, value), ramp_samples_); update_rates(); return true; }
+        if (name == "fall")  { fall_time_.set_target(std::max(0.0f, value), ramp_samples_); update_rates(); return true; }
         if (name == "curve") { curve_ = (value >= 0.5f) ? Curve::Exponential : Curve::Linear; return true; }
         return false;
     }
@@ -72,6 +76,12 @@ public:
 protected:
     void do_pull(std::span<float> output,
                  const VoiceContext* /*ctx*/ = nullptr) override {
+        const int n = static_cast<int>(output.size());
+        rise_time_.advance(n);
+        fall_time_.advance(n);
+        if (rise_time_.is_ramping() || fall_time_.is_ramping()) {
+            update_rates();
+        }
         for (size_t i = 0; i < output.size(); ++i) {
             float target = injected_.empty() ? 0.0f
                          : (i < injected_.size() ? injected_[i] : injected_.back());
@@ -97,18 +107,21 @@ private:
 
     void update_rates() {
         const float sr = static_cast<float>(sample_rate_);
+        const float rt = rise_time_.get();
+        const float ft = fall_time_.get();
         // Linear: full 2.0 range in rise_time_ seconds → rate per sample
-        rise_rate_ = (rise_time_ > 0.0f) ? (2.0f / (rise_time_ * sr)) : 1e9f;
-        fall_rate_ = (fall_time_ > 0.0f) ? (2.0f / (fall_time_ * sr)) : 1e9f;
+        rise_rate_ = (rt > 0.0f) ? (2.0f / (rt * sr)) : 1e9f;
+        fall_rate_ = (ft > 0.0f) ? (2.0f / (ft * sr)) : 1e9f;
         // Exponential: reaches 99% of target in time seconds
         static constexpr float kLog99 = 4.60517f; // log(99)
-        rise_coeff_ = (rise_time_ > 0.0f) ? std::exp(-kLog99 / (rise_time_ * sr)) : 0.0f;
-        fall_coeff_ = (fall_time_ > 0.0f) ? std::exp(-kLog99 / (fall_time_ * sr)) : 0.0f;
+        rise_coeff_ = (rt > 0.0f) ? std::exp(-kLog99 / (rt * sr)) : 0.0f;
+        fall_coeff_ = (ft > 0.0f) ? std::exp(-kLog99 / (ft * sr)) : 0.0f;
     }
 
     int   sample_rate_;
-    float rise_time_ = 0.0f;
-    float fall_time_ = 0.0f;
+    int   ramp_samples_;
+    SmoothedParam rise_time_{0.0f};
+    SmoothedParam fall_time_{0.0f};
     Curve curve_     = Curve::Linear;
 
     float rise_rate_ = 1e9f; // linear delta/sample (instant when rise_time == 0)
