@@ -64,6 +64,7 @@ public:
         declare_port({"audio_out", PORT_AUDIO,   PortDirection::OUT});
         declare_port({"pitch_cv",  PORT_CONTROL, PortDirection::IN,  false}); // bipolar 1V/oct
         declare_port({"pwm_cv",    PORT_CONTROL, PortDirection::IN,  false}); // bipolar
+        declare_port({"fm_in",     PORT_AUDIO,   PortDirection::IN});         // audio-rate FM input
 
         // Parameters
         declare_parameter({"saw_gain",       "Sawtooth Level",  0.0f, 1.0f, 0.0f});
@@ -73,20 +74,63 @@ public:
         declare_parameter({"sub_gain",       "Sub Level",       0.0f, 1.0f, 0.0f});
         declare_parameter({"wavetable_gain", "Wavetable Level", 0.0f, 1.0f, 0.0f});
         declare_parameter({"noise_gain",     "Noise Level",     0.0f, 1.0f, 0.0f});
-        declare_parameter({"pulse_width",    "Pulse Width",     0.0f, 0.5f, 0.5f});
-        declare_parameter({"wavetable_type", "Wavetable Type",  0.0f, 8.0f, 0.0f});
+        declare_parameter({"pulse_width",    "Pulse Width",      0.0f,  0.5f,   0.5f});
+        declare_parameter({"wavetable_type", "Wavetable Type",   0.0f,  8.0f,   0.0f});
+        declare_parameter({"transpose",      "Transpose",      -24.0f, 24.0f,   0.0f});
+        declare_parameter({"detune",         "Detune (cents)", -100.f,100.0f,   0.0f});
+        declare_parameter({"fm_depth",       "FM Depth",        0.0f,  1.0f,   0.0f});
     }
 
     // --- Frequency ---
 
     void set_frequency(double freq) override {
-        pulse_osc_->set_frequency(freq);
-        saw_osc_->set_frequency(freq);
-        sine_osc_->set_frequency(freq);
-        tri_osc_->set_frequency(freq);
-        wavetable_osc_->setFrequency(freq);
+        base_freq_ = freq;
+        double adjusted = freq
+            * std::pow(2.0, transpose_ / 12.0)
+            * std::pow(2.0, static_cast<double>(detune_cents_) / 1200.0);
+        pulse_osc_->set_frequency(adjusted);
+        saw_osc_->set_frequency(adjusted);
+        sine_osc_->set_frequency(adjusted);
+        tri_osc_->set_frequency(adjusted);
+        wavetable_osc_->setFrequency(adjusted);
         // SubOscillator tracks the pulse oscillator's phase — no independent freq.
         // WhiteNoiseProcessor is aperiodic — no frequency to set.
+    }
+
+    // --- Named parameter dispatch ---
+
+    bool apply_parameter(const std::string& name, float value) override {
+        if (name == "saw_gain")       { mixer_->set_gain(0, value); return true; }
+        if (name == "pulse_gain")     { mixer_->set_gain(1, value); return true; }
+        if (name == "sub_gain")       { mixer_->set_gain(2, value); return true; }
+        if (name == "sine_gain")      { mixer_->set_gain(3, value); return true; }
+        if (name == "triangle_gain")  { mixer_->set_gain(4, value); return true; }
+        if (name == "wavetable_gain") { mixer_->set_gain(5, value); return true; }
+        if (name == "noise_gain")     { mixer_->set_gain(6, value); return true; }
+        if (name == "pulse_width" || name == "osc_pw") {
+            pulse_osc_->set_pulse_width(value); return true;
+        }
+        if (name == "wavetable_type") {
+            wavetable_osc_->setWaveType(static_cast<WaveType>(static_cast<int>(value)));
+            return true;
+        }
+        if (name == "transpose") {
+            transpose_ = static_cast<double>(std::round(value));
+            set_frequency(base_freq_); // reapply with new offset
+            return true;
+        }
+        if (name == "detune") {
+            detune_cents_ = value;
+            set_frequency(base_freq_); // reapply with new offset
+            return true;
+        }
+        if (name == "fm_depth") {
+            fm_depth_ = value; return true;
+        }
+        if (name == "osc_frequency") {
+            set_frequency(static_cast<double>(value)); return true;
+        }
+        return false;
     }
 
     // --- Accessors for parameter routing ---
@@ -153,6 +197,10 @@ protected:
 
 private:
     [[maybe_unused]] int sample_rate_; // reserved for future per-sample-rate reconfiguration
+    double base_freq_    = 440.0; // last frequency set via set_frequency() before offsets
+    double transpose_    = 0.0;   // semitones (−24–+24)
+    float  detune_cents_ = 0.0f;  // cents (−100–+100)
+    float  fm_depth_     = 0.0f;  // 0.0–1.0, fm_in scaling (Phase 17)
 
     std::unique_ptr<PulseOscillatorProcessor>    pulse_osc_;
     std::unique_ptr<SubOscillator>               sub_osc_;

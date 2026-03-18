@@ -50,6 +50,23 @@ public:
         declare_parameter({"depth", "Chorus Depth", 0.0f,  1.0f, 0.5f});
     }
 
+    bool apply_parameter(const std::string& name, float value) override {
+        if (name == "mode") {
+            set_mode(static_cast<Mode>(static_cast<int>(std::round(value))));
+            return true;
+        }
+        if (name == "rate") {
+            lfo_rate_ = static_cast<double>(value);
+            return true;
+        }
+        if (name == "depth") {
+            // depth [0,1] → modulation depth in seconds (max ≈ 3ms)
+            lfo_depth_ = static_cast<double>(value) * 0.003;
+            return true;
+        }
+        return false;
+    }
+
     void set_mode(Mode mode) {
         mode_ = mode;
         switch (mode) {

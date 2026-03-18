@@ -59,6 +59,7 @@ public:
         declare_port({"gate_in",      PORT_CONTROL, PortDirection::IN,  true}); // lifecycle
         declare_port({"trigger_in",   PORT_CONTROL, PortDirection::IN,  true}); // lifecycle
         declare_port({"envelope_out", PORT_CONTROL, PortDirection::OUT, true}); // unipolar [0,1]
+        declare_port({"ext_gate_in",  PORT_CONTROL, PortDirection::IN,  true}); // external re-trigger (OR with gate_in)
 
         declare_parameter({"attack",   "Attack Time",  0.0f, 10.0f, 0.01f, true});
         declare_parameter({"decay",    "Decay Time",   0.0f, 10.0f, 0.1f,  true});
@@ -93,6 +94,14 @@ public:
     void reset() override {
         state_ = State::Idle;
         current_level_ = 0.0f;
+    }
+
+    bool apply_parameter(const std::string& name, float value) override {
+        if (name == "attack")  { set_attack_time(value);   return true; }
+        if (name == "decay")   { set_decay_time(value);    return true; }
+        if (name == "sustain") { set_sustain_level(value); return true; }
+        if (name == "release") { set_release_time(value);  return true; }
+        return false;
     }
 
     // Setters for envelope parameters

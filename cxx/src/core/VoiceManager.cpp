@@ -224,6 +224,12 @@ void VoiceManager::note_off(int note) {
     }
 }
 
+void VoiceManager::set_tag_parameter(const std::string& tag, const std::string& name, float value) {
+    for (auto& slot : voices_) {
+        if (slot.voice) slot.voice->set_tag_parameter(tag, name, value);
+    }
+}
+
 void VoiceManager::set_parameter_by_name(const std::string& name, float value) {
     // Map names to Phase 13 Global IDs
     int param_id = -1;

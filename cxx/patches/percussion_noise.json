@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "name": "Percussion Noise",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "WHITE_NOISE",   "tag": "NOISE" },
+        { "type": "ADSR_ENVELOPE", "tag": "ENV"   },
+        { "type": "VCA",           "tag": "VCA"   }
+      ],
+      "connections": [
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv" }
+      ],
+      "parameters": {
+        "ENV": { "attack": 0.001, "decay": 0.18, "sustain": 0.0, "release": 0.08 },
+        "VCF": { "cutoff": 3500.0, "res": 0.45 }
+      }
+    }
+  ]
+}

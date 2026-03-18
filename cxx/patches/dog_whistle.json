@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "name": "Dog Whistle",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO"       },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV_PITCH" },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV_AMP"   },
+        { "type": "VCA",                 "tag": "VCA"       }
+      ],
+      "connections": [
+        { "from_tag": "ENV_PITCH", "from_port": "envelope_out", "to_tag": "VCO", "to_port": "pitch_cv" },
+        { "from_tag": "ENV_AMP",   "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"  }
+      ],
+      "parameters": {
+        "VCO":       { "sine_gain": 1.0 },
+        "ENV_PITCH": { "attack": 0.18, "decay": 0.0, "sustain": 0.0, "release": 0.04 },
+        "ENV_AMP":   { "attack": 0.01, "decay": 0.0, "sustain": 1.0, "release": 0.12 }
+      }
+    }
+  ]
+}

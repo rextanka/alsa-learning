@@ -132,10 +132,18 @@ void Voice::set_parameter(int param, float value) {
 }
 
 bool Voice::set_named_parameter(const std::string& name, float value) {
-    // Try the virtual Processor::apply_parameter() on each chain node.
     for (auto& entry : signal_chain_) {
         if (entry.node->apply_parameter(name, value)) return true;
     }
+    for (auto& entry : mod_sources_) {
+        if (entry.node->apply_parameter(name, value)) return true;
+    }
+    return false;
+}
+
+bool Voice::set_tag_parameter(const std::string& tag, const std::string& name, float value) {
+    auto* proc = find_by_tag(tag);
+    if (proc) return proc->apply_parameter(name, value);
     return false;
 }
 
@@ -143,14 +151,11 @@ void Voice::note_on(double frequency) {
     active_ = true;
     base_frequency_ = frequency;
     for (auto& entry : signal_chain_) entry.node->reset();
+    for (auto& entry : mod_sources_) entry.node->reset();
     if (filter_) filter_->reset();
-    // Dispatch frequency to the first PORT_AUDIO node (the audio generator).
-    // PORT_CONTROL nodes (LFO etc.) may precede it in the chain — skip them.
-    for (auto& entry : signal_chain_) {
-        if (entry.node->output_port_type() == PortType::PORT_AUDIO) {
-            entry.node->set_frequency(frequency);
-            break;
-        }
+    // signal_chain_[0] is guaranteed by bake() to be the audio generator.
+    if (!signal_chain_.empty()) {
+        signal_chain_.front().node->set_frequency(frequency);
     }
     if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(find_by_tag("ENV"))) {
         env->gate_on();
@@ -168,9 +173,8 @@ bool Voice::is_active() const {
     if (active_) return true;
     // RT-SAFETY WARNING: dynamic_cast on the audio thread violates the no-RTTI policy
     // for the hot path. This is a known policy exception — VoiceManager calls is_active()
-    // from the audio callback to determine voice stealing candidates. A Phase 16 fix
-    // would replace this with a typed active_state enum cached on the Voice.
-    for (const auto& entry : signal_chain_) {
+    // from the audio callback to determine voice stealing candidates.
+    for (const auto& entry : mod_sources_) {
         if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(entry.node.get())) {
             return env->is_active();
         }
@@ -179,7 +183,7 @@ bool Voice::is_active() const {
 }
 
 bool Voice::is_releasing() const {
-    for (const auto& entry : signal_chain_) {
+    for (const auto& entry : mod_sources_) {
         if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(entry.node.get())) {
             return !active_ && env->is_active();
         }
@@ -189,6 +193,7 @@ bool Voice::is_releasing() const {
 
 void Voice::reset() {
     for (auto& entry : signal_chain_) entry.node->reset();
+    for (auto& entry : mod_sources_) entry.node->reset();
     if (filter_) filter_->reset();
 }
 
@@ -197,14 +202,13 @@ void Voice::do_pull(std::span<float> output, const VoiceContext* context) {
 }
 
 void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
-    // --- Phase 16 graph executor (RT-SAFE: pool-borrowed buffers, no heap alloc) ---
+    // --- Graph executor (RT-SAFE: pool-borrowed buffers, no heap alloc) ---
     //
-    // Pass 1: allocate scratch buffers for every PORT_CONTROL node in the chain.
-    // Pass 2: execute chain in order:
-    //   - PORT_CONTROL nodes are pulled into their scratch spans.
-    //   - Before pulling each PORT_AUDIO node, any named PORT_CONTROL connections
-    //     targeting it are applied (pitch_cv, pwm_cv; gain_cv is handled by VCA).
-    //   - VCA resolves gain_cv via explicit connection or falls back to ctrl_spans[0].
+    // Pass 1: pull all mod_sources (PORT_CONTROL generators: LFO, ADSR, …) into
+    //         scratch buffers. These are CV signals that modulate the audio chain.
+    // Pass 2: execute signal_chain_ in order (all PORT_AUDIO nodes). Before each
+    //         node, apply any incoming CV connections (pitch_cv, pwm_cv, cutoff_cv).
+    //         VCA is handled specially: filter is applied before it, then gain_cv.
 
     static constexpr size_t kMaxCtrl = 8;
     BufferPool::BufferPtr ctrl_ptrs[kMaxCtrl];
@@ -212,16 +216,15 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
     const char*           ctrl_tags_arr[kMaxCtrl];
     size_t                num_ctrl = 0;
 
-    // Pass 1: allocate scratch buffers for every PORT_CONTROL node.
-    for (const auto& entry : signal_chain_) {
-        if (entry.node->output_port_type() == PortType::PORT_CONTROL
-                && num_ctrl < kMaxCtrl) {
-            ctrl_ptrs[num_ctrl]  = graph_->borrow_buffer();
-            ctrl_spans[num_ctrl] = std::span<float>(
-                ctrl_ptrs[num_ctrl]->left.data(), output.size());
-            ctrl_tags_arr[num_ctrl] = entry.tag.c_str();
-            ++num_ctrl;
-        }
+    // Pass 1: pull each mod source into its scratch buffer.
+    for (auto& entry : mod_sources_) {
+        if (num_ctrl >= kMaxCtrl) break;
+        ctrl_ptrs[num_ctrl]  = graph_->borrow_buffer();
+        ctrl_spans[num_ctrl] = std::span<float>(
+            ctrl_ptrs[num_ctrl]->left.data(), output.size());
+        ctrl_tags_arr[num_ctrl] = entry.tag.c_str();
+        entry.node->pull(ctrl_spans[num_ctrl], context);
+        ++num_ctrl;
     }
 
     // Helper: find the ctrl span for a given source tag.
@@ -237,13 +240,12 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
         return std::accumulate(s.begin(), s.end(), 0.0f) / static_cast<float>(s.size());
     };
 
-    // Pass 2: execute chain in order.
+    // Pass 2: execute audio chain. signal_chain_ contains only PORT_AUDIO nodes.
     bool audio_generated = false;
-    size_t ctrl_pull_idx = 0;
 
     for (auto& entry : signal_chain_) {
         if ([[maybe_unused]] auto* vca = dynamic_cast<VcaProcessor*>(entry.node.get()); vca != nullptr) {
-            // Resolve gain_cv via explicit connection or fallback to first ctrl buffer.
+            // Resolve gain_cv via explicit connection only — no implicit fallback.
             std::span<float> gain_cv;
             for (const auto& conn : connections_) {
                 if (conn.to_tag == entry.tag && conn.to_port == "gain_cv") {
@@ -251,19 +253,18 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
                     break;
                 }
             }
-            if (gain_cv.empty() && num_ctrl > 0)
-                gain_cv = ctrl_spans[0];
 
             if (audio_generated && filter_) filter_->pull(output, context);
-            if (!gain_cv.empty())
+            if (!gain_cv.empty()) {
                 VcaProcessor::apply(output, gain_cv, base_amplitude_);
-
-        } else if (entry.node->output_port_type() == PortType::PORT_CONTROL) {
-            entry.node->pull(ctrl_spans[ctrl_pull_idx], context);
-            ++ctrl_pull_idx;
+            } else {
+                // No modulation source connected — apply base_amplitude_ at unity gain
+                // so the output level is defined regardless of patch topology.
+                for (auto& s : output) s *= base_amplitude_;
+            }
 
         } else {
-            // PORT_AUDIO node: apply any incoming PORT_CONTROL connections first.
+            // PORT_AUDIO node: apply any incoming CV connections first.
             for (const auto& conn : connections_) {
                 if (conn.to_tag != entry.tag) continue;
                 auto cv = find_ctrl(conn.from_tag);
@@ -297,7 +298,11 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
 
 void Voice::add_processor(std::unique_ptr<Processor> p, std::string tag) {
     p->set_tag(tag);
-    signal_chain_.push_back({std::move(p), std::move(tag)});
+    if (p->output_port_type() == PortType::PORT_CONTROL) {
+        mod_sources_.push_back({std::move(p), std::move(tag)});
+    } else {
+        signal_chain_.push_back({std::move(p), std::move(tag)});
+    }
     baked_ = false;
 }
 
@@ -312,8 +317,12 @@ void Voice::bake() {
     if (signal_chain_.empty()) {
         throw std::logic_error("Voice::bake() called on empty signal_chain_");
     }
-    // Port-Type Rule: last node must output PORT_AUDIO (chain output is always audio).
-    // Note: PORT_CONTROL nodes (LFO, etc.) may appear before the first PORT_AUDIO generator.
+    // signal_chain_ contains only PORT_AUDIO nodes (add_processor routes PORT_CONTROL
+    // nodes to mod_sources_). Enforce generator-first and sink-last rules.
+    if (signal_chain_.front().node->output_port_type() != PortType::PORT_AUDIO) {
+        throw std::logic_error(
+            "Voice::bake() failed: first node in signal_chain_ must output PORT_AUDIO");
+    }
     if (signal_chain_.back().node->output_port_type() != PortType::PORT_AUDIO) {
         throw std::logic_error(
             "Voice::bake() failed: last node in signal_chain_ must output PORT_AUDIO");
@@ -362,6 +371,9 @@ void Voice::bake() {
 
 Processor* Voice::find_by_tag(std::string_view tag) {
     for (auto& entry : signal_chain_) {
+        if (entry.tag == tag) return entry.node.get();
+    }
+    for (auto& entry : mod_sources_) {
         if (entry.tag == tag) return entry.node.get();
     }
     return nullptr;

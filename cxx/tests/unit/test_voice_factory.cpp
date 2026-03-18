@@ -94,14 +94,18 @@ TEST_F(VoiceFactoryTest, BakeFailsOnEmptyChain) {
     EXPECT_THROW(bare.bake(), std::logic_error);
 }
 
-TEST_F(VoiceFactoryTest, BakeFailsWhenLastNodeIsPortControl) {
-    Voice bad(kSR);
-    bad.add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
-    bad.add_processor(std::make_unique<AdsrEnvelopeProcessor>(kSR), "ENV");
-    EXPECT_THROW(bad.bake(), std::logic_error);
+// PORT_CONTROL nodes (ENV, LFO, …) are auto-routed to mod_sources_ by add_processor.
+// A voice with VCO + ENV (no VCA) has signal_chain_=[VCO], mod_sources_=[ENV] — bake() succeeds.
+TEST_F(VoiceFactoryTest, PortControlNodesRoutedToModSources) {
+    Voice v(kSR);
+    v.add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
+    v.add_processor(std::make_unique<AdsrEnvelopeProcessor>(kSR), "ENV");
+    EXPECT_NO_THROW(v.bake());
+    // ENV is reachable via find_by_tag (searches both signal_chain_ and mod_sources_).
+    auto* env = v.find_by_tag("ENV");
+    ASSERT_NE(env, nullptr);
+    EXPECT_EQ(env->output_port_type(), PortType::PORT_CONTROL);
 }
-
-// Phase 16: consecutive PORT_CONTROL nodes are now valid (e.g. LFO + ENV before VCA).
 
 // --- Phase 15: PortConnection / bake() validation ---
 

@@ -22,7 +22,9 @@
 #include "../dsp/oscillator/LfoProcessor.hpp"
 #include "../dsp/oscillator/WhiteNoiseProcessor.hpp"
 #include "../dsp/fx/JunoChorus.hpp"
+#include "../dsp/fx/EchoDelayProcessor.hpp"
 #include "../dsp/routing/DrawbarOrganProcessor.hpp"
+#include "../dsp/routing/InverterProcessor.hpp"
 
 namespace audio {
 
@@ -73,6 +75,16 @@ void register_builtin_processors() {
         "DRAWBAR_ORGAN",
         "9-partial tonewheel organ at Hammond footage ratios (16' to 1')",
         [](int sr) { return std::make_unique<DrawbarOrganProcessor>(sr); }
+    );
+    reg.register_module(
+        "ECHO_DELAY",
+        "Modulated delay line (BBD-style): static delay + LFO shimmer",
+        [](int sr) { return std::make_unique<EchoDelayProcessor>(sr); }
+    );
+    reg.register_module(
+        "INVERTER",
+        "CV signal inverter/scaler: cv_out = scale * cv_in",
+        [](int /*sr*/) { return std::make_unique<InverterProcessor>(); }
     );
 }
 

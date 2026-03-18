@@ -43,9 +43,10 @@ public:
         declare_port({"reset",       PORT_CONTROL, PortDirection::IN,  true});  // lifecycle-style trigger
         declare_port({"control_out", PORT_CONTROL, PortDirection::OUT, false}); // bipolar [-1,1]
 
-        declare_parameter({"rate",      "LFO Rate",      0.01f, 20.0f, 1.0f, true});
-        declare_parameter({"intensity", "LFO Intensity", 0.0f,   1.0f, 1.0f});
-        declare_parameter({"waveform",  "LFO Waveform",  0.0f,   3.0f, 0.0f});
+        declare_parameter({"rate",      "LFO Rate",      0.01f, 20.0f,  1.0f, true});
+        declare_parameter({"intensity", "LFO Intensity", 0.0f,   1.0f,  1.0f});
+        declare_parameter({"waveform",  "LFO Waveform",  0.0f,   3.0f,  0.0f});
+        declare_parameter({"delay",     "LFO Delay",     0.0f,  10.0f,  0.0f, true});
     }
 
     void set_frequency(double freq) override {
@@ -77,6 +78,11 @@ public:
             }
             return false;
         }
+        if (name == "delay") {
+            delay_time_ = std::max(0.0f, value);
+            delay_samples_remaining_ = static_cast<size_t>(delay_time_ * sample_rate_);
+            return true;
+        }
         return false;
     }
 
@@ -88,6 +94,8 @@ public:
     void reset() override {
         phase_ = 0.0;
         smoothed_intensity_ = intensity_;
+        // Reset delay countdown on note-on
+        delay_samples_remaining_ = static_cast<size_t>(delay_time_ * sample_rate_);
     }
 
     PortType output_port_type() const override { return PortType::PORT_CONTROL; }
@@ -98,6 +106,14 @@ protected:
         if (output.size() != last_block_size_) {
             last_block_size_ = output.size();
             update_smoothing_coeff(smoothing_time_, output.size());
+        }
+
+        // During delay window, output zero and do not advance phase.
+        if (delay_samples_remaining_ > 0) {
+            const size_t consumed = std::min(delay_samples_remaining_, output.size());
+            delay_samples_remaining_ -= consumed;
+            std::fill(output.begin(), output.end(), 0.0f);
+            return;
         }
 
         // Block-rate update
@@ -161,6 +177,8 @@ private:
     size_t last_block_size_;
     float smoothing_coeff_;
     Waveform waveform_;
+    float  delay_time_             = 0.0f; // seconds before modulation onset
+    size_t delay_samples_remaining_ = 0;   // countdown in samples
 };
 
 } // namespace audio

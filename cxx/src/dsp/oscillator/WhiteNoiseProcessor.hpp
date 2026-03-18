@@ -21,9 +21,18 @@ public:
     WhiteNoiseProcessor() : state_(0xDEADBEEFu) {
         // Phase 15: named port declarations
         declare_port({"audio_out", PORT_AUDIO, PortDirection::OUT});
+        declare_parameter({"color", "Noise Color", 0.0f, 1.0f, 0.0f}); // 0=White, 1=Pink
     }
 
     void reset() override { state_ = 0xDEADBEEFu; }
+
+    bool apply_parameter(const std::string& name, float value) override {
+        if (name == "color") {
+            color_ = static_cast<int>(std::round(value)); // 0=White, 1=Pink (Pink: Phase 17)
+            return true;
+        }
+        return false;
+    }
 
     PortType output_port_type() const override { return PortType::PORT_AUDIO; }
 
@@ -42,6 +51,7 @@ protected:
 
 private:
     uint32_t state_;
+    int color_ = 0; // 0=White, 1=Pink; Pink filter not yet implemented
 };
 
 } // namespace audio

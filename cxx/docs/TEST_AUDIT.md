@@ -1,5 +1,5 @@
 # Functional Test Audit Log
-Last Performed: 2026-03-16 (updated post-audit 2026-03-16)
+Last Performed: 2026-03-16 (updated post-audit 2026-03-17)
 
 This document tracks the sanity and utility of functional tests following the protocol defined in TESTING.md.
 
@@ -59,3 +59,16 @@ All HIGH and MEDIUM items resolved. One LOW item deferred to future feature work
 | ID | Priority | Item | Deferred To |
 |----|----------|------|-------------|
 | B6 | LOW | `DrawbarOrganProcessor`: `percussion` and `percussion_decay` parameters not declared. | Phase 16+ — implement when percussion chiff feature lands. |
+| A3-followup | LOW | `engine_connect_mod` / `engine_create_processor` / `engine_get_modulation_report` / `MOD_SRC_*` / `MOD_TGT_*` / `ALL_VOICES` — confirm removal is complete in implementation (BRIDGE_GUIDE.md §9 now marks these Removed per Phase 16 completion). | Verify at next implementation audit. |
+
+---
+
+## Spec Additions — 2026-03-17
+
+The following modules were added to MODULE_DESC.md and PATCH_SPEC.md during Roland reference document gap analysis. No implementation exists yet; no tests are required until each module lands.
+
+| Module | Source | Notes |
+|--------|--------|-------|
+| `ECHO_DELAY` — `mod_rate`, `mod_intensity` params | Roland Vol 2 §3-5, Fig 3-16 (Cymbal) | Extends existing planned spec; `cymbal.json` patch added |
+| `REVERB` | Roland Recording §2-6, §3-5 | Global FX module; `time`, `pre_delay`, `damping`, `mix` params |
+| `NOISE_GATE` | Roland Recording §4-5, Fig 4-4 (Boss NF-1) | Amplitude & Dynamics module; `threshold`, `attack`, `decay` params |

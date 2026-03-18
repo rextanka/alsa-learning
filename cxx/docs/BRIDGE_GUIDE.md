@@ -88,7 +88,7 @@ Use these labels with `set_param(handle, "label", value)`:
 
 **Implementation note**: `set_param` resolves labels via two paths. Core synthesis parameters (`vcf_*`, `amp_*`, oscillator gains, `osc_pw`, `osc_frequency`, `wavetable_type`) are in a hardcoded fast-path map and bypass the module registry. Organ drawbar labels (`drawbar_*`) go through a `set_parameter_by_name` fallback that queries the ModuleRegistry. Both paths are functionally equivalent from the caller's perspective.
 
-**Roadmap note**: This registry is a transitional compatibility layer. In Phase 15 and beyond, parameters are declared on modules and queryable via `engine_get_module_parameter`. The string label table above will be generated from module declarations rather than maintained manually.
+**Status note**: This registry is a transitional compatibility layer retained for single-VCO patch compatibility. Parameters are declared on modules and queryable via `engine_get_module_parameter` (see §4). For multi-module patches use tag-keyed parameter addressing in the patch JSON directly (see PATCH_SPEC.md §Parameters Object). Generating this table from module declarations is a future tooling task.
 
 ---
 
@@ -186,15 +186,16 @@ A patch file describes one or more voice group topologies, their connections, an
         { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"   }
       ],
       "parameters": {
-        "vcf_cutoff": 800.0,
-        "amp_attack": 0.01,
-        "amp_sustain": 0.8,
-        "amp_release": 0.3
+        "VCO": { "saw_gain": 1.0 },
+        "VCF": { "cutoff": 800.0, "resonance": 0.3 },
+        "ENV": { "attack": 0.01, "sustain": 0.8, "release": 0.3 }
       }
     }
   ]
 }
 ```
+
+> **Note**: `parameters` are keyed by instance tag then by the module's parameter name (as declared in MODULE_DESC.md). This is distinct from the `set_param` string labels in §3, which are a legacy C-API shorthand for the most common single-VCO patches. For multi-oscillator or multi-envelope patches use the tag-keyed format exclusively. See PATCH_SPEC.md for full format documentation.
 
 ### Feedback Connections
 
@@ -242,7 +243,7 @@ engine_clear_modulations(engine);
 
 `engine_set_lfo_depth` may be called multiple times with different targets to route the LFO to several destinations simultaneously. `engine_clear_modulations` resets all routes and LFO intensity to zero, then re-instates the mandatory `Envelope→Amplitude` connection.
 
-> **Phase 16**: The integer-ID external modulation matrix (`engine_connect_mod`, `MOD_SRC_*`, `MOD_TGT_*`) is deprecated in Phase 15A and will be removed in Phase 16, when all modulation routes become first-class named port connections in the patch graph.
+> **Phase 16 (complete)**: The integer-ID external modulation matrix (`engine_connect_mod`, `MOD_SRC_*`, `MOD_TGT_*`) was deprecated in Phase 15A and removed in Phase 16. All modulation routes are now first-class named port connections in the patch graph via `engine_connect_ports`.
 
 ---
 
@@ -264,7 +265,7 @@ engine_clear_modulations(engine);
 | `engine_set_modulation(source_int, target_int, intensity)` | **Removed** (Phase 15) | `engine_connect_ports(from_tag, from_port, to_tag, to_port)` |
 | `VoiceFactory::createSH101()` (C++ internal) | **Removed** (Phase 15) | `engine_load_patch` or `engine_add_module` / `engine_connect_ports` / `engine_bake` |
 | `engine_save_patch(handle, path)` | **Removed** (Phase 15) | No replacement — patch serialisation is not implemented. Patches are authored by hand and loaded via `engine_load_patch`. |
-| `engine_connect_mod(handle, src, voices, tgt, intensity)` | **Deprecated** (Phase 15A) — remove in Phase 16 | `engine_set_lfo_depth(handle, LFO_TARGET_*, depth)` |
-| `engine_create_processor(handle, type)` | **Deprecated** (Phase 15A) — remove in Phase 16 | `engine_add_module(handle, type, tag)` |
-| `engine_get_modulation_report(handle, buf, size)` | **Deprecated** (Phase 15A) — remove in Phase 16 | No replacement; use `engine_set_lfo_*` and structured patch files. |
-| `MOD_SRC_*` / `MOD_TGT_*` / `ALL_VOICES` constants | **Deprecated** (Phase 15A) — remove in Phase 16 | `LFO_TARGET_*` constants |
+| `engine_connect_mod(handle, src, voices, tgt, intensity)` | **Removed** (Phase 16) | `engine_set_lfo_depth(handle, LFO_TARGET_*, depth)` |
+| `engine_create_processor(handle, type)` | **Removed** (Phase 16) | `engine_add_module(handle, type, tag)` |
+| `engine_get_modulation_report(handle, buf, size)` | **Removed** (Phase 16) | No replacement; use `engine_set_lfo_*` and structured patch files. |
+| `MOD_SRC_*` / `MOD_TGT_*` / `ALL_VOICES` constants | **Removed** (Phase 16) | `LFO_TARGET_*` constants |
