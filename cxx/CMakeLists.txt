@@ -47,6 +47,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/filter)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/fx)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/routing)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/analysis)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/dynamics)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/hal)
 
 # Optional: Enable profiling (can be controlled via CMake)
@@ -221,6 +222,7 @@ if(BUILD_TESTING)
     add_functional_gtest(organ_drawbar_patch_tests test_organ_drawbar_patch.cpp)
     add_functional_gtest(percussion_noise_patch_tests test_percussion_noise_patch.cpp)
     add_functional_gtest(violin_vibrato_patch_tests test_violin_vibrato_patch.cpp)
+    add_functional_gtest(bell_patch_tests test_bell_patch.cpp)
 
     # Copy patch JSON files and MIDI test data to the binary output directory
     # so tests can be run directly from build/bin without extra arguments.

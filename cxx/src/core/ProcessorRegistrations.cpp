@@ -21,6 +21,8 @@
 #include "../dsp/filter/DiodeLadderProcessor.hpp"
 #include "../dsp/filter/CemFilterProcessor.hpp"
 #include "../dsp/filter/Ms20FilterProcessor.hpp"
+#include "../dsp/filter/HighPassFilterProcessor.hpp"
+#include "../dsp/filter/BandPassFilterProcessor.hpp"
 #include "../dsp/oscillator/LfoProcessor.hpp"
 #include "../dsp/oscillator/WhiteNoiseProcessor.hpp"
 #include "../dsp/fx/JunoChorus.hpp"
@@ -32,6 +34,10 @@
 #include "../dsp/routing/MathsProcessor.hpp"
 #include "../dsp/routing/GateDelayProcessor.hpp"
 #include "../dsp/routing/SampleHoldProcessor.hpp"
+#include "../dsp/routing/RingModProcessor.hpp"
+#include "../dsp/routing/AudioSplitterProcessor.hpp"
+#include "../dsp/dynamics/NoiseGateProcessor.hpp"
+#include "../dsp/dynamics/EnvelopeFollowerProcessor.hpp"
 
 namespace audio {
 
@@ -127,6 +133,36 @@ void register_builtin_processors() {
         "SAMPLE_HOLD",
         "Sample & hold: freezes cv_in on each rising clock_in edge for stepped modulation",
         [](int /*sr*/) { return std::make_unique<SampleHoldProcessor>(); }
+    );
+    reg.register_module(
+        "HIGH_PASS_FILTER",
+        "2-pole biquad high-pass filter — brightens by removing low frequencies",
+        [](int sr) { return std::make_unique<HighPassFilterProcessor>(sr); }
+    );
+    reg.register_module(
+        "BAND_PASS_FILTER",
+        "2-pole biquad band-pass filter — passes a band around center_freq",
+        [](int sr) { return std::make_unique<BandPassFilterProcessor>(sr); }
+    );
+    reg.register_module(
+        "RING_MOD",
+        "4-quadrant ring modulator: output = audio_in_a × audio_in_b — bell/metallic timbres",
+        [](int /*sr*/) { return std::make_unique<RingModProcessor>(); }
+    );
+    reg.register_module(
+        "AUDIO_SPLITTER",
+        "1-to-4 audio fan-out with per-output gain — routes one source to multiple destinations",
+        [](int /*sr*/) { return std::make_unique<AudioSplitterProcessor>(); }
+    );
+    reg.register_module(
+        "NOISE_GATE",
+        "Threshold-based gate: opens on signal above threshold, closes on silence below it",
+        [](int sr) { return std::make_unique<NoiseGateProcessor>(sr); }
+    );
+    reg.register_module(
+        "ENVELOPE_FOLLOWER",
+        "Extracts a dynamic control signal (RMS envelope) from the audio input",
+        [](int sr) { return std::make_unique<EnvelopeFollowerProcessor>(sr); }
     );
 }
 
