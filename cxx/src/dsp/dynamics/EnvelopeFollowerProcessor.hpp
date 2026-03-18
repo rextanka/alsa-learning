@@ -2,17 +2,18 @@
  * @file EnvelopeFollowerProcessor.hpp
  * @brief Envelope follower — extracts a dynamic control signal from audio.
  *
- * RT-SAFE chain node: PORT_AUDIO in → PORT_AUDIO out (passthrough).
+ * RT-SAFE chain node: PORT_AUDIO in → PORT_AUDIO out (transparent passthrough).
  * Type name: ENVELOPE_FOLLOWER
  *
- * Sits in signal_chain_ as a transparent audio passthrough. Internally
- * computes an RMS envelope and stores it in envelope_cv_ for readback.
- * The computed envelope_out is accessible to connected CV consumers via
- * apply_parameter("envelope_cv", ...) readback — full CV routing to VCF
- * cutoff_cv etc. requires the ParameterManager (Phase 21).
+ * Sits in signal_chain_ as a transparent audio passthrough. After each block,
+ * Voice::pull_mono detects this node via dynamic_cast and injects a constant-fill
+ * ctrl_span (value = get_envelope()) into the executor's ctrl_spans[] table.
+ * This makes `envelope_out` available to CV dispatch: wire it like any CV output:
+ *   engine_connect_ports(h, "EF", "envelope_out", "VCA", "gain_cv")
  *
- * For now the envelope value is available via get_envelope() for
- * diagnostic/test access and direct parameter injection.
+ * Connection ordering matters: the EnvelopeFollower node must appear before the
+ * CV consumer (e.g. VCA) in the signal_chain_ so that the ctrl_span is populated
+ * before the consumer's CV dispatch runs.
  */
 
 #ifndef ENVELOPE_FOLLOWER_PROCESSOR_HPP

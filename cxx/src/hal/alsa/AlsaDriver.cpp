@@ -369,4 +369,12 @@ std::vector<HostDeviceInfo> AudioDriver::enumerate_devices() {
     return devices;
 }
 
+// ---------------------------------------------------------------------------
+// AudioDriver::create — ALSA factory
+// ---------------------------------------------------------------------------
+
+std::unique_ptr<AudioDriver> AudioDriver::create(int sample_rate, int block_size) {
+    return std::make_unique<AlsaDriver>(sample_rate, block_size);
+}
+
 } // namespace hal

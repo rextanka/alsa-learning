@@ -39,7 +39,7 @@ Certain port names are **reserved lifecycle ports**. They are driven by the `Voi
 
 A connection that forms a cycle in the signal graph (e.g. delay feedback) must be marked `"feedback": true` in the patch. Non-feedback connections form a DAG validated by `bake()`.
 
-> **Current status**: Feedback execution is **not yet implemented**. The `"feedback": true` flag is parsed and stored but the graph executor does not maintain a previous-block output buffer. Feedback routing will be activated when `ECHO_DELAY` lands (Phase 17).
+> **Current status**: Graph-level cross-node feedback is **not implemented**. The `"feedback": true` field in connections is parsed by the patch loader but the graph executor does not maintain a previous-block output buffer for cycle-breaking. `ECHO_DELAY`'s self-feedback is handled internally via a circular delay buffer inside the processor — not via graph executor feedback. Graph-level feedback is a future feature.
 
 ### Port Declaration in C++
 
@@ -69,6 +69,12 @@ struct ParameterDescriptor {
 ```
 
 Each processor calls `declare_parameter()` in its constructor alongside `declare_port()`.
+
+### Parameter Smoothing (Phase 21)
+
+Continuous parameters (cutoff, gain, LFO rate/depth, FX wet/dry) use `SmoothedParam` members in the processor implementation. `set_target(value, ramp_samples)` schedules a linear ramp; the processor calls `advance(block_size)` at the start of each `do_pull` then reads `get()` for the block's value. Default ramp = `sample_rate × 0.010` (10 ms).
+
+Discrete selectors (waveform type, transpose semitones, mode) and patch-configuration values set before audio starts (delay time, room size) use snap mode: `set_target(value, 0)` sets the value immediately. CV accumulator ports (`cutoff_cv`, `kybd_cv`, `res_cv`) are not smoothed — they are already smooth from their source.
 
 ---
 
@@ -131,7 +137,7 @@ The registry is queryable via the C API (`engine_get_module_count`, `engine_get_
 - **Parameters**: `color` (enum: White=0, Pink=1; default White)
 - **Modes**:
   - **White Noise**: Random combination of all frequencies. Power must increase by 3 dB per octave. Perceptually bright; suits wind attacks, hi-hats, and initial consonants on breath instruments.
-  - **Pink Noise** (planned): White noise passed through a −3dB/octave shelving filter to equalize energy per octave. Perceptually flat; suits surf, wind body, and rain. Implement via a chain of 3–5 first-order allpass/IIR shelves approximating the −10dB/decade slope.
+  - **Pink Noise**: White noise passed through Paul Kellett's 7-pole IIR filter to equalize energy per octave (−3dB/octave). Perceptually flat; suits surf, wind body, and rain.
 - **Usage note**: The noise oscillator is embedded in `COMPOSITE_GENERATOR` as waveform channel 6 (`noise_gain`). For standalone noise-only voices (e.g., percussion, wind) the `WHITE_NOISE` module may be instantiated directly as the first chain node, keeping `noise_gain` at 1.0 and all other gains at 0.0.
 
 ### Drawbar Organ
@@ -186,14 +192,14 @@ All four filter types are **first-class chain nodes** — inserted into `signal_
 
 ### Band Pass Filter
 - **Type name**: `BAND_PASS_FILTER`
-- **Purpose**: Passes a band of frequencies between a low cutoff and a high cutoff, attenuating frequencies outside that band. Implemented internally as a LPF and HPF in series (Roland §5-6, Fig 5-6c). Useful for formant sculpting, telephone/radio effects, and mid-range emphasis.
+- **Purpose**: Passes a band of frequencies between a low cutoff and a high cutoff, attenuating frequencies outside that band. Implemented internally as a 2-pole biquad (Audio EQ Cookbook). Useful for formant sculpting, telephone/radio effects, and mid-range emphasis.
 - **Ports**:
   - `PORT_AUDIO` in `audio_in`
   - `PORT_AUDIO` out `audio_out`
-  - `PORT_CONTROL` in `cutoff_low_cv` (bipolar)
-  - `PORT_CONTROL` in `cutoff_high_cv` (bipolar)
-- **Parameters**: `cutoff_low` (20–20000 Hz, log — lower edge of pass band), `cutoff_high` (20–20000 Hz, log — upper edge of pass band), `resonance` (0.0–1.0)
-- **Status**: Planned.
+  - `PORT_CONTROL` in `cutoff_cv` (bipolar, 1V/oct)
+  - `PORT_CONTROL` in `res_cv` (unipolar)
+  - `PORT_CONTROL` in `kybd_cv` (bipolar, 1V/oct)
+- **Parameters**: `cutoff` (20–20000 Hz, log), `resonance` (0.0–1.0)
 
 ### Band Reject Filter
 - **Type name**: `BAND_REJECT_FILTER`
@@ -210,11 +216,17 @@ All four filter types are **first-class chain nodes** — inserted into `signal_
 - **Parameters**: `frequency` (20–20000 Hz, log), `decay` (0.0–4.0s)
 - **Status**: Planned.
 
-### High Pass Filter (Global/Static)
+### High Pass Filter
 - **Type name**: `HIGH_PASS_FILTER`
-- **Purpose**: Blocks low frequencies to brighten synthesized sounds.
+- **Purpose**: Blocks low frequencies to brighten synthesized sounds. Implemented as a 2-pole biquad (Audio EQ Cookbook).
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in`
+  - `PORT_AUDIO` out `audio_out`
+  - `PORT_CONTROL` in `cutoff_cv` (bipolar, 1V/oct)
+  - `PORT_CONTROL` in `res_cv` (unipolar)
+  - `PORT_CONTROL` in `kybd_cv` (bipolar, 1V/oct)
+- **Parameters**: `cutoff` (20–20000 Hz, log), `resonance` (0.0–1.0)
 - **Psychoacoustic Rule**: Even with heavy attenuation of the fundamental frequency, the engine should rely on the human ear's ability to "mentally" furnish the missing fundamental pitch as long as natural harmonic series overtones are present.
-- **Status**: Planned.
 
 ---
 
@@ -248,6 +260,15 @@ All four filter types are **first-class chain nodes** — inserted into `signal_
 - **Note**: Output is `PORT_CONTROL` only. To shape amplitude: patch `envelope_out` → VCA `gain_cv`. To shape filter: patch `envelope_out` → VCF `cutoff_cv`.
 - **Percussion Trill usage**: Route LFO `control_out` → `ADSR_ENVELOPE` `ext_gate_in`. The LFO square wave triggers the envelope at its rate, producing rapid re-triggered decay shapes independent of key hold. This replicates the Roland System 100M Percussion Trill topology (Vol 2, Fig 3-13).
 
+### Envelope Generator (AD)
+- **Type name**: `AD_ENVELOPE`
+- **Purpose**: Two-stage Attack-Decay transient generator. Output rises to peak during attack then falls to zero during decay — no sustain or release. Ideal for percussive sounds (bells, plucks, hits) where the envelope must complete its shape regardless of key hold duration.
+- **Ports**:
+  - `PORT_CONTROL` in `gate_in` (unipolar — **lifecycle port**, driven by VoiceContext)
+  - `PORT_CONTROL` out `envelope_out` (unipolar)
+- **Parameters**: `attack` (0.0–10.0s, log), `decay` (0.0–10.0s, log)
+- **Note**: Output is `PORT_CONTROL` only. Patch `envelope_out` → VCA `gain_cv` for percussive amplitude shaping.
+
 ### Noise Gate
 - **Type name**: `NOISE_GATE`
 - **Purpose**: Suppresses audio signal when its level falls below a threshold, blocking noise during silent passages. When a signal above the threshold is detected, the gate opens quickly; when the signal drops below threshold, the gate closes slowly to follow the natural decay. Modelled on the Boss NF-1 Noise Gate (Roland Recording §4-5, Fig 4-4).
@@ -257,8 +278,6 @@ All four filter types are **first-class chain nodes** — inserted into `signal_
 - **Parameters**: `threshold` (0.0–1.0 — level below which the gate closes; set just above the highest expected noise floor), `attack` (0.0–0.1s — time for gate to open fully when signal exceeds threshold; should be very fast to preserve note attacks), `decay` (0.0–2.0s — time for gate to close after signal drops below threshold; controls how naturally the tail fades; Roland calls this the DECAY knob on the NF-1)
 - **Behavioral Logic**: Internally uses an envelope detector (peak or RMS) on the input signal. When the detected envelope rises above `threshold`, the gain ramps to 1.0 in `attack` time. When the detected envelope falls below `threshold`, the gain ramps to 0.0 in `decay` time. Output = `audio_in * gain`.
 - **Usage**: In synthesis, a noise gate is useful for suppressing noise-floor bleed from oscillators between notes, or for cleaning up a `WHITE_NOISE` voice so it is silent between triggered events. As a global FX it removes tape-style hiss from sustained pauses.
-- **Status**: Planned.
-
 ### Envelope Follower
 - **Type name**: `ENVELOPE_FOLLOWER`
 - **Purpose**: Extracts a dynamic control signal from an audio input.
@@ -266,7 +285,6 @@ All four filter types are **first-class chain nodes** — inserted into `signal_
   - `PORT_AUDIO` in `audio_in`
   - `PORT_CONTROL` out `envelope_out` (unipolar)
 - **Parameters**: `attack` (0.0–1.0s), `release` (0.0–2.0s)
-- **Status**: Planned.
 
 ---
 
@@ -281,7 +299,6 @@ These modules operate entirely in the control domain.
   - `PORT_CONTROL` in `cv_in` (bipolar)
   - `PORT_CONTROL` out `cv_out` (bipolar)
 - **Parameters**: `rise` (0.0–10.0s), `fall` (0.0–10.0s), `curve` (enum: Log, Linear, Exponential)
-- **Status**: Planned.
 
 ### CV Mixer / Attenuverter
 - **Type name**: `CV_MIXER`
@@ -292,8 +309,6 @@ These modules operate entirely in the control domain.
 - **Parameters**: `gain_1` … `gain_4` (−1.0–1.0), `offset` (−1.0–1.0, default 0.0)
 - **Bias / DC Offset**: The `offset` parameter injects a constant DC level into the output signal. This is the electronic equivalent of adding a bias voltage and is used to shift a bipolar signal (e.g. LFO output in [−1, 1]) into unipolar territory so a single VCA can produce tremolo without fully gating off on the negative LFO half-cycle. Example: `offset=0.5` + `gain_1=0.5` on a full-range bipolar LFO yields a unipolar tremolo depth in [0, 1].
 - **Delayed Vibrato**: Route LFO `control_out` → `CV_MIXER` `cv_in_1`. Route a second `ADSR_ENVELOPE` `envelope_out` → `CV_MIXER` `cv_in_2` (acts as VCA for the LFO signal). The slow-attack envelope ramps the LFO gain from zero, producing vibrato that only appears after the note onset — the characteristic technique for bowed-string and woodwind patches. Connect `CV_MIXER` `cv_out` → `VCO` `pitch_cv`.
-- **Status**: Planned.
-
 ### CV Splitter
 - **Type name**: `CV_SPLITTER`
 - **Purpose**: Fans one control signal out to up to four destinations, each with independent gain scaling. Unity-gain fan-out is the default; unused outputs are ignored.
@@ -302,7 +317,6 @@ These modules operate entirely in the control domain.
   - `PORT_CONTROL` out `cv_out_1` … `cv_out_4` (bipolar)
 - **Parameters**: `gain_1` … `gain_4` (−2.0–2.0, default 1.0 each)
 - **Usage**: Patch one ADSR `envelope_out` → `CV_SPLITTER` `cv_in`, then connect `cv_out_1` → VCA `gain_cv` and `cv_out_2` → VCF `cutoff_cv` to drive both amplitude and filter shaping from a single envelope without requiring a `CV_MIXER`. Set `gain_2` to scale the filter modulation depth independently of the amplitude path.
-- **Status**: Planned.
 
 ### S&H (Sample & Hold)
 - **Type name**: `SAMPLE_HOLD`
@@ -312,7 +326,6 @@ These modules operate entirely in the control domain.
   - `PORT_CONTROL` in `clock_in` (unipolar)
   - `PORT_CONTROL` out `cv_out` (bipolar)
 - **Usage**: Patch a noise source (or LFO sawtooth) into `cv_in` and an LFO square wave into `clock_in`. The output steps to a new random value at each clock edge, producing random pitch patterns when connected to `VCO` `pitch_cv` or random filter-color sweeps when connected to VCF `cutoff_cv`. Classic for wind/surf textures and random arpeggio effects.
-- **Status**: Planned.
 
 ### Gate Delay / Pulse Shaper
 - **Type name**: `GATE_DELAY`
@@ -322,7 +335,6 @@ These modules operate entirely in the control domain.
   - `PORT_CONTROL` out `gate_out` (unipolar)
 - **Parameters**: `delay_time` (0.0–2.0s, default 0.0)
 - **Behavioral Rule**: When `gate_in` transitions high, `gate_out` remains low until `delay_time` has elapsed, then goes high for the remainder of the gate duration. If the gate closes before `delay_time` elapses, `gate_out` never fires. On `gate_in` low, `gate_out` drops low immediately (no trailing pulse).
-- **Status**: Planned.
 
 ### Inverter
 - **Type name**: `INVERTER`
@@ -333,7 +345,6 @@ These modules operate entirely in the control domain.
 - **Parameters**: `scale` (−2.0–2.0, default −1.0; allows attenuation alongside inversion)
 - **Harpsichord usage**: Route `ADSR_ENVELOPE` `envelope_out` → `INVERTER` `cv_in`. Route `INVERTER` `cv_out` → VCF `cutoff_cv`. Route `ADSR_ENVELOPE` `envelope_out` directly → VCA `gain_cv`. The amplitude envelope and the inverted filter sweep are driven by the same ADSR simultaneously: as the note attacks and sustains the VCA opens while the filter closes, then as the note releases the VCA closes and the filter opens — the classic harpsichord brightness-on-decay.
 - **Gong / metallic usage**: Route ring-mod envelope output through an `INVERTER` into a second resonant filter's cutoff to produce pitch-descending metallic decay.
-- **Status**: Planned.
 
 ---
 
@@ -371,16 +382,32 @@ These modules operate entirely in the control domain.
 - **Parameters**: `pan` (−1.0–1.0)
 - **Distance Logic**: Emulated apparent distance must be controlled by the ratio of direct loudness to reverberation. A sound with high reverberation and low direct volume will appear physically distant.
 
-### Reverb
-- **Type name**: `REVERB`
-- **Purpose**: Simulated room reverberation — the acoustic impression of a physical space. Essential for giving synthesized voices a natural-sounding environment (Roland Recording §2-6: "the addition of reverberation to the music is extremely important for creating a natural sounding environment for the music"). Controls apparent distance between instrument and listener when blended with the dry signal.
+### Freeverb Reverb
+- **Type name**: `REVERB_FREEVERB`
+- **Purpose**: Schroeder/Freeverb reverb — 8 parallel comb filters + 4 series all-pass filters per channel. Warm, dense room sound.
 - **Ports**:
   - `PORT_AUDIO` in `audio_in`
   - `PORT_AUDIO` out `audio_out`
-- **Parameters**: `time` (0.1–10.0s — RT60 reverberation time), `pre_delay` (0.0–0.1s — time before first reflection onset), `damping` (0.0–1.0 — high-frequency absorption; higher values simulate soft/carpeted rooms), `mix` (0.0–1.0, dry/wet blend; default 0.3)
-- **Behavioral Logic**: Implemented as a Schroeder-style network of allpass and comb filters, or an FDN (Feedback Delay Network). The wet output is the diffuse reverberant tail; `mix` blends it with the dry signal. `pre_delay` controls the gap before reflections arrive, simulating listener-source distance. High `damping` values attenuate high-frequency content in the tail, approximating absorption by furnishings and walls.
-- **Architecture Note**: Architecturally a **global FX module** — one instance processes the summed voice output, not a per-voice chain node. Per-voice instantiation is a temporary workaround pending global FX chain support. `SPATIAL` module `distance` logic should route to reverb send level: high distance = high reverb send, low direct level.
-- **Status**: Planned.
+- **Parameters**: `room_size` (0.0–1.0 — scales comb delay lengths; snap: buffer geometry fixed at construction), `damping` (0.0–1.0 — HF absorption in comb feedback path), `width` (0.0–1.0 — stereo decorrelation), `wet` (0.0–1.0 — wet/dry blend)
+- **Architecture Note**: **Global post-chain module only** — added via `engine_post_chain_push(h, "REVERB_FREEVERB")`. Not instantiated per-voice. Applied after all voices are summed and before HAL write.
+
+### FDN Reverb
+- **Type name**: `REVERB_FDN`
+- **Purpose**: Jean-Marc Jot Feedback Delay Network reverb — 8 mutually-prime delay lines, Householder unitary feedback matrix, per-line 1-pole absorption filter with exact T60 (`g_i = 10^(−3 × d_i / (T60 × sr))`). Smoother modal density than Freeverb; suited for long tails (organ, strings, brass).
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in`
+  - `PORT_AUDIO` out `audio_out`
+- **Parameters**: `decay` (T60 in seconds, 0.1–20.0), `room_size` (0.0–1.0 — scales delay line lengths; snap: buffer geometry fixed at construction), `damping` (0.0–1.0 — HF absorption), `width` (0.0–1.0 — stereo decorrelation), `wet` (0.0–1.0 — wet/dry blend)
+- **Architecture Note**: **Global post-chain module only** — added via `engine_post_chain_push(h, "REVERB_FDN")`.
+
+### Phaser
+- **Type name**: `PHASER`
+- **Purpose**: 4- or 8-stage all-pass ladder with LFO-swept pole frequency. Classic swirling phase-cancellation effect.
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in`
+  - `PORT_AUDIO` out `audio_out`
+- **Parameters**: `rate` (0.01–10 Hz — internal LFO sweep rate), `depth` (0.0–1.0 — sweep depth), `feedback` (0.0–0.99 — resonance; sharper notches at high values), `stages` (int: 4 or 8; snap), `base_freq` (20–2000 Hz — centre frequency of sweep), `wet` (0.0–1.0 — wet/dry blend)
+- **Architecture Note**: **Global post-chain module only** — added via `engine_post_chain_push(h, "PHASER")`.
 
 ### Echo / Delay
 - **Type name**: `ECHO_DELAY`
@@ -391,9 +418,8 @@ These modules operate entirely in the control domain.
   - `PORT_CONTROL` in `time_cv` (unipolar)
   - `PORT_CONTROL` in `feedback_cv` (unipolar)
 - **Parameters**: `time` (0.0–2.0s), `feedback` (0.0–0.99), `mix` (0.0–1.0), `mod_rate` (0.1–20 Hz, default 0.0 — rate of the built-in LFO that sweeps delay time; 0.0 disables modulation), `mod_intensity` (0.0–1.0, default 0.0 — depth of the delay-time sweep; at 1.0 the delay time oscillates ±50% of `time` at `mod_rate`, producing the metallic shimmer used in the Roland Cymbal patch, Vol 2 §3-5, Fig 3-16)
-- **Note**: Feedback connection from `audio_out` back to `audio_in` must be marked `"feedback": true` in the patch. The executor uses the previous block's output to break the cycle.
+- **Note**: `ECHO_DELAY` handles its own feedback via an internal circular delay buffer — no graph-level feedback connection is needed. Graph-level cross-node feedback (`"feedback": true` in connections) is not yet implemented in the executor.
 - **BBD Cymbal usage**: Set `time` ≈ 20–40 ms, `feedback` ≈ 0.5–0.7, `mod_rate` ≈ 5–8 Hz, `mod_intensity` ≈ 0.3–0.6. The wobbling delay time produces the characteristic shimmering metallic decay of a struck cymbal or gong. Combine with `WHITE_NOISE` → `MOOG_FILTER` (high cutoff, moderate resonance) → `ECHO_DELAY` → percussive `VCA`.
-- **Status**: Planned.
 
 ---
 
@@ -401,12 +427,7 @@ These modules operate entirely in the control domain.
 
 ### Summing Mixer (Source Mixer)
 - **Type name**: `SOURCE_MIXER`
-- **Purpose**: Combines multiple audio signals before processing. Head node for multi-oscillator voices.
-- **Ports**:
-  - `PORT_AUDIO` in `audio_in_1` … `audio_in_N`
-  - `PORT_AUDIO` out `audio_out`
-- **Parameters**: `gain_1` … `gain_N` (0.0–1.0 each)
-- **Note**: Embedded inside `COMPOSITE_GENERATOR`. Also available as a standalone node.
+- **Purpose**: Internal multi-waveform summing for legacy use. **Not registered in the ModuleRegistry** — cannot be used via `engine_add_module`. Multi-waveform blending (sawtooth, pulse, sine, sub, noise) is provided by `COMPOSITE_GENERATOR`, which embeds a SourceMixer internally and exposes per-waveform gain parameters (`saw_gain`, `sine_gain`, etc.) directly.
 
 ### Audio Splitter
 - **Type name**: `AUDIO_SPLITTER`
@@ -416,7 +437,6 @@ These modules operate entirely in the control domain.
   - `PORT_AUDIO` out `audio_out_1` … `audio_out_4`
 - **Parameters**: `gain_1` … `gain_4` (0.0–2.0, default 1.0 each)
 - **Usage**: Patch a VCO `audio_out` → `AUDIO_SPLITTER` `audio_in`, then connect `audio_out_1` → main chain (filter/VCA path) and `audio_out_2` → `RING_MOD` `audio_in_b` to use the same oscillator as both signal and FM modulator source. Also required for parallel-VCF topologies (two independent filters receiving the same oscillator).
-- **Status**: Planned.
 
 ### Ring Modulator
 - **Type name**: `RING_MOD`
@@ -431,9 +451,8 @@ These modules operate entirely in the control domain.
   - Implements 4-quadrant multiplication: `out[n] = A[n] * B[n]`. This suppresses the carrier (both input frequencies) and outputs only the **sum** (A+B) and **difference** (A−B) sidebands.
   - When input A is a pitched VCO (e.g. 440 Hz) and input B is a second VCO at an inharmonic interval (e.g. 554 Hz), the output contains 994 Hz and 114 Hz — neither matching the input pitches — producing the characteristic metallic, bell, or gong quality.
   - A single VCO into both inputs reduces to squaring: `sin²(ωt) = ½ − ½·cos(2ωt)`, yielding a DC offset plus a doubled-frequency component. For perceptual use both inputs must be distinct signals.
-  - **Bell patch**: VCO1 (sine, fundamental) → `audio_in_a`; VCO2 (sine, non-integer ratio e.g. 2.756×) → `audio_in_b`; RING_MOD output → percussive VCA envelope.
+  - **Bell patch**: VCO1 (sine, fundamental) → `audio_in_a`; VCO2 (sine, non-integer ratio e.g. 2.756×) → `audio_in_b`; RING_MOD output → percussive VCA envelope. See `patches/bell.json`.
   - **Choral/vocal formant patch**: one VCO + one VCO tuned to a voice-tract formant frequency → RING_MOD → VCA.
-- **Status**: Planned.
 
 ### Audio Input
 - **Type name**: `AUDIO_INPUT`
@@ -451,14 +470,14 @@ These modules operate entirely in the control domain.
 - **Generator-first rule**: `bake()` must verify that the first node in `signal_chain_` outputs `PORT_AUDIO`.
 - **VCA/Envelope separation**: `AdsrEnvelopeProcessor` produces `PORT_CONTROL` output only. A separate `VcaProcessor` node performs audio multiplication via its `gain_cv` input. They must not be merged.
 - **Lifecycle ports**: `gate_in` and `trigger_in` are injected by `VoiceContext`, not wired via `connections_`. `bake()` skips connection validation for these port names.
-- **Feedback connections**: Must be marked `"feedback": true`. The executor uses the previous block's output for these connections.
-- **Multiple inputs**: A node with multiple input ports (Ring Modulator, CV Mixer, SourceMixer) has all inputs gathered before `pull()` is called. The executor must resolve all inputs before executing any node. Multi-input execution in `Voice::pull_mono` is not yet implemented; it will land in the bell/ring-mod phase.
+- **Feedback connections**: Graph-level cross-node feedback (`"feedback": true` in connections) is parsed but **not executed** by the graph executor. Per-processor internal feedback (e.g. `ECHO_DELAY` internal delay line) is supported.
+- **Multiple inputs**: A node with multiple input ports (Ring Modulator, CV Mixer) has all inputs gathered before `pull()` is called. The executor resolves all inputs before executing any node via `inject_audio()` / `inject_cv()` in `Voice::pull_mono` (implemented Phase 18).
 - **Dynamic routing**: Modules are not hardcoded in `Voice`. `Voice` manages two lists — `signal_chain_` (PORT_AUDIO nodes) and `mod_sources_` (PORT_CONTROL generators) — with instance tags (e.g. `"VCO"`, `"ENV"`, `"LFO1"`) for parameter targeting and port connection. `add_processor()` routes each node automatically based on its output port type.
 - **Global vs per-voice**: Per-voice modules live in `signal_chain_` or `mod_sources_`. Global modules (chorus, reverb, master bus) live in a separate global FX chain applied after voice summing. Do not instantiate global modules per-voice.
 - **Sample rate**: All internal timing (ADSR curves, LFO rates, delay times) must derive from the runtime `sample_rate_` passed at construction. No hardcoded sample rate assumptions. Supported rates: 44100 Hz and 48000 Hz. If hardware reports a rate above 48000, the engine negotiates down to 48000.
 - **Filter chain placement**: All four filter types (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`) are first-class chain nodes. Add them via `engine_add_module("MOOG_FILTER", "VCF")` and wire audio with `engine_connect_ports`. `Voice` no longer contains an internal `filter_` member — the hardcoded fallback path has been removed. Minimum filter chain: `COMPOSITE_GENERATOR → MOOG_FILTER → ADSR_ENVELOPE → VCA`.
 - **Per-tag parameter addressing**: Parameters are addressed by tag in the patch JSON using a nested object per tag (see PATCH_SPEC.md §Parameters Object). At runtime, `set_named_parameter` must be extended to accept an optional tag scope so that two nodes of the same type (e.g. `"VCO1"` and `"VCO2"`) can be addressed independently. The patch loader maps `parameters["VCO2"]["detune"]` to `voice.find_by_tag("VCO2")->apply_parameter("detune", value)`. Full centralised ramping is Phase 21 (ParameterManager); tag-scoped direct addressing should land with multi-oscillator support.
-- **Parallel signal paths**: Not yet supported. The current `Voice` has a single `signal_chain_`. For now, multiple oscillators share a `SOURCE_MIXER` node before a common filter+VCA. Independent per-oscillator filter chains are a future architecture goal.
+- **Parallel signal paths**: Not yet supported. The current `Voice` has a single `signal_chain_`. Multi-waveform mixing is handled by `COMPOSITE_GENERATOR` internally. Independent per-oscillator filter chains are a future architecture goal.
 
 ---
 
@@ -469,16 +488,16 @@ The following capabilities are demonstrated in Roland's *Practical Synthesis* do
 | Technique | Source | Gap | Resolution |
 |-----------|--------|-----|------------|
 | Hard VCO sync | Clarinet, lead synth patches | `COMPOSITE_GENERATOR` has no `sync_in` port; sync topology between two VCO instances not specified | Add `sync_in` port to `COMPOSITE_GENERATOR`; implement phase-reset on rising edge. Scoped to the bell/ring-mod phase alongside multi-input executor |
-| Delayed vibrato | Violin, flute, bowed strings | CV_MIXER + second ADSR envelope required to gate the LFO signal; both `CV_MIXER` and per-tag parameter addressing are planned | `CV_MIXER` + Phase 21 ParameterManager |
-| Portamento / glide | Lead and bass patches | `MATHS` is documented as a slew limiter / portamento device but is **planned** only; no pitch-dip (inverted envelope on pitch CV) pattern specified | Implement `MATHS`; add inverted-output parameter; document pitch-dip patch |
-| Keyboard tracking of VCF cutoff | Nearly all tonal patches | `MOOG_FILTER` / `DIODE_FILTER` have a `kybd_cv` port but it is not wired by the current Voice architecture; the `Voice` does not pass keyboard pitch into filter CV | `Voice::pull_mono` must route note frequency as a bipolar CV to `kybd_cv` on each block |
-| Pink noise | Wind, surf, rain patches | `WHITE_NOISE` `color` parameter is declared but implementation is planned | Implement −3dB/octave shelving filter chain in `WHITE_NOISE` |
-| Gate delay (wolf-whistle) | Specialty pitch effects | `GATE_DELAY` module is now specified above; no implementation yet | Implement `GATE_DELAY` as a simple block-level countdown timer |
-| Ring modulator | Bell, metallic, choral patches | `RING_MOD` is now specified above with behavioral logic; no implementation yet | Implement as sample-by-sample `A[n] * B[n]` in `RingModProcessor`; multi-input execution in `Voice` graph not yet wired |
+| Delayed vibrato | Violin, flute, bowed strings | ~~RESOLVED~~ `CV_MIXER` (Phase 17) + second `ADSR_ENVELOPE` + `SmoothedParam` (Phase 21) parameter addressing all implemented | — |
+| Portamento / glide | Lead and bass patches | `MATHS` (Phase 17) implemented as slew limiter; glide via existing `oscillator_set_frequency_glide`; pitch-dip patch uses `INVERTER` (Phase 17) | — |
+| Keyboard tracking of VCF cutoff | Nearly all tonal patches | ~~RESOLVED~~ `Voice::pull_mono` caches nodes declaring `kybd_cv` port (`kybd_cv_nodes_` cache, Phase 17); routes note frequency as bipolar CV each block | — |
+| Pink noise | Wind, surf, rain patches | ~~RESOLVED~~ `WHITE_NOISE` `color=1` implemented via Paul Kellett 7-pole IIR in Phase 18 | — |
+| Gate delay (wolf-whistle) | Specialty pitch effects | ~~RESOLVED~~ `GATE_DELAY` implemented Phase 17 | — |
+| Ring modulator | Bell, metallic, choral patches | ~~RESOLVED~~ `RING_MOD` implemented Phase 18; multi-input execution via `inject_audio()` in `Voice::pull_mono` | — |
 | Filter as chain node | Pizzicato strings, two-VCF percussion, VCF self-oscillation, separate filter type per patch | ~~RESOLVED~~ All four filter types (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`) are now first-class chain nodes; `cutoff_cv` CV is routed via `apply_parameter` in `pull_mono`; `Voice::filter_` removed | — |
-| Audio-rate filter FM | Tom Tom, Cow Bell, Bongo Drums patches | VCO `audio_out` → VCF cutoff modulation requires connecting a `PORT_AUDIO` output to a `PORT_CONTROL`-style cutoff input; current architecture rejects PORT_AUDIO→PORT_CONTROL connections at bake time | Add a dedicated `fm_in` PORT_AUDIO input to `MOOG_FILTER` and `DIODE_FILTER`; `fm_in` is summed into the cutoff frequency at audio rate with a configurable depth; already declared above |
-| LFO as envelope gate source | Percussion Trill (Vol 2, Fig 3-13) | LFO square wave → ADSR `gate_in` is blocked because `gate_in` is a lifecycle port reserved for `VoiceContext` | Add `ext_gate_in` non-lifecycle PORT_CONTROL input to `ADSR_ENVELOPE`; OR'd with lifecycle `gate_in`; already declared above |
-| Two VCAs in series | Percussion amplitude shaping (linear dynamics + exponential decay) | No known architecture gap — the chain model already supports sequential audio processors; a patch may include two `VCA` nodes in `chain` with different `response_curve` values; executor must process them in order | Verify executor handles multiple VCA nodes in `signal_chain_` correctly; no new module needed |
-| Band Reject Filter topology | Notch/comb effects (Roland §5-7, Fig 5-7c) | Requires a LPF and HPF in **parallel** with outputs summed; the current `Voice` has a single serial `signal_chain_` — parallel branches are not yet supported | Extend `Voice` architecture to support forked/parallel signal paths; `BAND_REJECT_FILTER` module specified above; implementation deferred until parallel signal path support lands |
-| VCO audio-rate pitch FM | §2-2, Fig 2-5 (two-VCO FM patch) | VCO-2 `audio_out` (PORT_AUDIO) → VCO-1 pitch modulation requires connecting PORT_AUDIO to a pitch input; `pitch_cv` is PORT_CONTROL only — cross-type connection rejected at bake time | Add `fm_in` PORT_AUDIO port to `COMPOSITE_GENERATOR` with `fm_depth` parameter; `fm_in` is scaled and summed into the pitch CV path at audio rate; already declared above |
-| Ring mod LFO modulation | Vol 1 §2-5, Fig 2-19 (Violin Bowed Tremolo) | LFO `control_out` (PORT_CONTROL) → `RING_MOD` `audio_in_b` (PORT_AUDIO) is a port-type violation; bake rejects it; no control-rate input exists on `RING_MOD` | Add `mod_in` PORT_CONTROL input to `RING_MOD`; when connected, the control signal multiplies `audio_in_a` directly — at LFO rates this is AM tremolo, at audio rates it is ring modulation; already declared above |
+| Audio-rate filter FM | Tom Tom, Cow Bell, Bongo Drums patches | ~~RESOLVED~~ `fm_in` PORT_AUDIO input added to `MOOG_FILTER` and `DIODE_FILTER` (Phase 18); summed into cutoff at audio rate with `fm_depth` | — |
+| LFO as envelope gate source | Percussion Trill (Vol 2, Fig 3-13) | ~~RESOLVED~~ `ext_gate_in` non-lifecycle `PORT_CONTROL` input added to `ADSR_ENVELOPE` (Phase 17); OR'd with lifecycle `gate_in` | — |
+| Two VCAs in series | Percussion amplitude shaping (linear dynamics + exponential decay) | No architecture gap — chain model supports sequential `VCA` nodes with different `response_curve` values | No new module needed |
+| Band Reject Filter topology | Notch/comb effects (Roland §5-7, Fig 5-7c) | Requires LPF and HPF in **parallel** with outputs summed; current `Voice` has a single serial `signal_chain_` — parallel branches not yet supported | Extend `Voice` architecture to support forked/parallel signal paths; `BAND_REJECT_FILTER` specified above; deferred |
+| VCO audio-rate pitch FM | §2-2, Fig 2-5 (two-VCO FM patch) | ~~RESOLVED~~ `fm_in` PORT_AUDIO port + `fm_depth` added to `COMPOSITE_GENERATOR` (Phase 18) | — |
+| Ring mod LFO modulation | Vol 1 §2-5, Fig 2-19 (Violin Bowed Tremolo) | ~~RESOLVED~~ `mod_in` PORT_CONTROL input added to `RING_MOD` (Phase 18); control signal multiplies `audio_in_a` directly | — |

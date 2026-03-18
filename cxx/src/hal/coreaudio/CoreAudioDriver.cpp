@@ -377,4 +377,12 @@ std::vector<HostDeviceInfo> AudioDriver::enumerate_devices() {
     return devices;
 }
 
+// ---------------------------------------------------------------------------
+// AudioDriver::create — CoreAudio factory
+// ---------------------------------------------------------------------------
+
+std::unique_ptr<AudioDriver> AudioDriver::create(int sample_rate, int block_size) {
+    return std::make_unique<CoreAudioDriver>(sample_rate, block_size);
+}
+
 } // namespace hal

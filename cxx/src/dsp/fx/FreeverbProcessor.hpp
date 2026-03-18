@@ -105,7 +105,7 @@ private:
     static constexpr float kAllPassGain   = 0.5f;
     static constexpr int   kStereoSpread  = 23;
 
-    // Standard Freeverb delay lengths at 44100 Hz
+    // Jezar's reference delay lengths (samples at 44100 Hz); scaled to actual sample rate in init_filters().
     static constexpr int kCombBase[N_COMB] = {1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617};
     static constexpr int kApBase[N_AP]     = {556, 441, 341, 225};
 

@@ -61,10 +61,18 @@ is no longer supported and must not be used in new patches.
 | `type` | Registered module type name (see MODULE_DESC.md) |
 | `tag` | Unique instance tag for this group — used to target ports and parameters |
 
-Module type names: `COMPOSITE_GENERATOR`, `ADSR_ENVELOPE`, `VCA`, `MOOG_FILTER`,
-`DIODE_FILTER`, `LFO`, `DRAWBAR_ORGAN`, `WHITE_NOISE`, `INVERTER`, `RING_MOD`,
-`SOURCE_MIXER`, `SAMPLE_HOLD`, `CV_MIXER`, `CV_SPLITTER`, `AUDIO_SPLITTER`,
-`GATE_DELAY`, `PHASE_SHIFTER`, `ECHO_DELAY`, `REVERB`, `NOISE_GATE`. See MODULE_DESC.md for the full registry.
+Module type names (complete registry as of Phase 22A):
+
+`COMPOSITE_GENERATOR`, `ADSR_ENVELOPE`, `AD_ENVELOPE`, `VCA`, `MOOG_FILTER`,
+`DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`, `HIGH_PASS_FILTER`, `BAND_PASS_FILTER`,
+`LFO`, `DRAWBAR_ORGAN`, `WHITE_NOISE`, `INVERTER`, `RING_MOD`, `SOURCE_MIXER`,
+`SAMPLE_HOLD`, `CV_MIXER`, `CV_SPLITTER`, `AUDIO_SPLITTER`, `GATE_DELAY`,
+`NOISE_GATE`, `ENVELOPE_FOLLOWER`, `ECHO_DELAY`, `JUNO_CHORUS`
+
+**Global post-chain only** (not valid in `chain` array — use `engine_post_chain_push` instead):
+`REVERB_FREEVERB`, `REVERB_FDN`, `PHASER`
+
+See MODULE_DESC.md for port names, parameter ranges, and connection rules.
 
 ---
 
@@ -356,11 +364,11 @@ Short-decay percussive noise hit. White noise through the implicit filter with a
 
 ---
 
-## Patches Requiring Planned Modules
+## Advanced Patches
 
-The topologies below require modules that are not yet implemented. They are documented here so the patch format and wiring intent are established ahead of implementation.
+The patches in this section use modules implemented in Phases 17–19. All are fully buildable. See `cxx/patches/` for the authoritative JSON files. Patches still requiring future work are noted individually.
 
-### Bell / Metallic (requires `RING_MOD`)
+### Bell / Metallic
 
 Two VCOs at an inharmonic interval (ratio ≈ 2.756) fed into a ring modulator produce bell partials. A fast-decay percussive envelope shapes the amplitude.
 
@@ -396,7 +404,7 @@ Two VCOs at an inharmonic interval (ratio ≈ 2.756) fed into a ring modulator p
 
 > `VCO2` `transpose: 19` semitones + `detune: 63` cents ≈ +1663 cents total, giving the ≈ 2.756× inharmonic ratio for bell partials. Both `transpose` and `detune` are now declared parameters on `COMPOSITE_GENERATOR`.
 
-### Wind / Surf (requires `SAMPLE_HOLD`)
+### Wind / Surf
 
 Pink noise (or white noise) sampled by a slow LFO clock to produce slowly drifting pitch-like color variation through the filter.
 
@@ -431,9 +439,9 @@ Pink noise (or white noise) sampled by a slow LFO clock to produce slowly drifti
 }
 ```
 
-> The S&H `cv_in` above receives audio from VCO (noise channel). Port type enforcement note: `audio_out` is `PORT_AUDIO` and `cv_in` is `PORT_CONTROL` — this wiring will require either a dedicated noise CV output on `COMPOSITE_GENERATOR` or a dedicated `WHITE_NOISE` node with a `PORT_CONTROL` output variant.
+> The S&H `cv_in` receives audio from VCO (noise channel). The `WHITE_NOISE` standalone module outputs `PORT_AUDIO`; `SAMPLE_HOLD` `cv_in` is `PORT_CONTROL`. In practice, use a standalone `WHITE_NOISE` node as chain head and wire its `audio_out` directly into `SAMPLE_HOLD` `cv_in` — since both are at audio rate, the port-type mismatch is acceptable as a documented patch authoring exception. Alternatively, route `COMPOSITE_GENERATOR` `noise_gain` at 1.0 and use VCO → SH directly.
 
-### Harpsichord (requires `INVERTER`)
+### Harpsichord
 
 Plucked-string character: fast pulse-wave VCO, percussive ADSR with zero sustain. The inverted ADSR simultaneously sweeps the filter cutoff in the opposite direction to the amplitude — the filter brightens as the note decays, producing the characteristic harpsichord twang. Requires the `INVERTER` module and filter `cutoff_cv` connections (filter-as-chain-node refactor).
 
@@ -468,7 +476,7 @@ Plucked-string character: fast pulse-wave VCO, percussive ADSR with zero sustain
 
 > `INV` `scale: -0.6` attenuates the inverted sweep so the filter doesn't close completely at peak amplitude. The base `VCF` `cutoff` is the resting (post-decay) brightness; during the attack the inverted ADSR pulls cutoff down by up to 60% of envelope depth.
 
-### Pizzicato Violin (requires filter-as-chain-node refactor)
+### Pizzicato Violin
 
 Plucked string character. A single ADSR drives VCA amplitude (fast attack, medium decay, zero sustain) while a second ADSR with a shorter decay drives VCF cutoff — the filter sweeps down as the amplitude decays, producing the characteristic pizzicato bite-then-mellow. Requires `MOOG_FILTER` as a chain node with a wirable `cutoff_cv` input.
 
@@ -501,7 +509,7 @@ Plucked string character. A single ADSR drives VCA amplitude (fast attack, mediu
 }
 ```
 
-### Group Strings (requires SOURCE_MIXER chain wiring)
+### Group Strings (requires standalone `SOURCE_MIXER` executor — pending)
 
 Two detuned VCOs summed before a shared filter simulate an ensemble string section. VCO1 is the main voice; VCO2 is tuned slightly flat to produce the characteristic chorus/ensemble beating. Requires `SOURCE_MIXER` as a wired chain executor node rather than just embedded inside `COMPOSITE_GENERATOR`.
 
@@ -542,7 +550,7 @@ Two detuned VCOs summed before a shared filter simulate an ensemble string secti
 
 > `LFO1` `delay: 2.0` uses the new LFO `delay` parameter — vibrato ramps in 2 seconds after note onset. `VCO2` `detune: -12.0` cents (≈ half a semitone flat) produces ensemble beating against VCO1.
 
-### Banjo (requires `ext_gate_in` on ADSR)
+### Banjo
 
 Plucked, self-retriggering twang. A fast-decay pulse-wave VCO with zero sustain is re-triggered at a fixed rate by an LFO square wave feeding `ext_gate_in`, producing a continuous picked-string roll while the key is held. Similar topology to Percussion Trill but at a lower rate with a brighter, more pitched character. (Roland Vol 1 §3-4, Fig 3-4.)
 
@@ -576,7 +584,7 @@ Plucked, self-retriggering twang. A fast-decay pulse-wave VCO with zero sustain 
 
 > `PICK` `waveform: 2` is Square. At `rate: 6.5` Hz this produces approximately 6–7 picks per second. Adjust `PICK` `rate` and `ENV` `decay` together to control the speed and overlap of the picking pattern.
 
-### Whistling / Pitch Glide (requires `INVERTER`)
+### Whistling / Pitch Glide
 
 A pitch that bends up from the base frequency on attack (human-whistle character) with added LFO vibrato. A second `ADSR_ENVELOPE` drives `pitch_cv` through an `INVERTER` to produce an upward bend on attack (inverted decay sweep). The primary `ADSR_ENVELOPE` shapes amplitude with a slow attack. A slow LFO adds vibrato once the note is established. (Roland Vol 1 §3-5/3-6, Figs 3-5–3-6.)
 
@@ -616,7 +624,7 @@ A pitch that bends up from the base frequency on attack (human-whistle character
 
 > `ENV_PITCH` decays rapidly to zero, producing a downward pitch movement that `INV` `scale: -0.4` flips to an upward bend of 0.4 octave. `LFO1` `delay: 1.5` allows the bend to settle before vibrato begins. Both `LFO1` and `INV` feed `VCO` `pitch_cv` simultaneously — the pitch CV inputs are summed at the port. Requires `INVERTER` (planned).
 
-### Percussion Trill (requires `ext_gate_in` on ADSR)
+### Percussion Trill
 
 LFO square wave re-triggers the envelope continuously while a key is held, producing a rapid trill effect. The `ext_gate_in` port on `ADSR_ENVELOPE` is OR'd with the lifecycle `gate_in` so both sources can trigger it.
 
@@ -650,7 +658,7 @@ LFO square wave re-triggers the envelope continuously while a key is held, produ
 
 > `TRILL` `waveform: 2` is the Square waveform. At `rate: 8.0` this produces 8 retriggered hits per second.
 
-### Cymbal (requires `ECHO_DELAY` with modulation, filter-as-chain-node)
+### Cymbal
 
 Metallic cymbal character: high-pass filtered white noise into a modulated short delay for shimmer, shaped by a percussive ADSR. The `ECHO_DELAY` `mod_rate` and `mod_intensity` parameters wobble the delay time, producing the characteristic inharmonic shimmer of a struck cymbal. Requires `ECHO_DELAY` (planned) and `MOOG_FILTER` or `DIODE_FILTER` as a chain node. (Roland Vol 2 §3-5, Fig 3-16.)
 
@@ -686,7 +694,7 @@ Metallic cymbal character: high-pass filtered white noise into a modulated short
 }
 ```
 
-> The `feedback: true` connection re-enters the delay's own input. `DLY` `mod_rate: 6.5` Hz with `mod_intensity: 0.4` oscillates the 25 ms delay time by ±10 ms, producing the metallic shimmer. `VCF` `hpf_cutoff: 2` selects the ≈150 Hz high-pass stage to remove low-frequency mud. The `VCF` here requires filter-as-chain-node refactor to accept wired `audio_in`.
+> The `feedback: true` connection re-enters the delay's own input. `DLY` `mod_rate: 6.5` Hz with `mod_intensity: 0.4` oscillates the 25 ms delay time by ±10 ms, producing the metallic shimmer. `VCF` `hpf_cutoff: 2` selects the ≈150 Hz high-pass stage to remove low-frequency mud. See `patches/cymbal.json`.
 
 ---
 
@@ -707,7 +715,4 @@ The v1 format used integer-enum `modulations` to wire sources to targets:
 { "version": 1, "parameters": { ... }, "modulations": [{ "source": 4, "target": 1, "intensity": 0.1 }] }
 ```
 
-This format is **not supported** in Phase 15 and later, and patch files must use v2. The
-integer enums (`MOD_SRC_LFO`, `MOD_TGT_PULSEWIDTH`, etc.) and `engine_connect_mod` are
-deprecated in Phase 15A and will be removed in Phase 16. Runtime LFO routing now uses
-the `engine_set_lfo_*` API (see BRIDGE_GUIDE.md §7).
+This format is **not supported** in Phase 15 and later. The integer enums (`MOD_SRC_LFO`, `MOD_TGT_PULSEWIDTH`, etc.), `engine_connect_mod`, and `engine_set_lfo_*` are all removed (Phase 15–16). LFO is a first-class chain module; see BRIDGE_GUIDE.md §7.

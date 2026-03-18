@@ -16,6 +16,7 @@
 #include "ModuleRegistry.hpp"
 #include "../dsp/routing/CompositeGenerator.hpp"
 #include "../dsp/envelope/AdsrEnvelopeProcessor.hpp"
+#include "../dsp/envelope/ADEnvelopeProcessor.hpp"
 #include "../dsp/VcaProcessor.hpp"
 #include "../dsp/filter/MoogLadderProcessor.hpp"
 #include "../dsp/filter/DiodeLadderProcessor.hpp"
@@ -25,7 +26,6 @@
 #include "../dsp/filter/BandPassFilterProcessor.hpp"
 #include "../dsp/oscillator/LfoProcessor.hpp"
 #include "../dsp/oscillator/WhiteNoiseProcessor.hpp"
-#include "../dsp/fx/JunoChorus.hpp"
 #include "../dsp/fx/EchoDelayProcessor.hpp"
 #include "../dsp/routing/DrawbarOrganProcessor.hpp"
 #include "../dsp/routing/InverterProcessor.hpp"
@@ -56,6 +56,11 @@ void register_builtin_processors() {
         "ADSR_ENVELOPE",
         "4-stage ADSR envelope generator (exponential IIR curves)",
         [](int sr) { return std::make_unique<AdsrEnvelopeProcessor>(sr); }
+    );
+    reg.register_module(
+        "AD_ENVELOPE",
+        "Attack-Decay envelope for percussive sounds — ignores gate_off, completes Decay regardless",
+        [](int sr) { return std::make_unique<ADEnvelopeProcessor>(sr); }
     );
     reg.register_module(
         "VCA",
@@ -91,11 +96,6 @@ void register_builtin_processors() {
         "WHITE_NOISE",
         "LCG-based white noise generator (PORT_AUDIO, range [-1, 1])",
         [](int /*sr*/) { return std::make_unique<WhiteNoiseProcessor>(); }
-    );
-    reg.register_module(
-        "JUNO_CHORUS",
-        "Dual-rate BBD chorus emulating the Juno-60 stereo width effect",
-        [](int sr) { return std::make_unique<JunoChorus>(sr); }
     );
     reg.register_module(
         "DRAWBAR_ORGAN",

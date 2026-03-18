@@ -44,7 +44,7 @@ engine_set_note_pan(engine, 60, 0.5f);
 engine_note_off(engine, 60);
 ```
 
-> **Note**: `engine_note_on_group` (voice group splits/layers) and `engine_all_notes_off` / `engine_is_idle` are planned for Phase 17. Use `engine_stop` + `engine_start` to silence all voices between patch loads.
+> **Note**: `engine_note_on_group`, `engine_all_notes_off`, and `engine_is_idle` are not yet implemented. Use `engine_stop` + `engine_start` to silence all voices between patch loads.
 
 ---
 
@@ -100,34 +100,12 @@ The engine publishes all available module types at runtime. Hosts can query the 
 // How many module types are registered?
 int count = engine_get_module_count(engine);
 
-// Get the type name and description for module at index i
-char type_name[64], description[256];
+// Get the type name of module at index i
+char type_name[64];
 engine_get_module_type(engine, i, type_name, sizeof(type_name));
-engine_get_module_description(engine, type_name, description, sizeof(description));
-
-// How many ports does this module type have?
-int port_count = engine_get_module_port_count(engine, type_name);
-
-// Get port info: name, type ("AUDIO"/"CONTROL"), direction ("IN"/"OUT"), unipolar flag
-char port_name[64], port_type[16], port_dir[8];
-int unipolar;
-engine_get_module_port(engine, type_name, port_index,
-                       port_name, sizeof(port_name),
-                       port_type, sizeof(port_type),
-                       port_dir, sizeof(port_dir),
-                       &unipolar);
-
-// How many parameters does this module type have?
-int param_count = engine_get_module_parameter_count(engine, type_name);
-
-// Get parameter info: name, label, min, max, default, logarithmic flag
-char param_name[64], param_label[128];
-float pmin, pmax, pdef; int logarithmic;
-engine_get_module_parameter(engine, type_name, param_index,
-                            param_name, sizeof(param_name),
-                            param_label, sizeof(param_label),
-                            &pmin, &pmax, &pdef, &logarithmic);
 ```
+
+> **Note**: The `engine_get_module_description`, `engine_get_module_port_count`, `engine_get_module_port`, `engine_get_module_parameter_count`, and `engine_get_module_parameter` query functions are **not yet implemented** and are not declared in `CInterface.h`. Only `engine_get_module_count` and `engine_get_module_type` are available. Full registry query is deferred to a future phase. See MODULE_DESC.md for the authoritative per-module port and parameter specifications.
 
 ---
 
@@ -216,38 +194,117 @@ If the patch topology for a group matches the current chain (same module types a
 
 ---
 
-## 7. Runtime Modulation (Phase 15A LFO API)
+## 7. Runtime Modulation — Phase 16 Chain-Based LFO
 
-LFO modulation routes are configured via the `engine_set_lfo_*` family of functions (Phase 15A). These drive the per-voice internal LFO and ModulationMatrix directly.
+> **`engine_set_lfo_*` and `engine_clear_modulations` were REMOVED in Phase 16.** They are not in `CInterface.h`. See §9 Removed/Deprecated API.
+
+All modulation is now expressed as named port connections in the voice graph. Add an LFO as a chain module and wire its output to any `PORT_CONTROL` input:
 
 ```c
-// Configure LFO: 5 Hz sine wave with vibrato (±0.05 octave ≈ ±3 semitones)
-engine_set_lfo_rate(engine, 5.0f);
-engine_set_lfo_waveform(engine, LFO_WAVEFORM_SINE);
-engine_set_lfo_depth(engine, LFO_TARGET_PITCH, 0.05f);
-engine_set_lfo_intensity(engine, 1.0f);
+// LFO vibrato: LFO → VCO pitch_cv
+engine_add_module(engine, "LFO", "LFO1");
+engine_add_module(engine, "COMPOSITE_GENERATOR", "VCO");
+engine_add_module(engine, "ADSR_ENVELOPE", "ENV");
+engine_add_module(engine, "VCA", "VCA");
 
-// LFO → filter cutoff
-engine_set_lfo_depth(engine, LFO_TARGET_CUTOFF, 0.3f);
+engine_connect_ports(engine, "LFO1", "control_out", "VCO", "pitch_cv");
+engine_connect_ports(engine, "ENV",  "envelope_out", "VCA", "gain_cv");
+engine_bake(engine);
 
-// LFO → pulse width
-engine_set_lfo_depth(engine, LFO_TARGET_PULSEWIDTH, 0.2f);
-
-// Clear all LFO routes (restores default Envelope→Amplitude connection)
-engine_clear_modulations(engine);
+// Set LFO parameters via set_param or patch JSON
+set_param(engine, "lfo_rate",      5.0f);  // Hz
+set_param(engine, "lfo_intensity", 0.003f); // octaves
 ```
 
-**Waveform constants** (`LFO_WAVEFORM_*`): `SINE=0`, `TRIANGLE=1`, `SQUARE=2`, `SAW=3`.
-
-**Target constants** (`LFO_TARGET_*`): `PITCH=0`, `CUTOFF=1`, `RESONANCE=2`, `AMPLITUDE=3`, `PULSEWIDTH=4`.
-
-`engine_set_lfo_depth` may be called multiple times with different targets to route the LFO to several destinations simultaneously. `engine_clear_modulations` resets all routes and LFO intensity to zero, then re-instates the mandatory `Envelope→Amplitude` connection.
-
-> **Phase 16 (complete)**: The integer-ID external modulation matrix (`engine_connect_mod`, `MOD_SRC_*`, `MOD_TGT_*`) was deprecated in Phase 15A and removed in Phase 16. All modulation routes are now first-class named port connections in the patch graph via `engine_connect_ports`.
+LFO can simultaneously route to multiple destinations by declaring multiple `engine_connect_ports` calls from the same LFO output to different inputs.
 
 ---
 
-## 8. Implementation Rules
+## 8. Global Post-Processing Chain (Phase 19)
+
+Effects applied after all voices are summed, before the HAL write. Supports `REVERB_FREEVERB`, `REVERB_FDN`, and `PHASER`.
+
+```c
+// Append an effect — returns 0-based index, or -1 on unknown type
+int idx = engine_post_chain_push(engine, "REVERB_FDN");
+
+// Configure it
+engine_post_chain_set_param(engine, idx, "decay",   2.5f);
+engine_post_chain_set_param(engine, idx, "wet",     0.4f);
+engine_post_chain_set_param(engine, idx, "damping", 0.3f);
+
+// Remove all effects
+engine_post_chain_clear(engine);
+```
+
+Effects run in push order. Multiple effects are chained in sequence. Parameters are addressed by `fx_index` (0-based, in push order) and parameter name (see MODULE_DESC.md for each type's parameters).
+
+---
+
+## 9. Host Device Enumeration (Phase 20)
+
+All device information comes from the HAL layer. No platform-specific calls are required from the host application.
+
+```c
+// How many output-capable devices are on this host?
+int n = host_get_device_count();
+
+// Name, default rate, and default block size for device i
+char name[256];
+host_get_device_name(i, name, sizeof(name));
+int sr   = host_get_device_sample_rate(i);
+int bs   = host_get_device_block_size(i);
+
+// Supported rates and block sizes for device i
+int rates[16], sizes[16];
+int rate_count = host_get_supported_sample_rates(i, rates, 16);
+int size_count = host_get_supported_block_sizes(i, sizes, 16);
+
+// Queries on an open engine handle
+int driver_sr = engine_get_driver_sample_rate(engine);
+int driver_bs = engine_get_driver_block_size(engine);
+char driver_name[256];
+engine_get_driver_name(engine, driver_name, sizeof(driver_name));
+```
+
+---
+
+## 10. SMF File Playback (Phase 22A)
+
+Sample-accurate Standard MIDI File playback. All tracks merged; MIDI channel ignored (channel-blind). All voices use the single loaded patch.
+
+```c
+// 1. Load a patch for the timbre
+engine_load_patch(engine, "patches/organ_drawbar.json");
+
+// 2. Load and parse the MIDI file
+int rc = engine_load_midi(engine, "midi/bwv578.mid");
+// rc == 0 on success, -1 on parse error
+
+// 3. Start the engine and begin playback
+engine_start(engine);
+engine_midi_play(engine);
+
+// 4. Control playback
+engine_midi_stop(engine);    // pause — playhead stays
+engine_midi_rewind(engine);  // stop + seek to start
+
+// 5. Query playhead
+uint64_t tick;
+engine_midi_get_position(engine, &tick);
+```
+
+Playback is sample-accurate: `MidiFilePlayer::advance(frames, sr, vm)` is called once per audio block from both the HAL callback and `engine_process`. No `sleep()` or wall-clock timing.
+
+> **Phase 22B (planned)**: Multi-timbral routing — MIDI channel maps to a VoiceGroup with its own patch. Program Change events trigger live patch swaps.
+
+---
+
+## 11. Implementation Rules
+
+---
+
+## 12. Implementation Rules
 
 * **C API only for functional tests**: Functional tests use only `CInterface.h`. No C++ headers or internal types. If a behaviour cannot be exercised through the C API it is not a supported feature.
 * **RT-Safety**: Bridge lookups are read-only after engine creation. No mutex locks on the audio thread.
@@ -258,14 +315,19 @@ engine_clear_modulations(engine);
 
 ---
 
-## 9. Removed / Deprecated API
+## 13. Removed / Deprecated API
 
 | Function | Status | Replacement |
 |----------|--------|-------------|
 | `engine_set_modulation(source_int, target_int, intensity)` | **Removed** (Phase 15) | `engine_connect_ports(from_tag, from_port, to_tag, to_port)` |
 | `VoiceFactory::createSH101()` (C++ internal) | **Removed** (Phase 15) | `engine_load_patch` or `engine_add_module` / `engine_connect_ports` / `engine_bake` |
 | `engine_save_patch(handle, path)` | **Removed** (Phase 15) | No replacement — patch serialisation is not implemented. Patches are authored by hand and loaded via `engine_load_patch`. |
-| `engine_connect_mod(handle, src, voices, tgt, intensity)` | **Removed** (Phase 16) | `engine_set_lfo_depth(handle, LFO_TARGET_*, depth)` |
+| `engine_connect_mod(handle, src, voices, tgt, intensity)` | **Removed** (Phase 16) | `engine_connect_ports` — named port connections |
 | `engine_create_processor(handle, type)` | **Removed** (Phase 16) | `engine_add_module(handle, type, tag)` |
-| `engine_get_modulation_report(handle, buf, size)` | **Removed** (Phase 16) | No replacement; use `engine_set_lfo_*` and structured patch files. |
-| `MOD_SRC_*` / `MOD_TGT_*` / `ALL_VOICES` constants | **Removed** (Phase 16) | `LFO_TARGET_*` constants |
+| `engine_get_modulation_report(handle, buf, size)` | **Removed** (Phase 16) | No replacement; use named port connections and patch files. |
+| `MOD_SRC_*` / `MOD_TGT_*` / `ALL_VOICES` constants | **Removed** (Phase 16) | Named port strings |
+| `engine_set_lfo_rate(handle, hz)` | **Removed** (Phase 16) | `set_param(handle, "lfo_rate", hz)` after adding LFO as chain module |
+| `engine_set_lfo_waveform(handle, waveform)` | **Removed** (Phase 16) | `set_param(handle, "lfo_waveform", v)` |
+| `engine_set_lfo_depth(handle, target, depth)` | **Removed** (Phase 16) | `engine_connect_ports(handle, "LFO", "control_out", tag, port)` |
+| `engine_set_lfo_intensity(handle, v)` | **Removed** (Phase 16) | `set_param(handle, "lfo_intensity", v)` |
+| `engine_clear_modulations(handle)` | **Removed** (Phase 16) | No replacement; rebuild chain via `engine_add_module` / `engine_bake` |

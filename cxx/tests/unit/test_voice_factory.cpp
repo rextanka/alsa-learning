@@ -21,7 +21,7 @@ using namespace audio;
 static constexpr int kSR = 48000;
 static constexpr size_t kBlock = 512;
 
-class VoiceFactoryTest : public ::testing::Test {
+class VoiceChainTest : public ::testing::Test {
 protected:
     std::unique_ptr<Voice> voice;
 
@@ -43,13 +43,13 @@ protected:
     }
 };
 
-TEST_F(VoiceFactoryTest, VoiceIsBakedAfterCreation) {
+TEST_F(VoiceChainTest, VoiceIsBakedAfterCreation) {
     EXPECT_NE(voice->find_by_tag("VCO"), nullptr);
     EXPECT_NE(voice->find_by_tag("ENV"), nullptr);
     EXPECT_NE(voice->find_by_tag("VCA"), nullptr);
 }
 
-TEST_F(VoiceFactoryTest, ChainNodesHaveCorrectTags) {
+TEST_F(VoiceChainTest, ChainNodesHaveCorrectTags) {
     auto* vco = voice->find_by_tag("VCO");
     ASSERT_NE(vco, nullptr);
     EXPECT_EQ(vco->tag(), "VCO");
@@ -60,16 +60,16 @@ TEST_F(VoiceFactoryTest, ChainNodesHaveCorrectTags) {
     EXPECT_EQ(env->output_port_type(), PortType::PORT_CONTROL);
 }
 
-TEST_F(VoiceFactoryTest, VoiceInactiveBeforeNoteOn) {
+TEST_F(VoiceChainTest, VoiceInactiveBeforeNoteOn) {
     EXPECT_FALSE(voice->is_active());
 }
 
-TEST_F(VoiceFactoryTest, VoiceActiveAfterNoteOn) {
+TEST_F(VoiceChainTest, VoiceActiveAfterNoteOn) {
     voice->note_on(440.0);
     EXPECT_TRUE(voice->is_active());
 }
 
-TEST_F(VoiceFactoryTest, ProducesNonZeroAudioAfterNoteOn) {
+TEST_F(VoiceChainTest, ProducesNonZeroAudioAfterNoteOn) {
     voice->note_on(440.0);
 
     std::vector<float> buf(kBlock, 0.0f);
@@ -80,7 +80,7 @@ TEST_F(VoiceFactoryTest, ProducesNonZeroAudioAfterNoteOn) {
     EXPECT_GT(peak, 0.0f);
 }
 
-TEST_F(VoiceFactoryTest, ReleasingAfterNoteOff) {
+TEST_F(VoiceChainTest, ReleasingAfterNoteOff) {
     voice->note_on(440.0);
     std::vector<float> buf(kBlock, 0.0f);
     voice->pull_mono(std::span<float>(buf));
@@ -89,14 +89,14 @@ TEST_F(VoiceFactoryTest, ReleasingAfterNoteOff) {
     EXPECT_TRUE(voice->is_releasing());
 }
 
-TEST_F(VoiceFactoryTest, BakeFailsOnEmptyChain) {
+TEST_F(VoiceChainTest, BakeFailsOnEmptyChain) {
     Voice bare(kSR);
     EXPECT_THROW(bare.bake(), std::logic_error);
 }
 
 // PORT_CONTROL nodes (ENV, LFO, …) are auto-routed to mod_sources_ by add_processor.
 // A voice with VCO + ENV (no VCA) has signal_chain_=[VCO], mod_sources_=[ENV] — bake() succeeds.
-TEST_F(VoiceFactoryTest, PortControlNodesRoutedToModSources) {
+TEST_F(VoiceChainTest, PortControlNodesRoutedToModSources) {
     Voice v(kSR);
     v.add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
     v.add_processor(std::make_unique<AdsrEnvelopeProcessor>(kSR), "ENV");
@@ -109,7 +109,7 @@ TEST_F(VoiceFactoryTest, PortControlNodesRoutedToModSources) {
 
 // --- Phase 15: PortConnection / bake() validation ---
 
-TEST_F(VoiceFactoryTest, ConnectAndBakeSucceedsWithValidPorts) {
+TEST_F(VoiceChainTest, ConnectAndBakeSucceedsWithValidPorts) {
     Voice v(kSR);
     v.add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
     v.add_processor(std::make_unique<AdsrEnvelopeProcessor>(kSR), "ENV");
@@ -121,7 +121,7 @@ TEST_F(VoiceFactoryTest, ConnectAndBakeSucceedsWithValidPorts) {
     EXPECT_EQ(v.connections()[0].to_tag,   "VCA");
 }
 
-TEST_F(VoiceFactoryTest, BakeRejectsLifecyclePortInConnection) {
+TEST_F(VoiceChainTest, BakeRejectsLifecyclePortInConnection) {
     Voice v(kSR);
     v.add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
     v.add_processor(std::make_unique<AdsrEnvelopeProcessor>(kSR), "ENV");
@@ -130,7 +130,7 @@ TEST_F(VoiceFactoryTest, BakeRejectsLifecyclePortInConnection) {
     EXPECT_THROW(v.bake(), std::logic_error);
 }
 
-TEST_F(VoiceFactoryTest, BakeRejectsUnknownTag) {
+TEST_F(VoiceChainTest, BakeRejectsUnknownTag) {
     Voice v(kSR);
     v.add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
     v.add_processor(std::make_unique<VcaProcessor>(), "VCA");
@@ -138,7 +138,7 @@ TEST_F(VoiceFactoryTest, BakeRejectsUnknownTag) {
     EXPECT_THROW(v.bake(), std::logic_error);
 }
 
-TEST_F(VoiceFactoryTest, BakeRejectsUnknownPortName) {
+TEST_F(VoiceChainTest, BakeRejectsUnknownPortName) {
     Voice v(kSR);
     v.add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
     v.add_processor(std::make_unique<VcaProcessor>(), "VCA");
@@ -146,7 +146,7 @@ TEST_F(VoiceFactoryTest, BakeRejectsUnknownPortName) {
     EXPECT_THROW(v.bake(), std::logic_error);
 }
 
-TEST_F(VoiceFactoryTest, BakeRejectsTypeMismatch) {
+TEST_F(VoiceChainTest, BakeRejectsTypeMismatch) {
     // Connecting a PORT_AUDIO output to a PORT_CONTROL input is invalid.
     Voice v(kSR);
     v.add_processor(std::make_unique<CompositeGenerator>(kSR), "VCO");
