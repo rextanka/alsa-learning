@@ -52,6 +52,15 @@ public:
      */
     bool set_named_parameter(const std::string& name, float value);
 
+    /**
+     * @brief Set a named parameter on the specific tagged processor.
+     *
+     * Finds the node by @p tag and calls Processor::apply_parameter(name, value).
+     * Returns true if the node was found and accepted the parameter.
+     * Used by engine_load_patch for v2 tag-keyed parameter dispatch.
+     */
+    bool set_tag_parameter(const std::string& tag, const std::string& name, float value);
+
     void set_pan(float pan);
     float pan() const { return pan_; }
 

@@ -37,7 +37,14 @@ public:
         // initial_gain is queryable via the registry but the initial_gain_cv port is not
         // yet wired in the graph executor. Full tremolo-with-DC-offset requires Phase 16
         // full port routing so the executor can pull initial_gain_cv and pass it as scale.
-        declare_parameter({"initial_gain", "Initial Gain", 0.0f, 1.0f, 1.0f});
+        declare_parameter({"initial_gain",   "Initial Gain",   0.0f, 1.0f, 1.0f});
+        declare_parameter({"response_curve", "Response Curve", 0.0f, 1.0f, 0.0f});
+    }
+
+    bool apply_parameter(const std::string& name, float value) override {
+        if (name == "initial_gain")   { initial_gain_   = std::clamp(value, 0.0f, 1.0f); return true; }
+        if (name == "response_curve") { response_curve_ = std::clamp(value, 0.0f, 1.0f); return true; }
+        return false;
     }
 
     /**
@@ -62,6 +69,9 @@ public:
 
     void reset() override {}
 
+    float initial_gain()   const { return initial_gain_; }
+    float response_curve() const { return response_curve_; }
+
     // VcaProcessor consumes a PORT_CONTROL gain signal (from AdsrEnvelopeProcessor).
     PortType input_port_type() const override { return PortType::PORT_CONTROL; }
 
@@ -72,6 +82,10 @@ protected:
                  const VoiceContext* /*ctx*/ = nullptr) override {
         std::fill(output.begin(), output.end(), 0.0f);
     }
+
+private:
+    float initial_gain_   = 1.0f;
+    float response_curve_ = 0.0f; // 0=linear, 1=exponential (Phase 17)
 };
 
 } // namespace audio

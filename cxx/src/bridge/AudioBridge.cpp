@@ -666,9 +666,21 @@ int engine_load_patch(EngineHandle handle, const char* path) {
                 return -1;
             }
             // Apply parameters after bake (voices now exist with the new chain).
+            // Supports two formats:
+            //   v2 tag-keyed: {"VCO": {"saw_gain": 1.0}, "ENV": {"attack": 0.01}}
+            //   flat fallback: {"saw_gain": 1.0, "attack": 0.01}  (legacy / v1 compat)
             if (group.contains("parameters")) {
-                for (const auto& [name, val] : group["parameters"].items()) {
-                    impl->voice_manager->set_parameter_by_name(name, val.get<float>());
+                for (const auto& [key, val] : group["parameters"].items()) {
+                    if (val.is_object()) {
+                        // Tag-keyed: key is a module tag, val is {param_name: value}
+                        for (const auto& [param_name, param_val] : val.items()) {
+                            impl->voice_manager->set_tag_parameter(key, param_name,
+                                static_cast<float>(param_val.get<double>()));
+                        }
+                    } else if (val.is_number()) {
+                        // Flat fallback: key is a param name, val is the value
+                        impl->voice_manager->set_parameter_by_name(key, val.get<float>());
+                    }
                 }
             }
             log.log_message("engine_load_patch", ("Loaded v2: " + j.value("name", "")).c_str());

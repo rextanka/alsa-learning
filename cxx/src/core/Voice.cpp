@@ -141,6 +141,12 @@ bool Voice::set_named_parameter(const std::string& name, float value) {
     return false;
 }
 
+bool Voice::set_tag_parameter(const std::string& tag, const std::string& name, float value) {
+    auto* proc = find_by_tag(tag);
+    if (proc) return proc->apply_parameter(name, value);
+    return false;
+}
+
 void Voice::note_on(double frequency) {
     active_ = true;
     base_frequency_ = frequency;

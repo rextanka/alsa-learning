@@ -78,6 +78,14 @@ public:
     void set_parameter_by_name(const std::string& name, float value);
 
     /**
+     * @brief Set a parameter on the specific tagged module across all voices.
+     *
+     * Finds the processor with @p tag and calls Processor::apply_parameter().
+     * Used by engine_load_patch for v2 tag-keyed parameter dispatch.
+     */
+    void set_tag_parameter(const std::string& tag, const std::string& name, float value);
+
+    /**
      * @brief Set a parameter by ID across all voices (all groups).
      */
     void set_parameter(int param_id, float value);

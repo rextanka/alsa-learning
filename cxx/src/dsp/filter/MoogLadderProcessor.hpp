@@ -37,9 +37,18 @@ public:
         declare_port({"cutoff_cv", PORT_CONTROL, PortDirection::IN, false}); // bipolar [-1,1]
         declare_port({"res_cv",    PORT_CONTROL, PortDirection::IN, true});  // unipolar [0,1]
         declare_port({"kybd_cv",   PORT_CONTROL, PortDirection::IN, false}); // bipolar, 1V/oct keyboard tracking
+        declare_port({"fm_in",     PORT_AUDIO,   PortDirection::IN});        // audio-rate FM input
 
-        declare_parameter({"cutoff",    "Cutoff Frequency", 20.0f, 20000.0f, 20000.0f, true});
-        declare_parameter({"resonance", "Resonance",         0.0f,     1.0f,     0.0f});
+        declare_parameter({"cutoff",     "Cutoff Frequency", 20.0f, 20000.0f, 20000.0f, true});
+        declare_parameter({"resonance",  "Resonance",         0.0f,     1.0f,     0.0f});
+        declare_parameter({"hpf_cutoff", "HPF Cutoff (oct)",  0.0f,     2.0f,     0.0f});
+    }
+
+    bool apply_parameter(const std::string& name, float value) override {
+        if (name == "cutoff")    { set_cutoff(value);    return true; }
+        if (name == "resonance" || name == "res") { set_resonance(value); return true; }
+        if (name == "hpf_cutoff") { hpf_cutoff_ = value; return true; }
+        return false;
     }
 
     void set_cutoff(float frequency) override {
@@ -101,6 +110,7 @@ private:
     float res_;
     float g_;
     float stage_[4];
+    float hpf_cutoff_ = 0.0f; // planned HPF; stored but not yet applied in do_pull
 };
 
 } // namespace audio
