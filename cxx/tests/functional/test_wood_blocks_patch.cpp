@@ -126,7 +126,11 @@ TEST_F(WoodBlocksPatchTest, PercussiveDecay) {
 
     float rms_onset = float(std::sqrt(onset_sq / double(FRAMES * onset_n)));
     float rms_tail  = float(std::sqrt(tail_sq  / double(FRAMES * tail_n)));
-    float ratio     = rms_tail > 1e-9f ? rms_onset / rms_tail : 0.0f;
+    // If the tail is completely silent (rms_tail < noise floor), the sound has
+    // decayed to nothing — that is *more* percussive than ratio=4 requires.
+    // Treat near-silence as effectively infinite ratio so the test passes.
+    float ratio = (rms_tail > 1e-9f) ? rms_onset / rms_tail
+                                      : (rms_onset > 0.001f ? 999.0f : 0.0f);
 
     std::cout << "[WoodBlocks] RMS onset (~10–43ms):   " << rms_onset << "\n";
     std::cout << "[WoodBlocks] RMS tail  (~426–469ms): " << rms_tail  << "\n";
@@ -134,7 +138,7 @@ TEST_F(WoodBlocksPatchTest, PercussiveDecay) {
 
     EXPECT_GT(rms_onset, 0.001f) << "No signal at onset — check patch connectivity";
     EXPECT_GT(ratio, 4.0f)
-        << "Expected onset/tail ratio ≥ 4 (AD decay=0.25s); got " << ratio;
+        << "Expected onset/tail ratio ≥ 4 (AD decay=0.12s); got " << ratio;
 }
 
 // ---------------------------------------------------------------------------
