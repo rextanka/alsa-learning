@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "name": "Strings Chorus Reverb",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "LFO",                 "tag": "LFO1" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO"  },
+        { "type": "MOOG_FILTER",         "tag": "VCF"  },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV"  },
+        { "type": "VCA",                 "tag": "VCA"  }
+      ],
+      "connections": [
+        { "from_tag": "LFO1", "from_port": "control_out",  "to_tag": "VCO", "to_port": "pitch_cv"  },
+        { "from_tag": "VCO",  "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"  },
+        { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"  },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"   }
+      ],
+      "parameters": {
+        "VCO":  { "saw_gain": 1.0, "sub_gain": 0.2 },
+        "VCF":  { "cutoff": 3000.0, "resonance": 0.05 },
+        "ENV":  { "attack": 0.35, "decay": 0.1, "sustain": 0.85, "release": 0.6 },
+        "LFO1": { "rate": 0.4, "intensity": 0.002 }
+      }
+    }
+  ]
+}

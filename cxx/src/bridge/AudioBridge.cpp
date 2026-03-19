@@ -962,12 +962,11 @@ int engine_post_chain_push(EngineHandle handle, const char* type_name) {
     auto* impl = static_cast<EngineHandleImpl*>(handle);
     const int sr = impl->sample_rate;
 
-    std::unique_ptr<audio::Processor> fx;
-    const std::string t(type_name);
-    if      (t == "REVERB_FREEVERB") fx = std::make_unique<audio::FreeverbProcessor>(sr);
-    else if (t == "REVERB_FDN")      fx = std::make_unique<audio::FdnReverbProcessor>(sr);
-    else if (t == "PHASER")          fx = std::make_unique<audio::PhaserProcessor>(sr);
-    else return -1;
+    // Create the effect via the module registry so that any registered stereo
+    // processor (REVERB_FREEVERB, REVERB_FDN, PHASER, JUNO_CHORUS, …) can be
+    // pushed without requiring a new branch here.
+    auto fx = audio::ModuleRegistry::instance().create(type_name, sr);
+    if (!fx) return -1;
 
     impl->post_chain.push_back(std::move(fx));
     return static_cast<int>(impl->post_chain.size()) - 1;
