@@ -914,7 +914,137 @@ cases where an exact or approximate frequency is required.
 
 ---
 
-## 12  Known Limitations and Planned Features
+## 12  USB MIDI HAL (Phase 25)
+
+Phase 25 adds a cross-platform MIDI hardware layer following the **identical factory pattern** as the audio HAL — platform-specific code is isolated in concrete driver classes; the bridge and all library code see only the abstract base.
+
+### 12.1  Design Principles
+
+- **No platform `#ifdef`s outside HAL `.cpp` files**: `MidiDriver::create()` and `MidiDriver::enumerate_devices()` are static factory methods declared in the base header and defined only in the platform implementations. The bridge calls these factory methods with no OS-specific includes.
+- **Independent from the audio HAL**: `MidiDriver` has no dependency on `AudioDriver`. They share the `hal::` namespace and the same structural pattern but neither owns the other.
+- **Input is callback-driven**: MIDI data arrives asynchronously on a driver thread (ALSA: polling thread; CoreMIDI: CoreMIDI callback thread). The callback dispatches raw bytes to the engine via the existing `engine_process_midi_bytes` call — no new engine-side MIDI path is needed.
+- **Output is synchronous**: `send_bytes()` calls the OS write API immediately. Do not call from the audio thread.
+
+### 12.2  Platform Coverage
+
+| Platform | Driver class       | OS APIs used                                                       |
+|----------|--------------------|-------------------------------------------------------------------|
+| Linux    | `AlsaMidiDriver`   | `snd_rawmidi_open/read/write`, polling thread                     |
+| macOS    | `CoreMidiDriver`   | `MIDIClientCreate`, `MIDIInputPortCreate` (callback), `MIDISend`  |
+
+All ALSA headers are confined to `AlsaMidiDriver.cpp`; all CoreMIDI headers are confined to `CoreMidiDriver.cpp`. No platform header leaks through `.hpp` files.
+
+### 12.3  C API (`midi_*` family)
+
+```c
+// Device enumeration — no handle required
+int  host_midi_device_count();
+int  host_midi_get_device_info(int index, ...);   // fills HostMidiDeviceInfo fields
+
+// Lifecycle
+MidiHandle* midi_open_input(int device_index);
+MidiHandle* midi_open_output(int device_index);
+void        midi_close(MidiHandle* handle);
+
+// Connect a MIDI input handle to an engine
+// Automatically dispatches received bytes via engine_process_midi_bytes
+void        midi_connect_to_engine(MidiHandle* midi, EngineHandle* engine);
+
+// Output helpers
+int  midi_send_bytes(MidiHandle* handle, const uint8_t* data, int size);
+int  midi_send_note_on(MidiHandle* handle, int channel, int note, int velocity);
+int  midi_send_note_off(MidiHandle* handle, int channel, int note);
+int  midi_send_cc(MidiHandle* handle, int channel, int cc, int value);
+int  midi_send_program_change(MidiHandle* handle, int channel, int program);
+```
+
+`MidiHandle` is an opaque pointer (same pattern as `EngineHandle`). The connection established by `midi_connect_to_engine` is live until `midi_close` is called.
+
+### 12.4  Typical Usage
+
+```c
+// Enumerate devices
+int count = host_midi_device_count();
+for (int i = 0; i < count; ++i) {
+    // inspect HostMidiDeviceInfo.name, .is_input, .is_output
+}
+
+// Open a USB MIDI keyboard (input device index 0) and connect to the engine
+MidiHandle* kbd = midi_open_input(0);
+midi_connect_to_engine(kbd, engine);
+
+// Audio loop drives everything — MIDI bytes arrive asynchronously
+// and are injected into the engine by the driver callback.
+
+// On shutdown
+midi_close(kbd);
+```
+
+---
+
+## 13  Static Module Configuration (Phase 26)
+
+Phase 26 enables stripped binaries for resource-constrained hosts — Raspberry Pi, embedded Linux — by compiling only the DSP modules needed for a given target.
+
+### 13.1  Self-Registering Modules
+
+Currently, `ProcessorRegistrations.cpp` registers all ~30 modules unconditionally. Phase 26 introduces a per-module `_reg.cpp` pattern: each processor module gains a small companion `.cpp` whose sole job is registering that module via a C++ static initializer. CMake decides which `.cpp` files to compile. If a file is absent from `ENGINE_SOURCES`, its initializer never runs and the module is never registered — no `#ifdef`, no runtime cost.
+
+```cpp
+// src/dsp/fx/DistortionProcessor_reg.cpp (example)
+static const bool kReg = (ModuleRegistry::instance().register_module(
+    "DISTORTION", "Guitar distortion",
+    [](int sr) { return std::make_unique<DistortionProcessor>(sr); }
+), true);
+```
+
+`ProcessorRegistrations.cpp` is **retained for the desktop full build** (`AUDIO_STATIC_CONFIG=OFF`, the default). When `AUDIO_STATIC_CONFIG=ON`, the per-module `_reg.cpp` files take over.
+
+### 13.2  CMake Presets
+
+Named presets are defined in `CMakePresets.json` at the project root:
+
+| Preset         | Modules included          | Binary size vs. full |
+|----------------|--------------------------|----------------------|
+| `desktop_full` | All 30+                  | baseline             |
+| `pi_synth`     | All filters, distortion, delay, CV utils; no reverb/chorus/phaser/organ | ~25–35% smaller |
+| `pi_minimal`   | VCO, MOOG_FILTER, HPF, ADSR, VCA, LFO, WHITE_NOISE (~8 modules) | ~50–70% smaller |
+
+```bash
+# Build for Raspberry Pi minimal target
+cmake --preset pi_minimal -B build_pi
+cmake --build build_pi
+```
+
+### 13.3  Python Configuration Tool
+
+`tools/configure_modules.py` — pure Python 3, no external dependencies — provides two utilities:
+
+```bash
+# Interactive: prompts for each module group, writes CMakeUserPresets.json
+tools/configure_modules.py --interactive
+
+# Report: show which modules are in a given preset and estimated size impact
+tools/configure_modules.py --preset pi_minimal --report
+
+# List all defined presets
+tools/configure_modules.py --list-presets
+```
+
+### 13.4  Handling Missing Modules at Runtime
+
+When a patch JSON references a module type that was excluded at compile time, `ModuleRegistry::create()` returns `nullptr` and logs:
+
+```
+[WARN] Module type "REVERB_FDN" not registered — was it excluded at compile time?
+       Patch load failed for group 0.
+```
+
+The patch is not loaded; the engine is never left in a partially-configured state.
+
+---
+
+## 14  Known Limitations and Planned Features
 
 | Feature                         | Status                                                                     |
 |---------------------------------|----------------------------------------------------------------------------|
@@ -927,6 +1057,9 @@ cases where an exact or approximate frequency is required.
 | JUNO_CHORUS (fixed)             | Now registered — use `"type": "JUNO_CHORUS"` in JSON chains (see §6.4)     |
 | Multi-VCO additive mixing       | No registered SUMMING_MIXER; use RING_MOD or AUDIO_SPLITTER per-output     |
 | Vocoder / formant filter        | Not implemented                                                            |
+| USB MIDI HAL                    | Planned — Phase 25 (`midi_open_input`, `midi_connect_to_engine` C API)     |
+| Static module stripping         | Planned — Phase 26 (per-module `_reg.cpp`, CMake presets, Pi targets)      |
+| Multi-timbral SMF playback      | Planned — Phase 23 (MIDI channel → VoiceGroup routing table)               |
 | Tom tom (Vol. 2 Fig 3-14)       | Requires audio-rate VCO→VCF FM — blocked by PORT_AUDIO type mismatch       |
 | Gong with noise layer (Fig 3-17)| Parallel noise + RING_MOD requires SUMMING_MIXER — not available           |
 | Thunder (Fig 3-24)              | Two parallel noise filter paths require SUMMING_MIXER — not available      |
@@ -934,7 +1067,7 @@ cases where an exact or approximate frequency is required.
 
 ---
 
-## 13  Quick Reference — Parameter Names by Module
+## 15  Quick Reference — Parameter Names by Module
 
 | Module               | Parameters                                                                      |
 |----------------------|---------------------------------------------------------------------------------|

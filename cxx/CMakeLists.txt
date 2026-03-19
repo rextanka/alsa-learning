@@ -186,7 +186,8 @@ if(BUILD_TESTING)
         add_executable(${name} tests/functional/${source})
         target_include_directories(${name} PRIVATE tests)
         target_link_libraries(${name} PRIVATE audio_engine gtest_main)
-        add_test(NAME ${name} COMMAND ${name})
+        add_test(NAME ${name} COMMAND ${name}
+                 WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     endfunction()
 
     add_functional_test(audio_check audio_check.cpp)
@@ -250,6 +251,7 @@ if(BUILD_TESTING)
     add_functional_gtest(delay_lead_patch_tests test_delay_lead_patch.cpp)
     add_functional_gtest(gong_full_patch_tests test_gong_full_patch.cpp)
     add_functional_gtest(host_device_tests test_host_devices.cpp)
+    add_functional_gtest(strings_postchain_tests test_strings_postchain.cpp)
 
     # Copy patch JSON files and MIDI test data to the binary output directory
     # so tests can be run directly from build/bin without extra arguments.

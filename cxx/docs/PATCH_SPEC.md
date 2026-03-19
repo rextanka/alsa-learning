@@ -75,6 +75,8 @@ Module type names (complete registry as of Phase 22A+):
 
 See MODULE_DESC.md for port names, parameter ranges, and connection rules.
 
+> **Embedded / stripped builds (Phase 26)**: When the library is built with `AUDIO_STATIC_CONFIG=ON` and specific module groups disabled (e.g. `AUDIO_MODULE_REVERB=OFF`), those module types are absent from the registry at runtime. A patch referencing an excluded type will fail to load with a `[WARN]` log message. Use `tools/configure_modules.py --preset <name> --report` to check which modules are available in a given build. See ARCH_PLAN.md §Phase 26 for the full preset list.
+
 ---
 
 ## Connection Object
