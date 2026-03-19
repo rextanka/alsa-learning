@@ -32,6 +32,10 @@ public:
 
 protected:
     void process_sample(float& sample) override {
+        // Resonance compensation: normalise passband gain to unity.
+        // Ladder feedback reduces DC gain to 1/(1+4·res); premultiply to restore it.
+        sample *= (1.0f + res_ * 4.0f);
+
         // Tanh-saturated feedback — the Moog-style signature
         float feedback = stage_[3] * res_ * 4.0f;
         float input    = sample - std::tanh(feedback);

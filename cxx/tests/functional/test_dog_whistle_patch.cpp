@@ -30,6 +30,8 @@
 #include "../../src/dsp/analysis/PitchDetector.hpp"
 #include <vector>
 #include <cmath>
+#include <thread>
+#include <chrono>
 
 // ---------------------------------------------------------------------------
 // Fixture
@@ -159,6 +161,42 @@ TEST_F(DogWhistlePatchTest, PitchEnvelopeFiresAndReturns) {
         << "Expected pitch to be higher in the early window (ENV_PITCH still attacking)\n"
         << "  early=" << pitch_early << " Hz  late=" << pitch_late << " Hz\n"
         << "  If both are equal, ENV_PITCH dispatch may still be broken";
+}
+
+// ---------------------------------------------------------------------------
+// Test 3: Audible — C5/E5/G5/C6 ascending phrase (hear the pitch glide on each onset)
+//
+// Each note is held long enough (~900ms) for ENV_PITCH to complete its full
+// 566ms attack arc so the listener hears the characteristic upward glide
+// before the pitch snaps back to the target frequency.
+// ---------------------------------------------------------------------------
+
+TEST_F(DogWhistlePatchTest, AscendingPhraseAudible) {
+    PRINT_TEST_HEADER(
+        "Dog Whistle — Ascending Phrase (audible)",
+        "Sine voice with ENV_PITCH upward glide (~566ms arc) on each note onset.",
+        "engine_load_patch(dog_whistle.json) → engine_start → C5/E5/G5/C6",
+        "Audible whistle-like pitch rise on each note attack, snapping to target pitch.",
+        sample_rate
+    );
+
+    ASSERT_EQ(engine_load_patch(engine(), kPatch), 0);
+    ASSERT_ENGINE_START(engine());
+
+    // Gate long enough that the 566ms ENV_PITCH arc is fully heard before release
+    constexpr int NOTE_MS    = 900;
+    constexpr int RELEASE_MS = 250;  // 120ms release + margin
+
+    const int notes[] = {72, 76, 79, 84};  // C5, E5, G5, C6
+    std::cout << "[DogWhistle] Playing C5 → E5 → G5 → C6 (hear upward glide on each onset)…\n";
+    for (int midi : notes) {
+        engine_note_on(engine(), midi, 0.9f);
+        std::this_thread::sleep_for(std::chrono::milliseconds(NOTE_MS));
+        engine_note_off(engine(), midi);
+        std::this_thread::sleep_for(std::chrono::milliseconds(RELEASE_MS));
+    }
+
+    engine_stop(engine());
 }
 
 int main(int argc, char** argv) {

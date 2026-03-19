@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "name": "Wind / Surf",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "LFO",           "tag": "LFO1" },
+        { "type": "WHITE_NOISE",   "tag": "SRC"  },
+        { "type": "MOOG_FILTER",   "tag": "VCF"  },
+        { "type": "ADSR_ENVELOPE", "tag": "ENV"  },
+        { "type": "VCA",           "tag": "VCA"  }
+      ],
+      "connections": [
+        { "from_tag": "LFO1", "from_port": "control_out",  "to_tag": "VCF", "to_port": "cutoff_cv" },
+        { "from_tag": "SRC",  "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"  },
+        { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"  },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"   }
+      ],
+      "parameters": {
+        "LFO1": { "rate": 0.25, "intensity": 0.5 },
+        "VCF":  { "cutoff": 800.0, "resonance": 0.08 },
+        "ENV":  { "attack": 0.8, "decay": 0.0, "sustain": 1.0, "release": 1.5 }
+      }
+    }
+  ]
+}

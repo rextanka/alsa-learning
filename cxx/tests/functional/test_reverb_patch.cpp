@@ -311,7 +311,7 @@ TEST_F(ReverbPatchTest, AudibleFdnPad) {
     );
 
     ASSERT_EQ(engine_load_patch(engine(), kPatch), 0);
-    ASSERT_EQ(engine_start(engine()), 0);
+    ASSERT_ENGINE_START(engine());
 
     const int idx = engine_post_chain_push(engine(), "REVERB_FDN");
     ASSERT_GE(idx, 0);

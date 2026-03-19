@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "name": "Cow Bell",
+  "groups": [
+    {
+      "id": 0,
+      "comment": "TR-808 style: two detuned square waves, HPF strips low thump, short metallic decay.",
+      "chain": [
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO1" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
+        { "type": "AUDIO_MIXER",         "tag": "MIX"  },
+        { "type": "HIGH_PASS_FILTER",    "tag": "HPF"  },
+        { "type": "AD_ENVELOPE",         "tag": "ENV"  },
+        { "type": "VCA",                 "tag": "VCA"  }
+      ],
+      "connections": [
+        { "from_tag": "VCO1", "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_1" },
+        { "from_tag": "VCO2", "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_2" },
+        { "from_tag": "MIX",  "from_port": "audio_out",    "to_tag": "HPF",  "to_port": "audio_in"   },
+        { "from_tag": "HPF",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"   },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"    }
+      ],
+      "parameters": {
+        "VCO1": { "pulse_gain": 1.0 },
+        "VCO2": { "pulse_gain": 1.0, "transpose": 7 },
+        "MIX":  { "gain_1": 1.0, "gain_2": 0.8 },
+        "HPF":  { "cutoff": 200.0, "resonance": 0.1 },
+        "ENV":  { "attack": 0.001, "decay": 0.22 }
+      }
+    }
+  ]
+}

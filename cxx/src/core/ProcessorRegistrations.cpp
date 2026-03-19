@@ -36,11 +36,14 @@
 #include "../dsp/routing/SampleHoldProcessor.hpp"
 #include "../dsp/routing/RingModProcessor.hpp"
 #include "../dsp/routing/AudioSplitterProcessor.hpp"
+#include "../dsp/routing/AudioMixerProcessor.hpp"
 #include "../dsp/dynamics/NoiseGateProcessor.hpp"
 #include "../dsp/dynamics/EnvelopeFollowerProcessor.hpp"
 #include "../dsp/fx/FreeverbProcessor.hpp"
 #include "../dsp/fx/FdnReverbProcessor.hpp"
 #include "../dsp/fx/PhaserProcessor.hpp"
+#include "../dsp/fx/JunoChorus.hpp"
+#include "../dsp/fx/DistortionProcessor.hpp"
 
 namespace audio {
 
@@ -158,6 +161,11 @@ void register_builtin_processors() {
         [](int sr) { return std::make_unique<AudioSplitterProcessor>(sr); }
     );
     reg.register_module(
+        "AUDIO_MIXER",
+        "4-input audio summing mixer: sums up to 4 PORT_AUDIO sources with per-input gain",
+        [](int sr) { return std::make_unique<AudioMixerProcessor>(sr); }
+    );
+    reg.register_module(
         "NOISE_GATE",
         "Threshold-based gate: opens on signal above threshold, closes on silence below it",
         [](int sr) { return std::make_unique<NoiseGateProcessor>(sr); }
@@ -181,6 +189,16 @@ void register_builtin_processors() {
         "PHASER",
         "4/8-stage all-pass phaser with stereo quadrature LFO and feedback comb",
         [](int sr) { return std::make_unique<PhaserProcessor>(sr); }
+    );
+    reg.register_module(
+        "JUNO_CHORUS",
+        "Roland Juno-60 BBD stereo chorus emulation — dual-rate modulated delay with stereo width",
+        [](int sr) { return std::make_unique<JunoChorus>(sr); }
+    );
+    reg.register_module(
+        "DISTORTION",
+        "Guitar-style distortion with pre/post emphasis and 4x oversampling — drive + character blend",
+        [](int sr) { return std::make_unique<DistortionProcessor>(sr); }
     );
 }
 

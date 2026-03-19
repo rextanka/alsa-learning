@@ -96,7 +96,15 @@ public:
     PortType output_port_type() const override { return PORT_AUDIO; }
 
 protected:
-    void do_pull(std::span<float>, const VoiceContext* = nullptr) override {}
+    void do_pull(std::span<float> output, const VoiceContext* ctx = nullptr) override {
+        std::vector<float> l(output.size()), r(output.size());
+        std::copy(output.begin(), output.end(), l.begin());
+        std::copy(output.begin(), output.end(), r.begin());
+        AudioBuffer buf { std::span<float>(l), std::span<float>(r) };
+        do_pull(buf, ctx);
+        for (size_t i = 0; i < output.size(); ++i)
+            output[i] = (l[i] + r[i]) * 0.5f;
+    }
 
     void do_pull(AudioBuffer& buf, const VoiceContext* = nullptr) override {
         const int n = static_cast<int>(buf.frames());

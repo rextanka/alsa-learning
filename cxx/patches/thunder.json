@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "name": "Thunder",
+  "groups": [
+    {
+      "id": 0,
+      "comment": "Two parallel noise paths mixed — deep rumble + mid growl.",
+      "chain": [
+        { "type": "WHITE_NOISE",     "tag": "NOISE1" },
+        { "type": "MOOG_FILTER",     "tag": "VCF1"   },
+        { "type": "WHITE_NOISE",     "tag": "NOISE2" },
+        { "type": "SH_FILTER",       "tag": "VCF2"   },
+        { "type": "AUDIO_MIXER",     "tag": "MIX"    },
+        { "type": "ADSR_ENVELOPE",   "tag": "ENV"    },
+        { "type": "VCA",             "tag": "VCA"    }
+      ],
+      "connections": [
+        { "from_tag": "NOISE1", "from_port": "audio_out",    "to_tag": "VCF1", "to_port": "audio_in"   },
+        { "from_tag": "NOISE2", "from_port": "audio_out",    "to_tag": "VCF2", "to_port": "audio_in"   },
+        { "from_tag": "VCF1",  "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_1" },
+        { "from_tag": "VCF2",  "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_2" },
+        { "from_tag": "MIX",   "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"   },
+        { "from_tag": "ENV",   "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"    }
+      ],
+      "parameters": {
+        "VCF1": { "cutoff": 640.0,  "resonance": 0.90 },
+        "VCF2": { "cutoff": 3600.0, "resonance": 0.75 },
+        "MIX":  { "gain_1": 1.0,    "gain_2": 1.0     },
+        "ENV":  { "attack": 0.8, "decay": 0.2, "sustain": 1.0, "release": 3.0 }
+      }
+    }
+  ]
+}

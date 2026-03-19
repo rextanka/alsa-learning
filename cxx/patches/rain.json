@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "name": "Rain",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "WHITE_NOISE",     "tag": "NOISE" },
+        { "type": "MOOG_FILTER",     "tag": "VCF"   },
+        { "type": "HIGH_PASS_FILTER","tag": "HPF"   },
+        { "type": "ADSR_ENVELOPE",   "tag": "ENV"   },
+        { "type": "VCA",             "tag": "VCA"   }
+      ],
+      "connections": [
+        { "from_tag": "NOISE", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in" },
+        { "from_tag": "VCF",   "from_port": "audio_out",    "to_tag": "HPF", "to_port": "audio_in" },
+        { "from_tag": "HPF",   "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in" },
+        { "from_tag": "ENV",   "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"  }
+      ],
+      "parameters": {
+        "VCF": { "cutoff": 5000.0, "resonance": 0.25 },
+        "HPF": { "cutoff": 200.0,  "resonance": 0.1  },
+        "ENV": { "attack": 0.5, "decay": 0.1, "sustain": 1.0, "release": 2.0 }
+      }
+    }
+  ]
+}

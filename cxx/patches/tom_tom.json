@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "name": "Tom Tom",
+  "groups": [
+    {
+      "id": 0,
+      "comment": "Tonal VCO body layer — pitched triangle with filter-swept resonance.",
+      "chain": [
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO"  },
+        { "type": "SH_FILTER",           "tag": "VCF"  },
+        { "type": "AD_ENVELOPE",         "tag": "ENV"  },
+        { "type": "VCA",                 "tag": "VCA"  }
+      ],
+      "connections": [
+        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"  },
+        { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"  },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"   },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCF", "to_port": "cutoff_cv" }
+      ],
+      "parameters": {
+        "VCO": { "triangle_gain": 1.0, "sine_gain": 1.0 },
+        "VCF": { "cutoff": 800.0, "resonance": 0.6 },
+        "ENV": { "attack": 0.001, "decay": 0.50 }
+      }
+    }
+  ]
+}

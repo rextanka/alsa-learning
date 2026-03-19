@@ -194,7 +194,7 @@ TEST_F(JunoPadPatchTest, PadChordAudible) {
     );
 
     ASSERT_EQ(engine_load_patch(engine(), kPatch), 0);
-    ASSERT_EQ(engine_start(engine()), 0);
+    ASSERT_ENGINE_START(engine());
 
     // Notes overlap: each held 900ms with 300ms stagger → release blurs together
     constexpr int HOLD_MS   = 1200;

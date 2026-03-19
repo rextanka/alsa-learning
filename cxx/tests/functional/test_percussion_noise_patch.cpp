@@ -176,7 +176,7 @@ TEST_F(PercussionNoisePatchTest, FourFourPatternAudible) {
     }
 
     // --- Audible: replay the same pattern live ---
-    ASSERT_EQ(engine_start(engine()), 0);
+    ASSERT_ENGINE_START(engine());
 
     constexpr int BEAT_MS = 750;
     constexpr int GATE_MS =  10;

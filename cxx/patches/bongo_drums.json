@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "name": "Bongo Drums",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
+        { "type": "SH_FILTER",           "tag": "VCF" },
+        { "type": "AD_ENVELOPE",         "tag": "ENV" },
+        { "type": "VCA",                 "tag": "VCA" }
+      ],
+      "connections": [
+        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"  },
+        { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"  },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"   },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCF", "to_port": "cutoff_cv" }
+      ],
+      "parameters": {
+        "VCO": { "triangle_gain": 1.0 },
+        "VCF": { "cutoff": 320.0, "resonance": 0.65 },
+        "ENV": { "attack": 0.001, "decay": 0.18 }
+      }
+    }
+  ]
+}

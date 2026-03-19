@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "name": "Bass Drum",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
+        { "type": "AD_ENVELOPE",         "tag": "ENV" },
+        { "type": "VCA",                 "tag": "VCA" }
+      ],
+      "connections": [
+        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in" },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"  }
+      ],
+      "parameters": {
+        "VCO": { "sine_gain": 1.0, "triangle_gain": 1.0 },
+        "ENV": { "attack": 0.002, "decay": 0.35 }
+      }
+    }
+  ]
+}

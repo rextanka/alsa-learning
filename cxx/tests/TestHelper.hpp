@@ -72,6 +72,23 @@ private:
 };
 
 /**
+ * @brief Start audio engine and wait for hardware to settle.
+ *
+ * On macOS and Linux, the first audio callback may fire before the first
+ * note_on if the engine is started immediately before playing. A short
+ * warmup prevents the first note being dropped (the "3 hits not 4" problem).
+ * Returns the engine_start() return value for ASSERT_EQ checks.
+ */
+inline int engine_start_warmup(EngineHandle h, int warmup_ms = 500) {
+    int rc = engine_start(h);
+    if (rc == 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(warmup_ms));
+    return rc;
+}
+
+#define ASSERT_ENGINE_START(h) ASSERT_EQ(test::engine_start_warmup(h), 0)
+
+/**
  * @brief Print standardized test header.
  */
 inline void print_test_header(const char* test_name, 

@@ -7,6 +7,7 @@
 #include "VcaProcessor.hpp"
 #include "routing/CompositeGenerator.hpp"
 #include "envelope/AdsrEnvelopeProcessor.hpp" // needed for is_active()/is_releasing() dynamic_cast
+#include "envelope/ADEnvelopeProcessor.hpp"   // needed for is_active()/is_releasing() dynamic_cast
 #include "dynamics/EnvelopeFollowerProcessor.hpp" // needed for envelope→ctrl_spans injection in Pass 2
 #include <algorithm>
 #include <cmath>
@@ -69,7 +70,8 @@ bool Voice::set_tag_parameter(const std::string& tag, const std::string& name, f
 void Voice::note_on(double frequency) {
     active_ = true;
     base_frequency_ = frequency;
-    for (auto& entry : signal_chain_) entry.node->reset();
+    for (auto& entry : signal_chain_)
+        if (entry.node->reset_on_note_on()) entry.node->reset();
     for (auto& entry : mod_sources_) entry.node->reset();
     // signal_chain_[0] is guaranteed by bake() to be the audio generator.
     if (!signal_chain_.empty()) {
@@ -89,18 +91,20 @@ bool Voice::is_active() const {
     // for the hot path. This is a known policy exception — VoiceManager calls is_active()
     // from the audio callback to determine voice stealing candidates.
     for (const auto& entry : mod_sources_) {
-        if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(entry.node.get())) {
+        if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(entry.node.get()))
             return env->is_active();
-        }
+        if (auto* env = dynamic_cast<ADEnvelopeProcessor*>(entry.node.get()))
+            return env->is_active();
     }
     return false;
 }
 
 bool Voice::is_releasing() const {
     for (const auto& entry : mod_sources_) {
-        if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(entry.node.get())) {
+        if (auto* env = dynamic_cast<AdsrEnvelopeProcessor*>(entry.node.get()))
             return !active_ && env->is_active();
-        }
+        if (auto* env = dynamic_cast<ADEnvelopeProcessor*>(entry.node.get()))
+            return !active_ && env->is_active();
     }
     return false;
 }
@@ -294,6 +298,16 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
             // Pull into audio_bus if this node is an audio source; else inline.
             auto abus = find_audio_bus(entry.tag);
             if (!abus.empty()) {
+                // If this node has a primary inline audio input (audio_in from a non-bus
+                // predecessor), copy the current inline output into abus first so the
+                // node can process in-place (e.g. VCF1 in NOISE1→VCF1→MIX.audio_in_1).
+                for (const auto& conn : connections_) {
+                    if (conn.to_tag == entry.tag && conn.to_port == "audio_in"
+                        && find_audio_bus(conn.from_tag).empty()) {
+                        std::copy(output.begin(), output.end(), abus.begin());
+                        break;
+                    }
+                }
                 entry.node->pull(abus, context);
             } else {
                 entry.node->pull(output, context);

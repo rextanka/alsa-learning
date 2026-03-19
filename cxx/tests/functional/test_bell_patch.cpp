@@ -210,7 +210,7 @@ TEST_F(BellPatchTest, BellPatternAudible) {
     );
 
     ASSERT_EQ(engine_load_patch(engine(), kPatch), 0);
-    ASSERT_EQ(engine_start(engine()), 0);
+    ASSERT_ENGINE_START(engine());
 
     constexpr int NOTE_MS    =  80;  // short gate — percussive bell hit
     constexpr int RELEASE_MS = 1800; // 1.2s decay + margin
