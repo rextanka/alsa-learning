@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "name": "Banjo",
+  "groups": [
+    {
+      "id": 0,
+      "comment": "Saw + narrow pulse for harmonic richness and nasal membrane character. HPF strips bass weight. Filter envelope gives the bright pluck snap fading to warm ring.",
+      "chain": [
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO1" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
+        { "type": "AUDIO_MIXER",         "tag": "MIX"  },
+        { "type": "HIGH_PASS_FILTER",    "tag": "HPF"  },
+        { "type": "SH_FILTER",           "tag": "VCF"  },
+        { "type": "AD_ENVELOPE",         "tag": "ENV"  },
+        { "type": "VCA",                 "tag": "VCA"  }
+      ],
+      "connections": [
+        { "from_tag": "VCO1", "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_1" },
+        { "from_tag": "VCO2", "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_2" },
+        { "from_tag": "MIX",  "from_port": "audio_out",    "to_tag": "HPF",  "to_port": "audio_in"   },
+        { "from_tag": "HPF",  "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"   },
+        { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"   },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"    },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCF",  "to_port": "cutoff_cv"  }
+      ],
+      "parameters": {
+        "VCO1": { "saw_gain": 1.0 },
+        "VCO2": { "pulse_gain": 0.7, "pulse_width": 0.2, "detune": 6 },
+        "MIX":  { "gain_1": 1.0, "gain_2": 0.7 },
+        "HPF":  { "cutoff": 250.0, "resonance": 0.1 },
+        "VCF":  { "cutoff": 2500.0, "resonance": 0.5 },
+        "ENV":  { "attack": 0.001, "decay": 0.20 }
+      }
+    }
+  ]
+}

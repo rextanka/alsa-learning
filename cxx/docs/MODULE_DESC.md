@@ -173,8 +173,9 @@ All four filter types are **first-class chain nodes** — inserted into `signal_
 - **Type name**: `DIODE_FILTER`
 - **Purpose**: TB-303 acid character — rubbery, squelchy, the "mistake" that launched a genre.
 - **Additional ports**: `PORT_AUDIO` in `fm_in` (audio-rate cutoff FM)
-- **Parameters**: `cutoff` (20–20000 Hz, log), `resonance` (0.0–1.0), `hpf_cutoff` (0–3 stepped HPF stage)
-- **Character**: 3/4-pole blend — at full resonance the 3-pole (stage[2]) output dominates, giving an effective ~18 dB/oct rolloff. Per-stage `tanh` saturation adds the characteristic harmonic distortion. The blend shifts continuously from ~4-pole at zero resonance to ~3-pole at maximum, matching the 303's measured behaviour.
+- **Parameters**: `cutoff` (20–20000 Hz, log), `resonance` (0.0–1.0), `hpf_cutoff` (0–3 stepped HPF stage), `env_depth` (0.0–6.0, default 3.0 — scales how much a connected `cutoff_cv` envelope signal sweeps the cutoff; 0 = CV has no effect, 3 = one-octave sweep at full envelope, 6 = two-octave sweep)
+- **Character**: 4-pole ladder (24 dB/oct) with `tanh` saturation in all stages and a built-in high-pass in the feedback path (~100 Hz) to keep self-oscillation from building DC. Resonance close to 1.0 produces the signature 303 squelch and self-oscillation sine.
+- **Filter state**: Filter delay lines are **not reset on note_on**. State (including resonance buildup) persists across consecutive notes, replicating the 303's behaviour where the filter continues from its previous position at each new gate — essential for the characteristic acid squelch on rapid-fire riffs.
 
 ### VCF — SH-101 CEM / IR3109
 - **Type name**: `SH_FILTER`
@@ -400,6 +401,20 @@ These modules operate entirely in the control domain.
 - **Parameters**: `decay` (T60 in seconds, 0.1–20.0), `room_size` (0.0–1.0 — scales delay line lengths; snap: buffer geometry fixed at construction), `damping` (0.0–1.0 — HF absorption), `width` (0.0–1.0 — stereo decorrelation), `wet` (0.0–1.0 — wet/dry blend)
 - **Architecture Note**: **Global post-chain module only** — added via `engine_post_chain_push(h, "REVERB_FDN")`.
 
+### Distortion / Overdrive
+- **Type name**: `DISTORTION`
+- **Purpose**: Guitar/pedal-style distortion that saturates the input signal through a waveshaper. Replicates the character of a distortion or overdrive pedal placed after the instrument output.
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in`
+  - `PORT_AUDIO` out `audio_out`
+- **Parameters**:
+  - `drive` (1–40, default 8) — input gain into the clipping stage. At 1 the waveshaper input is nearly clean; at 20+ the signal saturates to a near-square wave.
+  - `character` (0–1, default 0.3) — waveshaper blend. `0` = symmetric tanh (soft/tube, odd harmonics only). `1` = asymmetric: positive peaks clip at +0.5 (fast tanh × 4 × 0.5) while negative peaks clip at −1.0 (normal tanh), introducing ~6 dB asymmetry and even harmonics audible at any drive setting.
+- **Signal path**: 4× linear interpolation upsampling → waveshaper → 2-stage cascaded 1-pole IIR anti-aliasing LP → decimate by 4.
+- **Parameter smoothing**: `drive` and `character` ramp linearly over 10 ms (480 samples at 48 kHz) to suppress parameter-change zipper noise.
+- **Placement note**: Insert post-VCA to replicate "synth output jack → distortion pedal". Inserting pre-VCA distorts before envelope shaping, which is less conventional. See `acid_reverb.json` for the canonical TB-303 pedal topology.
+- **Bass content**: No internal HPF — the full signal including low fundamentals is distorted. Place `HIGH_PASS_FILTER` before `DISTORTION` if pre-emphasis (bass-cut before clip stage) is wanted.
+
 ### Phaser
 - **Type name**: `PHASER`
 - **Purpose**: 4- or 8-stage all-pass ladder with LFO-swept pole frequency. Classic swirling phase-cancellation effect.
@@ -476,6 +491,7 @@ These modules operate entirely in the control domain.
 - **Global vs per-voice**: Per-voice modules live in `signal_chain_` or `mod_sources_`. Global modules (chorus, reverb, master bus) live in a separate global FX chain applied after voice summing. Do not instantiate global modules per-voice.
 - **Sample rate**: All internal timing (ADSR curves, LFO rates, delay times) must derive from the runtime `sample_rate_` passed at construction. No hardcoded sample rate assumptions. Supported rates: 44100 Hz and 48000 Hz. If hardware reports a rate above 48000, the engine negotiates down to 48000.
 - **Filter chain placement**: All four filter types (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`) are first-class chain nodes. Add them via `engine_add_module("MOOG_FILTER", "VCF")` and wire audio with `engine_connect_ports`. `Voice` no longer contains an internal `filter_` member — the hardcoded fallback path has been removed. Minimum filter chain: `COMPOSITE_GENERATOR → MOOG_FILTER → ADSR_ENVELOPE → VCA`.
+- **Filter state persistence**: All `VcfBase` subclasses (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`) override `reset_on_note_on()` to return `false`. Filter delay lines and resonance buildup are **preserved across consecutive notes**. Only envelope generators and other non-filter chain nodes reset on `note_on`. This is essential for acid/TB-303 style patches where filter self-oscillation builds across a rapid-fire note sequence.
 - **Per-tag parameter addressing**: Parameters are addressed by tag in the patch JSON using a nested object per tag (see PATCH_SPEC.md §Parameters Object). At runtime, `set_named_parameter` must be extended to accept an optional tag scope so that two nodes of the same type (e.g. `"VCO1"` and `"VCO2"`) can be addressed independently. The patch loader maps `parameters["VCO2"]["detune"]` to `voice.find_by_tag("VCO2")->apply_parameter("detune", value)`. Full centralised ramping is Phase 21 (ParameterManager); tag-scoped direct addressing should land with multi-oscillator support.
 - **Parallel signal paths**: Not yet supported. The current `Voice` has a single `signal_chain_`. Multi-waveform mixing is handled by `COMPOSITE_GENERATOR` internally. Independent per-oscillator filter chains are a future architecture goal.
 

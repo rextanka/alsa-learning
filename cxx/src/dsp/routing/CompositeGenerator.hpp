@@ -163,6 +163,16 @@ public:
         tri_osc_->reset();
         wavetable_osc_->reset();
         noise_osc_->reset();
+        // Snap all gain SmoothedParams to their targets so the first note
+        // starts with the correct timbre immediately rather than ramping
+        // from 0 — prevents a timbral "click" onset that masks the ADSR attack.
+        saw_gain_.snap();
+        pulse_gain_.snap();
+        sub_gain_.snap();
+        sine_gain_.snap();
+        tri_gain_.snap();
+        wavetable_gain_.snap();
+        noise_gain_.snap();
     }
 
     PortType output_port_type() const override { return PortType::PORT_AUDIO; }

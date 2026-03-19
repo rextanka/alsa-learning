@@ -148,7 +148,7 @@ TEST_F(BrassPatchTest, FanfareAudible) {
     );
 
     ASSERT_EQ(engine_load_patch(engine(), kPatch), 0);
-    ASSERT_EQ(engine_start(engine()), 0);
+    ASSERT_ENGINE_START(engine());
 
     constexpr int NOTE_MS    = 400;   // held duration
     constexpr int RELEASE_MS = 300;   // 150ms release + margin

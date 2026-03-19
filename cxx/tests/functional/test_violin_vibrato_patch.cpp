@@ -201,7 +201,7 @@ TEST_F(ViolinVibratoPatchTest, OpenStringPhraseAudible) {
     );
 
     ASSERT_EQ(engine_load_patch(engine(), kPatch), 0);
-    ASSERT_EQ(engine_start(engine()), 0);
+    ASSERT_ENGINE_START(engine());
 
     constexpr int NOTE_MS    = 1400;  // long enough to hear full attack + vibrato
     constexpr int RELEASE_MS =  600;  // 400ms release + margin

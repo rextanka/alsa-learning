@@ -29,8 +29,9 @@ Target use cases include: signal generators, MIDI file players, and classic subt
 The library is consumed via a stable C API, enabling host integration in native frameworks (Swift on macOS, Tauri/React on desktop) without exposing C++ internals.
 
 ### Target Platforms
-- **macOS**: Tahoe 26.3+ (CoreAudio)
-- **Linux**: Fedora 42+ (ALSA)
+- **macOS**: Tahoe 26.3+ (CoreAudio, CoreMIDI)
+- **Linux**: Fedora 42+ (ALSA, ALSA rawmidi)
+- **Embedded Linux**: Raspberry Pi 4/5 running Raspberry Pi OS or similar lightweight Linux — Phases 25–26 target this explicitly
 
 ### Technical Pillars
 - **Pull-Based Heartbeat**: Sample-accurate timing driven by the `AudioDriver`. Output pulls from the graph; processors pull from their inputs.
@@ -47,40 +48,39 @@ The library is consumed via a stable C API, enabling host integration in native 
 ### Future Roadmap (Not Currently Planned)
 - **Windows (WASAPI)**: Windows 11 via WASAPI HAL. No implementation exists yet; deferred until macOS and Linux HALs are fully hardened.
 - **MPE & Microtonality**: Per-voice pitch independence with a modular `TuningSystem` for cross-platform musical flexibility. Deferred until core dynamic routing is stable.
+- **WebAssembly**: Emscripten target consuming a Web Audio API driver. Deferred — requires its own HAL implementation and a sandboxed MIDI path.
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    C Interface Layer                     │
-│              (include/CInterface.h, bridge/AudioBridge.cpp) │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│              VoiceManager (Polyphony + Voice Groups)    │
-│  ┌──────────────────────┐  ┌──────────────────────┐     │
-│  │    Voice Group A     │  │    Voice Group B     │     │
-│  │    Voices 1-8        │  │    Voices 9-16       │     │
-│  │  (e.g. SH-101 patch) │  │  (e.g. Juno patch)  │     │
-│  └──────────┬───────────┘  └──────────┬───────────┘     │
-│             │                         │                  │
-│         ┌───▼─────────────────────────▼───┐              │
-│         │       Mono → Stereo Mixer       │              │
-│         │    (Panning & Voice Spread)     │              │
-│         └─────────────────────────────────┘              │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│              Processor base (dsp/Processor.hpp)         │
-│  Oscillators │ Envelope │ Filter                         │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│              AudioDriver HAL (hal/AudioDriver.hpp)      │
-│         ALSA │ CoreAudio │ WASAPI                       │
-└─────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│                         C Interface Layer                          │
+│           (include/CInterface.h, bridge/AudioBridge.cpp)           │
+└────────────────┬──────────────────────────────────┬───────────────┘
+                 │                                  │
+┌────────────────▼──────────────────────┐  ┌────────▼───────────────┐
+│   VoiceManager (Polyphony + Groups)   │  │  MidiDriver HAL        │
+│  ┌──────────────┐  ┌──────────────┐  │  │  (hal/MidiDriver.hpp)  │
+│  │  Voice Grp A │  │  Voice Grp B │  │  │  ALSA rawmidi │ CoreMIDI│
+│  │  Voices 1-8  │  │  Voices 9-16 │  │  └────────┬───────────────┘
+│  └──────┬───────┘  └──────┬───────┘  │           │ MIDI events
+│         │                 │          │           ▼ engine_process_midi_bytes
+│     ┌───▼─────────────────▼───┐      │
+│     │   Mono → Stereo Mixer   │      │
+│     └─────────────────────────┘      │
+└────────────────┬──────────────────────┘
+                 │
+┌────────────────▼──────────────────────────────────────────────────┐
+│              Processor base (dsp/Processor.hpp)                    │
+│  Oscillators │ Envelope │ Filter │ FX  [conditionally compiled]    │
+└────────────────┬──────────────────────────────────────────────────┘
+                 │
+┌────────────────▼──────────────────────────────────────────────────┐
+│              AudioDriver HAL (hal/AudioDriver.hpp)                 │
+│         ALSA │ CoreAudio │ (WASAPI — future)                       │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -90,39 +90,49 @@ The library is consumed via a stable C API, enabling host integration in native 
 ```
 cxx/
 ├── include/
-│   └── CInterface.h           # Public C API for Cross-Platform Interop
+│   └── CInterface.h               # Public C API for Cross-Platform Interop
 ├── src/
 │   ├── bridge/
-│   │   └── AudioBridge.cpp    # C-to-C++ implementation (Bridge)
+│   │   └── AudioBridge.cpp        # C-to-C++ implementation (Bridge)
 │   ├── core/
-│   │   ├── AudioBuffer.hpp    # Multi-channel buffer handling
-│   │   ├── AudioGraph.hpp     # Dynamic routing graph
-│   │   ├── Logger.hpp         # RT-Safe Non-Intrusive Logging
-│   │   ├── MidiParser.hpp     # MIDI event handling
-│   │   ├── MidiFilePlayer.hpp # SMF playback engine (Phase 22A)
-│   │   ├── MusicalClock.hpp   # Sample-accurate timing logic
-│   │   ├── PatchStore.hpp     # JSON patch management
-│   │   ├── SmfParser.hpp      # Standard MIDI File parser (Phase 22A)
-│   │   ├── Voice.hpp          # Per-voice graph container
-│   │   └── VoiceManager.hpp   # Polyphony & Voice Stealing
+│   │   ├── AudioBuffer.hpp        # Multi-channel buffer handling
+│   │   ├── AudioGraph.hpp         # Dynamic routing graph
+│   │   ├── Logger.hpp             # RT-Safe Non-Intrusive Logging
+│   │   ├── MidiParser.hpp         # MIDI event handling
+│   │   ├── MidiFilePlayer.hpp     # SMF playback engine (Phase 22A)
+│   │   ├── MusicalClock.hpp       # Sample-accurate timing logic
+│   │   ├── ModuleRegistry.hpp     # Self-registering processor registry
+│   │   ├── PatchStore.hpp         # JSON patch management
+│   │   ├── ProcessorRegistrations.cpp  # Central registration (conditionally replaced by Phase 26)
+│   │   ├── SmfParser.hpp          # Standard MIDI File parser (Phase 22A)
+│   │   ├── Voice.hpp              # Per-voice graph container
+│   │   └── VoiceManager.hpp       # Polyphony & Voice Stealing
 │   ├── dsp/
-│   │   ├── Processor.hpp      # Base processor class (NVI Pattern)
-│   │   ├── InputSource.hpp    # Pull interface
-│   │   ├── SmoothedParam.hpp  # Per-parameter linear-ramp interpolation (Phase 21)
-│   │   ├── envelope/          # ADSR, AD, Envelope base
-│   │   ├── filter/            # Moog, Diode, SH, MS20, HP, BP ladders; VcfBase
-│   │   ├── fx/                # Juno Chorus, Echo Delay, Freeverb, FDN Reverb, Phaser
-│   │   ├── oscillator/        # Sine, Saw, Pulse, Sub, LFO, White/Pink Noise
-│   │   └── routing/           # CompositeGenerator, DrawbarOrgan, CV/Audio utilities
+│   │   ├── Processor.hpp          # Base processor class (NVI Pattern)
+│   │   ├── InputSource.hpp        # Pull interface
+│   │   ├── SmoothedParam.hpp      # Per-parameter linear-ramp interpolation (Phase 21)
+│   │   ├── envelope/              # ADSR, AD, Envelope base
+│   │   ├── filter/                # Moog, Diode, SH, MS20, HP, BP ladders; VcfBase
+│   │   ├── fx/                    # Juno Chorus, Echo Delay, Freeverb, FDN Reverb, Phaser, Distortion
+│   │   ├── oscillator/            # Sine, Saw, Pulse, Sub, LFO, White/Pink Noise
+│   │   └── routing/               # CompositeGenerator, DrawbarOrgan, CV/Audio utilities
 │   └── hal/
-│       ├── AudioDriver.hpp    # Cross-platform HAL interface (enumerate_devices, device_name)
-│       ├── HostDeviceInfo.hpp # Platform-agnostic device descriptor (Phase 20)
-│       ├── alsa/              # Linux/Fedora implementation
-│       └── coreaudio/         # macOS implementation
+│       ├── AudioDriver.hpp        # Cross-platform audio HAL interface
+│       ├── HostDeviceInfo.hpp     # Platform-agnostic audio device descriptor
+│       ├── MidiDriver.hpp         # Cross-platform MIDI HAL interface (Phase 25)
+│       ├── HostMidiDeviceInfo.hpp # Platform-agnostic MIDI device descriptor (Phase 25)
+│       ├── alsa/                  # Linux audio + MIDI implementation
+│       │   ├── AlsaDriver.hpp/.cpp
+│       │   └── AlsaMidiDriver.hpp/.cpp   # Phase 25
+│       └── coreaudio/             # macOS audio + MIDI implementation
+│           ├── CoreAudioDriver.hpp/.cpp
+│           └── CoreMidiDriver.hpp/.cpp   # Phase 25
+├── tools/
+│   └── configure_modules.py       # Module configuration tool for embedded targets (Phase 26)
 └── tests/
-    ├── functional/            # Scenario-based engine tests
-    ├── integration/           # Bridge and Hardware validation tests
-    └── unit/                  # GTest-based component tests
+    ├── functional/                # Scenario-based engine tests
+    ├── integration/               # Bridge and Hardware validation tests
+    └── unit/                      # GTest-based component tests
 ```
 
 ---
@@ -215,6 +225,8 @@ The engine supports **44100 Hz and 48000 Hz** exclusively. These are the two rat
 | 22    | **SMF Playback — Phase A (Rudimentary)**: `SmfParser` + `MidiFilePlayer` — sample-accurate SMF Format 0/1 playback. All tracks merged; MIDI channel ignored (channel-blind). All voices use the single loaded patch. `engine_load_midi` / `engine_midi_play` / `engine_midi_stop` / `engine_midi_rewind` / `engine_midi_get_position` C API. Tempo map support (FF 51). Note On velocity-0 normalised to Note Off. Running status. SysEx skipped. | Complete |
 | 23    | **SMF Playback — Phase B (Multi-timbral)**: Extend `MidiFilePlayer` with a MIDI-channel-to-VoiceGroup routing table. Each channel maps to a VoiceGroup with its own patch. `engine_midi_set_channel_patch(ch, patch_path)` C API. Requires Phase 16 VoiceGroup/patch-per-group support. Program Change events (`0xC0`) trigger live patch swaps on the target channel's group. | Planned |
 | 24    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation. | Planned |
+| 25    | **USB MIDI HAL**: Platform-agnostic `hal::MidiDriver` base with static factory pattern (matching `AudioDriver`). Platform drivers: `AlsaMidiDriver` (ALSA rawmidi) and `CoreMidiDriver` (CoreMIDI framework). MIDI input dispatches to the engine via `engine_process_midi_bytes`. MIDI output sends raw bytes to a connected device. `HostMidiDeviceInfo` struct for enumeration. New C API: `midi_*` family. No platform `#ifdef`s in bridge layer. | Planned |
+| 26    | **Static Module Configuration**: Decouple module registration from the central `ProcessorRegistrations.cpp` into per-module self-registration (static initializers in each processor's `.cpp`). CMake `option()` flags (`AUDIO_MODULE_REVERB`, `AUDIO_MODULE_FX`, etc.) control which `.cpp` files compile, stripping unused modules from the binary. Named CMake presets for common targets (`desktop_full`, `pi_minimal`, `pi_synth`). Python tool `tools/configure_modules.py` for interactive preset configuration. Enables the engine to run on Raspberry Pi with a binary footprint 50–70% smaller than the full desktop build. | Planned |
 
 ---
 
@@ -411,6 +423,315 @@ To bridge the gap between the C-compatible public API and the internal Flexible 
 3. **RT-Safety**: All mapping lookups occur outside the audio thread or via lock-free atomic caches.
 
 ---
+
+## MIDI HAL Architecture (Phase 25)
+
+The MIDI hardware layer follows the **identical factory pattern** as `AudioDriver` — platform-specific code is isolated to concrete driver classes; the bridge and core engine see only the abstract base.
+
+### Design Principles
+
+- **No platform `#ifdef`s in `AudioBridge.cpp`**: `MidiDriver::create()` and `MidiDriver::enumerate_devices()` are static methods declared in the base header and defined only in the platform `.cpp` files. The bridge calls these factory methods without OS-specific includes.
+- **MIDI and Audio HALs are independent**: `MidiDriver` has no dependency on `AudioDriver`. They share `hal::` namespace and the same structural pattern, but neither owns the other.
+- **Input is callback-driven**: MIDI data arrives asynchronously on a driver thread (ALSA: polling thread; CoreMIDI: CoreMIDI callback thread). The callback dispatches to the engine via `engine_process_midi_bytes` with `sampleOffset = 0`. Sub-block sample-accurate MIDI scheduling (computing the exact offset within the current audio block using hardware timestamps) is a Phase 25B enhancement.
+- **Output is synchronous**: `send_bytes()` calls the OS write API immediately. RT-safety is caller's responsibility — do not call `send_bytes()` from the audio thread.
+- **RT-safe event queue** (optional, Phase 25B): Incoming MIDI bytes can be pushed to a lock-free SPSC ring buffer, then drained by the audio callback at block start with accurate `sampleOffset` values derived from hardware timestamps.
+
+### `HostMidiDeviceInfo` (new, analogous to `HostDeviceInfo`)
+
+```cpp
+// hal/HostMidiDeviceInfo.hpp
+namespace hal {
+struct HostMidiDeviceInfo {
+    int         index;         // 0-based enumeration index
+    std::string name;          // Human-readable name ("Arturia KeyStep", "IAC Driver Bus 1")
+    bool        is_input;      // Supports MIDI input (receiving from device)
+    bool        is_output;     // Supports MIDI output (sending to device)
+};
+} // namespace hal
+```
+
+All fields are standard C++ types — no OS handles, no platform-specific types.
+
+### `MidiDriver` Abstract Base
+
+```cpp
+// hal/MidiDriver.hpp
+namespace hal {
+
+class MidiDriver {
+public:
+    // Callback receives raw MIDI bytes and a nanosecond hardware timestamp.
+    // Called from the driver's background thread — must be RT-safe.
+    using MidiInputCallback =
+        std::function<void(const uint8_t* data, size_t size, uint64_t timestamp_ns)>;
+
+    virtual ~MidiDriver() = default;
+
+    virtual bool open_input(int device_index)  = 0;
+    virtual bool open_output(int device_index) = 0;
+    virtual void close()                        = 0;
+    virtual void set_input_callback(MidiInputCallback cb) = 0;
+    virtual bool send_bytes(const uint8_t* data, size_t size) = 0;
+    virtual std::string device_name() const    = 0;
+
+    // Defined in platform .cpp — no platform headers required by callers
+    static std::vector<HostMidiDeviceInfo> enumerate_devices();
+    static std::unique_ptr<MidiDriver>     create();
+};
+
+} // namespace hal
+```
+
+### Platform Implementations
+
+| Platform | Driver class | Key OS APIs |
+|---|---|---|
+| Linux | `AlsaMidiDriver` | `snd_rawmidi_open`, `snd_rawmidi_read`, `snd_rawmidi_write`, polling thread |
+| macOS | `CoreMidiDriver` | `MIDIClientCreate`, `MIDIInputPortCreate` (callback), `MIDIOutputPortCreate`, `MIDISend` |
+
+**Linux (ALSA rawmidi)**: Opens `/dev/midi*` or ALSA rawmidi handles. Spawns a `std::thread` that calls `snd_rawmidi_read()` in a poll loop. On receipt, invokes `MidiInputCallback` with the raw bytes and `clock_gettime(CLOCK_MONOTONIC)` timestamp. All ALSA headers (`alsa/asoundlib.h`) are confined to `AlsaMidiDriver.cpp` — the `.hpp` forward-declares the ALSA handle type.
+
+**macOS (CoreMIDI)**: Creates a `MIDIClientRef` and `MIDIPortRef` in `open_input()`. CoreMIDI dispatches received `MIDIPacketList` data to a callback on the CoreMIDI run loop thread; the driver converts packets to raw bytes and invokes `MidiInputCallback`. CoreMIDI headers (`CoreMIDI/CoreMIDI.h`) are confined to `CoreMidiDriver.cpp`.
+
+### C API (new `midi_*` family in `CInterface.h`)
+
+```c
+// Device enumeration (no handle needed)
+int  host_midi_device_count();
+int  host_midi_get_device_info(int index, /* HostMidiDeviceInfo fields */ ...);
+
+// Lifecycle
+MidiHandle* midi_open_input(int device_index);
+MidiHandle* midi_open_output(int device_index);
+void        midi_close(MidiHandle* handle);
+
+// Connect a MIDI input to an engine — automatically dispatches received bytes
+// via engine_process_midi_bytes(engine, data, size, 0)
+void        midi_connect_to_engine(MidiHandle* midi_handle, EngineHandle* engine_handle);
+
+// Output
+int         midi_send_bytes(MidiHandle* handle, const uint8_t* data, int size);
+int         midi_send_note_on(MidiHandle* handle, int channel, int note, int velocity);
+int         midi_send_note_off(MidiHandle* handle, int channel, int note);
+int         midi_send_cc(MidiHandle* handle, int channel, int cc, int value);
+int         midi_send_program_change(MidiHandle* handle, int channel, int program);
+```
+
+`MidiHandle` is an opaque pointer (same pattern as `EngineHandle`). The connection established by `midi_connect_to_engine` is live for the lifetime of the `MidiHandle` — calling `midi_close` disconnects and destroys it.
+
+### CMake Changes
+
+```cmake
+if(APPLE)
+    list(APPEND ENGINE_SOURCES src/hal/coreaudio/CoreMidiDriver.cpp)
+    find_library(COREMIDI_FRAMEWORK CoreMIDI REQUIRED)
+    list(APPEND PLATFORM_LIBS ${COREMIDI_FRAMEWORK})
+elseif(UNIX AND NOT APPLE)
+    list(APPEND ENGINE_SOURCES src/hal/alsa/AlsaMidiDriver.cpp)
+    # ALSA already linked via pkg_check_modules(ALSA)
+endif()
+```
+
+### Testing
+
+- **Unit**: Mock `MidiDriver` that replays a pre-recorded byte sequence into `engine_process_midi_bytes`. Verify that note-on/off events reach the `VoiceManager`.
+- **Integration**: `test_midi_roundtrip.cpp` — opens a loopback MIDI port (Linux: ALSA seq loopback; macOS: IAC bus), sends a note-on from the output port, verifies the input callback fires with the correct bytes.
+- **Functional**: `Functional_MidiLive` — interactive test (not part of `ctest`) that opens a real USB MIDI device by name and plays a scale by sending note events to the engine.
+
+---
+
+## Static Module Configuration (Phase 26)
+
+The goal is to produce a stripped binary suitable for resource-constrained hosts (Raspberry Pi, embedded Linux) by compiling only the processor modules needed for the target use case.
+
+### Problem with the Current Design
+
+`ProcessorRegistrations.cpp` calls `register_builtin_processors()` which unconditionally registers all ~30 modules. There is no way to exclude individual modules at compile time without editing this file. On a Pi Zero (512 MB RAM, single-core ARMv6), loading a full desktop build with FDN reverb, 4 different filter types, and all CV utilities wastes code space and startup time.
+
+### Solution: Self-Registering Modules via Static Initializers
+
+Each processor module gets its own small `.cpp` file whose sole responsibility is registering that module via a C++ static initializer. CMake decides which `.cpp` files to compile. If a `.cpp` file is not compiled in, its static initializer never runs, and the module is never registered — no `#ifdef`, no runtime cost.
+
+#### Self-Registration Pattern
+
+```cpp
+// src/dsp/fx/DistortionProcessor_reg.cpp
+#include "../../core/ModuleRegistry.hpp"
+#include "DistortionProcessor.hpp"
+namespace audio {
+static const bool kReg = (ModuleRegistry::instance().register_module(
+    "DISTORTION",
+    "Guitar-style distortion — drive + character blend",
+    [](int sr) { return std::make_unique<DistortionProcessor>(sr); }
+), true);
+} // namespace audio
+```
+
+`kReg` is a translation-unit-local variable. The linker includes the TU only if the `.cpp` is listed in `ENGINE_SOURCES`. Modules not listed simply do not exist at link time.
+
+#### Central Registration File Fate
+
+`ProcessorRegistrations.cpp` is **retained as the "full desktop" build path** — it registers everything and is included by default (`AUDIO_STATIC_CONFIG=OFF`). When `AUDIO_STATIC_CONFIG=ON`, `ProcessorRegistrations.cpp` is excluded from `ENGINE_SOURCES` and the per-module `_reg.cpp` files take over, controlled individually by CMake options.
+
+This preserves the existing build exactly as-is while enabling the new embedded path without a flag.
+
+### CMake Module Groups
+
+Modules are organized into groups. Each group is controlled by a single CMake `option()`. Individual module granularity is available but not required for most targets.
+
+```cmake
+option(AUDIO_STATIC_CONFIG "Use per-module self-registration instead of central ProcessorRegistrations.cpp" OFF)
+
+if(AUDIO_STATIC_CONFIG)
+    # Core — always compiled, no option to disable
+    list(APPEND ENGINE_SOURCES
+        src/dsp/envelope/AdsrEnvelopeProcessor_reg.cpp
+        src/dsp/envelope/ADEnvelopeProcessor_reg.cpp
+        src/dsp/VcaProcessor_reg.cpp
+        src/dsp/routing/CompositeGenerator_reg.cpp
+        src/dsp/oscillator/LfoProcessor_reg.cpp
+        src/dsp/oscillator/WhiteNoiseProcessor_reg.cpp
+    )
+
+    # Filters (one or more ladder types)
+    option(AUDIO_MODULE_FILTERS_ALL  "All four filter types"        ON)
+    option(AUDIO_MODULE_FILTER_MOOG  "Moog ladder filter"           ON)
+    option(AUDIO_MODULE_FILTER_DIODE "TB-303 diode ladder"          ON)
+    option(AUDIO_MODULE_FILTER_SH    "SH-101 CEM filter"            ON)
+    option(AUDIO_MODULE_FILTER_MS20  "Korg MS-20 SVF"               ON)
+    option(AUDIO_MODULE_FILTER_HPF   "High-pass biquad"             ON)
+    option(AUDIO_MODULE_FILTER_BPF   "Band-pass biquad"             ON)
+
+    # FX
+    option(AUDIO_MODULE_REVERB       "FDN and Freeverb reverb"      ON)
+    option(AUDIO_MODULE_CHORUS       "Juno BBD chorus"              ON)
+    option(AUDIO_MODULE_DISTORTION   "Guitar distortion"            ON)
+    option(AUDIO_MODULE_PHASER       "All-pass phaser"              ON)
+    option(AUDIO_MODULE_ECHO_DELAY   "Echo/BBD delay"               ON)
+
+    # Dynamics
+    option(AUDIO_MODULE_DYNAMICS     "Noise gate + envelope follower" ON)
+
+    # CV Utilities
+    option(AUDIO_MODULE_CV_UTILS     "CV mixer, splitter, maths, S&H, gate delay, inverter" ON)
+
+    # Audio Routing
+    option(AUDIO_MODULE_AUDIO_ROUTING "Audio splitter, mixer, ring mod" ON)
+
+    # Organ
+    option(AUDIO_MODULE_DRAWBAR_ORGAN "Hammond drawbar organ"       ON)
+
+    # Conditionally append _reg.cpp files based on options ...
+endif()
+```
+
+### CMakePresets for Named Targets
+
+`CMakePresets.json` (at project root alongside `CMakeLists.txt`) defines named configurations:
+
+```json
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "desktop_full",
+      "displayName": "Desktop — full module set",
+      "cacheVariables": {
+        "AUDIO_STATIC_CONFIG": "OFF"
+      }
+    },
+    {
+      "name": "pi_minimal",
+      "displayName": "Raspberry Pi — minimal (VCO, one filter, ADSR, VCA, LFO)",
+      "cacheVariables": {
+        "AUDIO_STATIC_CONFIG":       "ON",
+        "AUDIO_MODULE_FILTER_MOOG":  "ON",
+        "AUDIO_MODULE_FILTER_DIODE": "OFF",
+        "AUDIO_MODULE_FILTER_SH":    "OFF",
+        "AUDIO_MODULE_FILTER_MS20":  "OFF",
+        "AUDIO_MODULE_FILTER_HPF":   "ON",
+        "AUDIO_MODULE_FILTER_BPF":   "OFF",
+        "AUDIO_MODULE_REVERB":       "OFF",
+        "AUDIO_MODULE_CHORUS":       "OFF",
+        "AUDIO_MODULE_DISTORTION":   "OFF",
+        "AUDIO_MODULE_PHASER":       "OFF",
+        "AUDIO_MODULE_ECHO_DELAY":   "OFF",
+        "AUDIO_MODULE_DYNAMICS":     "OFF",
+        "AUDIO_MODULE_CV_UTILS":     "OFF",
+        "AUDIO_MODULE_AUDIO_ROUTING":"OFF",
+        "AUDIO_MODULE_DRAWBAR_ORGAN":"OFF"
+      }
+    },
+    {
+      "name": "pi_synth",
+      "displayName": "Raspberry Pi — synth (all filters, distortion, delay, CV utils)",
+      "cacheVariables": {
+        "AUDIO_STATIC_CONFIG":       "ON",
+        "AUDIO_MODULE_REVERB":       "OFF",
+        "AUDIO_MODULE_CHORUS":       "OFF",
+        "AUDIO_MODULE_PHASER":       "OFF",
+        "AUDIO_MODULE_DRAWBAR_ORGAN":"OFF"
+      }
+    }
+  ]
+}
+```
+
+Usage:
+```bash
+cmake --preset pi_minimal -B build_pi
+cmake --build build_pi
+# Binary contains only 8 modules vs. 30+ in desktop_full
+```
+
+### Python Configuration Tool (`tools/configure_modules.py`)
+
+The Python tool addresses two use cases:
+1. **Interactive configuration**: prompts the user to select modules and writes a `CMakeUserPresets.json`
+2. **Preset validation**: checks a preset name against the known module list and reports which modules are included/excluded
+
+```
+tools/configure_modules.py --interactive
+  → Prompts: "Include reverb? [Y/n]", "Include distortion? [Y/n]", ...
+  → Writes: cmake/user_preset.cmake or CMakeUserPresets.json
+
+tools/configure_modules.py --preset pi_minimal --report
+  → Outputs a table: module name | included | estimated code size contribution
+
+tools/configure_modules.py --list-presets
+  → Lists all defined presets from CMakePresets.json
+```
+
+The tool is a pure Python 3 script with no external dependencies — it manipulates JSON directly. It does not replace CMake; it is a convenience wrapper over `cmake --preset`.
+
+### Error Handling for Missing Modules
+
+When a patch JSON references a module type that was not compiled in (e.g., `"type": "REVERB_FDN"` on a `pi_minimal` build), `ModuleRegistry::create()` returns `nullptr`. The patch loader logs:
+
+```
+[WARN] Module type "REVERB_FDN" not registered — was it excluded at compile time?
+       Patch load failed for group 0.
+```
+
+This is a clear, actionable error. The patch itself is not loaded, so the engine is never in a partially-configured state.
+
+### Binary Size Estimates
+
+| Preset | Modules | Approx. binary size reduction |
+|---|---|---|
+| `desktop_full` | 30+ | baseline |
+| `pi_synth` | ~20 | ~25–35% smaller |
+| `pi_minimal` | ~8 | ~50–70% smaller |
+
+Estimates based on typical DSP module object sizes (2–8 KB each before LTO). Link-time optimization (`-flto`) can reduce further.
+
+### Testing
+
+- **Unit**: Verify that a `pi_minimal` build's `ModuleRegistry` contains exactly the expected modules and rejects attempts to instantiate excluded ones.
+- **Build CI**: Add a CMake build job to CI that builds with `pi_minimal` preset and verifies it links clean.
+
+---
+
 ## Documentation Map
 
 > **Context Refresh Rule**: When resuming work after a context break, read ARCH_PLAN.md (this file) first, then the documents below in order. Each document governs a distinct domain — all rules in all documents are active at all times. ARCH_PLAN.md is the single source of truth for architecture decisions; the other documents are the governing contracts for their respective domains.

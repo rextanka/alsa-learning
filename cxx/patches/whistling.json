@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "name": "Whistling",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "AD_ENVELOPE",         "tag": "PITCH_ENV" },
+        { "type": "INVERTER",            "tag": "INV"       },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO"       },
+        { "type": "SH_FILTER",           "tag": "VCF"       },
+        { "type": "ADSR_ENVELOPE",       "tag": "AMP_ENV"   },
+        { "type": "VCA",                 "tag": "VCA"       }
+      ],
+      "connections": [
+        { "from_tag": "PITCH_ENV", "from_port": "envelope_out", "to_tag": "INV",     "to_port": "cv_in"    },
+        { "from_tag": "INV",       "from_port": "cv_out",       "to_tag": "VCO",     "to_port": "pitch_cv" },
+        { "from_tag": "VCO",       "from_port": "audio_out",    "to_tag": "VCF",     "to_port": "audio_in" },
+        { "from_tag": "VCF",       "from_port": "audio_out",    "to_tag": "VCA",     "to_port": "audio_in" },
+        { "from_tag": "AMP_ENV",   "from_port": "envelope_out", "to_tag": "VCA",     "to_port": "gain_cv"  }
+      ],
+      "parameters": {
+        "VCO":       { "sine_gain": 1.0 },
+        "VCF":       { "cutoff": 4000.0, "resonance": 0.08 },
+        "PITCH_ENV": { "attack": 0.001, "decay": 0.4 },
+        "INV":       { "scale": -0.3 },
+        "AMP_ENV":   { "attack": 0.08, "decay": 0.05, "sustain": 0.9, "release": 0.15 }
+      }
+    }
+  ]
+}

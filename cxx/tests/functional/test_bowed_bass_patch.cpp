@@ -149,7 +149,7 @@ TEST_F(BowedBassPatchTest, SustainedNotesAudible) {
     );
 
     ASSERT_EQ(engine_load_patch(engine(), kPatch), 0);
-    ASSERT_EQ(engine_start(engine()), 0);
+    ASSERT_ENGINE_START(engine());
 
     constexpr int NOTE_MS    = 1800;  // long bow
     constexpr int RELEASE_MS =  700;  // 0.5s release + margin

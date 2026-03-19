@@ -143,7 +143,7 @@ TEST_F(TbBassPatchTest, ChromaticScaleAudible) {
     );
 
     ASSERT_EQ(engine_load_patch(engine(), kPatch), 0);
-    ASSERT_EQ(engine_start(engine()), 0);
+    ASSERT_ENGINE_START(engine());
     set_param(engine(), "vcf_res", kResonance);
 
     std::cout << "[TbBass] Playing two-octave chromatic C2–B3 with filter sweep…\n";

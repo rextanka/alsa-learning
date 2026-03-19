@@ -172,6 +172,15 @@ public:
     virtual void reset() = 0;
 
     /**
+     * @brief Whether this processor should be reset on each note_on.
+     *
+     * Override to return false for stateful processors (filters, delay lines)
+     * that should maintain state across notes — e.g. a TB-303 filter that
+     * builds resonance continuously between notes.
+     */
+    virtual bool reset_on_note_on() const { return true; }
+
+    /**
      * @brief Node tag for signal chain discovery (Phase 14).
      *
      * Tags are assigned by engine_add_module() (e.g. "VCO", "VCF", "ENV", "VCA").

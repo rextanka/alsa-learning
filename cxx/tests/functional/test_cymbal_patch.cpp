@@ -249,7 +249,7 @@ TEST_F(CymbalPatchTest, FourFourPatternAudible) {
     );
 
     ASSERT_EQ(engine_load_patch(engine(), kPatch), 0);
-    ASSERT_EQ(engine_start(engine()), 0);
+    ASSERT_ENGINE_START(engine());
 
     // 80 BPM: quarter note = 750ms. Short gate (percussive), ring out between hits.
     constexpr int BEAT_MS = 750;

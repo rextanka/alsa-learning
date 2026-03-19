@@ -201,7 +201,7 @@ TEST_F(HarpsichordPatchTest, GavotteAudible) {
     }
 
     ASSERT_EQ(engine_load_patch(engine(), kPatch), 0);
-    ASSERT_EQ(engine_start(engine()), 0);
+    ASSERT_ENGINE_START(engine());
     ASSERT_EQ(engine_load_midi(engine(), kMidi), 0);
     engine_midi_play(engine());
 

@@ -91,6 +91,7 @@ public:
     }
 
     void reset() override { reset_state(); }
+    bool reset_on_note_on() const override { return false; }
 
 protected:
     // -------------------------------------------------------------------

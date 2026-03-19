@@ -61,16 +61,17 @@ is no longer supported and must not be used in new patches.
 | `type` | Registered module type name (see MODULE_DESC.md) |
 | `tag` | Unique instance tag for this group — used to target ports and parameters |
 
-Module type names (complete registry as of Phase 22A):
+Module type names (complete registry as of Phase 22A+):
 
 `COMPOSITE_GENERATOR`, `ADSR_ENVELOPE`, `AD_ENVELOPE`, `VCA`, `MOOG_FILTER`,
 `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`, `HIGH_PASS_FILTER`, `BAND_PASS_FILTER`,
 `LFO`, `DRAWBAR_ORGAN`, `WHITE_NOISE`, `INVERTER`, `RING_MOD`, `SOURCE_MIXER`,
-`SAMPLE_HOLD`, `CV_MIXER`, `CV_SPLITTER`, `AUDIO_SPLITTER`, `GATE_DELAY`,
-`NOISE_GATE`, `ENVELOPE_FOLLOWER`, `ECHO_DELAY`, `JUNO_CHORUS`
+`SAMPLE_HOLD`, `CV_MIXER`, `CV_SPLITTER`, `AUDIO_SPLITTER`, `AUDIO_MIXER`, `GATE_DELAY`,
+`NOISE_GATE`, `ENVELOPE_FOLLOWER`, `ECHO_DELAY`, `JUNO_CHORUS`, `DISTORTION`, `MATHS`,
+`REVERB_FDN`
 
-**Global post-chain only** (not valid in `chain` array — use `engine_post_chain_push` instead):
-`REVERB_FREEVERB`, `REVERB_FDN`, `PHASER`
+**Global post-chain only** (prefer `engine_post_chain_push`; also valid as a per-voice chain node):
+`REVERB_FREEVERB`, `PHASER`
 
 See MODULE_DESC.md for port names, parameter ranges, and connection rules.
 
@@ -552,37 +553,47 @@ Two detuned VCOs summed before a shared filter simulate an ensemble string secti
 
 ### Banjo
 
-Plucked, self-retriggering twang. A fast-decay pulse-wave VCO with zero sustain is re-triggered at a fixed rate by an LFO square wave feeding `ext_gate_in`, producing a continuous picked-string roll while the key is held. Similar topology to Percussion Trill but at a lower rate with a brighter, more pitched character. (Roland Vol 1 §3-4, Fig 3-4.)
+Plucked twang: two detuned VCOs blended through a mixer, stripped of low weight by a HPF, then filtered by a resonant SH_FILTER for nasal membrane character. An AD envelope simultaneously drives VCA amplitude and VCF cutoff — the filter opens wide at the pluck then narrows as the note decays, producing the characteristic bright snap fading to warm ring. See `patches/banjo.json`.
 
 ```json
 {
   "version": 2,
-  "name": "banjo",
+  "name": "Banjo",
   "groups": [
     {
       "id": 0,
       "chain": [
-        { "type": "LFO",                 "tag": "PICK" },
-        { "type": "COMPOSITE_GENERATOR", "tag": "VCO"  },
-        { "type": "ADSR_ENVELOPE",       "tag": "ENV"  },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO1" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
+        { "type": "AUDIO_MIXER",         "tag": "MIX"  },
+        { "type": "HIGH_PASS_FILTER",    "tag": "HPF"  },
+        { "type": "SH_FILTER",           "tag": "VCF"  },
+        { "type": "AD_ENVELOPE",         "tag": "ENV"  },
         { "type": "VCA",                 "tag": "VCA"  }
       ],
       "connections": [
-        { "from_tag": "PICK", "from_port": "control_out",  "to_tag": "ENV", "to_port": "ext_gate_in" },
-        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"     }
+        { "from_tag": "VCO1", "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_1" },
+        { "from_tag": "VCO2", "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_2" },
+        { "from_tag": "MIX",  "from_port": "audio_out",    "to_tag": "HPF",  "to_port": "audio_in"   },
+        { "from_tag": "HPF",  "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"   },
+        { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"   },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"    },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCF",  "to_port": "cutoff_cv"  }
       ],
       "parameters": {
-        "VCO":  { "pulse_gain": 0.9, "pulse_width": 0.45 },
-        "ENV":  { "attack": 0.002, "decay": 0.12, "sustain": 0.0, "release": 0.05 },
-        "VCF":  { "cutoff": 2200.0, "res": 0.2 },
-        "PICK": { "rate": 6.5, "waveform": 2 }
+        "VCO1": { "saw_gain": 1.0 },
+        "VCO2": { "pulse_gain": 0.7, "pulse_width": 0.2, "detune": 6 },
+        "MIX":  { "gain_1": 1.0, "gain_2": 0.7 },
+        "HPF":  { "cutoff": 250.0, "resonance": 0.1 },
+        "VCF":  { "cutoff": 2500.0, "resonance": 0.5 },
+        "ENV":  { "attack": 0.001, "decay": 0.20 }
       }
     }
   ]
 }
 ```
 
-> `PICK` `waveform: 2` is Square. At `rate: 6.5` Hz this produces approximately 6–7 picks per second. Adjust `PICK` `rate` and `ENV` `decay` together to control the speed and overlap of the picking pattern.
+> `VCO1` (sawtooth) provides the full harmonic series; `VCO2` (narrow pulse, 6 cents sharp) adds nasal colour and subtle beating. `HPF` at 250 Hz strips bass weight so the pluck sounds bright rather than thumpy. The dual `ENV → VCA + VCF` routing gives the characteristic filter-brightness-on-attack.
 
 ### Whistling / Pitch Glide
 
@@ -686,7 +697,7 @@ Metallic cymbal character: high-pass filtered white noise into a modulated short
       "parameters": {
         "NOISE": { "color": 0 },
         "VCF":   { "cutoff": 6000.0, "resonance": 0.35, "hpf_cutoff": 2 },
-        "ENV":   { "attack": 0.001, "decay": 0.35, "sustain": 0.0, "release": 0.15 },
+        "ENV":   { "attack": 0.001, "decay": 1.2, "sustain": 0.0, "release": 0.6 },
         "DLY":   { "time": 0.025, "feedback": 0.55, "mix": 0.5, "mod_rate": 6.5, "mod_intensity": 0.4 }
       }
     }
@@ -694,7 +705,48 @@ Metallic cymbal character: high-pass filtered white noise into a modulated short
 }
 ```
 
-> The `feedback: true` connection re-enters the delay's own input. `DLY` `mod_rate: 6.5` Hz with `mod_intensity: 0.4` oscillates the 25 ms delay time by ±10 ms, producing the metallic shimmer. `VCF` `hpf_cutoff: 2` selects the ≈150 Hz high-pass stage to remove low-frequency mud. See `patches/cymbal.json`.
+> The `feedback: true` connection re-enters the delay's own input. `DLY` `mod_rate: 6.5` Hz with `mod_intensity: 0.4` oscillates the 25 ms delay time by ±10 ms, producing the metallic shimmer. `VCF` `hpf_cutoff: 2` selects the ≈150 Hz high-pass stage to remove low-frequency mud. `ENV` `decay: 1.2` and `release: 0.6` give a realistic sustained shimmer decay — shorter values produce a tighter, dryer hit. See `patches/cymbal.json`.
+
+### Acid Reverb (TB-303 with Distortion)
+
+TB-303 style acid bass: sawtooth through a Diode Ladder filter with envelope-swept cutoff and self-oscillation resonance, into a VCA, then a distortion pedal (modelled as a DISTORTION module), then a FDN reverb tail. The AD envelope drives both VCA amplitude and filter cutoff — the filter sweeps up on attack and closes on decay. Filter state is preserved across notes (no reset on note_on), so resonance builds across the riff. See `patches/acid_reverb.json`.
+
+```json
+{
+  "version": 2,
+  "name": "Acid Reverb",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO"  },
+        { "type": "DIODE_FILTER",        "tag": "VCF"  },
+        { "type": "AD_ENVELOPE",         "tag": "ENV"  },
+        { "type": "VCA",                 "tag": "VCA"  },
+        { "type": "DISTORTION",          "tag": "DIST" },
+        { "type": "REVERB_FDN",          "tag": "REV"  }
+      ],
+      "connections": [
+        { "from_tag": "VCO",  "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"  },
+        { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"  },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"   },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCF",  "to_port": "cutoff_cv" },
+        { "from_tag": "VCA",  "from_port": "audio_out",    "to_tag": "DIST", "to_port": "audio_in"  },
+        { "from_tag": "DIST", "from_port": "audio_out",    "to_tag": "REV",  "to_port": "audio_in"  }
+      ],
+      "parameters": {
+        "VCO":  { "saw_gain": 1.0 },
+        "VCF":  { "cutoff": 800.0, "resonance": 0.92, "env_depth": 3.0 },
+        "DIST": { "drive": 8.0, "character": 0.3 },
+        "ENV":  { "attack": 0.003, "decay": 0.25 },
+        "REV":  { "decay": 1.2, "wet": 0.20, "room_size": 0.5, "damping": 0.4 }
+      }
+    }
+  ]
+}
+```
+
+> `VCF` `resonance: 0.92` is on the edge of self-oscillation — exactly the 303's characteristic squelch. `env_depth: 3.0` scales the AD envelope to sweep one octave of filter cutoff. `DIST` is post-VCA, replicating the 303 output jack plugged into a pedal. `character: 0.3` gives a mild asymmetry for warm even-harmonic content without going full ring distortion. `REV` `wet: 0.20` adds subtle space without washing out the acid bite.
 
 ---
 

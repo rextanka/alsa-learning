@@ -21,7 +21,7 @@
       "parameters": {
         "NOISE": { "color": 0 },
         "VCF":   { "cutoff": 6000.0, "resonance": 0.35, "hpf_cutoff": 2 },
-        "ENV":   { "attack": 0.001, "decay": 0.35, "sustain": 0.0, "release": 0.15 },
+        "ENV":   { "attack": 0.001, "decay": 1.2, "sustain": 0.0, "release": 0.6 },
         "DLY":   { "time": 0.025, "feedback": 0.55, "mix": 0.5, "mod_rate": 6.5, "mod_intensity": 0.4 }
       }
     }

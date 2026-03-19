@@ -1,16 +1,19 @@
 /**
  * @file DiodeLadderProcessor.hpp
- * @brief TB-style diode ladder filter — "rubbery acid" character.
+ * @brief TB-303 style diode ladder filter — 4-pole 24dB/oct.
  *
  * RT-SAFE chain node: PORT_AUDIO in → PORT_AUDIO out.
  * Type name: DIODE_FILTER
  *
- * TB-style character: 4-pole diode ladder with 3/4-pole blend at high resonance.
- * Component tolerances in the original circuit cause it to measure closer to
- * 18 dB/oct (3-pole) at moderate resonance. Emulated here by blending stage[2]
- * (3-pole) and stage[3] (4-pole) with the blend shifting 100% to 3-pole at
- * maximum resonance. Per-stage tanh saturation adds characteristic harmonic
- * distortion.
+ * Stripped to minimum for verified self-oscillation:
+ *   - 1× sample rate (g_ at fs — no oversampling complication)
+ *   - k=6: for 4-pole, threshold is k·|H|⁴=1 where |H|⁴≈0.23 at the
+ *     oscillation frequency → threshold k≈4.35; k=6 gives res threshold ≈0.72
+ *   - HPF in feedback path (~100Hz) — creates squelch at low cutoff
+ *   - Pure tanh everywhere — maximum small-signal loop gain
+ *   - env_depth: scales cutoff_cv for multi-octave envelope sweeps
+ *
+ * Note: self-oscillation frequency ≈ 0.54×cutoff (at fc=800Hz, rings at ~430Hz)
  */
 
 #ifndef AUDIO_DIODE_LADDER_PROCESSOR_HPP
@@ -25,37 +28,60 @@ public:
     explicit DiodeLadderProcessor(int sample_rate)
         : LadderVcfBase(sample_rate)
     {
-        declare_parameter({"hpf_cutoff", "HPF Stage (0-3)", 0.0f, 3.0f, 0.0f});
+        declare_parameter({"env_depth", "Envelope Depth (oct/V)", 0.0f, 6.0f, 3.0f});
+
+        // HPF in feedback path at ~100Hz (impulse invariant, 1× rate)
+        g_hpf_ = 1.0f - std::exp(-static_cast<float>(2.0 * M_PI) * 100.0f
+                                  / static_cast<float>(sample_rate));
     }
 
     bool apply_parameter(const std::string& name, float value) override {
-        if (name == "hpf_cutoff") { hpf_cutoff_ = value; return true; }
+        if (name == "env_depth") {
+            env_depth_ = std::clamp(value, 0.0f, 6.0f);
+            return true;
+        }
+        if (name == "cutoff_cv") {
+            return LadderVcfBase::apply_parameter("cutoff_cv", value * env_depth_);
+        }
         return LadderVcfBase::apply_parameter(name, value);
     }
 
 protected:
+    // 1× sample rate
+    void update_cutoff_coefficient(float cutoff) override {
+        g_ = std::tan(static_cast<float>(M_PI) * cutoff
+                      / static_cast<float>(sample_rate_));
+        g_ = std::clamp(g_, 0.0001f, 0.9999f);
+    }
+
     void process_sample(float& sample) override {
-        // TB-style pole blend: at full resonance, 3-pole (stage[2]) dominates
-        float blend   = 1.0f - res_;
-        float tap     = stage_[2] + blend * (stage_[3] - stage_[2]);
-        float feedback = std::tanh(tap * res_ * 3.5f);
-        float input    = sample - feedback;
+        // HPF in feedback path — eliminates resonance at low cutoff (squelch)
+        hpf_state_ += g_hpf_ * (stage_[3] - hpf_state_);
+        const float hpf_out = stage_[3] - hpf_state_;
 
-        float s0 = stage_[0], s1 = stage_[1], s2 = stage_[2], s3 = stage_[3];
-        stage_[0] += g_ * (std::tanh(input)     - std::tanh(s0));
-        stage_[1] += g_ * (std::tanh(stage_[0]) - std::tanh(s1));
-        stage_[2] += g_ * (std::tanh(stage_[1]) - std::tanh(s2));
-        stage_[3] += g_ * (std::tanh(stage_[2]) - std::tanh(s3));
+        // k=6 — self-oscillates at res≈0.72 for 4-pole at typical acid cutoffs
+        const float feedback = std::tanh(hpf_out * res_ * 6.0f);
+        const float input    = sample - feedback;
 
-        float out3 = stage_[2];
-        float out4 = stage_[3];
-        sample = out3 + blend * (out4 - out3);
+        stage_[0] += g_ * (std::tanh(input)     - std::tanh(stage_[0]));
+        stage_[1] += g_ * (std::tanh(stage_[0]) - std::tanh(stage_[1]));
+        stage_[2] += g_ * (std::tanh(stage_[1]) - std::tanh(stage_[2]));
+        stage_[3] += g_ * (std::tanh(stage_[2]) - std::tanh(stage_[3]));
+
+        sample = stage_[3];
 
         if (std::isnan(sample) || std::isinf(sample)) { reset_state(); sample = 0.0f; }
     }
 
+    void reset_state() override {
+        LadderVcfBase::reset_state();
+        hpf_state_ = 0.0f;
+    }
+
 private:
-    float hpf_cutoff_ = 0.0f;
+    float env_depth_ = 3.0f;
+    float g_hpf_     = 0.0f;
+    float hpf_state_ = 0.0f;
 };
 
 } // namespace audio

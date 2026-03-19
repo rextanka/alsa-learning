@@ -203,7 +203,7 @@ TEST_F(OrganDrawbarPatchTest, OrganScaleAudible) {
     );
 
     ASSERT_EQ(engine_load_patch(engine(), kPatch), 0);
-    ASSERT_EQ(engine_start(engine()), 0);
+    ASSERT_ENGINE_START(engine());
 
     constexpr int NOTE_MS    = 200;
     constexpr int RELEASE_MS =  80;  // 30ms release + margin

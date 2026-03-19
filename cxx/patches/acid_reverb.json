@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "name": "Acid Reverb",
+  "groups": [
+    {
+      "id": 0,
+      "comment": "TB-303 style: sawtooth → diode filter → VCA → distortion → reverb. AD envelope sweeps VCA gain and filter cutoff. Post-VCA distortion replicates plugging the 303 output into a pedal.",
+      "chain": [
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
+        { "type": "DIODE_FILTER",        "tag": "VCF" },
+        { "type": "AD_ENVELOPE",         "tag": "ENV" },
+        { "type": "VCA",                 "tag": "VCA" },
+        { "type": "DISTORTION",          "tag": "DIST" },
+        { "type": "REVERB_FDN",          "tag": "REV" }
+      ],
+      "connections": [
+        { "from_tag": "VCO",  "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"  },
+        { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"  },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"   },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCF",  "to_port": "cutoff_cv" },
+        { "from_tag": "VCA",  "from_port": "audio_out",    "to_tag": "DIST", "to_port": "audio_in"  },
+        { "from_tag": "DIST", "from_port": "audio_out",    "to_tag": "REV",  "to_port": "audio_in"  }
+      ],
+      "parameters": {
+        "VCO":  { "saw_gain": 1.0 },
+        "VCF":  { "cutoff": 800.0, "resonance": 0.92, "env_depth": 3.0 },
+        "DIST": { "drive": 8.0, "character": 0.3 },
+        "ENV":  { "attack": 0.003, "decay": 0.25 },
+        "REV":  { "decay": 1.2, "wet": 0.20, "room_size": 0.5, "damping": 0.4 }
+      }
+    }
+  ]
+}

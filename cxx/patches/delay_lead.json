@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "name": "Delay Lead",
+  "groups": [
+    {
+      "id": 0,
+      "chain": [
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
+        { "type": "SH_FILTER",           "tag": "VCF" },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
+        { "type": "VCA",                 "tag": "VCA" },
+        { "type": "ECHO_DELAY",          "tag": "DLY" }
+      ],
+      "connections": [
+        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"  },
+        { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"  },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"   },
+        { "from_tag": "VCA", "from_port": "audio_out",    "to_tag": "DLY", "to_port": "audio_in"  }
+      ],
+      "parameters": {
+        "VCO": { "saw_gain": 0.7, "pulse_gain": 0.5, "pulse_width": 0.5 },
+        "VCF": { "cutoff": 2400.0, "resonance": 0.25 },
+        "ENV": { "attack": 0.008, "decay": 0.05, "sustain": 0.9, "release": 0.15 },
+        "DLY": { "time": 0.375, "feedback": 0.45, "mix": 0.4 }
+      }
+    }
+  ]
+}

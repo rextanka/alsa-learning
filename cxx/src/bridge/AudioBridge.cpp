@@ -988,6 +988,19 @@ int engine_post_chain_clear(EngineHandle handle) {
 }
 
 // ---------------------------------------------------------------------------
+// Live Parameter Control
+// ---------------------------------------------------------------------------
+
+// Set a named parameter on all voices by module tag (e.g. tag="VCF", name="cutoff").
+// Takes effect immediately on all active and future voices.
+int engine_set_tag_param(EngineHandle handle, const char* tag, const char* name, float value) {
+    if (!handle || !tag || !name) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->voice_manager->set_tag_parameter(tag, name, value);
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
 // Spectral Analysis API
 // ---------------------------------------------------------------------------
 

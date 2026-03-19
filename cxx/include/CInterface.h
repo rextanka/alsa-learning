@@ -114,6 +114,10 @@ AUDIO_API int engine_get_xrun_count(EngineHandle handle);
 // authored by hand and loaded via engine_load_patch; there is no round-trip save path).
 AUDIO_API int engine_load_patch(EngineHandle handle, const char* path);
 
+// Set a named parameter on all voices by module tag, effective immediately.
+// e.g. engine_set_tag_param(h, "VCF", "cutoff", 1200.0f)
+AUDIO_API int engine_set_tag_param(EngineHandle handle, const char* tag, const char* name, float value);
+
 // ---------------------------------------------------------------------------
 // Phase 22A: SMF File Playback (channel-blind polyphonic)
 // ---------------------------------------------------------------------------
