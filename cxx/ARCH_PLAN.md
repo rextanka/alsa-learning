@@ -743,6 +743,7 @@ Estimates based on typical DSP module object sizes (2–8 KB each before LTO). L
 | [docs/BRIDGE_GUIDE.md](docs/BRIDGE_GUIDE.md) | C-Bridge contract | All `CInterface.h` functions with usage examples; parameter label registry; removed/deprecated API table |
 | [docs/MODULE_DESC.md](docs/MODULE_DESC.md) | Processor specifications | Port names, port types, parameter declarations, connection rules, known gaps for every module type |
 | [docs/PATCH_SPEC.md](docs/PATCH_SPEC.md) | Patch file format | JSON v2 schema, chain/connection/parameter structure, patch library |
+| [docs/LIBRARY_USER_MANUAL.md](docs/LIBRARY_USER_MANUAL.md) | Developer user guide | Module catalog, patch cookbook, analysis tools, USB MIDI HAL (§12), static module config / embedded targets (§13) |
 | BUILD.md | Build & CI | CMake targets, dependency setup, ctest invocation |
 
 ## References
