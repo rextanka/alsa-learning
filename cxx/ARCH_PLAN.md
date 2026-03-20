@@ -228,7 +228,8 @@ The engine supports **44100 Hz and 48000 Hz** exclusively. These are the two rat
 | 24    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation. | Planned |
 | 25    | **USB MIDI HAL**: Platform-agnostic `hal::MidiDriver` base with static factory pattern (matching `AudioDriver`). Platform drivers: `AlsaMidiDriver` (ALSA rawmidi) and `CoreMidiDriver` (CoreMIDI framework). MIDI input dispatches to the engine via `engine_process_midi_bytes`. MIDI output sends raw bytes to a connected device. `HostMidiDeviceInfo` struct for enumeration. New C API: `midi_*` family. No platform `#ifdef`s in bridge layer. | Planned |
 | 26    | **hpp/cpp Companion Split, Presets & Module Tooling**: Co-located `.cpp` files for all 30 processors (FX, routing, oscillator, envelope, filter, dynamics groups). Each `.cpp` holds the constructor body, `do_pull`, helpers, and a `kRegistered` static initializer that calls the 4-arg `register_module(type, brief, usage_notes, factory)` overload. `ProcessorRegistrations.cpp` retained as the explicit registrar called from `engine_create()` — provides authoritative registration and "linker bait" for the static library. Double-registration is safe (idempotent). Extended `register_module` 4-arg overload in `ModuleRegistry.hpp` stores `usage_notes` in `ModuleDescriptor` — prerequisite for Phase 27A introspection. `VCA.response_curve` (exponential blend) implemented; `VCA.initial_gain_cv` port wired in graph executor. `CMakePresets.json` with four named configurations (`desktop_full`, `desktop_release`, `pi_synth`, `pi_minimal`). `tools/configure_modules.py` — patch validation and module-set documentation tool (subcommands: `list`, `preset`, `validate`, `interactive`). Patch library expanded: `tom_tom.json` (FM via `fm_in`), `gong_noise_layer.json`, `thunder.json`, `group_strings.json` (using `AUDIO_MIXER`), `juno_strings.json`, `delay_lead.json`, `strings_chorus_reverb.json`, `gong_full.json`. 51/51 tests pass. | Complete |
-| 27    | **Module Introspection & Patch Serialization** — **27A**: `module_get_descriptor_json(type_name, buf, max_len)` and `module_registry_get_all_json(buf, max_len)` C API; returns JSON descriptor populated from Phase 26 extended declarations (`usage_notes`, parameter/port descriptions). Works natively with Swift `JSONDecoder` and React/Tauri `JSON.parse`. **27B**: `engine_get_patch_json(engine, group_index, buf, max_len)`, `engine_load_patch_json(engine, json, len)`, `engine_save_patch(engine, path)` — full round-trip patch serialization. Serialization walks both `signal_chain_` (PORT_AUDIO nodes) and `mod_sources_` (PORT_CONTROL generators) plus all `connections_` and post-chain entries; graph traversal from the audio output alone is insufficient. | Planned |
+| 27A   | **Module Introspection API**: `module_get_descriptor_json(type_name, buf, max_len)` and `module_registry_get_all_json(buf, max_len)` C API; returns JSON descriptor populated from Phase 26 extended declarations (`usage_notes`, parameter/port descriptions). Sorted alphabetically; no `EngineHandle` required — registry is read-only after static init. Works natively with Swift `JSONDecoder` and React/Tauri `JSON.parse`. `test_module_registry.cpp` (unit, 20 tests) + `test_module_introspection.cpp` (integration, 10 tests) — all structural invariants, no hardcoded module names. 51/51 tests pass. | Complete |
+| 27B   | **Patch Serialization**: `engine_get_patch_json(engine, group_index, buf, max_len)`, `engine_load_patch_json(engine, json, len)`, `engine_save_patch(engine, path)` — full round-trip patch serialization. Serialization walks both `signal_chain_` (PORT_AUDIO nodes) and `mod_sources_` (PORT_CONTROL generators) plus all `connections_` and post-chain entries; graph traversal from the audio output alone is insufficient. | Planned |
 
 ---
 
@@ -588,7 +589,7 @@ void register_module(
     FactoryFn        factory_fn);
 ```
 
-`usage_notes` is stored in `ModuleDescriptor::usage_notes` alongside the existing `brief` and `ports`/`parameters` collections. The Phase 27A introspection API (`module_get_descriptor_json`) will expose all of this as JSON.
+`usage_notes` is stored in `ModuleDescriptor::usage_notes` alongside the existing `brief` and `ports`/`parameters` collections. The Phase 27A introspection API (`module_get_descriptor_json`) exposes all of this as JSON.
 
 ### CMakePresets.json
 
@@ -668,7 +669,7 @@ The CMake option (`AUDIO_STATIC_CONFIG`) and per-module enable/disable flags tha
 
 ## Module Introspection & Patch Serialization (Phase 27)
 
-Phase 27 is split into two independent deliverables that share the extended metadata introduced in Phase 26.
+Phase 27 is split into two independent deliverables that share the extended metadata introduced in Phase 26. **Phase 27A is complete** (merged PR #90). Phase 27B is planned.
 
 ---
 
@@ -720,10 +721,12 @@ The `module_registry_get_all_json` response is a JSON array of the above objects
 - **React/Tauri**: `JSON.parse` directly; TypeScript interface generated from the schema.
 - The API is a one-shot read at startup — modules do not change after registration.
 
-#### Testing
+#### Testing (Complete — 30 tests, 51/51 suite passes)
 
-- **Unit**: For each registered module, call `module_get_descriptor_json` and assert the returned JSON is valid, contains the correct `type_name`, and has non-empty `brief` and at least one port entry.
-- **Integration**: Call `module_registry_get_all_json`, parse the array, verify count matches `ModuleRegistry::instance().size()`.
+- **`tests/unit/test_module_registry.cpp`** (20 tests): For every registered module, asserts non-empty `brief` and `usage_notes`, valid port types/directions, parameter range sanity (`min ≤ default ≤ max`), and factory produces a live instance at 44100 and 48000 Hz. Also exercises `module_get_descriptor_json` and `module_registry_get_all_json` C API per-module.
+- **`tests/integration/test_module_introspection.cpp`** (10 tests): `module_get_descriptor_json` error codes (-1 unknown type, -2 buf too small), sorted array guarantee, count consistency with `ModuleRegistry::instance().size()`, required JSON fields, single vs. bulk lookup consistency.
+
+All tests are structural invariants — no module names or counts are hardcoded.
 
 ---
 

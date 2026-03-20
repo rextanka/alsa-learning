@@ -1094,7 +1094,7 @@ The patch is not loaded; the engine is never left in a partially-configured stat
 | Selective module stripping      | Not yet — CMake presets exist but all 30 modules compile in every preset; future phase              |
 | USB MIDI HAL                    | Planned — Phase 25 (`midi_open_input`, `midi_connect_to_engine` C API)                              |
 | Multi-timbral SMF playback      | Planned — Phase 23 (MIDI channel → VoiceGroup routing table)                                        |
-| Module introspection API        | Planned — Phase 27A (`module_get_descriptor_json`, `module_registry_get_all_json`)                  |
+| Module introspection API        | **Implemented** — Phase 27A (`module_get_descriptor_json`, `module_registry_get_all_json`)           |
 | Patch serialization             | Planned — Phase 27B (`engine_get_patch_json`, `engine_save_patch`)                                  |
 
 ---
