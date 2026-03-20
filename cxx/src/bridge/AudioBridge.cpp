@@ -38,6 +38,7 @@
 #include <span>
 #include <cassert>
 #include <cstring>
+#include <algorithm>
 
 // Handle type discrimination for tag-based safety
 enum class HandleType {
@@ -1015,6 +1016,79 @@ float audio_spectral_centroid(const float* samples, size_t frame_count, int samp
     if (!samples || frame_count < 2) return 0.0f;
     const std::vector<float> window(samples, samples + frame_count);
     return audio::spectral_centroid(window, sample_rate);
+}
+
+// ---------------------------------------------------------------------------
+// Phase 27A: Module Introspection API
+// ---------------------------------------------------------------------------
+
+namespace {
+
+/// Serialize one ModuleDescriptor to a nlohmann::json object.
+nlohmann::json descriptor_to_json(const audio::ModuleDescriptor& d) {
+    nlohmann::json j;
+    j["type_name"]   = d.type_name;
+    j["brief"]       = d.description;
+    j["usage_notes"] = d.usage_notes;
+
+    nlohmann::json params = nlohmann::json::array();
+    for (const auto& p : d.parameters) {
+        nlohmann::json pj;
+        pj["name"]        = p.name;
+        // Prefer explicit description; fall back to human label.
+        pj["description"] = p.description.empty() ? p.label : p.description;
+        pj["min"]         = p.min;
+        pj["max"]         = p.max;
+        pj["default"]     = p.def;
+        if (p.logarithmic) pj["logarithmic"] = true;
+        params.push_back(std::move(pj));
+    }
+    j["parameters"] = std::move(params);
+
+    nlohmann::json ports = nlohmann::json::array();
+    for (const auto& p : d.ports) {
+        nlohmann::json pj;
+        pj["name"]      = p.name;
+        pj["type"]      = (p.type == audio::PortType::PORT_AUDIO) ? "PORT_AUDIO" : "PORT_CONTROL";
+        pj["direction"] = (p.dir  == audio::PortDirection::IN)    ? "PORT_INPUT" : "PORT_OUTPUT";
+        pj["description"] = p.description;
+        ports.push_back(std::move(pj));
+    }
+    j["ports"] = std::move(ports);
+
+    return j;
+}
+
+/// Write a serialized string into caller buffer.
+/// Returns bytes written (excl. null) on success, -2 if buf too small.
+int write_json_to_buf(const std::string& s, char* buf, int max_len) {
+    const int needed = static_cast<int>(s.size());
+    if (!buf || max_len <= needed) return -2;
+    std::memcpy(buf, s.c_str(), static_cast<size_t>(needed) + 1);
+    return needed;
+}
+
+} // anonymous namespace
+
+int module_get_descriptor_json(const char* type_name, char* buf, int max_len) {
+    if (!type_name) return -1;
+    const auto* desc = audio::ModuleRegistry::instance().find(type_name);
+    if (!desc) return -1;
+    return write_json_to_buf(descriptor_to_json(*desc).dump(2), buf, max_len);
+}
+
+int module_registry_get_all_json(char* buf, int max_len) {
+    auto& reg   = audio::ModuleRegistry::instance();
+    auto  names = reg.type_names();
+    std::sort(names.begin(), names.end()); // stable alphabetical order
+
+    nlohmann::json arr = nlohmann::json::array();
+    for (const auto& name : names) {
+        const auto* desc = reg.find(name);
+        if (desc) arr.push_back(descriptor_to_json(*desc));
+    }
+
+    return write_json_to_buf(arr.dump(2), buf, max_len);
 }
 
 } // extern "C"

@@ -284,6 +284,57 @@ AUDIO_API int engine_post_chain_set_param(EngineHandle handle, int fx_index,
 /** Remove all effects from the post chain. */
 AUDIO_API int engine_post_chain_clear(EngineHandle handle);
 
+// ---------------------------------------------------------------------------
+// Phase 27A: Module Introspection API
+//
+// Returns JSON descriptors for registered module types.  No EngineHandle
+// required — the registry is populated at static-init time before main().
+//
+// Both functions write at most max_len bytes (null-terminated) into buf.
+// Return values:
+//   >= 0  bytes written (excluding null terminator) — success
+//   -1    type not found (module_get_descriptor_json only)
+//   -2    buf too small — increase max_len and retry
+//
+// Typical usage (single module):
+//   char buf[4096];
+//   int n = module_get_descriptor_json("MOOG_FILTER", buf, sizeof(buf));
+//   if (n >= 0) { /* parse buf as JSON */ }
+//
+// Typical usage (all modules):
+//   int n = module_registry_get_all_json(nullptr, 0);  // probe required size
+//   std::vector<char> buf(n + 1);
+//   module_registry_get_all_json(buf.data(), buf.size());
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Serialize the descriptor for one registered module type to JSON.
+ *
+ * JSON keys: "type_name", "brief", "usage_notes", "parameters" (array),
+ *            "ports" (array).  Each parameter: "name", "description",
+ *            "min", "max", "default".  Each port: "name", "type",
+ *            "direction", "description".
+ *
+ * @param type_name  Registered type string (e.g. "MOOG_FILTER").
+ * @param buf        Caller-allocated output buffer.
+ * @param max_len    Capacity of buf in bytes (including null terminator).
+ * @return bytes written (excl. null) on success; -1 type not found; -2 buf too small.
+ */
+AUDIO_API int module_get_descriptor_json(const char* type_name, char* buf, int max_len);
+
+/**
+ * @brief Serialize all registered module descriptors as a JSON array.
+ *
+ * Modules are sorted alphabetically by type_name for stable output.
+ * Pass buf=nullptr and max_len=0 to probe the required buffer size (returns -2
+ * plus the size is available after a successful call with a large-enough buf).
+ *
+ * @param buf        Caller-allocated output buffer (may be nullptr to probe size).
+ * @param max_len    Capacity of buf in bytes.
+ * @return bytes written (excl. null) on success; -2 if buf too small.
+ */
+AUDIO_API int module_registry_get_all_json(char* buf, int max_len);
+
 // Logging API
 AUDIO_API void audio_log_message(const char* tag, const char* message);
 AUDIO_API void audio_log_event(const char* tag, float value);
