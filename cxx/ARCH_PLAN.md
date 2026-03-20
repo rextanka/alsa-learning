@@ -230,6 +230,7 @@ The engine supports **44100 Hz and 48000 Hz** exclusively. These are the two rat
 | 26    | **hpp/cpp Companion Split, Presets & Module Tooling**: Co-located `.cpp` files for all 30 processors (FX, routing, oscillator, envelope, filter, dynamics groups). Each `.cpp` holds the constructor body, `do_pull`, helpers, and a `kRegistered` static initializer that calls the 4-arg `register_module(type, brief, usage_notes, factory)` overload. `ProcessorRegistrations.cpp` retained as the explicit registrar called from `engine_create()` — provides authoritative registration and "linker bait" for the static library. Double-registration is safe (idempotent). Extended `register_module` 4-arg overload in `ModuleRegistry.hpp` stores `usage_notes` in `ModuleDescriptor` — prerequisite for Phase 27A introspection. `VCA.response_curve` (exponential blend) implemented; `VCA.initial_gain_cv` port wired in graph executor. `CMakePresets.json` with four named configurations (`desktop_full`, `desktop_release`, `pi_synth`, `pi_minimal`). `tools/configure_modules.py` — patch validation and module-set documentation tool (subcommands: `list`, `preset`, `validate`, `interactive`). Patch library expanded: `tom_tom.json` (FM via `fm_in`), `gong_noise_layer.json`, `thunder.json`, `group_strings.json` (using `AUDIO_MIXER`), `juno_strings.json`, `delay_lead.json`, `strings_chorus_reverb.json`, `gong_full.json`. 51/51 tests pass. | Complete |
 | 27A   | **Module Introspection API**: `module_get_descriptor_json(type_name, buf, max_len)` and `module_registry_get_all_json(buf, max_len)` C API; returns JSON descriptor populated from Phase 26 extended declarations (`usage_notes`, parameter/port descriptions). Sorted alphabetically; no `EngineHandle` required — registry is read-only after static init. Works natively with Swift `JSONDecoder` and React/Tauri `JSON.parse`. `test_module_registry.cpp` (unit, 20 tests) + `test_module_introspection.cpp` (integration, 10 tests) — all structural invariants, no hardcoded module names. 51/51 tests pass. | Complete |
 | 27B   | **Patch Serialization**: `engine_get_patch_json(engine, group_index, buf, max_len)`, `engine_load_patch_json(engine, json, len)`, `engine_save_patch(engine, path)` — full round-trip patch serialization. Serialization walks both `signal_chain_` (PORT_AUDIO nodes) and `mod_sources_` (PORT_CONTROL generators) plus all `connections_` and post-chain entries; graph traversal from the audio output alone is insufficient. | Planned |
+| 27D   | **Transport Clock & Tempo-Sync Effects**: (a) `engine_set_tempo(bpm)`, `engine_set_time_signature(num, denom)`, `engine_get_tempo()` C API; `MusicalClock` made authoritative — SMF player tempo map overrides host set, manual `engine_set_tempo` overrides when no SMF is loaded. (b) `VoiceContext` gains `bpm` (float) and `beats_per_bar` (int) fields — pre-computed before each block, passed to `do_pull`, no lock required in audio thread. (c) `ECHO_DELAY` gains `sync` (bool) + `division` (enum: `whole`, `half`, `quarter`, `eighth`, `sixteenth`, `thirtysecond`, `sixtyfourth`, `dotted_quarter`, `dotted_eighth`, `triplet_quarter`, `triplet_eighth`) parameters; when `sync=true` delay time = `(60 / bpm) × division_multiplier`; `time` parameter ignored. (d) `LFO` and `PHASER` gain the same `sync`/`division` parameters for rate locking. (e) Fully backward-compatible: `sync=false` (default) uses `time`/`rate` in seconds/Hz as today. Prerequisite for sequencer phase: tempo grid, MIDI clock output (0xF8), and pattern length in bars all depend on a canonical transport object. | Planned |
 | 27C   | **I/O Processor Family & Role Classification**: (a) `ModuleDescriptor` gains a `role` field (`"SOURCE"`, `"SINK"`, `"PROCESSOR"`, `"CV_SOURCE"`, `"CV_PROCESSOR"`) inferred from declared ports at registration; `module_get_descriptor_json` / `module_registry_get_all_json` include `"role"` in JSON output. (b) Four new registered processors: `AUDIO_OUTPUT` (HAL sink — explicit chain terminator with friendly UI name; `audio_in` port), `AUDIO_INPUT` (line input / microphone source; `audio_out` port + `device_index`, `gain` parameters), `AUDIO_FILE_READER` (WAV/AIFF source; `audio_out` port + `path`, `loop`, `gain`), `AUDIO_FILE_WRITER` (offline WAV sink; `audio_in` port + `path`). (c) `bake()` updated to allow `AUDIO_OUTPUT` as the last chain node (special-case: SINK role bypasses "last node must have audio_out" check). (d) New C API: `engine_open_audio_input(handle, device_index)`, `engine_file_writer_flush(handle)`. (e) `AUDIO_SPLITTER` mono-to-stereo usage documented (connect `audio_out_1` → L path, `audio_out_2` → R path of a stereo post-chain processor). Prerequisite for Phase 25 USB MIDI HAL (establishes the full I/O model). | Planned |
 
 ---
@@ -670,7 +671,7 @@ The CMake option (`AUDIO_STATIC_CONFIG`) and per-module enable/disable flags tha
 
 ## Module Introspection & Patch Serialization (Phase 27)
 
-Phase 27 has three sub-deliverables. **Phase 27A is complete** (merged PR #90). Phase 27B and 27C are planned. 27C should be completed before Phase 25 (USB MIDI HAL) as it establishes the full I/O model.
+Phase 27 has four sub-deliverables. **Phase 27A is complete** (merged PR #90). Phases 27B, 27C, and 27D are planned. Recommended order: 27B → 27C → 27D → Phase 25 (USB MIDI HAL). 27C establishes the full I/O model; 27D establishes the transport clock that the MIDI HAL (Phase 25) and sequencer phases will depend on.
 
 ---
 
@@ -843,6 +844,101 @@ The engine is mono-until-SummingBus by design. Two explicit paths allow stereo w
 - `AUDIO_OUTPUT` accepted as last chain node by `bake()` without error
 - `AUDIO_INPUT` chain produces non-silent output when a capture device is available
 - `AUDIO_FILE_WRITER` produces a valid WAV file containing the rendered frames
+
+---
+
+## Transport Clock & Tempo-Sync Effects (Phase 27D)
+
+Establishes a canonical, engine-owned tempo and time-signature state that effects processors can read at audio rate without locks, and that the SMF player, sequencer, and MIDI clock output all write to from the same source.
+
+### Transport State
+
+`MusicalClock` (already in `src/core/MusicalClock.hpp`) is promoted to the authoritative transport object. Two write paths, one read path:
+
+- **Host/UI write**: `engine_set_tempo(bpm)` / `engine_set_time_signature(num, denom)` — used when no SMF file is playing.
+- **SMF player write**: `MidiFilePlayer` extracts FF 51 tempo meta-events and calls `MusicalClock::set_tempo()` automatically during playback. This overrides any host-set tempo while the file is playing.
+- **Processor read**: `VoiceContext` carries `float bpm` and `int beats_per_bar` pre-computed once per block from `MusicalClock`. Processors access these inside `do_pull(span, ctx)` — zero allocations, zero locks.
+
+#### New C API
+
+```c
+// Set tempo manually (ignored while SMF is playing)
+void engine_set_tempo(EngineHandle* h, float bpm);
+
+// Set time signature (affects bar-length calculations and sequencer grid; default 4/4)
+void engine_set_time_signature(EngineHandle* h, int numerator, int denominator);
+
+// Query current live tempo (reflects SMF file tempo if playing, else manually set value)
+float engine_get_tempo(EngineHandle* h);
+```
+
+### Tempo-Sync Division Vocabulary
+
+All synced effects share the same `division` enum. Divisions are **beat-relative** (not bar-relative) so they work correctly in any time signature:
+
+| `division` value | Multiplier (× one beat) | At 120 BPM |
+|---|---|---|
+| `"whole"` | 4.0 | 2000 ms |
+| `"half"` | 2.0 | 1000 ms |
+| `"quarter"` | 1.0 | 500 ms |
+| `"dotted_quarter"` | 1.5 | 750 ms |
+| `"eighth"` | 0.5 | 250 ms |
+| `"dotted_eighth"` | 0.75 | 375 ms — classic "Edge delay" |
+| `"triplet_quarter"` | 0.667 | 333 ms |
+| `"sixteenth"` | 0.25 | 125 ms |
+| `"triplet_eighth"` | 0.333 | 167 ms |
+| `"thirtysecond"` | 0.125 | 62.5 ms |
+| `"sixtyfourth"` | 0.0625 | 31.25 ms |
+
+`delay_time_seconds = (60.0 / bpm) × multiplier`
+
+### Processors Gaining Tempo-Sync Parameters
+
+All three additions are **backward-compatible**: `sync` defaults to `false`, leaving current `time`/`rate` parameters fully in control.
+
+#### `ECHO_DELAY`
+
+New parameters added alongside existing `time` and `mod_rate`:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `sync` | bool | `false` | When `true`, `time` is ignored; delay length is computed from `bpm` + `division` |
+| `division` | enum | `"quarter"` | Beat subdivision (see table above) |
+
+When `sync=true`: `time = (60 / ctx->bpm) × division_multiplier`, recomputed each block if tempo changes (smooth ramp via SmoothedParam to avoid click on tempo change).
+
+#### `LFO`
+
+New parameters added alongside existing `rate`:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `sync` | bool | `false` | When `true`, `rate` is ignored; LFO period = `(60 / bpm) × division_multiplier` |
+| `division` | enum | `"quarter"` | One LFO cycle per N beats |
+
+Synced LFO at `"whole"` division = one slow sweep per bar. Useful for tempo-locked filter sweeps, tremolo, and vibrato.
+
+#### `PHASER`
+
+New parameters added alongside existing `rate`:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `sync` | bool | `false` | When `true`, `rate` is ignored; sweep rate = `(60 / bpm) × division_multiplier` |
+| `division` | enum | `"half"` | Sweep cycle length in beats |
+
+### Relationship to Future Phases
+
+- **Phase 25 (USB MIDI HAL)**: MIDI clock output (`0xF8` timing tick, 24 PPQ) is derived directly from `MusicalClock`. No additional transport infrastructure needed once 27D lands.
+- **Sequencer phase**: Step sequencer grid uses `time_signature.numerator` as steps-per-bar. Pattern length in bars uses `MusicalClock::bar_duration_seconds()`. MIDI clock sync input (external device driving the engine clock) replaces `engine_set_tempo`.
+
+### Testing
+
+- `engine_set_tempo(120)` + `ECHO_DELAY` with `sync=true, division="quarter"` → delay time = 500 ms ± 1 sample
+- `engine_set_tempo(90)` after playback starts → delay smoothly glides to new time (no click)
+- SMF playback with FF 51 tempo change → `engine_get_tempo()` reflects new tempo during block containing the event
+- LFO `sync=true, division="whole"` at 120 BPM → LFO period = 2.0 s ± 1 sample
+- `sync=false` on all processors → identical behaviour to Phase 27C baseline (regression)
 
 ---
 

@@ -148,8 +148,9 @@ The registry is queryable via the C API (`engine_get_module_count`, `engine_get_
   - `PORT_CONTROL` in `rate_cv` (unipolar)
   - `PORT_CONTROL` in `reset` (unipolar, lifecycle-style trigger)
   - `PORT_CONTROL` out `control_out` (bipolar)
-- **Parameters**: `rate` (0.01–20 Hz), `intensity` (0.0–1.0), `waveform` (enum: Sine=0, Triangle=1, Square=2, Saw=3; S&H planned), `delay` (0.0–10.0s, default 0.0 — time after note gate-on before modulation onset begins; output remains zero during the delay window then ramps to full depth)
+- **Parameters**: `rate` (0.01–20 Hz — used when `sync=false`), `intensity` (0.0–1.0), `waveform` (enum: Sine=0, Triangle=1, Square=2, Saw=3; S&H planned), `delay` (0.0–10.0s, default 0.0 — time after note gate-on before modulation onset begins; output remains zero during the delay window then ramps to full depth), `sync` (bool, default `false` — when `true`, `rate` is ignored and LFO period is derived from engine tempo + `division`), `division` (enum, default `"quarter"` — beat subdivision when `sync=true`; see Transport Clock division table in ARCH_PLAN.md §Phase 27D)
 - **Modulation Logic**: Routing LFO output to `pitch_cv` produces vibrato (FM); routing to VCA `gain_cv` produces tremolo (AM); routing to VCF `cutoff_cv` produces **growl** — a wavering of tone color at the LFO rate (Roland §5-5). The `delay` parameter implements the Roland DEL knob used on flute and string patches to produce built-in delayed vibrato without requiring a separate `CV_MIXER` + second `ADSR_ENVELOPE`.
+- **Tempo sync** (Phase 27D): When `sync=true`, LFO period = `(60 / bpm) × division_multiplier` beats. A `"whole"` LFO at 120 BPM completes one cycle every 2 seconds — useful for tempo-locked filter sweeps and tremolo. Rate changes from tempo automation glide smoothly.
 - **Note**: Output is `PORT_CONTROL`. Must not be patched directly into an audio mix.
 
 ### Noise Generator
@@ -445,7 +446,8 @@ These modules operate entirely in the control domain.
 - **Ports**:
   - `PORT_AUDIO` in `audio_in`
   - `PORT_AUDIO` out `audio_out`
-- **Parameters**: `rate` (0.01–10 Hz — internal LFO sweep rate), `depth` (0.0–1.0 — sweep depth), `feedback` (0.0–0.99 — resonance; sharper notches at high values), `stages` (int: 4 or 8; snap), `base_freq` (20–2000 Hz — centre frequency of sweep), `wet` (0.0–1.0 — wet/dry blend)
+- **Parameters**: `rate` (0.01–10 Hz — internal LFO sweep rate, used when `sync=false`), `depth` (0.0–1.0 — sweep depth), `feedback` (0.0–0.99 — resonance; sharper notches at high values), `stages` (int: 4 or 8; snap), `base_freq` (20–2000 Hz — centre frequency of sweep), `wet` (0.0–1.0 — wet/dry blend), `sync` (bool, default `false` — when `true`, `rate` is ignored and sweep rate is derived from engine tempo + `division`), `division` (enum, default `"half"` — beat subdivision when `sync=true`; see Transport Clock division table in ARCH_PLAN.md §Phase 27D)
+- **Tempo sync** (Phase 27D): When `sync=true`, one full sweep cycle = `(60 / bpm) × division_multiplier` seconds. A `"whole"` phaser at 120 BPM sweeps once every 2 seconds.
 - **Architecture Note**: **Global post-chain module only** — added via `engine_post_chain_push(h, "PHASER")`.
 
 ### Echo / Delay
@@ -456,9 +458,18 @@ These modules operate entirely in the control domain.
   - `PORT_AUDIO` out `audio_out`
   - `PORT_CONTROL` in `time_cv` (unipolar)
   - `PORT_CONTROL` in `feedback_cv` (unipolar)
-- **Parameters**: `time` (0.0–2.0s), `feedback` (0.0–0.99), `mix` (0.0–1.0), `mod_rate` (0.1–20 Hz, default 0.0 — rate of the built-in LFO that sweeps delay time; 0.0 disables modulation), `mod_intensity` (0.0–1.0, default 0.0 — depth of the delay-time sweep; at 1.0 the delay time oscillates ±50% of `time` at `mod_rate`, producing the metallic shimmer used in the Roland Cymbal patch, Vol 2 §3-5, Fig 3-16)
-- **Note**: `ECHO_DELAY` handles its own feedback via an internal circular delay buffer — no graph-level feedback connection is needed. Graph-level cross-node feedback (`"feedback": true` in connections) is not yet implemented in the executor.
-- **BBD Cymbal usage**: Set `time` ≈ 20–40 ms, `feedback` ≈ 0.5–0.7, `mod_rate` ≈ 5–8 Hz, `mod_intensity` ≈ 0.3–0.6. The wobbling delay time produces the characteristic shimmering metallic decay of a struck cymbal or gong. Combine with `WHITE_NOISE` → `MOOG_FILTER` (high cutoff, moderate resonance) → `ECHO_DELAY` → percussive `VCA`.
+- **Parameters**:
+  - `time` (0.0–2.0s — absolute delay time; ignored when `sync=true`)
+  - `feedback` (0.0–0.99 — feedback gain; >0 produces cascading repeats that decay geometrically; 0.0 = single echo, 0.5 = ~3–4 audible repeats, 0.85 = long wash)
+  - `mix` (0.0–1.0 — wet/dry blend; 0.0 = dry only, 1.0 = wet only, 0.4 = typical slapback)
+  - `mod_rate` (0.1–20 Hz, default 0.0 — rate of the built-in LFO that sweeps delay time; 0.0 disables modulation)
+  - `mod_intensity` (0.0–1.0, default 0.0 — depth of delay-time sweep; at 1.0 the delay oscillates ±50% of `time` at `mod_rate`, producing metallic shimmer — see Roland Cymbal patch, Vol 2 §3-5, Fig 3-16)
+  - `sync` (bool, default `false` — when `true`, `time` is ignored and delay length = `(60 / bpm) × division_multiplier`)
+  - `division` (enum, default `"quarter"` — beat subdivision when `sync=true`; see Transport Clock division table in ARCH_PLAN.md §Phase 27D)
+- **Tempo sync** (Phase 27D): When `sync=true`, delay time tracks engine BPM in real time (SmoothedParam ramp to avoid click on tempo change). `"dotted_eighth"` (0.75×) at 120 BPM = 375 ms — the classic U2/Edge floating delay. `"quarter"` = one echo per beat. `"eighth"` = slapback.
+- **Repeat count**: Controlled by `feedback`. With `sync=true` and `feedback=0.65`, repeats decay by ~65% each cycle — at `"quarter"` division and 120 BPM you hear ~4 distinct repeats before they fall below noise. Set `feedback=0.0` for a clean single echo.
+- **Note**: Internal circular delay buffer handles self-feedback — no graph-level feedback connection needed.
+- **BBD Cymbal usage** (`sync=false`): Set `time` ≈ 20–40 ms, `feedback` ≈ 0.5–0.7, `mod_rate` ≈ 5–8 Hz, `mod_intensity` ≈ 0.3–0.6. The wobbling delay time produces the characteristic metallic shimmer of a struck cymbal or gong. Chain: `WHITE_NOISE` → `MOOG_FILTER` → `ECHO_DELAY` → percussive `VCA`.
 
 ---
 
@@ -530,6 +541,7 @@ These modules operate entirely in the control domain.
 - **Global vs per-voice**: Per-voice modules live in `signal_chain_` or `mod_sources_`. Global modules (chorus, reverb, master bus) live in a separate global FX chain applied after voice summing. Do not instantiate global modules per-voice.
 - **Mono-to-stereo paths**: The engine is mono-until-SummingBus. Two explicit paths introduce stereo before the bus: (1) Stereo FX processors (`JUNO_CHORUS`, `REVERB_FDN`, `REVERB_FREEVERB`) in the global post-chain — place via `engine_post_chain_push`; they receive summed mono and output stereo. (2) `AUDIO_SPLITTER` explicit copy — connect one mono source to `audio_in`, then `audio_out_1` → left path and `audio_out_2` → right path feeding a spatial/stereo processor downstream. Direct stereo within per-voice chains is not supported in the current architecture.
 - **Role classification** (Phase 27C): Every registered module has an inferred `role` (`SOURCE`, `SINK`, `PROCESSOR`, `CV_SOURCE`, `CV_PROCESSOR`) exposed via the JSON introspection API. UI tools should use `role` to filter modules when building a chain (e.g. only offer SOURCEs at the chain head, only offer SINKs or PROCESSORs as subsequent nodes).
+- **Tempo-sync parameters** (Phase 27D): `ECHO_DELAY`, `LFO`, and `PHASER` gain `sync` (bool) + `division` (enum) parameters. When `sync=true` the processor's time/rate is derived from the engine's transport clock (`engine_set_tempo`, or automatically from SMF file tempo). Division vocabulary is beat-relative and works in any time signature. See ARCH_PLAN.md §Phase 27D for the full division table and `VoiceContext` BPM propagation design.
 - **Sample rate**: All internal timing (ADSR curves, LFO rates, delay times) must derive from the runtime `sample_rate_` passed at construction. No hardcoded sample rate assumptions. Supported rates: 44100 Hz and 48000 Hz. If hardware reports a rate above 48000, the engine negotiates down to 48000.
 - **Filter chain placement**: All four filter types (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`) are first-class chain nodes. Add them via `engine_add_module("MOOG_FILTER", "VCF")` and wire audio with `engine_connect_ports`. `Voice` no longer contains an internal `filter_` member — the hardcoded fallback path has been removed. Minimum filter chain: `COMPOSITE_GENERATOR → MOOG_FILTER → ADSR_ENVELOPE → VCA`.
 - **Filter state persistence**: All `VcfBase` subclasses (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`) override `reset_on_note_on()` to return `false`. Filter delay lines and resonance buildup are **preserved across consecutive notes**. Only envelope generators and other non-filter chain nodes reset on `note_on`. This is essential for acid/TB-303 style patches where filter self-oscillation builds across a rapid-fire note sequence.
