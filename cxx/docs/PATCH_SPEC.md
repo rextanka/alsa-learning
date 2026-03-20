@@ -61,21 +61,32 @@ is no longer supported and must not be used in new patches.
 | `type` | Registered module type name (see MODULE_DESC.md) |
 | `tag` | Unique instance tag for this group — used to target ports and parameters |
 
-Module type names (complete registry as of Phase 22A+):
+Module type names (complete registry as of Phase 26):
 
-`COMPOSITE_GENERATOR`, `ADSR_ENVELOPE`, `AD_ENVELOPE`, `VCA`, `MOOG_FILTER`,
-`DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`, `HIGH_PASS_FILTER`, `BAND_PASS_FILTER`,
-`LFO`, `DRAWBAR_ORGAN`, `WHITE_NOISE`, `INVERTER`, `RING_MOD`, `SOURCE_MIXER`,
-`SAMPLE_HOLD`, `CV_MIXER`, `CV_SPLITTER`, `AUDIO_SPLITTER`, `AUDIO_MIXER`, `GATE_DELAY`,
-`NOISE_GATE`, `ENVELOPE_FOLLOWER`, `ECHO_DELAY`, `JUNO_CHORUS`, `DISTORTION`, `MATHS`,
-`REVERB_FDN`
+**Generators / Oscillators:**
+`COMPOSITE_GENERATOR`, `WHITE_NOISE`, `LFO`, `DRAWBAR_ORGAN`
 
-**Global post-chain only** (prefer `engine_post_chain_push`; also valid as a per-voice chain node):
-`REVERB_FREEVERB`, `PHASER`
+**Envelopes:**
+`ADSR_ENVELOPE`, `AD_ENVELOPE`
+
+**Filters:**
+`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`, `HIGH_PASS_FILTER`, `BAND_PASS_FILTER`
+
+**Dynamics:**
+`VCA`, `NOISE_GATE`, `ENVELOPE_FOLLOWER`
+
+**CV / Routing utilities:**
+`INVERTER`, `CV_MIXER`, `CV_SPLITTER`, `MATHS`, `GATE_DELAY`, `SAMPLE_HOLD`,
+`RING_MOD`, `AUDIO_SPLITTER`, `AUDIO_MIXER`
+
+**FX:**
+`ECHO_DELAY`, `PHASER`, `JUNO_CHORUS`, `DISTORTION`, `REVERB_FREEVERB`, `REVERB_FDN`
+
+> `SOURCE_MIXER` is **not in the module registry** — multi-oscillator mixing is handled by `AUDIO_MIXER` (4 audio inputs, wirable) or by `COMPOSITE_GENERATOR`'s internal waveform mixer (parameter-controlled). Do not use `SOURCE_MIXER` in patch files.
+
+> **Architecture note**: `REVERB_FREEVERB`, `REVERB_FDN`, and `PHASER` are primarily used as global post-chain effects via `engine_post_chain_push`. They are also valid as per-voice chain nodes (e.g. `acid_reverb.json` places `REVERB_FDN` in the voice chain).
 
 See MODULE_DESC.md for port names, parameter ranges, and connection rules.
-
-> **Embedded / stripped builds (Phase 26)**: When the library is built with `AUDIO_STATIC_CONFIG=ON` and specific module groups disabled (e.g. `AUDIO_MODULE_REVERB=OFF`), those module types are absent from the registry at runtime. A patch referencing an excluded type will fail to load with a `[WARN]` log message. Use `tools/configure_modules.py --preset <name> --report` to check which modules are available in a given build. See ARCH_PLAN.md §Phase 26 for the full preset list.
 
 ---
 
@@ -512,9 +523,9 @@ Plucked string character. A single ADSR drives VCA amplitude (fast attack, mediu
 }
 ```
 
-### Group Strings (requires standalone `SOURCE_MIXER` executor — pending)
+### Group Strings
 
-Two detuned VCOs summed before a shared filter simulate an ensemble string section. VCO1 is the main voice; VCO2 is tuned slightly flat to produce the characteristic chorus/ensemble beating. Requires `SOURCE_MIXER` as a wired chain executor node rather than just embedded inside `COMPOSITE_GENERATOR`.
+Two detuned VCOs summed through an `AUDIO_MIXER` before a shared filter simulate an ensemble string section. `AUDIO_MIXER` accepts up to 4 audio inputs — use `audio_in_1` / `audio_in_2` for the two oscillators. See `patches/group_strings.json`.
 
 ```json
 {
@@ -527,7 +538,8 @@ Two detuned VCOs summed before a shared filter simulate an ensemble string secti
         { "type": "LFO",                 "tag": "LFO1" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO1" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
-        { "type": "SOURCE_MIXER",        "tag": "MIX"  },
+        { "type": "AUDIO_MIXER",         "tag": "MIX"  },
+        { "type": "MOOG_FILTER",         "tag": "VCF"  },
         { "type": "ADSR_ENVELOPE",       "tag": "ENV"  },
         { "type": "VCA",                 "tag": "VCA"  }
       ],
@@ -536,22 +548,24 @@ Two detuned VCOs summed before a shared filter simulate an ensemble string secti
         { "from_tag": "LFO1", "from_port": "control_out",  "to_tag": "VCO2", "to_port": "pitch_cv"   },
         { "from_tag": "VCO1", "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_1" },
         { "from_tag": "VCO2", "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_2" },
+        { "from_tag": "MIX",  "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"   },
+        { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"   },
         { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"    }
       ],
       "parameters": {
         "VCO1": { "saw_gain": 1.0 },
         "VCO2": { "saw_gain": 1.0, "detune": -12.0 },
+        "MIX":  { "gain_1": 0.6, "gain_2": 0.6 },
+        "VCF":  { "cutoff": 1800.0, "resonance": 0.12 },
         "ENV":  { "attack": 0.35, "decay": 0.0, "sustain": 1.0, "release": 0.5 },
-        "VCF":  { "cutoff": 1800.0, "res": 0.12 },
-        "LFO1": { "rate": 5.2, "intensity": 0.003, "delay": 2.0 },
-        "MIX":  { "gain_1": 0.6, "gain_2": 0.6 }
+        "LFO1": { "rate": 5.2, "intensity": 0.003 }
       }
     }
   ]
 }
 ```
 
-> `LFO1` `delay: 2.0` uses the new LFO `delay` parameter — vibrato ramps in 2 seconds after note onset. `VCO2` `detune: -12.0` cents (≈ half a semitone flat) produces ensemble beating against VCO1.
+> `VCO2` `detune: -12.0` cents (slightly flat) produces ensemble beating against `VCO1`. `AUDIO_MIXER` sums the two oscillators before the filter, which both then share. `SOURCE_MIXER` is **not registered** — use `AUDIO_MIXER` for wired multi-VCO mixing.
 
 ### Banjo
 

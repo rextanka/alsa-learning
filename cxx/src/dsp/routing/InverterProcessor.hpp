@@ -20,30 +20,21 @@
 #include "../Processor.hpp"
 #include "../SmoothedParam.hpp"
 #include <algorithm>
-#include <cmath>
 
 namespace audio {
 
 class InverterProcessor : public Processor {
 public:
-    static constexpr float kRampSeconds = 0.010f; // 10 ms
+    static constexpr float kRampSeconds = 0.010f;
 
-    explicit InverterProcessor(int sample_rate = 48000) {
-        ramp_samples_ = static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds);
-        declare_port({"cv_in",  PORT_CONTROL, PortDirection::IN,  false}); // bipolar
-        declare_port({"cv_out", PORT_CONTROL, PortDirection::OUT, false}); // bipolar
-
-        declare_parameter({"scale", "Scale", -2.0f, 2.0f, -1.0f});
-    }
+    explicit InverterProcessor(int sample_rate = 48000);
 
     void reset() override { injected_ = {}; }
 
     PortType output_port_type() const override { return PortType::PORT_CONTROL; }
 
     bool apply_parameter(const std::string& name, float value) override {
-        // scale_ snaps immediately — it is a patch-configuration parameter set once
-        // before audio starts. A 10ms ramp here would cause the first pulled block
-        // to see an incorrect (transitional) scale value.
+        // scale_ snaps immediately — it is a patch-configuration parameter.
         if (name == "scale") { scale_.set_target(value, 0); return true; }
         return false;
     }
@@ -53,23 +44,10 @@ public:
     }
 
 protected:
-    void do_pull(std::span<float> output,
-                 const VoiceContext* /*ctx*/ = nullptr) override {
-        scale_.advance(static_cast<int>(output.size()));
-        const float scale_val = scale_.get();
-        if (!injected_.empty()) {
-            size_t n = std::min(output.size(), injected_.size());
-            for (size_t i = 0; i < n; ++i) output[i] = scale_val * injected_[i];
-            for (size_t i = n; i < output.size(); ++i) output[i] = 0.0f;
-        } else {
-            // No input connected — output zero (not scale_, which would be a DC bias)
-            for (auto& s : output) s = 0.0f;
-        }
-        injected_ = {}; // clear after use
-    }
+    void do_pull(std::span<float> output, const VoiceContext* ctx = nullptr) override;
 
 private:
-    int ramp_samples_ = 480; // default ~10ms at 48kHz
+    int ramp_samples_ = 480;
     SmoothedParam scale_{-1.0f};
     std::span<const float> injected_;
 };

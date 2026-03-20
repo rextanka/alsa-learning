@@ -61,14 +61,23 @@ exposes to the user. Parameters are queryable via the C API.
 
 ```cpp
 struct ParameterDescriptor {
-    std::string name;       // "cutoff", "attack_time"
-    std::string label;      // human-readable: "Cutoff Frequency"
-    float min, max, def;    // range and default
-    bool  logarithmic;      // true for frequency/time params
+    std::string name;        // "cutoff", "attack_time"
+    std::string label;       // human-readable: "Cutoff Frequency"
+    float min, max, def;     // range and default
+    bool  logarithmic;       // true for frequency/time params
+    std::string description; // usage note (Phase 26) — default ""
+};
+
+struct PortDescriptor {
+    std::string   name;        // "audio_in", "gain_cv"
+    PortType      type;        // PORT_AUDIO or PORT_CONTROL
+    PortDirection dir;         // IN or OUT
+    bool          unipolar;    // true → [0,1]; false → [-1,1] (PORT_CONTROL only)
+    std::string   description; // usage note (Phase 26) — default ""
 };
 ```
 
-Each processor calls `declare_parameter()` in its constructor alongside `declare_port()`.
+Each processor calls `declare_parameter()` and `declare_port()` in its constructor. The `description` field is optional (defaults to `""`) and is used by the Phase 27A introspection API to populate JSON module descriptors for host applications.
 
 ### Parameter Smoothing (Phase 21)
 
@@ -83,16 +92,30 @@ Discrete selectors (waveform type, transpose semitones, mode) and patch-configur
 At library load time each processor `.cpp` registers its module type with `ModuleRegistry::instance()` via a static initializer:
 
 ```cpp
-static bool reg = ModuleRegistry::instance().register_module({
+// Phase 26 extended signature: type_name, brief, usage_notes, factory
+static const bool kReg = (ModuleRegistry::instance().register_module(
     "MOOG_FILTER",
-    "4-pole Moog ladder low-pass filter",
-    ports,       // from declare_port() calls
-    parameters,  // from declare_parameter() calls
+    "4-pole Moog transistor ladder LP (24 dB/oct) — smooth, creamy, thick",
+    "resonance > 0.8 approaches self-oscillation. Connect ENV → cutoff_cv for filter sweep. "
+    "fm_in enables audio-rate cutoff modulation.",
     [](int sr) { return std::make_unique<MoogLadderProcessor>(sr); }
-});
+), true);
 ```
 
-The registry is queryable via the C API (`engine_get_module_count`, `engine_get_module_type`, `engine_get_module_port`, `engine_get_module_parameter`). See BRIDGE_GUIDE.md §5.
+`ModuleRegistry` builds a prototype at `sample_rate=48000` to harvest the declared ports and parameters, stores everything in a `ModuleDescriptor`, then discards the prototype. The resulting `ModuleDescriptor` contains:
+
+```cpp
+struct ModuleDescriptor {
+    std::string type_name;    // "MOOG_FILTER"
+    std::string description;  // one-line brief
+    std::string usage_notes;  // longer-form usage guidance (Phase 26)
+    std::vector<PortDescriptor>      ports;
+    std::vector<ParameterDescriptor> parameters;
+    FactoryFn   factory;
+};
+```
+
+The registry is queryable via the C API (`engine_get_module_count`, `engine_get_module_type`, `engine_get_module_port`, `engine_get_module_parameter`). See BRIDGE_GUIDE.md §5. The Phase 27A introspection API (`module_get_descriptor_json`, `module_registry_get_all_json`) exposes the full descriptor including `usage_notes` and per-port/parameter `description` fields as JSON.
 
 ---
 
@@ -240,13 +263,14 @@ All four filter types are **first-class chain nodes** — inserted into `signal_
   - `PORT_AUDIO` in `audio_in`
   - `PORT_AUDIO` out `audio_out`
   - `PORT_CONTROL` in `gain_cv` (unipolar)
-  - `PORT_CONTROL` in `initial_gain_cv` (unipolar)
-- **Parameters**: `initial_gain` (0.0–1.0), `response_curve` (enum: Linear, Exponential)
+  - `PORT_CONTROL` in `initial_gain_cv` (unipolar) — wired as of Phase 26
+- **Parameters**: `initial_gain` (0.0–1.0, default 1.0), `response_curve` (0.0–1.0, default 0.0 — implemented Phase 26)
 - **Behaviour**:
-  - **Linear Mode**: Output level is directly proportional to control voltage input.
-  - **Exponential Mode**: Output level follows an exponential curve relative to input CV. Critical for producing natural-sounding percussive decays.
-  - `initial_gain_cv` sets a resting DC level so a bipolar LFO can produce tremolo without fully closing the VCA on negative half-cycles.
-  - When no `gain_cv` connection is present the VCA applies `base_amplitude_` at unity gain, ensuring output level is always defined.
+  - **`gain_cv`**: Per-block gain envelope (from `ADSR_ENVELOPE` or `AD_ENVELOPE`). Applied as: `output[i] = audio[i] × effective_gain[i] × scale`.
+  - **`response_curve`** (Phase 26): Blends between linear (0.0) and exponential (1.0) gain law. `effective_gain = lerp(g, g², response_curve)` where `g = gain_cv[i]`. Exponential is perceptually uniform for fades and percussive decays.
+  - **`initial_gain`**: Static gain floor applied as `scale = initial_gain × base_amplitude_` when no `initial_gain_cv` is connected.
+  - **`initial_gain_cv`** (Phase 26): When connected, overrides `initial_gain`: `scale = initial_gain_cv[0] × base_amplitude_`. Enables live CV control of the VCA floor for tremolo with offset (prevents VCA fully closing on LFO negative half-cycles).
+  - When no `gain_cv` connection is present the VCA applies `scale` directly, ensuring output level is always defined.
 
 ### Envelope Generator (ADSR)
 - **Type name**: `ADSR_ENVELOPE`

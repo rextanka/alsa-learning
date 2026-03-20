@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "name": "Gong Noise Layer",
+  "groups": [
+    {
+      "id": 0,
+      "comment": "Tonal gong body (VCO1+VCO2 ring-mod → MOOG_FILTER) + transient noise layer (WHITE_NOISE → SH_FILTER) summed via AUDIO_MIXER.",
+      "chain": [
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO1"  },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO2"  },
+        { "type": "RING_MOD",            "tag": "RM"    },
+        { "type": "MOOG_FILTER",         "tag": "VCF"   },
+        { "type": "WHITE_NOISE",         "tag": "NOISE" },
+        { "type": "SH_FILTER",           "tag": "VCF2"  },
+        { "type": "AUDIO_MIXER",         "tag": "MIX"   },
+        { "type": "AD_ENVELOPE",         "tag": "ENV"   },
+        { "type": "VCA",                 "tag": "VCA"   }
+      ],
+      "connections": [
+        { "from_tag": "VCO1",  "from_port": "audio_out",    "to_tag": "RM",   "to_port": "audio_in_a" },
+        { "from_tag": "VCO2",  "from_port": "audio_out",    "to_tag": "RM",   "to_port": "audio_in_b" },
+        { "from_tag": "RM",    "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"   },
+        { "from_tag": "VCF",   "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_1" },
+        { "from_tag": "NOISE", "from_port": "audio_out",    "to_tag": "VCF2", "to_port": "audio_in"   },
+        { "from_tag": "VCF2",  "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_2" },
+        { "from_tag": "MIX",   "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"   },
+        { "from_tag": "ENV",   "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"    }
+      ],
+      "parameters": {
+        "VCO1":  { "sine_gain": 1.0 },
+        "VCO2":  { "sine_gain": 1.0, "transpose": 7, "detune": 40 },
+        "VCF":   { "cutoff": 800.0, "resonance": 0.15 },
+        "VCF2":  { "cutoff": 3000.0, "resonance": 0.30 },
+        "MIX":   { "gain_1": 0.85, "gain_2": 0.30 },
+        "ENV":   { "attack": 0.001, "decay": 3.0 }
+      }
+    }
+  ]
+}

@@ -74,7 +74,7 @@ The library is consumed via a stable C API, enabling host integration in native 
                  │
 ┌────────────────▼──────────────────────────────────────────────────┐
 │              Processor base (dsp/Processor.hpp)                    │
-│  Oscillators │ Envelope │ Filter │ FX  [conditionally compiled]    │
+│  Oscillators │ Envelope │ Filter │ FX  (30 modules, all compiled)  │
 └────────────────┬──────────────────────────────────────────────────┘
                  │
 ┌────────────────▼──────────────────────────────────────────────────┐
@@ -103,7 +103,7 @@ cxx/
 │   │   ├── MusicalClock.hpp       # Sample-accurate timing logic
 │   │   ├── ModuleRegistry.hpp     # Self-registering processor registry
 │   │   ├── PatchStore.hpp         # JSON patch management
-│   │   ├── ProcessorRegistrations.cpp  # Central registration (conditionally replaced by Phase 26)
+│   │   ├── ProcessorRegistrations.cpp  # Central registration — called from engine_create(); linker bait for static lib
 │   │   ├── SmfParser.hpp          # Standard MIDI File parser (Phase 22A)
 │   │   ├── Voice.hpp              # Per-voice graph container
 │   │   └── VoiceManager.hpp       # Polyphony & Voice Stealing
@@ -115,6 +115,7 @@ cxx/
 │   │   ├── filter/                # Moog, Diode, SH, MS20, HP, BP ladders; VcfBase
 │   │   ├── fx/                    # Juno Chorus, Echo Delay, Freeverb, FDN Reverb, Phaser, Distortion
 │   │   ├── oscillator/            # Sine, Saw, Pulse, Sub, LFO, White/Pink Noise
+│   │   ├── dynamics/              # NoiseGate, EnvelopeFollower
 │   │   └── routing/               # CompositeGenerator, DrawbarOrgan, CV/Audio utilities
 │   └── hal/
 │       ├── AudioDriver.hpp        # Cross-platform audio HAL interface
@@ -226,7 +227,8 @@ The engine supports **44100 Hz and 48000 Hz** exclusively. These are the two rat
 | 23    | **SMF Playback — Phase B (Multi-timbral)**: Extend `MidiFilePlayer` with a MIDI-channel-to-VoiceGroup routing table. Each channel maps to a VoiceGroup with its own patch. `engine_midi_set_channel_patch(ch, patch_path)` C API. Requires Phase 16 VoiceGroup/patch-per-group support. Program Change events (`0xC0`) trigger live patch swaps on the target channel's group. | Planned |
 | 24    | **Optimization**: SIMD, fast-math, and dynamic 'Mono-to-Stereo' negotiation. | Planned |
 | 25    | **USB MIDI HAL**: Platform-agnostic `hal::MidiDriver` base with static factory pattern (matching `AudioDriver`). Platform drivers: `AlsaMidiDriver` (ALSA rawmidi) and `CoreMidiDriver` (CoreMIDI framework). MIDI input dispatches to the engine via `engine_process_midi_bytes`. MIDI output sends raw bytes to a connected device. `HostMidiDeviceInfo` struct for enumeration. New C API: `midi_*` family. No platform `#ifdef`s in bridge layer. | Planned |
-| 26    | **Static Module Configuration**: Decouple module registration from the central `ProcessorRegistrations.cpp` into per-module self-registration (static initializers in each processor's `.cpp`). CMake `option()` flags (`AUDIO_MODULE_REVERB`, `AUDIO_MODULE_FX`, etc.) control which `.cpp` files compile, stripping unused modules from the binary. Named CMake presets for common targets (`desktop_full`, `pi_minimal`, `pi_synth`). Python tool `tools/configure_modules.py` for interactive preset configuration. Enables the engine to run on Raspberry Pi with a binary footprint 50–70% smaller than the full desktop build. | Planned |
+| 26    | **hpp/cpp Companion Split, Presets & Module Tooling**: Co-located `.cpp` files for all 30 processors (FX, routing, oscillator, envelope, filter, dynamics groups). Each `.cpp` holds the constructor body, `do_pull`, helpers, and a `kRegistered` static initializer that calls the 4-arg `register_module(type, brief, usage_notes, factory)` overload. `ProcessorRegistrations.cpp` retained as the explicit registrar called from `engine_create()` — provides authoritative registration and "linker bait" for the static library. Double-registration is safe (idempotent). Extended `register_module` 4-arg overload in `ModuleRegistry.hpp` stores `usage_notes` in `ModuleDescriptor` — prerequisite for Phase 27A introspection. `VCA.response_curve` (exponential blend) implemented; `VCA.initial_gain_cv` port wired in graph executor. `CMakePresets.json` with four named configurations (`desktop_full`, `desktop_release`, `pi_synth`, `pi_minimal`). `tools/configure_modules.py` — patch validation and module-set documentation tool (subcommands: `list`, `preset`, `validate`, `interactive`). Patch library expanded: `tom_tom.json` (FM via `fm_in`), `gong_noise_layer.json`, `thunder.json`, `group_strings.json` (using `AUDIO_MIXER`), `juno_strings.json`, `delay_lead.json`, `strings_chorus_reverb.json`, `gong_full.json`. 51/51 tests pass. | Complete |
+| 27    | **Module Introspection & Patch Serialization** — **27A**: `module_get_descriptor_json(type_name, buf, max_len)` and `module_registry_get_all_json(buf, max_len)` C API; returns JSON descriptor populated from Phase 26 extended declarations (`usage_notes`, parameter/port descriptions). Works natively with Swift `JSONDecoder` and React/Tauri `JSON.parse`. **27B**: `engine_get_patch_json(engine, group_index, buf, max_len)`, `engine_load_patch_json(engine, json, len)`, `engine_save_patch(engine, path)` — full round-trip patch serialization. Serialization walks both `signal_chain_` (PORT_AUDIO nodes) and `mod_sources_` (PORT_CONTROL generators) plus all `connections_` and post-chain entries; graph traversal from the audio output alone is insufficient. | Planned |
 
 ---
 
@@ -415,6 +417,7 @@ To bridge the gap between the C-compatible public API and the internal Flexible 
 
 1. **Global Modulation Bus**: Shift from per-voice matrices to a centralized bus where global sources (e.g., Vibrato LFO) write to synchronized slots, improving phase coherency and reducing CPU overhead via a subscription model.
 2. **BaseOscillator Hierarchy**: Consolidate redundant logic (gain, fine-tuning, pitch-bend) into a polymorphic collection, allowing the `Voice` to manage generators as a dynamic list rather than hardcoded pointers.
+3. **Hard VCO Sync**: See [Hard VCO Sync Design](#hard-vco-sync-design) below.
 
 ### Implementation Rules
 1. **Test Source of Truth**: All testing standards, including the "Golden Lifecycle" and mandatory modular routing protocols, are defined in [cxx/docs/TESTING.md](cxx/docs/TESTING.md).
@@ -540,195 +543,331 @@ endif()
 
 ---
 
-## Static Module Configuration (Phase 26)
+## hpp/cpp Companion Split, Presets & Module Tooling (Phase 26)
 
-The goal is to produce a stripped binary suitable for resource-constrained hosts (Raspberry Pi, embedded Linux) by compiling only the processor modules needed for the target use case.
+Phase 26 was primarily a code-organisation and tooling phase. All 30 processor types received co-located `.cpp` implementation files. `CMakePresets.json` and `tools/configure_modules.py` were added to support multi-target development.
 
-### Problem with the Current Design
+### hpp/cpp Companion Split
 
-`ProcessorRegistrations.cpp` calls `register_builtin_processors()` which unconditionally registers all ~30 modules. There is no way to exclude individual modules at compile time without editing this file. On a Pi Zero (512 MB RAM, single-core ARMv6), loading a full desktop build with FDN reverb, 4 different filter types, and all CV utilities wastes code space and startup time.
+Every processor was split into a header (class declaration + trivial inline methods) and a co-located `.cpp` (constructor body, `do_pull`, helper methods). This eliminates large header-only translation units and reduces incremental build times.
 
-### Solution: Self-Registering Modules via Static Initializers
+### Dual-Layer Self-Registration Pattern
 
-Each processor module gets its own small `.cpp` file whose sole responsibility is registering that module via a C++ static initializer. CMake decides which `.cpp` files to compile. If a `.cpp` file is not compiled in, its static initializer never runs, and the module is never registered — no `#ifdef`, no runtime cost.
+Each processor `.cpp` adds an anonymous-namespace static initializer that calls the 4-arg `register_module` overload with `usage_notes` — the metadata prerequisite for Phase 27A introspection.
 
-#### Self-Registration Pattern
+> **VCA exception**: `VcaProcessor` retains its full implementation in the header by design. Its hot path is the `static apply()` helper called directly by the graph executor (not via virtual `do_pull()`), so the implementation is intentionally header-only. `VcaProcessor.cpp` contains only the `kRegistered` static.
 
 ```cpp
-// src/dsp/fx/DistortionProcessor_reg.cpp
-#include "../../core/ModuleRegistry.hpp"
-#include "DistortionProcessor.hpp"
-namespace audio {
-static const bool kReg = (ModuleRegistry::instance().register_module(
+// src/dsp/fx/DistortionProcessor.cpp (tail of file)
+namespace {
+[[maybe_unused]] const bool kRegistered = ModuleRegistry::instance().register_module(
     "DISTORTION",
-    "Guitar-style distortion — drive + character blend",
+    "Guitar-style distortion with pre/post emphasis and 4x oversampling",
+    "Place post-VCA to replicate a synth output into a pedal. "
+    "drive=8, character=0.3 for warm asymmetric grit.",
     [](int sr) { return std::make_unique<DistortionProcessor>(sr); }
-), true);
-} // namespace audio
+);
+} // namespace
 ```
 
-`kReg` is a translation-unit-local variable. The linker includes the TU only if the `.cpp` is listed in `ENGINE_SOURCES`. Modules not listed simply do not exist at link time.
+`ProcessorRegistrations.cpp` is **retained unchanged** as the explicit registrar called from `engine_create()`. It uses the 3-arg overload and explicitly references every processor factory — this serves as "linker bait", ensuring all processor `.o` files are included in a static library link even when no external symbol from that TU is otherwise referenced.
 
-#### Central Registration File Fate
+The `kRegistered` statics fire as a bonus when the `.o` is included; `register_module` is idempotent so double-registration is safe. The per-processor `kRegistered` primarily serves as co-located documentation of the registration and as the source of `usage_notes` for Phase 27A.
 
-`ProcessorRegistrations.cpp` is **retained as the "full desktop" build path** — it registers everything and is included by default (`AUDIO_STATIC_CONFIG=OFF`). When `AUDIO_STATIC_CONFIG=ON`, `ProcessorRegistrations.cpp` is excluded from `ENGINE_SOURCES` and the per-module `_reg.cpp` files take over, controlled individually by CMake options.
+> **Static library linker note**: In a static library (`libaudio_engine.a`), the linker only includes `.o` files that provide symbols referenced by the executable. A processor whose only external symbols are polymorphic methods (called via base pointer through the registry) could be dropped. `ProcessorRegistrations.cpp`'s explicit factory lambdas prevent this — they directly name each processor type, forcing the linker to retain those TUs. This is why `ProcessorRegistrations.cpp` is retained even though `kRegistered` statics exist in each `.cpp`.
 
-This preserves the existing build exactly as-is while enabling the new embedded path without a flag.
+### Extended `register_module` Signature
 
-### CMake Module Groups
+The 4-arg overload added to `ModuleRegistry.hpp`:
 
-Modules are organized into groups. Each group is controlled by a single CMake `option()`. Individual module granularity is available but not required for most targets.
-
-```cmake
-option(AUDIO_STATIC_CONFIG "Use per-module self-registration instead of central ProcessorRegistrations.cpp" OFF)
-
-if(AUDIO_STATIC_CONFIG)
-    # Core — always compiled, no option to disable
-    list(APPEND ENGINE_SOURCES
-        src/dsp/envelope/AdsrEnvelopeProcessor_reg.cpp
-        src/dsp/envelope/ADEnvelopeProcessor_reg.cpp
-        src/dsp/VcaProcessor_reg.cpp
-        src/dsp/routing/CompositeGenerator_reg.cpp
-        src/dsp/oscillator/LfoProcessor_reg.cpp
-        src/dsp/oscillator/WhiteNoiseProcessor_reg.cpp
-    )
-
-    # Filters (one or more ladder types)
-    option(AUDIO_MODULE_FILTERS_ALL  "All four filter types"        ON)
-    option(AUDIO_MODULE_FILTER_MOOG  "Moog ladder filter"           ON)
-    option(AUDIO_MODULE_FILTER_DIODE "TB-303 diode ladder"          ON)
-    option(AUDIO_MODULE_FILTER_SH    "SH-101 CEM filter"            ON)
-    option(AUDIO_MODULE_FILTER_MS20  "Korg MS-20 SVF"               ON)
-    option(AUDIO_MODULE_FILTER_HPF   "High-pass biquad"             ON)
-    option(AUDIO_MODULE_FILTER_BPF   "Band-pass biquad"             ON)
-
-    # FX
-    option(AUDIO_MODULE_REVERB       "FDN and Freeverb reverb"      ON)
-    option(AUDIO_MODULE_CHORUS       "Juno BBD chorus"              ON)
-    option(AUDIO_MODULE_DISTORTION   "Guitar distortion"            ON)
-    option(AUDIO_MODULE_PHASER       "All-pass phaser"              ON)
-    option(AUDIO_MODULE_ECHO_DELAY   "Echo/BBD delay"               ON)
-
-    # Dynamics
-    option(AUDIO_MODULE_DYNAMICS     "Noise gate + envelope follower" ON)
-
-    # CV Utilities
-    option(AUDIO_MODULE_CV_UTILS     "CV mixer, splitter, maths, S&H, gate delay, inverter" ON)
-
-    # Audio Routing
-    option(AUDIO_MODULE_AUDIO_ROUTING "Audio splitter, mixer, ring mod" ON)
-
-    # Organ
-    option(AUDIO_MODULE_DRAWBAR_ORGAN "Hammond drawbar organ"       ON)
-
-    # Conditionally append _reg.cpp files based on options ...
-endif()
+```cpp
+void register_module(
+    std::string_view type_name,
+    std::string_view brief_description,
+    std::string_view usage_notes,
+    FactoryFn        factory_fn);
 ```
 
-### CMakePresets for Named Targets
+`usage_notes` is stored in `ModuleDescriptor::usage_notes` alongside the existing `brief` and `ports`/`parameters` collections. The Phase 27A introspection API (`module_get_descriptor_json`) will expose all of this as JSON.
 
-`CMakePresets.json` (at project root alongside `CMakeLists.txt`) defines named configurations:
+### CMakePresets.json
 
-```json
-{
-  "version": 3,
-  "configurePresets": [
-    {
-      "name": "desktop_full",
-      "displayName": "Desktop — full module set",
-      "cacheVariables": {
-        "AUDIO_STATIC_CONFIG": "OFF"
-      }
-    },
-    {
-      "name": "pi_minimal",
-      "displayName": "Raspberry Pi — minimal (VCO, one filter, ADSR, VCA, LFO)",
-      "cacheVariables": {
-        "AUDIO_STATIC_CONFIG":       "ON",
-        "AUDIO_MODULE_FILTER_MOOG":  "ON",
-        "AUDIO_MODULE_FILTER_DIODE": "OFF",
-        "AUDIO_MODULE_FILTER_SH":    "OFF",
-        "AUDIO_MODULE_FILTER_MS20":  "OFF",
-        "AUDIO_MODULE_FILTER_HPF":   "ON",
-        "AUDIO_MODULE_FILTER_BPF":   "OFF",
-        "AUDIO_MODULE_REVERB":       "OFF",
-        "AUDIO_MODULE_CHORUS":       "OFF",
-        "AUDIO_MODULE_DISTORTION":   "OFF",
-        "AUDIO_MODULE_PHASER":       "OFF",
-        "AUDIO_MODULE_ECHO_DELAY":   "OFF",
-        "AUDIO_MODULE_DYNAMICS":     "OFF",
-        "AUDIO_MODULE_CV_UTILS":     "OFF",
-        "AUDIO_MODULE_AUDIO_ROUTING":"OFF",
-        "AUDIO_MODULE_DRAWBAR_ORGAN":"OFF"
-      }
-    },
-    {
-      "name": "pi_synth",
-      "displayName": "Raspberry Pi — synth (all filters, distortion, delay, CV utils)",
-      "cacheVariables": {
-        "AUDIO_STATIC_CONFIG":       "ON",
-        "AUDIO_MODULE_REVERB":       "OFF",
-        "AUDIO_MODULE_CHORUS":       "OFF",
-        "AUDIO_MODULE_PHASER":       "OFF",
-        "AUDIO_MODULE_DRAWBAR_ORGAN":"OFF"
-      }
-    }
-  ]
-}
-```
+`CMakePresets.json` at the project root defines four named configurations. All four currently compile all 30 modules — selective module stripping is deferred to a future phase:
 
-Usage:
+| Preset | `CMAKE_BUILD_TYPE` | Testing | Notes |
+|---|---|---|---|
+| `desktop_full` | Debug | ON | Primary development build |
+| `desktop_release` | Release | OFF | Optimised desktop build |
+| `pi_synth` | Release | OFF | arm64 cross-compile target |
+| `pi_minimal` | MinSizeRel | OFF | Embedded target |
+
 ```bash
-cmake --preset pi_minimal -B build_pi
-cmake --build build_pi
-# Binary contains only 8 modules vs. 30+ in desktop_full
+# Configure and build using a named preset
+cmake --preset desktop_full
+cmake --build --preset desktop_full
+ctest --preset desktop_full
+
+cmake --preset pi_synth -DCMAKE_TOOLCHAIN_FILE=...
+cmake --build --preset pi_synth
 ```
 
 ### Python Configuration Tool (`tools/configure_modules.py`)
 
-The Python tool addresses two use cases:
-1. **Interactive configuration**: prompts the user to select modules and writes a `CMakeUserPresets.json`
-2. **Preset validation**: checks a preset name against the known module list and reports which modules are included/excluded
+A pure Python 3 script (no external dependencies) with four subcommands:
 
-```
-tools/configure_modules.py --interactive
-  → Prompts: "Include reverb? [Y/n]", "Include distortion? [Y/n]", ...
-  → Writes: cmake/user_preset.cmake or CMakeUserPresets.json
+```bash
+# List all 30 modules with category and description
+python tools/configure_modules.py list
 
-tools/configure_modules.py --preset pi_minimal --report
-  → Outputs a table: module name | included | estimated code size contribution
+# Show which modules a preset includes and validate patches against it
+python tools/configure_modules.py preset desktop_full --validate-patches
+python tools/configure_modules.py preset pi_minimal --validate-patches
 
-tools/configure_modules.py --list-presets
-  → Lists all defined presets from CMakePresets.json
-```
+# Validate all patches in patches/ against the full module set
+python tools/configure_modules.py validate
 
-The tool is a pure Python 3 script with no external dependencies — it manipulates JSON directly. It does not replace CMake; it is a convenience wrapper over `cmake --preset`.
-
-### Error Handling for Missing Modules
-
-When a patch JSON references a module type that was not compiled in (e.g., `"type": "REVERB_FDN"` on a `pi_minimal` build), `ModuleRegistry::create()` returns `nullptr`. The patch loader logs:
-
-```
-[WARN] Module type "REVERB_FDN" not registered — was it excluded at compile time?
-       Patch load failed for group 0.
+# Interactive module selection + patch validation
+python tools/configure_modules.py interactive
 ```
 
-This is a clear, actionable error. The patch itself is not loaded, so the engine is never in a partially-configured state.
+The tool documents which patches are compatible with a given module set. When a patch uses a module type that a preset excludes, the tool reports it clearly — useful groundwork for when selective compilation is implemented.
 
-### Binary Size Estimates
+### Extended Module Descriptor Metadata
 
-| Preset | Modules | Approx. binary size reduction |
+The 4-arg `register_module` overload and the per-processor `kRegistered` statics provide `usage_notes` for every module. The existing `declare_parameter` / `declare_port` calls in each processor constructor populate `ModuleDescriptor::parameters` and `ModuleDescriptor::ports`. All of this feeds Phase 27A's `module_get_descriptor_json` / `module_registry_get_all_json` C API.
+
+### VCA Enhancements
+
+- **`response_curve` (exponential blend)**: `VCA.response_curve` [0, 1] blends between linear (0) and exponential gain law (1). `effective_gain = lerp(g, g², response_curve)`. Perceptually uniform for fades and percussive decays.
+- **`initial_gain_cv` port wiring**: When the `initial_gain_cv` PORT_CONTROL input is connected, its current-block value overrides the `initial_gain` parameter as the static gain floor, enabling live CV control of the VCA resting level.
+
+### Patch Library Expansion
+
+Eight new patches delivered in Phase 26:
+
+| Patch | Key modules | Technique |
 |---|---|---|
-| `desktop_full` | 30+ | baseline |
-| `pi_synth` | ~20 | ~25–35% smaller |
-| `pi_minimal` | ~8 | ~50–70% smaller |
+| `tom_tom.json` | `COMPOSITE_GENERATOR` `fm_in` | Audio-rate FM pitch drop |
+| `gong_noise_layer.json` | `RING_MOD` + `AUDIO_MIXER` | Ring mod + noise blend |
+| `thunder.json` | Two noise paths + `AUDIO_MIXER` | Parallel noise mixing |
+| `group_strings.json` | Dual `COMPOSITE_GENERATOR` + `AUDIO_MIXER` | Detuned ensemble |
+| `juno_strings.json` | `SH_FILTER` + `JUNO_CHORUS` | Roland-style strings |
+| `delay_lead.json` | `SH_FILTER` + `ECHO_DELAY` | Lead with echo |
+| `strings_chorus_reverb.json` | `JUNO_CHORUS` + `REVERB_FREEVERB` | Lush stereo strings |
+| `gong_full.json` | `RING_MOD` + `AUDIO_MIXER` + noise | Full gong with noise layer |
 
-Estimates based on typical DSP module object sizes (2–8 KB each before LTO). Link-time optimization (`-flto`) can reduce further.
+### Future: Selective Module Stripping
+
+The CMake option (`AUDIO_STATIC_CONFIG`) and per-module enable/disable flags that would actually strip unused processors from the binary are **not yet implemented**. All four CMake presets currently compile all 30 modules. The `tools/configure_modules.py` tool models the intended future behaviour for patch compatibility documentation. Selective compilation is a candidate for a future phase (28 or later) once the current architecture is stable.
 
 ### Testing
 
-- **Unit**: Verify that a `pi_minimal` build's `ModuleRegistry` contains exactly the expected modules and rejects attempts to instantiate excluded ones.
-- **Build CI**: Add a CMake build job to CI that builds with `pi_minimal` preset and verifies it links clean.
+51/51 tests pass with the Phase 26 changes. Each new patch has a corresponding functional test (`test_tom_tom_patch.cpp`, `test_gong_patch.cpp`, `test_group_strings_patch_tests.cpp`, etc.).
+
+---
+
+## Module Introspection & Patch Serialization (Phase 27)
+
+Phase 27 is split into two independent deliverables that share the extended metadata introduced in Phase 26.
+
+---
+
+### Phase 27A — Module Introspection API
+
+Exposes the full `ModuleDescriptor` (type name, brief, usage notes, parameter descriptions, port descriptions) via a stable C API so host applications can build dynamic patch editors, auto-generate help text, and validate connections without hardcoded module knowledge.
+
+#### C API
+
+```c
+// CInterface.h additions
+//
+// Returns the JSON descriptor for a single registered module type.
+// Writes at most max_len bytes to buf (null-terminated).
+// Returns: bytes written (excluding null), or -1 if type not found, or -2 if buf too small.
+int module_get_descriptor_json(const char* type_name, char* buf, int max_len);
+
+// Returns a JSON array of descriptors for every registered module.
+// Writes at most max_len bytes to buf (null-terminated).
+// Returns: bytes written (excluding null), or -2 if buf too small.
+int module_registry_get_all_json(char* buf, int max_len);
+```
+
+#### JSON Descriptor Format
+
+```json
+{
+  "type_name":   "MOOG_FILTER",
+  "brief":       "Moog 4-pole ladder lowpass filter",
+  "usage_notes": "Set resonance > 0.8 for self-oscillation. Connect ENV→cutoff_cv for filter sweep.",
+  "parameters": [
+    { "name": "cutoff",    "description": "Cutoff frequency (Hz, log scale 20–20000)", "min": 20.0,  "max": 20000.0, "default": 1000.0 },
+    { "name": "resonance", "description": "Resonance / Q [0–1]; >0.9 self-oscillates",  "min": 0.0,   "max": 1.0,    "default": 0.2   }
+  ],
+  "ports": [
+    { "name": "audio_in",  "type": "PORT_AUDIO",   "direction": "PORT_INPUT",  "description": "Mono audio input" },
+    { "name": "audio_out", "type": "PORT_AUDIO",   "direction": "PORT_OUTPUT", "description": "Filtered audio output" },
+    { "name": "cutoff_cv", "type": "PORT_CONTROL", "direction": "PORT_INPUT",  "description": "Cutoff modulation (1V/oct)" },
+    { "name": "fm_in",     "type": "PORT_AUDIO",   "direction": "PORT_INPUT",  "description": "Audio-rate FM input" }
+  ]
+}
+```
+
+The `module_registry_get_all_json` response is a JSON array of the above objects. Both calls are safe to call from any thread (the registry is read-only after `bake()`).
+
+#### Host Integration
+
+- **Swift**: `JSONDecoder` + `Codable` struct matching the schema above.
+- **React/Tauri**: `JSON.parse` directly; TypeScript interface generated from the schema.
+- The API is a one-shot read at startup — modules do not change after registration.
+
+#### Testing
+
+- **Unit**: For each registered module, call `module_get_descriptor_json` and assert the returned JSON is valid, contains the correct `type_name`, and has non-empty `brief` and at least one port entry.
+- **Integration**: Call `module_registry_get_all_json`, parse the array, verify count matches `ModuleRegistry::instance().size()`.
+
+---
+
+### Phase 27B — Patch Serialization
+
+Enables saving the current engine patch state to JSON and reloading it later — round-trip fidelity for all connection types.
+
+#### C API
+
+```c
+// Serialize the patch for a single voice group to JSON.
+// Returns bytes written, or -2 if buf too small.
+int  engine_get_patch_json(EngineHandle* engine, int group_index,
+                           char* buf, int max_len);
+
+// Load a patch from an in-memory JSON string (same format as v2 patch files).
+// Returns 0 on success, non-zero on error.
+int  engine_load_patch_json(EngineHandle* engine, const char* json, int json_len);
+
+// Serialize the current patch for group 0 directly to a file path.
+// Returns 0 on success.
+int  engine_save_patch(EngineHandle* engine, const char* path);
+```
+
+#### Serialization Scope
+
+A complete patch serialization must capture:
+
+| Source | Why it must be walked |
+|---|---|
+| `signal_chain_` | PORT_AUDIO nodes (generators, filters, VCA) |
+| `mod_sources_` | PORT_CONTROL generators (LFOs, envelopes) — **not reachable from audio output** |
+| `connections_` | All named port connections (both audio-rate and control-rate wires) |
+| `parameters_`  | Current `apply_parameter` state for each node |
+| post-chain entries | `engine_post_chain_push` effects (JUNO_CHORUS, REVERB_FDN, etc.) |
+
+Graph traversal starting from the audio output node is **insufficient** — `mod_sources_` entries (LFOs, envelopes wired only to PORT_CONTROL inputs) have no audio-path predecessor and would be silently omitted. The serializer must iterate both lists explicitly.
+
+#### Output Format
+
+The serialized JSON is a valid v2 patch file — it can be loaded with `engine_load_patch` (file path) or `engine_load_patch_json` (in-memory string) interchangeably.
+
+#### Testing
+
+- **Round-trip unit test**: Load `juno_pad.json`, serialize to buffer via `engine_get_patch_json`, load result via `engine_load_patch_json`, play a note, assert RMS output matches original patch.
+- **mod_sources_ coverage**: Use a patch with a standalone LFO (not connected to any audio-path node). Serialize, reload, verify LFO modulation is present in the reloaded patch.
+- **Post-chain round-trip**: Push `REVERB_FDN` onto the post-chain, serialize, reload, verify the post-chain entry is preserved.
+
+---
+
+## Hard VCO Sync Design
+
+Hard sync resets the slave oscillator's phase to zero each time the master oscillator completes a cycle (crosses zero in the positive direction). This creates the classic "sync sweep" timbral effect — sweeping the slave's frequency while it is synced to the master produces waveform folding and complex harmonic evolution (Roland §2-7, Oberheim synthesizers).
+
+### Signal Flow
+
+```
+Master VCO (fixed frequency)  ──sync_out──▶  Slave VCO (swept frequency)
+                                                   │
+                                                  audio_out ──▶ VCF ──▶ VCA
+```
+
+### Design
+
+#### New Port: `sync_in` (PORT_AUDIO, input)
+
+The slave oscillator declares a new `sync_in` port of type `PORT_AUDIO`. This port carries a trigger signal: a positive zero-crossing in the `sync_in` buffer causes the slave to reset its phase accumulator to 0.0 at that sample.
+
+The `sync_in` signal is **the master's raw audio output** — no separate trigger generator is needed. The slave detects the positive zero-crossing internally (previous sample < 0, current sample ≥ 0).
+
+#### New Port: `sync_out` (PORT_AUDIO, output)
+
+The master oscillator declares a `sync_out` port that aliases its `audio_out` buffer (no copy). This naming makes the patch graph intent explicit: wiring `master.sync_out → slave.sync_in` is semantically correct even if the buffer is shared.
+
+Alternatively, the master's `audio_out` can be split via `AUDIO_SPLITTER` — one branch to the signal path, one to `sync_in`. Both approaches are valid patch designs.
+
+#### Phase Reset Implementation
+
+Inside `CompositeGenerator::pull()`, if `sync_in` is connected:
+```cpp
+for (size_t i = 0; i < frames; ++i) {
+    if (sync_in_prev_ < 0.0f && sync_in_buf[i] >= 0.0f)
+        phase_ = 0.0;            // hard reset
+    sync_in_prev_ = sync_in_buf[i];
+    // ... normal oscillator update
+}
+```
+
+Sample-accurate reset within the block — no inter-block latency.
+
+#### Impact on `declare_port`
+
+`COMPOSITE_GENERATOR` gains two new port declarations:
+```cpp
+declare_port("sync_in",  PORT_AUDIO, PORT_INPUT,  "Hard sync trigger — connect to master oscillator audio_out");
+declare_port("sync_out", PORT_AUDIO, PORT_OUTPUT, "Alias of audio_out for sync routing clarity");
+```
+
+`sync_out` is a read-only alias; writing to it has no effect. The graph executor does not need special handling — `sync_out` simply returns the same `AudioBuffer*` as `audio_out`.
+
+#### Patch Example (`patches/sync_lead.json`)
+
+```json
+{
+  "version": 2,
+  "name": "Sync Lead",
+  "groups": [{
+    "id": 0,
+    "chain": [
+      { "type": "COMPOSITE_GENERATOR", "tag": "MASTER" },
+      { "type": "AUDIO_SPLITTER",       "tag": "SPL"    },
+      { "type": "COMPOSITE_GENERATOR", "tag": "SLAVE"  },
+      { "type": "MOOG_FILTER",          "tag": "VCF"   },
+      { "type": "ADSR_ENVELOPE",        "tag": "ENV"   },
+      { "type": "VCA",                  "tag": "VCA"   }
+    ],
+    "connections": [
+      { "from_tag": "MASTER", "from_port": "audio_out",  "to_tag": "SPL",   "to_port": "audio_in"   },
+      { "from_tag": "SPL",    "from_port": "audio_out_0","to_tag": "SLAVE", "to_port": "sync_in"    },
+      { "from_tag": "SLAVE",  "from_port": "audio_out",  "to_tag": "VCF",   "to_port": "audio_in"   },
+      { "from_tag": "VCF",    "from_port": "audio_out",  "to_tag": "VCA",   "to_port": "audio_in"   },
+      { "from_tag": "ENV",    "from_port": "envelope_out","to_tag": "VCA",  "to_port": "gain_cv"    }
+    ],
+    "parameters": {
+      "MASTER": { "saw_gain": 1.0 },
+      "SLAVE":  { "saw_gain": 1.0 },
+      "VCF":    { "cutoff": 3000.0, "resonance": 0.3 },
+      "ENV":    { "attack": 0.01, "decay": 0.2, "sustain": 0.7, "release": 0.3 }
+    }
+  }]
+}
+```
+
+The `MASTER` oscillator is tuned to the `kybd_cv` (auto-injected at note-on). The `SLAVE` oscillator is swept by a second LFO or manual `cutoff_cv` to produce the sync sweep effect. `kybd_cv` is auto-injected to `SLAVE.pitch_cv` as well (same note number, but the sync reset still dominates the timbre).
+
+#### Scope and Placement
+
+Hard VCO sync is a **future phase** — not currently assigned. It requires:
+- `sync_in`/`sync_out` port additions to `COMPOSITE_GENERATOR` (or a new `SYNC_GENERATOR` type)
+- Zero-crossing detection in the pull loop (sample-accurate)
+- `AUDIO_SPLITTER` already available (Phase 18)
+- No new engine infrastructure required
+
+Candidate phase slot: **28** (after Phase 27B patch serialization is complete).
 
 ---
 
@@ -743,7 +882,7 @@ Estimates based on typical DSP module object sizes (2–8 KB each before LTO). L
 | [docs/BRIDGE_GUIDE.md](docs/BRIDGE_GUIDE.md) | C-Bridge contract | All `CInterface.h` functions with usage examples; parameter label registry; removed/deprecated API table |
 | [docs/MODULE_DESC.md](docs/MODULE_DESC.md) | Processor specifications | Port names, port types, parameter declarations, connection rules, known gaps for every module type |
 | [docs/PATCH_SPEC.md](docs/PATCH_SPEC.md) | Patch file format | JSON v2 schema, chain/connection/parameter structure, patch library |
-| [docs/LIBRARY_USER_MANUAL.md](docs/LIBRARY_USER_MANUAL.md) | Developer user guide | Module catalog, patch cookbook, analysis tools, USB MIDI HAL (§12), static module config / embedded targets (§13) |
+| [docs/LIBRARY_USER_MANUAL.md](docs/LIBRARY_USER_MANUAL.md) | Developer user guide | Module catalog, patch cookbook, analysis tools, USB MIDI HAL (§12), static module config / embedded targets (§13), Known Limitations (§14) |
 | BUILD.md | Build & CI | CMake targets, dependency setup, ctest invocation |
 
 ## References

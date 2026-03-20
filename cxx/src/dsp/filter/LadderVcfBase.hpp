@@ -40,9 +40,6 @@ public:
 
     /**
      * @brief Inject the fm_in audio buffer for audio-rate cutoff modulation.
-     *
-     * When connected, the signed audio signal is scaled by fm_depth_ and
-     * added to the effective cutoff (in octaves) per sample in do_pull.
      */
     void inject_audio(std::string_view port_name,
                       std::span<const float> audio) override {
@@ -56,7 +53,6 @@ public:
 
 protected:
     void update_cutoff_coefficient(float cutoff) override {
-        // Bilinear pre-warp: g = tan(π·fc/fs), clamped for numerical stability
         g_ = std::tan(static_cast<float>(M_PI) * cutoff / static_cast<float>(sample_rate_));
         g_ = std::clamp(g_, 0.0001f, 0.9999f);
     }
@@ -65,25 +61,8 @@ protected:
         for (int i = 0; i < 4; ++i) stage_[i] = 0.0f;
     }
 
-    // Override do_pull to handle per-sample audio-rate FM when fm_in_ is present.
-    void do_pull(std::span<float> output,
-                 const VoiceContext* ctx = nullptr) override {
-        fm_depth_.advance(static_cast<int>(output.size()));
-        const float fm_depth_val = fm_depth_.get();
-        if (fm_in_.empty() || fm_depth_val == 0.0f) {
-            VcfBase::do_pull(output, ctx);
-        } else {
-            for (size_t i = 0; i < output.size(); ++i) {
-                const float eff_cv = cutoff_cv_ + kybd_cv_ + fm_depth_val * fm_in_[i];
-                const float fc = std::max(20.0f, base_cutoff_.get() * std::pow(2.0f, eff_cv));
-                update_cutoff_coefficient(fc);
-                process_sample(output[i]);
-            }
-            // Restore coefficient to block-rate value after FM loop.
-            update_effective_cutoff();
-            fm_in_ = {};
-        }
-    }
+    // FM-aware do_pull override — implemented in LadderVcfBase.cpp
+    void do_pull(std::span<float> output, const VoiceContext* ctx = nullptr) override;
 
     float stage_[4];
     float g_ = 0.0f; ///< frequency coefficient (pre-warped via tan)

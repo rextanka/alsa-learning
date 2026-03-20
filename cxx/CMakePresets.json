@@ -1,0 +1,90 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 20, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "desktop_full",
+      "displayName": "Desktop — all modules, tests enabled",
+      "description": "Full build for macOS/Linux desktop development. All 30 processors, all tests.",
+      "binaryDir": "${sourceDir}/build",
+      "generator": "Unix Makefiles",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE":       "Debug",
+        "BUILD_TESTING":          "ON",
+        "AUDIO_ENABLE_PROFILING": "ON"
+      }
+    },
+    {
+      "name": "desktop_release",
+      "displayName": "Desktop — release build",
+      "description": "Optimised release build for desktop. No profiling overhead.",
+      "binaryDir": "${sourceDir}/build_release",
+      "generator": "Unix Makefiles",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE":       "Release",
+        "BUILD_TESTING":          "OFF",
+        "AUDIO_ENABLE_PROFILING": "OFF"
+      }
+    },
+    {
+      "name": "pi_synth",
+      "displayName": "Raspberry Pi — synth voice modules only",
+      "description": "Cross-compiled for arm64 Linux. All modules enabled.",
+      "binaryDir": "${sourceDir}/build_pi_synth",
+      "generator": "Unix Makefiles",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE":       "Release",
+        "BUILD_TESTING":          "OFF",
+        "AUDIO_ENABLE_PROFILING": "OFF"
+      },
+      "condition": {
+        "type": "notEquals",
+        "lhs": "$env{PI_CROSS}",
+        "rhs": ""
+      }
+    },
+    {
+      "name": "pi_minimal",
+      "displayName": "Raspberry Pi — minimal (oscillators + ADSR + VCA only)",
+      "description": "Smallest binary footprint build for embedded targets. All modules enabled.",
+      "binaryDir": "${sourceDir}/build_pi_minimal",
+      "generator": "Unix Makefiles",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE":       "MinSizeRel",
+        "BUILD_TESTING":          "OFF",
+        "AUDIO_ENABLE_PROFILING": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "desktop_full",
+      "configurePreset": "desktop_full",
+      "displayName": "Build desktop_full"
+    },
+    {
+      "name": "desktop_release",
+      "configurePreset": "desktop_release",
+      "displayName": "Build desktop_release"
+    },
+    {
+      "name": "pi_synth",
+      "configurePreset": "pi_synth",
+      "displayName": "Build pi_synth"
+    },
+    {
+      "name": "pi_minimal",
+      "configurePreset": "pi_minimal",
+      "displayName": "Build pi_minimal"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "desktop_full",
+      "configurePreset": "desktop_full",
+      "displayName": "Test desktop_full",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 4 }
+    }
+  ]
+}

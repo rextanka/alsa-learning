@@ -39,15 +39,7 @@ class RingModProcessor : public Processor {
 public:
     static constexpr float kRampSeconds = 0.010f; // 10 ms
 
-    explicit RingModProcessor(int sample_rate = 48000) {
-        ramp_samples_ = static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds);
-        declare_port({"audio_in_a", PORT_AUDIO,   PortDirection::IN});
-        declare_port({"audio_in_b", PORT_AUDIO,   PortDirection::IN});
-        declare_port({"audio_out",  PORT_AUDIO,   PortDirection::OUT});
-        declare_port({"mod_in",     PORT_CONTROL, PortDirection::IN, false}); // bipolar LFO AM
-
-        declare_parameter({"mix", "Dry/Wet Mix", 0.0f, 1.0f, 1.0f}); // default fully wet
-    }
+    explicit RingModProcessor(int sample_rate = 48000);
 
     void reset() override {
         audio_in_a_ = {};
@@ -60,13 +52,6 @@ public:
         return false;
     }
 
-    /**
-     * @brief Inject a secondary audio input before do_pull().
-     *
-     * Called by Voice::pull_mono audio_bus mechanism.
-     * audio_in_a: carrier signal (or first VCO)
-     * audio_in_b: modulator signal (or second VCO at inharmonic interval)
-     */
     void inject_audio(std::string_view port_name,
                       std::span<const float> audio) override {
         if (port_name == "audio_in_a") audio_in_a_ = audio;
@@ -76,7 +61,6 @@ public:
     void inject_cv(std::string_view port_name,
                    std::span<const float> cv) override {
         if (port_name == "mod_in" && !cv.empty()) {
-            // Use the mean of the CV block as a scalar modulator
             float sum = 0.0f;
             for (auto v : cv) sum += v;
             mod_cv_ = sum / static_cast<float>(cv.size());
@@ -86,42 +70,14 @@ public:
     PortType output_port_type() const override { return PortType::PORT_AUDIO; }
 
 protected:
-    void do_pull(std::span<float> output,
-                 const VoiceContext* /*ctx*/ = nullptr) override {
-        mix_.advance(static_cast<int>(output.size()));
-        const float mix_val = mix_.get();
-        const float dry = 1.0f - mix_val;
-
-        if (!audio_in_a_.empty() && !audio_in_b_.empty()) {
-            // Full ring mod: A × B
-            const size_t n = std::min({output.size(), audio_in_a_.size(), audio_in_b_.size()});
-            for (size_t i = 0; i < n; ++i) {
-                const float wet = audio_in_a_[i] * audio_in_b_[i];
-                output[i] = dry * audio_in_a_[i] + mix_val * wet;
-            }
-        } else if (!audio_in_a_.empty()) {
-            // Only A injected: apply mod_cv as AM (or self-square if mod_cv=1)
-            const float mod = 1.0f + mod_cv_; // bias 1 so zero CV = unity gain
-            const size_t n = std::min(output.size(), audio_in_a_.size());
-            for (size_t i = 0; i < n; ++i) {
-                const float wet = audio_in_a_[i] * mod;
-                output[i] = dry * audio_in_a_[i] + mix_val * wet;
-            }
-        }
-        // If neither injected, output is left as-is (silent / previous content).
-
-        // Clear injected spans — they are valid for this block only.
-        audio_in_a_ = {};
-        audio_in_b_ = {};
-        mod_cv_     = 0.0f;
-    }
+    void do_pull(std::span<float> output, const VoiceContext* ctx = nullptr) override;
 
 private:
-    int ramp_samples_ = 480; // default ~10ms at 48kHz
-    std::span<const float> audio_in_a_; ///< first VCO audio (injected per-block)
-    std::span<const float> audio_in_b_; ///< second VCO audio (injected per-block)
-    float mod_cv_  = 0.0f;              ///< LFO modulator (from inject_cv)
-    SmoothedParam mix_{1.0f};           ///< 0=dry, 1=wet ring-mod
+    int ramp_samples_ = 480;
+    std::span<const float> audio_in_a_;
+    std::span<const float> audio_in_b_;
+    float mod_cv_  = 0.0f;
+    SmoothedParam mix_{1.0f};
 };
 
 } // namespace audio

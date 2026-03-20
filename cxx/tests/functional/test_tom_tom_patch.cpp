@@ -1,17 +1,19 @@
 /**
  * @file test_tom_tom_patch.cpp
- * @brief Functional tests for tom_tom.json — tonal VCO body with filter-swept resonance.
+ * @brief Functional tests for tom_tom.json — dual-VCO FM tom with filter sweep.
  *
- * Patch topology:
- *   VCO (triangle=0.8, sine=0.2) → SH_FILTER (cutoff=240, res=0.6)
- *   → VCA ← AD_ENVELOPE (attack=1ms, decay=350ms)
+ * Patch topology (Phase 26 rework — fm_in enabled):
+ *   VCO1 (triangle=1.0, sine=0.5) → SH_FILTER.audio_in  (tonal body layer)
+ *   VCO2 (sine=0.4, transpose=7)  → SH_FILTER.fm_in     (FM modulator, P5 above)
+ *   SH_FILTER (cutoff=280, res=0.72) → VCA ← AD_ENVELOPE (attack=1ms, decay=350ms)
  *   ENV → VCF.cutoff_cv (envelope sweeps filter down from peak)
  *
  * Characteristic features:
  *   - Fast 1ms attack for crisp percussive onset
  *   - 350ms decay gives the sustained tom body
+ *   - VCO2 FM modulator adds transient click and pitched complexity at onset
  *   - Envelope sweeps VCF cutoff: bright attack, darker sustain
- *   - SH_FILTER (CEM) resonance at 0.6 gives the characteristic tonal ring
+ *   - SH_FILTER (CEM) resonance at 0.72 gives the characteristic tonal ring
  *   - Lower notes produce lower resonance peak (kybd_cv tracking)
  *
  * Key assertions:

@@ -37,9 +37,8 @@ public:
         declare_port({"gain_cv",         PORT_CONTROL, PortDirection::IN,  true}); // unipolar [0,1]
         declare_port({"initial_gain_cv", PORT_CONTROL, PortDirection::IN,  true}); // unipolar [0,1]
 
-        // initial_gain is queryable via the registry but the initial_gain_cv port is not
-        // yet wired in the graph executor. Full tremolo-with-DC-offset requires Phase 16
-        // full port routing so the executor can pull initial_gain_cv and pass it as scale.
+        // initial_gain_cv is wired in Voice.cpp VCA block (Phase 26).
+        // When connected: scale = initial_gain_cv[0] * base_amplitude_.
         declare_parameter({"initial_gain",   "Initial Gain",   0.0f, 1.0f, 1.0f});
         declare_parameter({"response_curve", "Response Curve", 0.0f, 1.0f, 0.0f});
     }
@@ -51,22 +50,35 @@ public:
     }
 
     /**
-     * @brief Apply VCA gain: audio[i] *= gain_cv[i] * scale.
+     * @brief Apply VCA gain: audio[i] *= effective_gain[i] * scale.
      *
      * RT-SAFE: no allocations, no locks, no branches per sample.
      *
-     * @param audio    Audio buffer to scale in-place (PORT_AUDIO).
-     * @param gain_cv  Per-sample gain envelope (PORT_CONTROL, range [0,1]).
-     * @param scale    Static amplitude scale — base_amplitude or initial_gain.
-     *                 Defaults to 1.0 (unity).
+     * @param audio          Audio buffer to scale in-place (PORT_AUDIO).
+     * @param gain_cv        Per-sample gain envelope (PORT_CONTROL, range [0,1]).
+     * @param scale          Static amplitude scale — initial_gain * base_amplitude_.
+     *                       Defaults to 1.0 (unity).
+     * @param response_curve Blend between linear (0.0) and exponential (1.0) law.
+     *                       effective_gain = lerp(g, g², response_curve).
+     *                       Defaults to 0.0 (linear, backward-compatible).
      */
     static void apply(std::span<float> audio,
                       std::span<const float> gain_cv,
-                      float scale = 1.0f) noexcept {
+                      float scale = 1.0f,
+                      float response_curve = 0.0f) noexcept {
         // RT-SAFE: no allocations, no locks
         const size_t n = std::min(audio.size(), gain_cv.size());
-        for (size_t i = 0; i < n; ++i) {
-            audio[i] *= gain_cv[i] * scale;
+        if (response_curve < 1e-4f) {
+            // Fast path: linear (default)
+            for (size_t i = 0; i < n; ++i)
+                audio[i] *= gain_cv[i] * scale;
+        } else {
+            // Blended path: lerp between linear (g) and exponential (g²)
+            for (size_t i = 0; i < n; ++i) {
+                const float g = gain_cv[i];
+                const float g_exp = g * g;
+                audio[i] *= (g + response_curve * (g_exp - g)) * scale;
+            }
         }
     }
 
@@ -89,7 +101,7 @@ protected:
 private:
     int ramp_samples_             = 480; // default ~10ms at 48kHz
     SmoothedParam initial_gain_{1.0f};
-    float response_curve_ = 0.0f; // 0=linear, 1=exponential (Phase 17)
+    float response_curve_ = 0.0f; // 0=linear, 1=exponential (implemented Phase 26)
 };
 
 } // namespace audio

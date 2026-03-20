@@ -49,91 +49,28 @@ public:
 
     static constexpr float kRampSeconds = 0.010f; // 10 ms
 
-    explicit DrawbarOrganProcessor(int sample_rate)
-        : sample_rate_(sample_rate)
-        , ramp_samples_(static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds))
-        , base_freq_(0.0)
-    {
-        for (size_t i = 0; i < NUM_DRAWBARS; ++i) {
-            oscs_[i] = std::make_unique<SineOscillatorProcessor>(sample_rate);
-        }
-        // Default: 8' drawbar fully open (classic "flute" preset)
-        drawbar_gains_[2].set_target(8.0f, 0); // snap to initial value
-
-        set_tag("ORGAN");
-
-        declare_port({"audio_out", PORT_AUDIO,   PortDirection::OUT});
-        declare_port({"pitch_cv",  PORT_CONTROL, PortDirection::IN, false});
-
-        declare_parameter({"drawbar_16",  "16' Sub-Octave",  0.0f, 8.0f, 0.0f});
-        declare_parameter({"drawbar_513", "5⅓' Quint",      0.0f, 8.0f, 0.0f});
-        declare_parameter({"drawbar_8",   "8' Principal",    0.0f, 8.0f, 8.0f});
-        declare_parameter({"drawbar_4",   "4' Octave",       0.0f, 8.0f, 0.0f});
-        declare_parameter({"drawbar_223", "2⅔' Nazard",     0.0f, 8.0f, 0.0f});
-        declare_parameter({"drawbar_2",   "2' Super-Octave", 0.0f, 8.0f, 0.0f});
-        declare_parameter({"drawbar_135", "1⅗' Tierce",     0.0f, 8.0f, 0.0f});
-        declare_parameter({"drawbar_113", "1⅓' Larigot",    0.0f, 8.0f, 0.0f});
-        declare_parameter({"drawbar_1",   "1' Sifflöte",    0.0f, 8.0f, 0.0f});
-    }
+    explicit DrawbarOrganProcessor(int sample_rate);
 
     void set_frequency(double freq) override {
         base_freq_ = freq;
-        for (size_t i = 0; i < NUM_DRAWBARS; ++i) {
+        for (size_t i = 0; i < NUM_DRAWBARS; ++i)
             oscs_[i]->set_frequency(freq * kHarmonicRatios[i]);
-        }
     }
 
     void set_drawbar(size_t index, float value) {
-        if (index < NUM_DRAWBARS) {
+        if (index < NUM_DRAWBARS)
             drawbar_gains_[index].set_target(value, ramp_samples_);
-        }
     }
 
-    void reset() override {
-        for (auto& osc : oscs_) osc->reset();
-    }
+    void reset() override { for (auto& osc : oscs_) osc->reset(); }
 
     PortType output_port_type() const override { return PortType::PORT_AUDIO; }
 
-    bool apply_parameter(const std::string& name, float value) override {
-        // Map parameter names to drawbar indices
-        static constexpr const char* kParamNames[NUM_DRAWBARS] = {
-            "drawbar_16", "drawbar_513", "drawbar_8",   "drawbar_4",
-            "drawbar_223", "drawbar_2",  "drawbar_135", "drawbar_113",
-            "drawbar_1"
-        };
-        for (size_t i = 0; i < NUM_DRAWBARS; ++i) {
-            if (name == kParamNames[i]) {
-                drawbar_gains_[i].set_target(value, ramp_samples_);
-                return true;
-            }
-        }
-        return false;
-    }
+    bool apply_parameter(const std::string& name, float value) override;
 
 protected:
     void do_pull(std::span<float> output,
-                 const VoiceContext* /*context*/ = nullptr) override {
-        // Normalise: max combined output is 9 drawbars × 1.0 amplitude.
-        // We scale by 1/9 so the output never exceeds unity.
-        constexpr float kNorm = 1.0f / 9.0f;
-
-        const int n_frames = static_cast<int>(output.size());
-        for (size_t i = 0; i < NUM_DRAWBARS; ++i) {
-            drawbar_gains_[i].advance(n_frames);
-        }
-
-        for (size_t n = 0; n < output.size(); ++n) {
-            float sum = 0.0f;
-            for (size_t i = 0; i < NUM_DRAWBARS; ++i) {
-                const float gain = drawbar_gains_[i].get();
-                if (gain > 0.0f) {
-                    sum += static_cast<float>(oscs_[i]->tick()) * (gain / 8.0f);
-                }
-            }
-            output[n] = sum * kNorm;
-        }
-    }
+                 const VoiceContext* context = nullptr) override;
 
 private:
     [[maybe_unused]] int sample_rate_;
