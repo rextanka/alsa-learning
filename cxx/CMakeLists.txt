@@ -200,6 +200,7 @@ if(BUILD_TESTING)
         tests/unit/test_lfo.cpp
         tests/unit/test_cv_utilities.cpp
         tests/unit/test_distortion_processor.cpp
+        tests/unit/test_module_registry.cpp
     )
     target_include_directories(unit_tests PRIVATE tests/unit tests)
     target_link_libraries(unit_tests PRIVATE audio_engine gtest_main)
@@ -209,6 +210,7 @@ if(BUILD_TESTING)
     # --- Integration Tests (C API) ---
     add_executable(integration_tests
         tests/integration/test_bridge.cpp
+        tests/integration/test_module_introspection.cpp
     )
     # Note: We link against audio_engine but we ONLY include CInterface.h in the source
     target_include_directories(integration_tests PRIVATE tests)

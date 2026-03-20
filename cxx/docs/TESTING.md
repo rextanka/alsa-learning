@@ -88,6 +88,15 @@ If a test produces no audio, follow this binary search path — do not guess:
 
 ## 5. Test Registry
 
+### Unit & Integration (GTest)
+
+| Test File | Suite | Purpose |
+|-----------|-------|---------|
+| `tests/unit/test_module_registry.cpp` | `unit_tests` | Phase 27A: structural invariants on every registered ModuleDescriptor via C++ API — non-empty brief/usage_notes, valid port types/directions, parameter range sanity, factory produces valid instances; also exercises `module_get_descriptor_json` and `module_registry_get_all_json` |
+| `tests/integration/test_module_introspection.cpp` | `integration_tests` | Phase 27A: C API contract — `module_get_descriptor_json` (unknown type → -1, tiny buf → -2, valid JSON per module) and `module_registry_get_all_json` (sorted array, count matches registry, each entry consistent with single lookup) |
+
+### Functional Tests
+
 | Test File | Tier | Purpose |
 |-----------|------|---------|
 | `automated_osc_integrity.cpp` | 2 | High-precision pitch audit (DCT) |
