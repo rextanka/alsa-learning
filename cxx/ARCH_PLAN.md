@@ -230,6 +230,7 @@ The engine supports **44100 Hz and 48000 Hz** exclusively. These are the two rat
 | 26    | **hpp/cpp Companion Split, Presets & Module Tooling**: Co-located `.cpp` files for all 30 processors (FX, routing, oscillator, envelope, filter, dynamics groups). Each `.cpp` holds the constructor body, `do_pull`, helpers, and a `kRegistered` static initializer that calls the 4-arg `register_module(type, brief, usage_notes, factory)` overload. `ProcessorRegistrations.cpp` retained as the explicit registrar called from `engine_create()` — provides authoritative registration and "linker bait" for the static library. Double-registration is safe (idempotent). Extended `register_module` 4-arg overload in `ModuleRegistry.hpp` stores `usage_notes` in `ModuleDescriptor` — prerequisite for Phase 27A introspection. `VCA.response_curve` (exponential blend) implemented; `VCA.initial_gain_cv` port wired in graph executor. `CMakePresets.json` with four named configurations (`desktop_full`, `desktop_release`, `pi_synth`, `pi_minimal`). `tools/configure_modules.py` — patch validation and module-set documentation tool (subcommands: `list`, `preset`, `validate`, `interactive`). Patch library expanded: `tom_tom.json` (FM via `fm_in`), `gong_noise_layer.json`, `thunder.json`, `group_strings.json` (using `AUDIO_MIXER`), `juno_strings.json`, `delay_lead.json`, `strings_chorus_reverb.json`, `gong_full.json`. 51/51 tests pass. | Complete |
 | 27A   | **Module Introspection API**: `module_get_descriptor_json(type_name, buf, max_len)` and `module_registry_get_all_json(buf, max_len)` C API; returns JSON descriptor populated from Phase 26 extended declarations (`usage_notes`, parameter/port descriptions). Sorted alphabetically; no `EngineHandle` required — registry is read-only after static init. Works natively with Swift `JSONDecoder` and React/Tauri `JSON.parse`. `test_module_registry.cpp` (unit, 20 tests) + `test_module_introspection.cpp` (integration, 10 tests) — all structural invariants, no hardcoded module names. 51/51 tests pass. | Complete |
 | 27B   | **Patch Serialization**: `engine_get_patch_json(engine, group_index, buf, max_len)`, `engine_load_patch_json(engine, json, len)`, `engine_save_patch(engine, path)` — full round-trip patch serialization. Serialization walks both `signal_chain_` (PORT_AUDIO nodes) and `mod_sources_` (PORT_CONTROL generators) plus all `connections_` and post-chain entries; graph traversal from the audio output alone is insufficient. | Planned |
+| 27C   | **I/O Processor Family & Role Classification**: (a) `ModuleDescriptor` gains a `role` field (`"SOURCE"`, `"SINK"`, `"PROCESSOR"`, `"CV_SOURCE"`, `"CV_PROCESSOR"`) inferred from declared ports at registration; `module_get_descriptor_json` / `module_registry_get_all_json` include `"role"` in JSON output. (b) Four new registered processors: `AUDIO_OUTPUT` (HAL sink — explicit chain terminator with friendly UI name; `audio_in` port), `AUDIO_INPUT` (line input / microphone source; `audio_out` port + `device_index`, `gain` parameters), `AUDIO_FILE_READER` (WAV/AIFF source; `audio_out` port + `path`, `loop`, `gain`), `AUDIO_FILE_WRITER` (offline WAV sink; `audio_in` port + `path`). (c) `bake()` updated to allow `AUDIO_OUTPUT` as the last chain node (special-case: SINK role bypasses "last node must have audio_out" check). (d) New C API: `engine_open_audio_input(handle, device_index)`, `engine_file_writer_flush(handle)`. (e) `AUDIO_SPLITTER` mono-to-stereo usage documented (connect `audio_out_1` → L path, `audio_out_2` → R path of a stereo post-chain processor). Prerequisite for Phase 25 USB MIDI HAL (establishes the full I/O model). | Planned |
 
 ---
 
@@ -312,9 +313,9 @@ m_write_index = (m_write_index + 1) & (m_buffer_size - 1);
         - **Dynamic Signal Chain**: A `Voice` maintains a `std::vector<std::unique_ptr<Processor>> signal_chain_` as its execution backbone. The `do_pull()` method iterates through this vector, executing nodes in sequence.
         - **API-First Construction**: The `Voice` exposes an API (e.g., `add_processor(std::unique_ptr<Processor> p, std::string tag)`) that allows tests, factory methods, and UI controllers to build complex signal chains at runtime.
         - **The "Generator-First" Rule (Topological Validation)**:
-            - **Rule**: Every `signal_chain_` must begin with a **Generator** node (Oscillator or SourceMixer).
+            - **Rule**: Every `signal_chain_` must begin with a **Generator** node — one of `COMPOSITE_GENERATOR`, `WHITE_NOISE`, or `DRAWBAR_ORGAN`. For multi-VCO patches, `AUDIO_MIXER` may appear as the first `PORT_AUDIO` node when its inputs are fed by `mod_sources_`-style side-chain injection (see Phase 18 multi-input executor). `SourceMixer` is **retired** — multi-waveform blending within a single VCO uses `COMPOSITE_GENERATOR`'s internal waveform mixer; cross-VCO summing uses `AUDIO_MIXER`.
             - **Reason**: The first node is responsible for clearing the buffer (initialization); subsequent nodes are Processors that perform in-place modification.
-            - **Validation**: A `bake()` call must be made after chain construction. `bake()` verifies that `signal_chain_[0]` is a Generator before the voice becomes active.
+            - **Validation**: A `bake()` call must be made after chain construction. `bake()` verifies that `signal_chain_[0]` outputs `PORT_AUDIO` before the voice becomes active.
         - **Node Tagging & Discovery**:
             - **Tagging**: Each node in the chain can be assigned a unique string tag (e.g., "Filter_HP", "SubOsc").
             - **Discovery**: The `Voice` implements a discovery method. When a user sends a parameter update (e.g., "Cutoff"), the `Voice` uses the tag or processor type to find the target node(s) in its current chain.
@@ -323,11 +324,11 @@ m_write_index = (m_write_index + 1) & (m_buffer_size - 1);
             - **Contract**: The `Voice` is considered active if any `EnvelopeProcessor` node in its chain is in a non-idle state.
             - **Implementation**: `Voice::is_active()` delegates to its internal dynamic nodes, fulfilling the Voice-Manager Contract for polyphonic stealing without external synchronization risks.
         - **Strategic Versatility**: This API allows the construction of complex dual-filter architectures (MS-20 style) or minimal single-oscillator chains (SH-101 style) without changing a single line of `Voice` class code.
-        - **Buffer Reuse Strategy**: Use `borrow_buffer()` logic to provide temporary spans for parallel oscillators before they are summed in the `SourceMixer`.
+        - **Multi-VCO Summing**: Multiple oscillator nodes (`COMPOSITE_GENERATOR`, `WHITE_NOISE`) feed `AUDIO_MIXER` via its `audio_in_1`…`audio_in_4` injection ports. `AUDIO_MIXER` produces a single summed `audio_out` with hard-clip limiting (±1.0). Set per-input `gain_N` to 0.5 when mixing two equal-level sources to prevent clipping.
         - **Factory-Based Configuration**: Instrument chains are defined in patch files (v2 JSON) and constructed at runtime via `engine_add_module` / `engine_connect_ports` / `engine_bake`. `VoiceFactory` is retired in Phase 15 — chain construction is exclusively driven by the C API and patch loader.
 - **Exponential Parameter Scaling**: Pitch and Filter Cutoff modulation follow a logarithmic/octave-based response: $f_{final} = f_{base} \cdot 2^{mod}$, where $mod$ is the sum of modulation offsets in octaves.
 - **Base + Offset Accumulation**: Processors maintain a "Base" value (anchor). Each block, the `ModulationMatrix` sums all offsets (bipolar) and applies them exponentially to the base.
-- **Soft-Saturated Mixing (Phase 13)**: To emulate analog growl and headroom, the Source Mixer uses a `tanh` soft-saturation curve on the summed output. This prevents harsh digital clipping and provides harmonic richness when multiple oscillators are pushed into the filter.
+- **Multi-VCO Mixing**: `COMPOSITE_GENERATOR`'s internal waveform mixer historically used `tanh` soft-saturation on the summed waveform slots (Phase 13). Cross-VCO summing is now handled by `AUDIO_MIXER`, which applies hard-clip limiting (±1.0). The `SourceMixer` class is **retired** — do not reference it in new code or documentation.
 - **Classic Polyphonic Signal Flow (Phase 13.5)**:
     - **The Mono Voice Primitive**: Each voice remains a strictly mono "black box" that handles its own internal modulation (LFO, Envelopes, CV). The terminal node (VCA) provides a mono signal to the mixer.
     - **The Mono → Stereo Mixer**: The first point in the graph where stereo `AudioBuffer` is used. It aggregates mono voice outputs, applies constant-power panning ($L = \cos(\theta)$, $R = \sin(\theta)$), and manages polyphonic spread (e.g., alternating voices across the stereo field).
@@ -669,7 +670,7 @@ The CMake option (`AUDIO_STATIC_CONFIG`) and per-module enable/disable flags tha
 
 ## Module Introspection & Patch Serialization (Phase 27)
 
-Phase 27 is split into two independent deliverables that share the extended metadata introduced in Phase 26. **Phase 27A is complete** (merged PR #90). Phase 27B is planned.
+Phase 27 has three sub-deliverables. **Phase 27A is complete** (merged PR #90). Phase 27B and 27C are planned. 27C should be completed before Phase 25 (USB MIDI HAL) as it establishes the full I/O model.
 
 ---
 
@@ -774,6 +775,74 @@ The serialized JSON is a valid v2 patch file — it can be loaded with `engine_l
 - **Round-trip unit test**: Load `juno_pad.json`, serialize to buffer via `engine_get_patch_json`, load result via `engine_load_patch_json`, play a note, assert RMS output matches original patch.
 - **mod_sources_ coverage**: Use a patch with a standalone LFO (not connected to any audio-path node). Serialize, reload, verify LFO modulation is present in the reloaded patch.
 - **Post-chain round-trip**: Push `REVERB_FDN` onto the post-chain, serialize, reload, verify the post-chain entry is preserved.
+
+---
+
+## I/O Processor Family & Role Classification (Phase 27C)
+
+Phase 27C completes the I/O model before Phase 25 (USB MIDI HAL) by giving every module an explicit **role** and adding the four I/O processors that host applications (patch editors, guitar rig apps, offline renderers) need.
+
+### Role Classification
+
+Add a `role` field to `ModuleDescriptor`, inferred automatically at `register_module` time from the declared port set:
+
+| Role | Criteria | Examples |
+|---|---|---|
+| `SOURCE` | PORT_AUDIO output, no PORT_AUDIO input | `COMPOSITE_GENERATOR`, `WHITE_NOISE`, `DRAWBAR_ORGAN`, `AUDIO_INPUT`, `AUDIO_FILE_READER` |
+| `SINK` | PORT_AUDIO input, no PORT_AUDIO output | `AUDIO_OUTPUT`, `AUDIO_FILE_WRITER` |
+| `PROCESSOR` | Both PORT_AUDIO input and output | All filters, FX, VCA, routing nodes |
+| `CV_SOURCE` | PORT_CONTROL output, no audio ports | `ADSR_ENVELOPE`, `AD_ENVELOPE`, `LFO` |
+| `CV_PROCESSOR` | PORT_CONTROL input and/or output, no audio | `CV_MIXER`, `CV_SPLITTER`, `MATHS`, `GATE_DELAY`, `SAMPLE_HOLD`, `INVERTER` |
+
+`module_get_descriptor_json` and `module_registry_get_all_json` add `"role"` to the JSON output. No per-processor changes needed — the role is computed once per registration.
+
+```json
+{ "type_name": "COMPOSITE_GENERATOR", "role": "SOURCE", "brief": "...", ... }
+{ "type_name": "AUDIO_OUTPUT",        "role": "SINK",   "brief": "...", ... }
+{ "type_name": "MOOG_FILTER",         "role": "PROCESSOR", ... }
+```
+
+### New I/O Processors
+
+#### `AUDIO_OUTPUT` (SINK)
+Explicit HAL output sink. Provides a chain-terminator node with a friendly name for UI tools. The engine's implicit "last node feeds SummingBus" behaviour is preserved for backward compatibility — `AUDIO_OUTPUT` is additive, not required.
+- **Ports**: `PORT_AUDIO` in `audio_in`
+- `bake()` exception: SINK nodes are allowed as the last chain entry (existing "last node must output PORT_AUDIO" check skipped for SINK role).
+
+#### `AUDIO_INPUT` (SOURCE)
+Live audio from hardware line input or microphone.
+- **Ports**: `PORT_AUDIO` out `audio_out`
+- **Parameters**: `device_index` (int, default 0), `gain` (0.0–4.0, default 1.0)
+- **Platform**: CoreAudio full-duplex (native); ALSA capture PCM (separate `snd_pcm_open(SND_PCM_STREAM_CAPTURE)`)
+- **C API**: `engine_open_audio_input(handle, device_index)` — opens the capture path and binds it to the `AUDIO_INPUT` node.
+
+#### `AUDIO_FILE_READER` (SOURCE)
+WAV/AIFF file playback source for offline processing or sample replay in a chain.
+- **Ports**: `PORT_AUDIO` out `audio_out`
+- **Parameters**: `path` (string), `loop` (bool, default false), `gain` (0.0–4.0, default 1.0)
+- On `engine_start`, the file is opened and pre-buffered. Underrun produces silence.
+
+#### `AUDIO_FILE_WRITER` (SINK)
+Offline WAV render sink. Captures everything arriving at `audio_in` to a file on disk.
+- **Ports**: `PORT_AUDIO` in `audio_in`
+- **Parameters**: `path` (string)
+- **C API**: `engine_file_writer_flush(handle)` — closes and finalises the WAV header.
+- Opens on `engine_start`, flushes on `engine_stop` or explicit flush call.
+
+### Mono-to-Stereo Paths
+
+The engine is mono-until-SummingBus by design. Two explicit paths allow stereo width before the bus:
+
+1. **Stereo FX left-channel use**: Processors with stereo internal processing (`JUNO_CHORUS`, `REVERB_FDN`, `REVERB_FREEVERB`) produce a stereo field in their `audio_out` when placed in the global post-chain. Within a per-voice chain they operate mono.
+2. **`AUDIO_SPLITTER` explicit copy**: Connect `VCO.audio_out → AUDIO_SPLITTER.audio_in`, then `audio_out_1` → left path and `audio_out_2` → right path of a stereo post-chain processor. This produces two identical mono copies that a downstream spatial processor can pan independently.
+
+### Testing
+
+- `role` field present in every module's JSON output (extend `test_module_registry.cpp`)
+- All SOURCE modules have no PORT_AUDIO input; all SINK modules have no PORT_AUDIO output
+- `AUDIO_OUTPUT` accepted as last chain node by `bake()` without error
+- `AUDIO_INPUT` chain produces non-silent output when a capture device is available
+- `AUDIO_FILE_WRITER` produces a valid WAV file containing the rendered frames
 
 ---
 

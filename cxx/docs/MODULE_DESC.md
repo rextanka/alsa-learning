@@ -123,7 +123,7 @@ The registry is queryable via the C API (`engine_get_module_count`, `engine_get_
 
 ### VCO (Voltage Controlled Oscillator)
 - **Type name**: `COMPOSITE_GENERATOR`
-- **Purpose**: Primary periodic harmonic generation. Owns all waveform oscillators and a SourceMixer.
+- **Purpose**: Primary periodic harmonic generation. Owns all waveform oscillators and an internal waveform mixer (gain-blended, not wirable — use `AUDIO_MIXER` for cross-VCO mixing).
 - **Ports**:
   - `PORT_CONTROL` in `pitch_cv` (bipolar, 1V/oct)
   - `PORT_CONTROL` in `pwm_cv` (bipolar)
@@ -136,7 +136,7 @@ The registry is queryable via the C API (`engine_get_module_count`, `engine_get_
     - **Sawtooth**: Must contain all harmonics (even and odd). Amplitude decreases at a rate of 1/n (where n is the harmonic number). Waveform inversion (ramp-up vs. ramp-down) is permitted as it does not alter perceived tone color.
     - **Square**: Must contain only odd-numbered harmonics. Amplitude decreases at a rate of 1/n.
     - **Triangle**: Must contain only odd-numbered harmonics, with amplitudes decreasing sharply at a rate of 1/n².
-  - All waveforms produced simultaneously, blended by internal SourceMixer. Sub-oscillator phase-coupled to pulse oscillator.
+  - All waveforms produced simultaneously, blended by the internal waveform mixer via per-gain parameters. Sub-oscillator phase-coupled to pulse oscillator.
   - **Pitch offset**: The final frequency is computed as `f = f_base * 2^(detune/1200) * 2^(transpose/12) * 2^CV`. `transpose` and `detune` are static offsets baked at note-on; `pitch_cv` is the per-block modulation term. This allows a second VCO instance to be tuned to a fixed interval (e.g. `transpose=-12` for sub-octave, `detune=-14` for ≈ 1/10 semitone chorus) independently of the first.
   - **VCO Hard Sync** (planned): When a `sync_in` pulse is received, the oscillator's phase is reset to zero. This forces the slave waveform to restart at the master's period, emphasizing odd harmonics that align with the master. Used in clarinet and aggressive lead patches. The `sync_in` port is not yet declared; pending a multi-VCO chain topology where one COMPOSITE_GENERATOR drives another's sync input.
 - **Architecture Note**: Two independent `COMPOSITE_GENERATOR` instances can coexist in the same voice chain with distinct tags (e.g. `"VCO1"`, `"VCO2"`). Each is tuned independently via its `pitch_cv` input, enabling interval stacking, detuning, and (eventually) hard sync.
@@ -464,9 +464,23 @@ These modules operate entirely in the control domain.
 
 ## 6. Global I/O
 
-### Summing Mixer (Source Mixer)
+### ~~Source Mixer~~ (Retired)
 - **Type name**: `SOURCE_MIXER`
-- **Purpose**: Internal multi-waveform summing for legacy use. **Not registered in the ModuleRegistry** — cannot be used via `engine_add_module`. Multi-waveform blending (sawtooth, pulse, sine, sub, noise) is provided by `COMPOSITE_GENERATOR`, which embeds a SourceMixer internally and exposes per-waveform gain parameters (`saw_gain`, `sine_gain`, etc.) directly.
+- **Status**: **Retired — not registered, cannot be used via `engine_add_module`.** Do not reference in patch files or code.
+- Multi-waveform blending within a single VCO is handled by `COMPOSITE_GENERATOR`'s internal waveform mixer (controlled via `saw_gain`, `pulse_gain`, `sine_gain`, `sub_gain`, `triangle_gain`, `noise_gain` parameters). Cross-VCO summing of independent oscillator nodes uses `AUDIO_MIXER` (registered, wirable via port connections).
+
+### Audio Mixer
+- **Type name**: `AUDIO_MIXER`
+- **Purpose**: Sums up to 4 audio signals into a single output with per-input gain control. The registered replacement for the retired `SOURCE_MIXER`. Use for dual- or multi-VCO additive synthesis, layering independent oscillator paths before a shared filter, or combining a main signal with a ring-modulated or noise component.
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in_1` … `audio_in_4`
+  - `PORT_AUDIO` out `audio_out`
+- **Parameters**: `gain_1` … `gain_4` (0.0–1.0, default 1.0 each — SmoothedParam, 10 ms ramp)
+- **Behavioural notes**:
+  - Only connected inputs contribute to the sum — unconnected inputs are zero.
+  - Output is hard-clipped to ±1.0 after summing. Set `gain_N = 0.5` on each active input when mixing two equal-level sources to prevent saturation.
+  - All gain changes ramp linearly over ~10 ms (SmoothedParam) to suppress zipper noise.
+- **Usage**: Wire `VCO1.audio_out → AUDIO_MIXER.audio_in_1`, `VCO2.audio_out → AUDIO_MIXER.audio_in_2`, then `AUDIO_MIXER.audio_out → VCF.audio_in`. See `patches/group_strings.json` and `patches/banjo.json` for real examples.
 
 ### Audio Splitter
 - **Type name**: `AUDIO_SPLITTER`
@@ -495,11 +509,12 @@ These modules operate entirely in the control domain.
 
 ### Audio Input
 - **Type name**: `AUDIO_INPUT`
-- **Purpose**: Interface for external audio signals (e.g. side-chain, vocoder source).
+- **Purpose**: Live audio source from a hardware line input or microphone (e.g. guitar into an effects chain, side-chain vocoder input). Role: **SOURCE**.
 - **Ports**:
   - `PORT_AUDIO` out `audio_out`
-- **Note**: Requires audio driver input buffer support. Pending audio driver input capability (Phase 18).
-- **Status**: Planned.
+- **Parameters**: `device_index` (int, default 0), `gain` (0.0–4.0, default 1.0)
+- **Note**: Requires the audio driver to open a capture PCM path alongside the playback path. CoreAudio supports full-duplex natively; ALSA requires a separate `snd_pcm_open` in `SND_PCM_STREAM_CAPTURE`. Dispatched to the engine via the same block-pull mechanism as oscillators.
+- **Status**: Planned — Phase 27C (I/O Processor Family & Role Classification).
 
 ---
 
@@ -513,6 +528,8 @@ These modules operate entirely in the control domain.
 - **Multiple inputs**: A node with multiple input ports (Ring Modulator, CV Mixer) has all inputs gathered before `pull()` is called. The executor resolves all inputs before executing any node via `inject_audio()` / `inject_cv()` in `Voice::pull_mono` (implemented Phase 18).
 - **Dynamic routing**: Modules are not hardcoded in `Voice`. `Voice` manages two lists — `signal_chain_` (PORT_AUDIO nodes) and `mod_sources_` (PORT_CONTROL generators) — with instance tags (e.g. `"VCO"`, `"ENV"`, `"LFO1"`) for parameter targeting and port connection. `add_processor()` routes each node automatically based on its output port type.
 - **Global vs per-voice**: Per-voice modules live in `signal_chain_` or `mod_sources_`. Global modules (chorus, reverb, master bus) live in a separate global FX chain applied after voice summing. Do not instantiate global modules per-voice.
+- **Mono-to-stereo paths**: The engine is mono-until-SummingBus. Two explicit paths introduce stereo before the bus: (1) Stereo FX processors (`JUNO_CHORUS`, `REVERB_FDN`, `REVERB_FREEVERB`) in the global post-chain — place via `engine_post_chain_push`; they receive summed mono and output stereo. (2) `AUDIO_SPLITTER` explicit copy — connect one mono source to `audio_in`, then `audio_out_1` → left path and `audio_out_2` → right path feeding a spatial/stereo processor downstream. Direct stereo within per-voice chains is not supported in the current architecture.
+- **Role classification** (Phase 27C): Every registered module has an inferred `role` (`SOURCE`, `SINK`, `PROCESSOR`, `CV_SOURCE`, `CV_PROCESSOR`) exposed via the JSON introspection API. UI tools should use `role` to filter modules when building a chain (e.g. only offer SOURCEs at the chain head, only offer SINKs or PROCESSORs as subsequent nodes).
 - **Sample rate**: All internal timing (ADSR curves, LFO rates, delay times) must derive from the runtime `sample_rate_` passed at construction. No hardcoded sample rate assumptions. Supported rates: 44100 Hz and 48000 Hz. If hardware reports a rate above 48000, the engine negotiates down to 48000.
 - **Filter chain placement**: All four filter types (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`) are first-class chain nodes. Add them via `engine_add_module("MOOG_FILTER", "VCF")` and wire audio with `engine_connect_ports`. `Voice` no longer contains an internal `filter_` member — the hardcoded fallback path has been removed. Minimum filter chain: `COMPOSITE_GENERATOR → MOOG_FILTER → ADSR_ENVELOPE → VCA`.
 - **Filter state persistence**: All `VcfBase` subclasses (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`) override `reset_on_note_on()` to return `false`. Filter delay lines and resonance buildup are **preserved across consecutive notes**. Only envelope generators and other non-filter chain nodes reset on `note_on`. This is essential for acid/TB-303 style patches where filter self-oscillation builds across a rapid-fire note sequence.
