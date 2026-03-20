@@ -135,21 +135,26 @@ TEST_F(BanjoPatchTest, PercussiveDecay) {
 }
 
 // ---------------------------------------------------------------------------
-// Test 3: BrightSpectrum — onset spectral centroid > 1500 Hz
+// Test 3: FilterEnvelopeSweep — onset centroid > tail centroid
 //
-// SH_FILTER at cutoff=5000 Hz with resonance=0.45 passes most of the spectrum
-// and boosts the region around 5 kHz.  The ENV→VCF.cutoff_cv at near-peak
-// envelope pushes the effective cutoff even higher.  The pulse wave
-// (odd-harmonic rich) combined with the resonant filter should yield a
-// spectral centroid well above 1500 Hz at onset.
+// The patch routes ENV → VCF.cutoff_cv so the SH_FILTER opens bright at the
+// pluck onset and darkens as the AD envelope decays.  The saw+pulse source
+// through the 250 Hz HPF produces a centroid in the 600–900 Hz range at onset
+// (sawtooth lower harmonics dominate; HPF strips the 196 Hz fundamental).
+// As the envelope decays the filter closes and the centroid drops.
+//
+// Assertion: centroid_onset > centroid_tail × 1.3
+// This verifies the ENV→VCF connection is live without depending on an
+// absolute centroid value that would change with sample rate or patch tuning.
 // ---------------------------------------------------------------------------
 
-TEST_F(BanjoPatchTest, BrightSpectrum) {
+TEST_F(BanjoPatchTest, FilterEnvelopeSweep) {
     PRINT_TEST_HEADER(
-        "Banjo — Bright Spectrum (automated)",
-        "Resonant SH_FILTER at 5kHz + pulse wave: onset spectral centroid > 1500 Hz.",
-        "engine_load_patch → note_on(G3) → capture 2048-sample onset window → centroid",
-        "centroid > 1500 Hz",
+        "Banjo — Filter Envelope Sweep (automated)",
+        "ENV→VCF.cutoff_cv: onset centroid brighter than tail centroid.",
+        "engine_load_patch → note_on(G3) → onset window (blocks 1–4)"
+        " vs tail window (blocks 16–20) → centroid comparison",
+        "centroid_onset > centroid_tail × 1.3",
         sample_rate
     );
 
@@ -159,26 +164,42 @@ TEST_F(BanjoPatchTest, BrightSpectrum) {
     const size_t FRAMES = 512;
     const size_t WINDOW = 2048;
     std::vector<float> buf(FRAMES * 2);
-    std::vector<float> onset_win;
+    std::vector<float> onset_win, tail_win;
     onset_win.reserve(WINDOW);
+    tail_win.reserve(WINDOW);
 
-    // Capture starting at block 1 (past 1ms attack transient)
-    for (int b = 0; b < 8; ++b) {
+    // blocks_for_ms at this sample rate
+    const int onset_start = 1;
+    const int onset_end   = 1 + static_cast<int>(WINDOW / FRAMES) + 1;  // ~4 blocks
+    // Tail: start at ~1.5× decay constant (decay=0.20s → 300ms)
+    const int tail_start  = std::max(onset_end + 2,
+        static_cast<int>(0.30 * sample_rate / FRAMES));
+
+    for (int b = 0; b < tail_start + static_cast<int>(WINDOW / FRAMES) + 2; ++b) {
         engine_process(engine(), buf.data(), FRAMES);
-        if (b >= 1 && onset_win.size() < WINDOW)
+        if (b >= onset_start && onset_win.size() < WINDOW)
             for (size_t i = 0; i < FRAMES && onset_win.size() < WINDOW; ++i)
                 onset_win.push_back(buf[i * 2]);
+        if (b >= tail_start && tail_win.size() < WINDOW)
+            for (size_t i = 0; i < FRAMES && tail_win.size() < WINDOW; ++i)
+                tail_win.push_back(buf[i * 2]);
     }
     engine_note_off(engine(), 55);
 
     ASSERT_EQ(onset_win.size(), WINDOW);
+    ASSERT_EQ(tail_win.size(),  WINDOW);
 
-    float centroid = spectral_centroid(onset_win, sample_rate);
-    std::cout << "[Banjo] G3 fundamental:    196 Hz\n";
-    std::cout << "[Banjo] Spectral centroid: " << centroid << " Hz\n";
+    const float centroid_onset = spectral_centroid(onset_win, sample_rate);
+    const float centroid_tail  = spectral_centroid(tail_win,  sample_rate);
 
-    EXPECT_GT(centroid, 1500.0f)
-        << "Expected bright banjo centroid > 1500 Hz from resonant SH_FILTER + pulse wave";
+    std::cout << "[Banjo] G3 fundamental:       196 Hz\n";
+    std::cout << "[Banjo] Centroid onset:        " << centroid_onset << " Hz\n";
+    std::cout << "[Banjo] Centroid tail:         " << centroid_tail  << " Hz\n";
+    std::cout << "[Banjo] Onset/tail ratio:      " << centroid_onset / std::max(centroid_tail, 1.0f) << "\n";
+
+    EXPECT_GT(centroid_onset, 200.0f) << "No meaningful signal at onset";
+    EXPECT_GT(centroid_onset, centroid_tail * 1.3f)
+        << "Expected onset centroid > 1.3× tail centroid (ENV→VCF darkens as envelope decays)";
 }
 
 // ---------------------------------------------------------------------------

@@ -14,15 +14,6 @@
  *
  * Parameters:
  *   delay_time (0.0 – 2.0 s, default 0.0) — time from note_on before gate fires
- *
- * Usage — wolf-whistle pitch effect:
- *   Add a second VCO with GATE_DELAY → ADSR2:ext_gate_in. ADSR2 drives a
- *   pitch CV offset; the delayed trigger fires after the initial note, creating
- *   a rising pitch glide that starts mid-note.
- *
- * Usage — percussion trill with offset:
- *   GATE_DELAY:gate_out → ADSR:ext_gate_in delays the trill onset so the
- *   first beat is dry and rhythm shifts with each successive retriggering.
  */
 
 #ifndef GATE_DELAY_PROCESSOR_HPP
@@ -36,13 +27,7 @@ namespace audio {
 
 class GateDelayProcessor : public Processor {
 public:
-    explicit GateDelayProcessor(int sample_rate)
-        : sample_rate_(sample_rate)
-    {
-        declare_port({"gate_out", PORT_CONTROL, PortDirection::OUT, true}); // unipolar
-
-        declare_parameter({"delay_time", "Delay Time (s)", 0.0f, 2.0f, 0.0f, true});
-    }
+    explicit GateDelayProcessor(int sample_rate);
 
     PortType output_port_type() const override { return PortType::PORT_CONTROL; }
 
@@ -51,53 +36,13 @@ public:
         samples_left_ = 0;
     }
 
-    bool apply_parameter(const std::string& name, float value) override {
-        if (name == "delay_time") {
-            // Snap immediately — delay_time controls gate-level logic (note_on countdown),
-            // not audio samples. A ramp here would mean the first note_on after setting
-            // the parameter reads a stale (partially-ramped) value.
-            delay_time_.set_target(std::clamp(value, 0.0f, 2.0f), 0);
-            return true;
-        }
-        return false;
-    }
+    bool apply_parameter(const std::string& name, float value) override;
 
-    // Lifecycle — dispatched by Voice::note_on() / note_off() for all mod_sources.
-    void on_note_on(double /*frequency*/) override {
-        if (delay_time_.get() <= 0.0f) {
-            state_        = State::High;
-            samples_left_ = 0;
-        } else {
-            state_        = State::Counting;
-            samples_left_ = static_cast<int>(delay_time_.get() * static_cast<float>(sample_rate_));
-        }
-    }
-
-    void on_note_off() override {
-        state_        = State::Idle;
-        samples_left_ = 0;
-    }
+    void on_note_on(double frequency) override;
+    void on_note_off() override;
 
 protected:
-    void do_pull(std::span<float> output,
-                 const VoiceContext* /*ctx*/ = nullptr) override {
-        delay_time_.advance(static_cast<int>(output.size()));
-        for (auto& s : output) {
-            switch (state_) {
-                case State::Counting:
-                    s = 0.0f;
-                    if (--samples_left_ <= 0) state_ = State::High;
-                    break;
-                case State::High:
-                    s = 1.0f;
-                    break;
-                case State::Idle:
-                default:
-                    s = 0.0f;
-                    break;
-            }
-        }
-    }
+    void do_pull(std::span<float> output, const VoiceContext* ctx = nullptr) override;
 
 private:
     enum class State { Idle, Counting, High };

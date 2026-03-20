@@ -696,7 +696,7 @@ See `bell.json` (transpose=19), `glockenspiel.json` (transpose=3), and `gong.jso
 
 ## 9  Patch Catalog
 
-All 29 reference patches in the `patches/` directory:
+All 37 reference patches in the `patches/` directory:
 
 ### Melodic / Tonal
 
@@ -736,6 +736,7 @@ All 29 reference patches in the `patches/` directory:
 | Wind / Surf          | `wind_surf.json`         | WHITE_NOISE → MOOG_FILTER (LFO sweep) → ADSR → VCA             | Foundation §5-5   |
 | Percussion Noise     | `percussion_noise.json`  | WHITE_NOISE → AD → VCA                                         | Foundation §5-7   |
 | Rain                 | `rain.json`              | WHITE_NOISE → MOOG LP → HIGH_PASS_FILTER → ADSR → VCA          | Practical 2 Fig 3-25 |
+| Thunder              | `thunder.json`           | Two WHITE_NOISE paths → AUDIO_MIXER → SH_FILTER → AD → VCA     | Practical 2 Fig 3-24 |
 
 ### Percussion
 
@@ -747,6 +748,18 @@ All 29 reference patches in the `patches/` directory:
 | Bass Drum            | `bass_drum.json`         | WHITE_NOISE → MOOG_FILTER (LP 280 Hz, res=0.55) → AD → VCA     | Practical 2 §3    |
 | Bongo Drums          | `bongo_drums.json`       | VCO(tri) → SH_FILTER → AD (dual ENV→VCF+VCA, kybd tracked)     | Practical 2 Fig 3-22 |
 | Cow Bell             | `cow_bell.json`          | VCO1(pulse)+VCO2(pulse, +7st) → AUDIO_MIXER → HPF(200Hz) → AD → VCA | TR-808 style    |
+| Tom Tom              | `tom_tom.json`           | VCO1 → VCO2.fm_in (audio-rate FM) → SH_FILTER → AD → VCA      | Practical 2 Fig 3-14 |
+
+### Ensemble / Multi-Module (Phase 26)
+
+| Patch                | File                        | Topology / Character                                         | Source            |
+|----------------------|-----------------------------|--------------------------------------------------------------|-------------------|
+| Group Strings        | `group_strings.json`        | Dual VCO (detuned) → AUDIO_MIXER → MOOG_FILTER → ADSR → VCA + LFO | Foundation §4-6 |
+| Juno Strings         | `juno_strings.json`         | VCO(saw+sub) → SH_FILTER → ADSR → VCA → JUNO_CHORUS        | Juno-60 style     |
+| Strings Chorus Reverb| `strings_chorus_reverb.json`| VCO(saw) → MOOG_FILTER → ADSR → VCA → JUNO_CHORUS → REVERB_FREEVERB | Lush stereo strings |
+| Delay Lead           | `delay_lead.json`           | VCO(saw+pulse) → SH_FILTER → ADSR → VCA → ECHO_DELAY       | —                 |
+| Gong (full)          | `gong_full.json`            | RING_MOD + WHITE_NOISE → AUDIO_MIXER → AD → VCA             | Practical 2 Fig 3-17 |
+| Gong Noise Layer     | `gong_noise_layer.json`     | RING_MOD + noise → AUDIO_MIXER → MOOG_FILTER → AD → VCA    | Practical 2 Fig 3-17 |
 
 ---
 
@@ -982,58 +995,75 @@ midi_close(kbd);
 
 ---
 
-## 13  Static Module Configuration (Phase 26)
+## 13  hpp/cpp Companion Split, Presets & Module Tooling (Phase 26)
 
-Phase 26 enables stripped binaries for resource-constrained hosts — Raspberry Pi, embedded Linux — by compiling only the DSP modules needed for a given target.
+Phase 26 reorganised all 30 processor implementations into co-located `.cpp` files and added build preset support and a patch validation tool.
 
-### 13.1  Self-Registering Modules
+### 13.1  Co-located `.cpp` Files and Self-Registration
 
-Currently, `ProcessorRegistrations.cpp` registers all ~30 modules unconditionally. Phase 26 introduces a per-module `_reg.cpp` pattern: each processor module gains a small companion `.cpp` whose sole job is registering that module via a C++ static initializer. CMake decides which `.cpp` files to compile. If a file is absent from `ENGINE_SOURCES`, its initializer never runs and the module is never registered — no `#ifdef`, no runtime cost.
+Every processor type now has a companion `.cpp` file (e.g. `src/dsp/fx/DistortionProcessor.cpp`) that holds the constructor body, `do_pull`, and helper methods. Each `.cpp` also has a `kRegistered` static initializer that calls the 4-arg `register_module` overload with a `usage_notes` string — the metadata prerequisite for the Phase 27A introspection API:
 
 ```cpp
-// src/dsp/fx/DistortionProcessor_reg.cpp (example)
-static const bool kReg = (ModuleRegistry::instance().register_module(
-    "DISTORTION", "Guitar distortion",
+// src/dsp/fx/DistortionProcessor.cpp (tail)
+namespace {
+[[maybe_unused]] const bool kRegistered = ModuleRegistry::instance().register_module(
+    "DISTORTION",
+    "Guitar-style distortion with 4x oversampling",
+    "Place post-VCA to replicate synth output into a pedal.",
     [](int sr) { return std::make_unique<DistortionProcessor>(sr); }
-), true);
+);
+} // namespace
 ```
 
-`ProcessorRegistrations.cpp` is **retained for the desktop full build** (`AUDIO_STATIC_CONFIG=OFF`, the default). When `AUDIO_STATIC_CONFIG=ON`, the per-module `_reg.cpp` files take over.
+`ProcessorRegistrations.cpp` is **retained** as the authoritative registrar called from `engine_create()`. It also serves as "linker bait" — its explicit factory lambdas reference every processor type, ensuring all `.o` files are included in the static library link. All 30 modules are compiled in every build configuration.
 
 ### 13.2  CMake Presets
 
-Named presets are defined in `CMakePresets.json` at the project root:
+Four named presets are defined in `CMakePresets.json` at the project root. All compile all 30 modules:
 
-| Preset         | Modules included          | Binary size vs. full |
-|----------------|--------------------------|----------------------|
-| `desktop_full` | All 30+                  | baseline             |
-| `pi_synth`     | All filters, distortion, delay, CV utils; no reverb/chorus/phaser/organ | ~25–35% smaller |
-| `pi_minimal`   | VCO, MOOG_FILTER, HPF, ADSR, VCA, LFO, WHITE_NOISE (~8 modules) | ~50–70% smaller |
+| Preset           | Build type  | Tests | Use case                     |
+|------------------|-------------|-------|------------------------------|
+| `desktop_full`   | Debug       | ON    | Primary development          |
+| `desktop_release`| Release     | OFF   | Optimised desktop            |
+| `pi_synth`       | Release     | OFF   | Raspberry Pi arm64           |
+| `pi_minimal`     | MinSizeRel  | OFF   | Raspberry Pi embedded        |
 
 ```bash
-# Build for Raspberry Pi minimal target
-cmake --preset pi_minimal -B build_pi
-cmake --build build_pi
+# Configure and build
+cmake --preset desktop_full
+cmake --build --preset desktop_full
+
+# Run tests
+ctest --preset desktop_full
+
+# Pi build (supply a toolchain file)
+cmake --preset pi_synth -DCMAKE_TOOLCHAIN_FILE=/path/to/arm64.cmake
+cmake --build --preset pi_synth
 ```
 
 ### 13.3  Python Configuration Tool
 
-`tools/configure_modules.py` — pure Python 3, no external dependencies — provides two utilities:
+`tools/configure_modules.py` — pure Python 3, no external dependencies — documents and validates module sets for different build targets:
 
 ```bash
-# Interactive: prompts for each module group, writes CMakeUserPresets.json
-tools/configure_modules.py --interactive
+# List all 30 modules with category and description
+python tools/configure_modules.py list
 
-# Report: show which modules are in a given preset and estimated size impact
-tools/configure_modules.py --preset pi_minimal --report
+# Show modules in a preset and validate all patches against it
+python tools/configure_modules.py preset pi_minimal --validate-patches
 
-# List all defined presets
-tools/configure_modules.py --list-presets
+# Validate all patches in patches/ against the full module set
+python tools/configure_modules.py validate
+
+# Interactive: select modules per category, then validate patches
+python tools/configure_modules.py interactive
 ```
+
+The tool currently models selective module sets for documentation and patch compatibility checking. Actual binary stripping via CMake options is a future phase item.
 
 ### 13.4  Handling Missing Modules at Runtime
 
-When a patch JSON references a module type that was excluded at compile time, `ModuleRegistry::create()` returns `nullptr` and logs:
+If a patch JSON references a module type absent from the registry (e.g. because it was excluded from a future stripped build), `ModuleRegistry::create()` returns `nullptr` and logs:
 
 ```
 [WARN] Module type "REVERB_FDN" not registered — was it excluded at compile time?
@@ -1046,24 +1076,26 @@ The patch is not loaded; the engine is never left in a partially-configured stat
 
 ## 14  Known Limitations and Planned Features
 
-| Feature                         | Status                                                                     |
-|---------------------------------|----------------------------------------------------------------------------|
-| Hard VCO sync                   | Not implemented                                                            |
-| Band-reject / notch filter      | Not implemented (requires parallel signal path routing)                    |
-| Exponential VCA `response_curve`| Parameter declared, implementation planned                                 |
-| `initial_gain_cv` port wiring   | Port declared on VCA, graph executor wiring planned                        |
-| Percussion trill / arpeggiator  | Not implemented (requires sequencer)                                       |
-| Audio-rate VCO FM               | Not possible in JSON patches: PORT_AUDIO out → PORT_CONTROL in type clash  |
-| JUNO_CHORUS (fixed)             | Now registered — use `"type": "JUNO_CHORUS"` in JSON chains (see §6.4)     |
-| Multi-VCO additive mixing       | No registered SUMMING_MIXER; use RING_MOD or AUDIO_SPLITTER per-output     |
-| Vocoder / formant filter        | Not implemented                                                            |
-| USB MIDI HAL                    | Planned — Phase 25 (`midi_open_input`, `midi_connect_to_engine` C API)     |
-| Static module stripping         | Planned — Phase 26 (per-module `_reg.cpp`, CMake presets, Pi targets)      |
-| Multi-timbral SMF playback      | Planned — Phase 23 (MIDI channel → VoiceGroup routing table)               |
-| Tom tom (Vol. 2 Fig 3-14)       | Requires audio-rate VCO→VCF FM — blocked by PORT_AUDIO type mismatch       |
-| Gong with noise layer (Fig 3-17)| Parallel noise + RING_MOD requires SUMMING_MIXER — not available           |
-| Thunder (Fig 3-24)              | Two parallel noise filter paths require SUMMING_MIXER — not available      |
-| Group strings multi-VCO         | Section/unison layering requires SUMMING_MIXER — not available             |
+| Feature                         | Status                                                                                              |
+|---------------------------------|-----------------------------------------------------------------------------------------------------|
+| Hard VCO sync                   | Not implemented — designed (ARCH_PLAN.md §Hard VCO Sync); candidate Phase 28                       |
+| Band-reject / notch filter      | Not implemented (requires parallel signal path routing)                                             |
+| Exponential VCA `response_curve`| **Implemented** — Phase 26; blends linear (0) and exponential (1) gain law                         |
+| `initial_gain_cv` port wiring   | **Implemented** — Phase 26; connected port overrides `initial_gain` parameter                      |
+| Percussion trill / arpeggiator  | Not implemented (requires sequencer)                                                                |
+| Audio-rate FM via `pitch_cv`    | Not possible: `pitch_cv` is PORT_CONTROL; audio-rate sources cannot connect directly                |
+| Audio-rate FM via `fm_in`       | **Available** — `fm_in` is PORT_AUDIO on `COMPOSITE_GENERATOR` and all ladder filters; wire `VCO.audio_out → VCF.fm_in` or `VCO1.audio_out → VCO2.fm_in` |
+| Multi-VCO additive mixing       | **Available** — `AUDIO_MIXER` registered with 4 audio inputs and per-input gain parameters          |
+| Tom tom (Vol. 2 Fig 3-14)       | **Available** — `patches/tom_tom.json` delivered Phase 26 using `fm_in` for FM pitch drop          |
+| Gong with noise layer (Fig 3-17)| **Available** — `patches/gong_noise_layer.json` delivered Phase 26                                 |
+| Thunder (Fig 3-24)              | **Available** — `patches/thunder.json` delivered Phase 26                                           |
+| Group strings multi-VCO         | **Available** — `patches/group_strings.json` delivered Phase 26                                    |
+| Vocoder / formant filter        | Not implemented                                                                                     |
+| Selective module stripping      | Not yet — CMake presets exist but all 30 modules compile in every preset; future phase              |
+| USB MIDI HAL                    | Planned — Phase 25 (`midi_open_input`, `midi_connect_to_engine` C API)                              |
+| Multi-timbral SMF playback      | Planned — Phase 23 (MIDI channel → VoiceGroup routing table)                                        |
+| Module introspection API        | Planned — Phase 27A (`module_get_descriptor_json`, `module_registry_get_all_json`)                  |
+| Patch serialization             | Planned — Phase 27B (`engine_get_patch_json`, `engine_save_patch`)                                  |
 
 ---
 

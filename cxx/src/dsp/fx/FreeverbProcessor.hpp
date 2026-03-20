@@ -22,7 +22,6 @@
 #include "../SmoothedParam.hpp"
 #include <vector>
 #include <algorithm>
-#include <cmath>
 #include <span>
 
 namespace audio {
@@ -31,85 +30,25 @@ class FreeverbProcessor : public Processor {
 public:
     static constexpr float kRampSeconds = 0.010f; // 10 ms
 
-    explicit FreeverbProcessor(int sample_rate) : sample_rate_(sample_rate) {
-        ramp_samples_ = static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds);
-        declare_port({"audio_in",  PORT_AUDIO, PortDirection::IN});
-        declare_port({"audio_out", PORT_AUDIO, PortDirection::OUT});
-        declare_parameter({"room_size", "Room Size",  0.0f, 1.0f, 0.5f});
-        declare_parameter({"damping",   "Damping",    0.0f, 1.0f, 0.5f});
-        declare_parameter({"width",     "Width",      0.0f, 1.0f, 1.0f});
-        declare_parameter({"wet",       "Wet/Dry",    0.0f, 1.0f, 0.33f});
-        init_filters();
-    }
+    explicit FreeverbProcessor(int sample_rate);
 
     void reset() override {
         for (int i = 0; i < N_COMB; ++i) { comb_l_[i].clear(); comb_r_[i].clear(); }
         for (int i = 0; i < N_AP;   ++i) { ap_l_[i].clear();   ap_r_[i].clear();   }
     }
 
-    bool apply_parameter(const std::string& name, float value) override {
-        if (name == "room_size") { room_size_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_); update_params(); return true; }
-        if (name == "damping")   { damping_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_); update_params(); return true; }
-        if (name == "width")     { width_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_); return true; }
-        if (name == "wet")       { wet_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_); return true; }
-        return false;
-    }
+    bool apply_parameter(const std::string& name, float value) override;
 
     PortType output_port_type() const override { return PORT_AUDIO; }
 
 protected:
-    void do_pull(std::span<float> output, const VoiceContext* ctx = nullptr) override {
-        std::vector<float> l(output.size()), r(output.size());
-        std::copy(output.begin(), output.end(), l.begin());
-        std::copy(output.begin(), output.end(), r.begin());
-        AudioBuffer buf { std::span<float>(l), std::span<float>(r) };
-        do_pull(buf, ctx);
-        for (size_t i = 0; i < output.size(); ++i)
-            output[i] = (l[i] + r[i]) * 0.5f;
-    }
-
-    void do_pull(AudioBuffer& buf, const VoiceContext* = nullptr) override {
-        const int n = static_cast<int>(buf.frames());
-        room_size_.advance(n);
-        damping_.advance(n);
-        width_.advance(n);
-        wet_.advance(n);
-        // Recompute comb filter parameters if room_size or damping changed
-        if (room_size_.is_ramping() || damping_.is_ramping()) {
-            update_params();
-        }
-
-        const float wet_val  = wet_.get();
-        const float width_val = width_.get();
-        const float wet1 = wet_val * (width_val * 0.5f + 0.5f);
-        const float wet2 = wet_val * (0.5f - width_val * 0.5f);
-        const float dry  = 1.0f - wet_val;
-        const size_t frames = buf.frames();
-
-        for (size_t i = 0; i < frames; ++i) {
-            const float inL = buf.left[i];
-            const float inR = buf.right[i];
-            const float mono = (inL + inR) * kInputGain;
-
-            float outL = 0.0f, outR = 0.0f;
-            for (int c = 0; c < N_COMB; ++c) {
-                outL += comb_l_[c].process(mono);
-                outR += comb_r_[c].process(mono);
-            }
-            for (int a = 0; a < N_AP; ++a) {
-                outL = ap_l_[a].process(outL);
-                outR = ap_r_[a].process(outR);
-            }
-
-            buf.left[i]  = outL * wet1 + outR * wet2 + inL * dry;
-            buf.right[i] = outR * wet1 + outL * wet2 + inR * dry;
-        }
-    }
+    void do_pull(std::span<float> output, const VoiceContext* ctx = nullptr) override;
+    void do_pull(AudioBuffer& buf, const VoiceContext* ctx = nullptr) override;
 
 private:
     static constexpr int   N_COMB         = 8;
     static constexpr int   N_AP           = 4;
-    static constexpr float kInputGain     = 0.015f; // prevents overload from 8 parallel combs
+    static constexpr float kInputGain     = 0.015f;
     static constexpr float kAllPassGain   = 0.5f;
     static constexpr int   kStereoSpread  = 23;
 
@@ -162,30 +101,8 @@ private:
         void clear() { std::fill(buf.begin(), buf.end(), 0.0f); }
     };
 
-    void init_filters() {
-        const float scale = static_cast<float>(sample_rate_) / 44100.0f;
-        for (int i = 0; i < N_COMB; ++i) {
-            comb_l_[i].init(std::max(static_cast<int>(kCombBase[i] * scale + 0.5f), 4));
-            comb_r_[i].init(std::max(static_cast<int>((kCombBase[i] + kStereoSpread) * scale + 0.5f), 4));
-        }
-        for (int i = 0; i < N_AP; ++i) {
-            int len = std::max(static_cast<int>(kApBase[i] * scale + 0.5f), 4);
-            ap_l_[i].init(len);
-            ap_r_[i].init(len);
-        }
-        update_params();
-    }
-
-    void update_params() {
-        const float fb   = room_size_.get() * 0.28f + 0.70f;  // 0.70..0.98
-        const float damp = damping_.get();
-        for (int i = 0; i < N_COMB; ++i) {
-            comb_l_[i].set_feedback(fb);
-            comb_r_[i].set_feedback(fb);
-            comb_l_[i].set_damp(damp);
-            comb_r_[i].set_damp(damp);
-        }
-    }
+    void init_filters();
+    void update_params();
 
     int sample_rate_;
     int ramp_samples_;

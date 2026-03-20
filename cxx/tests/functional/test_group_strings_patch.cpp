@@ -1,15 +1,18 @@
 /**
  * @file test_group_strings_patch.cpp
- * @brief Functional tests for group_strings.json — ensemble strings.
+ * @brief Functional tests for group_strings.json — dual-VCO ensemble strings.
  *
- * Patch topology:
- *   COMPOSITE_GENERATOR (saw+sub) → MOOG_FILTER (cutoff=2400 Hz, res=0.06)
+ * Patch topology (Phase 26 rework — dual-VCO via AUDIO_MIXER):
+ *   VCO1 (saw=1.0, sub=0.15) → AUDIO_MIXER.audio_in_1
+ *   VCO2 (saw=1.0, sub=0.15, transpose=7) → AUDIO_MIXER.audio_in_2
+ *   AUDIO_MIXER (gain_1=0.65, gain_2=0.65) → MOOG_FILTER (cutoff=2400 Hz, res=0.06)
  *       → VCA ← ADSR_ENVELOPE (attack=0.35s, decay=0.1s, sustain=0.85, release=0.5s)
- *   LFO (0.35 Hz, intensity=0.002) → VCO.pitch_cv  (subtle ensemble shimmer)
+ *   LFO (0.35 Hz, intensity=0.002) → VCO1.pitch_cv + VCO2.pitch_cv  (ensemble shimmer)
  *
  * Roland's group strings patch is characterised by the slow bow-attack (§4-6
- * "Strings" entry) and a warm, open filter.  The LFO provides the gentle
- * pitch instability that distinguishes a string section from a single voice.
+ * "Strings" entry) and a warm, open filter. The dual-VCO detuning (7 cents)
+ * and shared LFO vibrato produce the gentle pitch instability that distinguishes
+ * a string section from a single voice.
  *
  * Key assertions:
  *   1. Smoke       — note_on + 60 warm-up blocks produces non-silent audio.

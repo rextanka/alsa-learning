@@ -67,9 +67,49 @@ set(ENGINE_SOURCES
     src/core/Voice.cpp
     src/core/VoiceManager.cpp
     src/core/MidiParser.cpp
-    src/core/ProcessorRegistrations.cpp
     src/core/SmfParser.cpp
     src/core/MidiFilePlayer.cpp
+    src/core/ProcessorRegistrations.cpp
+    # Per-processor .cpp files: each registers itself at static-init time
+    # Filter
+    src/dsp/filter/VcfBase.cpp
+    src/dsp/filter/LadderVcfBase.cpp
+    src/dsp/filter/MoogLadderProcessor.cpp
+    src/dsp/filter/DiodeLadderProcessor.cpp
+    src/dsp/filter/CemFilterProcessor.cpp
+    src/dsp/filter/Ms20FilterProcessor.cpp
+    src/dsp/filter/HighPassFilterProcessor.cpp
+    src/dsp/filter/BandPassFilterProcessor.cpp
+    # Envelope
+    src/dsp/envelope/AdsrEnvelopeProcessor.cpp
+    src/dsp/envelope/ADEnvelopeProcessor.cpp
+    # Oscillator
+    src/dsp/oscillator/LfoProcessor.cpp
+    src/dsp/oscillator/WhiteNoiseProcessor.cpp
+    # Dynamics
+    src/dsp/dynamics/NoiseGateProcessor.cpp
+    src/dsp/dynamics/EnvelopeFollowerProcessor.cpp
+    # FX
+    src/dsp/fx/EchoDelayProcessor.cpp
+    src/dsp/fx/FreeverbProcessor.cpp
+    src/dsp/fx/FdnReverbProcessor.cpp
+    src/dsp/fx/PhaserProcessor.cpp
+    src/dsp/fx/JunoChorus.cpp
+    src/dsp/fx/DistortionProcessor.cpp
+    # Routing
+    src/dsp/routing/CompositeGenerator.cpp
+    src/dsp/routing/DrawbarOrganProcessor.cpp
+    src/dsp/routing/RingModProcessor.cpp
+    src/dsp/routing/AudioMixerProcessor.cpp
+    src/dsp/routing/AudioSplitterProcessor.cpp
+    src/dsp/routing/CvMixerProcessor.cpp
+    src/dsp/routing/CvSplitterProcessor.cpp
+    src/dsp/routing/InverterProcessor.cpp
+    src/dsp/routing/MathsProcessor.cpp
+    src/dsp/routing/GateDelayProcessor.cpp
+    src/dsp/routing/SampleHoldProcessor.cpp
+    # Root DSP
+    src/dsp/VcaProcessor.cpp
 )
 
 if(APPLE)

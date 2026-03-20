@@ -241,12 +241,25 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
                 }
             }
 
+            // Phase 26: resolve initial_gain_cv — overrides initial_gain parameter
+            // when connected. Use first sample as the block-constant floor value.
+            std::span<float> initial_gain_cv;
+            for (const auto& conn : connections_) {
+                if (conn.to_tag == entry.tag && conn.to_port == "initial_gain_cv") {
+                    initial_gain_cv = find_ctrl(conn.from_tag);
+                    break;
+                }
+            }
+            const float gain_floor = initial_gain_cv.empty()
+                                     ? vca->initial_gain()
+                                     : initial_gain_cv[0];
+            const float scale = gain_floor * base_amplitude_;
+
             if (!gain_cv.empty()) {
-                VcaProcessor::apply(output, gain_cv, base_amplitude_);
+                VcaProcessor::apply(output, gain_cv, scale, vca->response_curve());
             } else {
-                // No modulation source connected — apply base_amplitude_ at unity gain
-                // so the output level is defined regardless of patch topology.
-                for (auto& s : output) s *= base_amplitude_;
+                // No modulation source connected — apply scale directly.
+                for (auto& s : output) s *= scale;
             }
 
         } else {

@@ -59,7 +59,8 @@ struct PortDescriptor {
     std::string   name;
     PortType      type;
     PortDirection dir;
-    bool          unipolar = false; ///< true → [0,1]; false → [-1,1] (PORT_CONTROL only)
+    bool          unipolar    = false; ///< true → [0,1]; false → [-1,1] (PORT_CONTROL only)
+    std::string   description = "";    ///< usage note for introspection API (Phase 26)
 };
 
 /**
@@ -75,6 +76,7 @@ struct ParameterDescriptor {
     float       max  = 1.0f;
     float       def  = 0.0f; ///< default value
     bool        logarithmic = false;
+    std::string description = ""; ///< usage note for introspection API (Phase 26)
 };
 
 /**

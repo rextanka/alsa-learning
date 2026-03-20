@@ -4,23 +4,26 @@
   "groups": [
     {
       "id": 0,
-      "comment": "Tonal VCO body layer — pitched triangle with filter-swept resonance.",
+      "comment": "Tonal body (VCO1, triangle+sine) + FM modulator (VCO2, sine, P5 above) via fm_in for pitched transient click.",
       "chain": [
-        { "type": "COMPOSITE_GENERATOR", "tag": "VCO"  },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO1" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
         { "type": "SH_FILTER",           "tag": "VCF"  },
         { "type": "AD_ENVELOPE",         "tag": "ENV"  },
         { "type": "VCA",                 "tag": "VCA"  }
       ],
       "connections": [
-        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"  },
-        { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"  },
-        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"   },
-        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCF", "to_port": "cutoff_cv" }
+        { "from_tag": "VCO1", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"  },
+        { "from_tag": "VCO2", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "fm_in"     },
+        { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"  },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"   },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCF", "to_port": "cutoff_cv" }
       ],
       "parameters": {
-        "VCO": { "triangle_gain": 1.0, "sine_gain": 1.0 },
-        "VCF": { "cutoff": 800.0, "resonance": 0.6 },
-        "ENV": { "attack": 0.001, "decay": 0.50 }
+        "VCO1": { "triangle_gain": 1.0, "sine_gain": 0.5 },
+        "VCO2": { "sine_gain": 0.4, "transpose": 7 },
+        "VCF":  { "cutoff": 280.0, "resonance": 0.72 },
+        "ENV":  { "attack": 0.001, "decay": 0.35 }
       }
     }
   ]

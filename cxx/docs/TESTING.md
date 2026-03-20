@@ -91,6 +91,7 @@ If a test produces no audio, follow this binary search path — do not guess:
 | Test File | Tier | Purpose |
 |-----------|------|---------|
 | `automated_osc_integrity.cpp` | 2 | High-precision pitch audit (DCT) |
+| `acid_live_tweak.cpp` | 3 | Interactive acid filter sweep: keyboard-driven DIODE_FILTER cutoff/resonance tweak over TB-303 riff (standalone, not ctest) |
 | `audio_check.cpp` | 1 | Basic driver stability |
 | `four_beeps_adsr.cpp` | 2 | ADSR articulation & lifecycle |
 | `filter_sweep_test.cpp` | 3 | Moog/Diode resonant sweep |
@@ -108,14 +109,10 @@ If a test produces no audio, follow this binary search path — do not guess:
 | `test_juno_chorus.cpp` | 2 | Juno chorus stereo separation |
 | `Functional_BachMidi.cpp` | 3 | MIDI polyphony, DrawbarOrgan |
 | `BachOrganTest.cpp` | 3 | DrawbarOrgan register blend |
-| `Functional_SH101_Live.cpp` | 3 | Patch load + live pluck seq |
+| `Functional_SH101_Live.cpp` | 3 | Patch load + live pluck sequence |
 | `patch_sequence_test.cpp` | 3 | Four reference patches: SH-101 ostinato, TB-303 acid sweep, Juno pad melody, Drawbar Organ chorale |
 | `processor_check.cpp` | 2 | Oscillator frequency fidelity via hysteresis zero-crossing and symmetry analysis |
 | `TimingValidation.cpp` | 1 | Callback jitter measurement and sample-accurate clock drift verification |
-| `Functional_SH101_Live.cpp` | 3 | Patch load + live pluck sequence |
-| `patch_sequence_test.cpp` | 3 | Four reference patches: SH-101 ostinato, TB-303 acid sweep, Juno pad melody, Drawbar Organ chorale |
-| `Functional_BachMidi.cpp` | 3 | MIDI polyphony, DrawbarOrgan |
-| `BachOrganTest.cpp` | 3 | DrawbarOrgan register blend |
 | `test_midi_file_playback.cpp` | 3 | SMF playback tick accuracy, note dispatch (Phase 22A) |
 | `test_host_devices.cpp` | 1 | HAL device enumeration: count, name, sample rate, block size (Phase 20) |
 | `test_harpsichord_patch.cpp` | 3 | Harpsichord patch: INVERTER filter sweep |
@@ -132,6 +129,28 @@ If a test produces no audio, follow this binary search path — do not guess:
 | `test_violin_vibrato_patch.cpp` | 3 | Violin vibrato: attack swell, pitch modulation |
 | `test_bell_patch.cpp` | 3 | Bell: RING_MOD sidebands, percussive decay |
 | `test_reverb_patch.cpp` | 3 | Reverb FDN/Freeverb: wet energy, stereo correlation |
+| `test_acid_reverb_patch.cpp` | 3 | Acid reverb: TB-303 chain + FDN reverb, onset RMS |
+| `test_banjo_patch.cpp` | 3 | Banjo: AD_ENVELOPE 1ms attack, onset signal |
+| `test_bass_drum_patch.cpp` | 3 | Bass drum: sine+triangle VCO + AD envelope, onset RMS |
+| `test_bongo_drums_patch.cpp` | 3 | Bongo drums: resonant LP filter + AD envelope, onset RMS |
+| `test_clarinet_patch.cpp` | 3 | Clarinet: pulse VCO + LP filter, signal after 12ms attack |
+| `test_cow_bell_patch.cpp` | 3 | Cow bell: pulse VCO + dual resonant LP + AD envelope, onset RMS |
+| `test_delay_lead_patch.cpp` | 3 | Delay lead: ECHO_DELAY in post-chain, onset RMS |
+| `test_english_horn_patch.cpp` | 3 | English horn: 30ms attack, RMS after attack window |
+| `test_glockenspiel_patch.cpp` | 3 | Glockenspiel: AD_ENVELOPE 1ms attack, onset signal |
+| `test_gong_patch.cpp` | 3 | Gong: RING_MOD (VCO1×VCO2 at +7st) + AD envelope, onset RMS |
+| `test_gong_full_patch.cpp` | 3 | Gong full: noise transient + ring-mod body, onset RMS |
+| `test_group_strings_patch.cpp` | 3 | Group strings: AUDIO_MIXER + MOOG_FILTER, RMS after 430ms attack |
+| `test_juno_strings_patch.cpp` | 3 | Juno strings: 350ms attack swell, RMS after warm-up |
+| `test_pizzicato_violin_patch.cpp` | 3 | Pizzicato violin: AD_ENVELOPE 1ms attack, onset RMS |
+| `test_rain_patch.cpp` | 3 | Rain: LP+HPF filtered noise + slow ADSR, RMS after 587ms attack |
+| `test_snare_drum_patch.cpp` | 3 | Snare drum: WHITE_NOISE + LP+HPF cascade + AD envelope, onset RMS |
+| `test_strings_postchain.cpp` | 3 | Strings + post-chain FX: JUNO_CHORUS stereo spread, REVERB_FDN tail energy |
+| `test_thunder_patch.cpp` | 3 | Thunder: noise + 800ms attack, RMS after warm-up |
+| `test_tom_tom_patch.cpp` | 3 | Tom tom: VCO + AD envelope at C3, onset RMS |
+| `test_whistling_patch.cpp` | 3 | Whistling: 80ms attack, signal after attack window |
+| `test_wind_surf_patch.cpp` | 3 | Wind/surf: WHITE_NOISE + MOOG_FILTER envelope, RMS after attack |
+| `test_wood_blocks_patch.cpp` | 3 | Wood blocks: AD_ENVELOPE 1ms attack, onset RMS |
 
 ---
 

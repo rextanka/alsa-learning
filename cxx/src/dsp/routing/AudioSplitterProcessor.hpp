@@ -32,21 +32,9 @@ namespace audio {
 
 class AudioSplitterProcessor : public Processor {
 public:
-    static constexpr float kRampSeconds = 0.010f; // 10 ms
+    static constexpr float kRampSeconds = 0.010f;
 
-    explicit AudioSplitterProcessor(int sample_rate = 48000) {
-        ramp_samples_ = static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds);
-        declare_port({"audio_in",    PORT_AUDIO, PortDirection::IN});
-        declare_port({"audio_out_1", PORT_AUDIO, PortDirection::OUT});
-        declare_port({"audio_out_2", PORT_AUDIO, PortDirection::OUT});
-        declare_port({"audio_out_3", PORT_AUDIO, PortDirection::OUT});
-        declare_port({"audio_out_4", PORT_AUDIO, PortDirection::OUT});
-
-        declare_parameter({"gain_1", "Output 1 Gain", 0.0f, 2.0f, 1.0f});
-        declare_parameter({"gain_2", "Output 2 Gain", 0.0f, 2.0f, 1.0f});
-        declare_parameter({"gain_3", "Output 3 Gain", 0.0f, 2.0f, 1.0f});
-        declare_parameter({"gain_4", "Output 4 Gain", 0.0f, 2.0f, 1.0f});
-    }
+    explicit AudioSplitterProcessor(int sample_rate = 48000);
 
     void reset() override {}
 
@@ -58,13 +46,6 @@ public:
         return false;
     }
 
-    /**
-     * @brief Inject the primary audio input (for audio_bus execution path).
-     *
-     * When AUDIO_SPLITTER is designated as an audio_source and its audio_in
-     * is explicitly wired, the executor injects the upstream buffer here.
-     * The injected span is copied to all outputs (with per-output gain).
-     */
     void inject_audio(std::string_view port_name,
                       std::span<const float> audio) override {
         if (port_name == "audio_in") audio_in_ = audio;
@@ -73,39 +54,12 @@ public:
     PortType output_port_type() const override { return PortType::PORT_AUDIO; }
 
 protected:
-    void do_pull(std::span<float> output,
-                 const VoiceContext* /*ctx*/ = nullptr) override {
-        const int n_frames = static_cast<int>(output.size());
-        gain_[0].advance(n_frames);
-        gain_[1].advance(n_frames);
-        gain_[2].advance(n_frames);
-        gain_[3].advance(n_frames);
-
-        // In the serial inline path: `output` contains the input signal.
-        // Apply gain_1 to the primary output (in-place).
-        // Secondary outputs audio_out_2..4 are served from the audio_bus
-        // buffer (which is this node's audio_bus slot) for downstream nodes
-        // that injected audio_in_b/fm_in connections referencing this node.
-        const float g0 = gain_[0].get();
-        if (!audio_in_.empty()) {
-            // Audio_bus path: copy injected input to output with gain_1.
-            const size_t n = std::min(output.size(), audio_in_.size());
-            for (size_t i = 0; i < n; ++i) output[i] = audio_in_[i] * g0;
-            audio_in_ = {};
-        } else {
-            // Inline path: scale in-place with gain_1.
-            for (auto& s : output) s *= g0;
-        }
-        // Note: gain_[1..3] are applied when downstream nodes read from audio_bus
-        // via inject_audio. For now, all fan-out connections receive the same
-        // gain_1-scaled signal. Per-output gain enforcement for secondary outputs
-        // requires the parallel-path executor (Phase 20+).
-    }
+    void do_pull(std::span<float> output, const VoiceContext* ctx = nullptr) override;
 
 private:
-    int ramp_samples_ = 480; // default ~10ms at 48kHz
+    int ramp_samples_ = 480;
     SmoothedParam gain_[4] = {SmoothedParam{1.0f}, SmoothedParam{1.0f}, SmoothedParam{1.0f}, SmoothedParam{1.0f}};
-    std::span<const float> audio_in_; ///< injected primary input (audio_bus path)
+    std::span<const float> audio_in_;
 };
 
 } // namespace audio

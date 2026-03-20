@@ -35,7 +35,8 @@ namespace audio {
  */
 struct ModuleDescriptor {
     std::string type_name;    ///< e.g. "COMPOSITE_GENERATOR"
-    std::string description;  ///< human-readable
+    std::string description;  ///< one-line human-readable description
+    std::string usage_notes;  ///< longer-form usage guidance (Phase 26)
 
     /// Port layout — mirrored from a prototype instance's declare_port() calls.
     std::vector<PortDescriptor> ports;
@@ -67,27 +68,54 @@ public:
      * ports and parameters, then stores everything in the descriptor.
      *
      * @param type_name   Unique type string (e.g. "MOOG_FILTER")
-     * @param description Human-readable description
+     * @param description One-line human-readable description
+     * @param usage_notes Longer-form usage guidance (patch examples, tips, limits).
+     *                    Defaults to "" for call sites that pre-date Phase 26.
      * @param factory     Factory function: (int sample_rate) → unique_ptr<Processor>
      * @return true (for use in static bool initializer idiom)
      */
     bool register_module(
         std::string type_name,
         std::string description,
+        std::string usage_notes,
         std::function<std::unique_ptr<Processor>(int)> factory)
     {
         // Build a prototype at a neutral sample rate to harvest declared ports/params.
         auto prototype = factory(48000);
 
+        // Preserve existing usage_notes if the new registration provides none.
+        // register_builtin_processors() uses the 3-arg overload (usage_notes="")
+        // and runs after the per-processor kRegistered statics (4-arg, with notes).
+        // Without this guard the 3-arg re-registration would wipe the notes out,
+        // breaking Phase 27A introspection.
+        if (usage_notes.empty()) {
+            auto it = registry_.find(type_name);
+            if (it != registry_.end() && !it->second.usage_notes.empty())
+                usage_notes = it->second.usage_notes;
+        }
+
         ModuleDescriptor desc;
         desc.type_name   = type_name;
         desc.description = std::move(description);
+        desc.usage_notes = std::move(usage_notes);
         desc.ports       = prototype->ports();
         desc.parameters  = prototype->parameters();
         desc.factory     = std::move(factory);
 
         registry_[std::move(type_name)] = std::move(desc);
         return true;
+    }
+
+    /**
+     * @brief Overload without usage_notes for backward compatibility.
+     */
+    bool register_module(
+        std::string type_name,
+        std::string description,
+        std::function<std::unique_ptr<Processor>(int)> factory)
+    {
+        return register_module(std::move(type_name), std::move(description),
+                               /*usage_notes=*/"", std::move(factory));
     }
 
     /**

@@ -17,12 +17,6 @@
  *   rise  (0.0 – 10.0 s) — time to slew from -1 to +1; default 0.0 (instant)
  *   fall  (0.0 – 10.0 s) — time to slew from +1 to -1; default 0.0 (instant)
  *   curve (enum 0=Linear, 1=Exponential) — slew curve shape
- *
- * Portamento usage:
- *   voice: VCO pitch is set to target_freq on note_on. Patch MATHS cv_in to
- *   receive a separate pitch-CV source (e.g., from a future KEYBOARD node).
- *   For now, MATHS with its slew on VCO pitch_cv smooths pitch transitions
- *   between successive notes.
  */
 
 #ifndef MATHS_PROCESSOR_HPP
@@ -39,94 +33,39 @@ class MathsProcessor : public Processor {
 public:
     enum class Curve { Linear = 0, Exponential = 1 };
 
-    static constexpr float kRampSeconds = 0.010f; // 10 ms
+    static constexpr float kRampSeconds = 0.010f;
 
-    explicit MathsProcessor(int sample_rate)
-        : sample_rate_(sample_rate)
-        , ramp_samples_(static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds))
-    {
-        declare_port({"cv_in",  PORT_CONTROL, PortDirection::IN,  false});
-        declare_port({"cv_out", PORT_CONTROL, PortDirection::OUT, false});
-
-        declare_parameter({"rise",  "Rise Time (s)",  0.0f, 10.0f, 0.0f, true});
-        declare_parameter({"fall",  "Fall Time (s)",  0.0f, 10.0f, 0.0f, true});
-        declare_parameter({"curve", "Curve (0=Lin 1=Exp)", 0.0f, 1.0f, 0.0f});
-
-        update_rates();
-    }
+    explicit MathsProcessor(int sample_rate);
 
     PortType output_port_type() const override { return PortType::PORT_CONTROL; }
 
     void reset() override {
-        current_ = 0.0f;
+        current_  = 0.0f;
         injected_ = {};
     }
 
-    bool apply_parameter(const std::string& name, float value) override {
-        if (name == "rise")  { rise_time_.set_target(std::max(0.0f, value), ramp_samples_); update_rates(); return true; }
-        if (name == "fall")  { fall_time_.set_target(std::max(0.0f, value), ramp_samples_); update_rates(); return true; }
-        if (name == "curve") { curve_ = (value >= 0.5f) ? Curve::Exponential : Curve::Linear; return true; }
-        return false;
-    }
+    bool apply_parameter(const std::string& name, float value) override;
 
     void inject_cv(std::string_view port_name, std::span<const float> cv) override {
         if (port_name == "cv_in") injected_ = cv;
     }
 
 protected:
-    void do_pull(std::span<float> output,
-                 const VoiceContext* /*ctx*/ = nullptr) override {
-        const int n = static_cast<int>(output.size());
-        rise_time_.advance(n);
-        fall_time_.advance(n);
-        if (rise_time_.is_ramping() || fall_time_.is_ramping()) {
-            update_rates();
-        }
-        for (size_t i = 0; i < output.size(); ++i) {
-            float target = injected_.empty() ? 0.0f
-                         : (i < injected_.size() ? injected_[i] : injected_.back());
-            output[i] = slew(target);
-        }
-        injected_ = {};
-    }
+    void do_pull(std::span<float> output, const VoiceContext* ctx = nullptr) override;
 
 private:
-    float slew(float target) {
-        const float delta = target - current_;
-        if (curve_ == Curve::Exponential) {
-            // One-pole IIR: output tracks target with time constant
-            if (delta > 0.0f) current_ += delta * (1.0f - rise_coeff_);
-            else              current_ += delta * (1.0f - fall_coeff_);
-        } else {
-            // Linear: advance at constant rate per sample
-            if (delta > 0.0f) current_ = std::min(current_ + rise_rate_, target);
-            else              current_ = std::max(current_ - fall_rate_, target);
-        }
-        return current_;
-    }
-
-    void update_rates() {
-        const float sr = static_cast<float>(sample_rate_);
-        const float rt = rise_time_.get();
-        const float ft = fall_time_.get();
-        // Linear: full 2.0 range in rise_time_ seconds → rate per sample
-        rise_rate_ = (rt > 0.0f) ? (2.0f / (rt * sr)) : 1e9f;
-        fall_rate_ = (ft > 0.0f) ? (2.0f / (ft * sr)) : 1e9f;
-        // Exponential: reaches 99% of target in time seconds
-        static constexpr float kLog99 = 4.60517f; // log(99)
-        rise_coeff_ = (rt > 0.0f) ? std::exp(-kLog99 / (rt * sr)) : 0.0f;
-        fall_coeff_ = (ft > 0.0f) ? std::exp(-kLog99 / (ft * sr)) : 0.0f;
-    }
+    float slew(float target);
+    void  update_rates();
 
     int   sample_rate_;
     int   ramp_samples_;
     SmoothedParam rise_time_{0.0f};
     SmoothedParam fall_time_{0.0f};
-    Curve curve_     = Curve::Linear;
+    Curve curve_ = Curve::Linear;
 
-    float rise_rate_ = 1e9f; // linear delta/sample (instant when rise_time == 0)
-    float fall_rate_ = 1e9f;
-    float rise_coeff_ = 0.0f; // IIR coefficient (exponential curve)
+    float rise_rate_  = 1e9f;
+    float fall_rate_  = 1e9f;
+    float rise_coeff_ = 0.0f;
     float fall_coeff_ = 0.0f;
 
     float current_ = 0.0f;
