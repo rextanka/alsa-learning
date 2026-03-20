@@ -92,9 +92,11 @@ Use these labels with `set_param(handle, "label", value)`:
 
 ---
 
-## 4. Module Registry (Phase 15)
+## 4. Module Registry (Phase 15 + Phase 27A)
 
 The engine publishes all available module types at runtime. Hosts can query the registry to discover what is available — useful for building dynamic patch editors or modular UI.
+
+### Legacy enumeration (Phase 15)
 
 ```c
 // How many module types are registered?
@@ -105,7 +107,22 @@ char type_name[64];
 engine_get_module_type(engine, i, type_name, sizeof(type_name));
 ```
 
-> **Note**: The `engine_get_module_description`, `engine_get_module_port_count`, `engine_get_module_port`, `engine_get_module_parameter_count`, and `engine_get_module_parameter` query functions are **not yet implemented** and are not declared in `CInterface.h`. Only `engine_get_module_count` and `engine_get_module_type` are available. Full registry query is deferred to a future phase. See MODULE_DESC.md for the authoritative per-module port and parameter specifications.
+### Full JSON introspection (Phase 27A — preferred)
+
+`module_get_descriptor_json` and `module_registry_get_all_json` supersede the per-field query functions. No `EngineHandle` is required — the registry is populated at static-init time.
+
+```c
+// Full descriptor for one module type — returns bytes written, -1 unknown, -2 buf too small
+char buf[4096];
+int n = module_get_descriptor_json("MOOG_FILTER", buf, sizeof(buf));
+
+// All registered modules as a sorted JSON array
+char all[65536];
+int n = module_registry_get_all_json(all, sizeof(all));
+```
+
+JSON schema per module: `{ "type_name", "brief", "usage_notes", "parameters": [...], "ports": [...] }`.
+Works directly with Swift `JSONDecoder` and `JSON.parse` in React/Tauri. See ARCH_PLAN.md §Phase 27A for the full schema.
 
 ---
 
