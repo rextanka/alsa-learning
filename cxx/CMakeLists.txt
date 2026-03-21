@@ -303,24 +303,27 @@ if(BUILD_TESTING)
     target_include_directories(patch_test PRIVATE tests)
     target_link_libraries(patch_test PRIVATE audio_engine nlohmann_json::nlohmann_json)
 
-    # Copy patch JSON files and MIDI test data to the binary output directory
-    # so tests can be run directly from build/bin without extra arguments.
-    # patches/ and assets/midi/ are stable — configure-time copy is sufficient.
-    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/patches
-         DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    # Copy assets/midi (static assets) at configure time — these are stable.
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets/midi
          DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
-    # midi/ (gen_test_midi.py output) changes whenever fixtures are regenerated.
-    # Use a build-time custom target so 'cmake --build' always re-syncs the files.
-    file(GLOB MIDI_FIXTURE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/midi/*.mid)
+    # patches/ and midi/ change during development; use build-time custom targets
+    # so 'cmake --build' always re-syncs the files without needing re-configure.
+    add_custom_target(sync_patch_fixtures ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_CURRENT_SOURCE_DIR}/patches
+                ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/patches
+        COMMENT "Syncing patches/ to build output"
+        VERBATIM)
+
     add_custom_target(sync_midi_fixtures ALL
         COMMAND ${CMAKE_COMMAND} -E copy_directory
                 ${CMAKE_CURRENT_SOURCE_DIR}/midi
                 ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/midi
         COMMENT "Syncing midi/ fixtures to build output"
         VERBATIM)
-    add_dependencies(patch_test sync_midi_fixtures)
+
+    add_dependencies(patch_test sync_patch_fixtures sync_midi_fixtures)
 
     # ---------------------------------------------------------------------------
     # Patch smoke tests — offline render, no audio hardware, one per patch
