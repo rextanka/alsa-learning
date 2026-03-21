@@ -211,6 +211,7 @@ if(BUILD_TESTING)
     add_executable(integration_tests
         tests/integration/test_bridge.cpp
         tests/integration/test_module_introspection.cpp
+        tests/integration/test_patch_serialization.cpp
     )
     # Note: We link against audio_engine but we ONLY include CInterface.h in the source
     target_include_directories(integration_tests PRIVATE tests)

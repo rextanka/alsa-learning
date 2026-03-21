@@ -39,6 +39,7 @@
 #include <cassert>
 #include <cstring>
 #include <algorithm>
+#include <unordered_map>
 
 // Handle type discrimination for tag-based safety
 enum class HandleType {
@@ -100,6 +101,17 @@ struct EngineHandleImpl : public HandleBase {
     // Phase 19: global post-processing chain (applied after voice summing + chorus).
     // Each element is a stereo Processor driven via pull(AudioBuffer&).
     std::vector<std::unique_ptr<audio::Processor>> post_chain;
+
+    // Phase 27B: serialization state — persists across engine_bake() / engine_load_patch().
+    // baked_modules / baked_connections mirror the last successfully baked chain spec.
+    // tag_param_cache tracks every set_tag_parameter() call so parameters survive round-trip.
+    // post_chain_type_names / post_chain_param_cache mirror post_chain for serialization.
+    std::vector<ModuleSpec>                    baked_modules;
+    std::vector<audio::Voice::PortConnection>  baked_connections;
+    std::string                                baked_patch_name;
+    std::vector<std::string>                   post_chain_type_names;
+    std::unordered_map<std::string, std::unordered_map<std::string, float>> tag_param_cache;
+    std::vector<std::unordered_map<std::string, float>> post_chain_param_cache;
 
     // Scratch buffers for engine_process stereo path (avoids per-call allocation).
     std::vector<float> process_left;
@@ -568,6 +580,99 @@ int engine_get_xrun_count(EngineHandle handle) {
     return impl->driver->get_xrun_count();
 }
 
+// ---------------------------------------------------------------------------
+// Phase 27B: shared JSON load helper (used by both file and string paths)
+// ---------------------------------------------------------------------------
+
+static int do_load_patch_json(EngineHandle handle, EngineHandleImpl* impl,
+                               const nlohmann::json& j,
+                               const char* caller_name) {
+    auto& log = audio::AudioLogger::instance();
+
+    int version = j.value("version", 1);
+    if (version < 2) {
+        log.log_message(caller_name, "v1 patch format is not supported — use v2");
+        return -1;
+    }
+
+    if (!j.contains("groups") || !j["groups"].is_array() || j["groups"].empty()) {
+        log.log_message(caller_name, "patch missing 'groups' array");
+        return -1;
+    }
+
+    const auto& group = j["groups"][0];
+
+    impl->pending_modules.clear();
+    impl->pending_connections.clear();
+
+    if (group.contains("chain")) {
+        for (const auto& m : group["chain"]) {
+            std::string type = m.at("type").get<std::string>();
+            std::string tag  = m.at("tag").get<std::string>();
+            if (engine_add_module(handle, type.c_str(), tag.c_str()) != 0) {
+                log.log_message(caller_name, ("Unknown module type: " + type).c_str());
+                return -1;
+            }
+        }
+    }
+    if (group.contains("connections")) {
+        for (const auto& c : group["connections"]) {
+            engine_connect_ports(handle,
+                c.at("from_tag").get<std::string>().c_str(),
+                c.at("from_port").get<std::string>().c_str(),
+                c.at("to_tag").get<std::string>().c_str(),
+                c.at("to_port").get<std::string>().c_str());
+        }
+    }
+    if (engine_bake(handle) != 0) {
+        log.log_message(caller_name, "engine_bake() failed");
+        return -1;
+    }
+
+    // Apply parameters after bake (voices now exist with the new chain).
+    // v2 tag-keyed: {"VCO": {"saw_gain": 1.0}}  or flat: {"saw_gain": 1.0}
+    // Phase 27B: also track values in tag_param_cache for later serialization.
+    if (group.contains("parameters")) {
+        for (const auto& [key, val] : group["parameters"].items()) {
+            if (val.is_object()) {
+                for (const auto& [param_name, param_val] : val.items()) {
+                    float v = static_cast<float>(param_val.get<double>());
+                    impl->voice_manager->set_tag_parameter(key, param_name, v);
+                    impl->tag_param_cache[key][param_name] = v;
+                }
+            } else if (val.is_number()) {
+                impl->voice_manager->set_parameter_by_name(key, val.get<float>());
+            }
+        }
+    }
+
+    // Phase 27B: capture patch name for serialization.
+    impl->baked_patch_name = j.value("name", "");
+
+    // Phase 27B v3: apply post_chain if present, replacing any existing one.
+    engine_post_chain_clear(handle);
+    if (j.contains("post_chain") && j["post_chain"].is_array()) {
+        for (const auto& fx_spec : j["post_chain"]) {
+            std::string type = fx_spec.at("type").get<std::string>();
+            int idx = engine_post_chain_push(handle, type.c_str());
+            if (idx < 0) {
+                log.log_message(caller_name, ("Unknown post_chain type: " + type).c_str());
+                return -1;
+            }
+            if (fx_spec.contains("parameters") && fx_spec["parameters"].is_object()) {
+                for (const auto& [pname, pval] : fx_spec["parameters"].items()) {
+                    float v = static_cast<float>(pval.get<double>());
+                    engine_post_chain_set_param(handle, idx, pname.c_str(), v);
+                }
+            }
+        }
+    }
+
+    log.log_message(caller_name,
+        ("Loaded v" + std::to_string(version) + ": " + impl->baked_patch_name).c_str());
+    return 0;
+}
+
 /**
  * @brief Load a patch from a JSON file.
  *
@@ -603,7 +708,6 @@ int engine_load_patch(EngineHandle handle, const char* path) {
     if (!handle || !path) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
     auto& log = audio::AudioLogger::instance();
-
     try {
         std::ifstream file(path);
         if (!file.is_open()) {
@@ -612,74 +716,101 @@ int engine_load_patch(EngineHandle handle, const char* path) {
         }
         nlohmann::json j;
         file >> j;
-
-        int version = j.value("version", 1);
-
-        if (version >= 2) {
-            // --- Patch v2: typed chain + named connections ---
-            if (!j.contains("groups") || !j["groups"].is_array()
-                    || j["groups"].empty()) {
-                log.log_message("engine_load_patch", "v2 patch missing 'groups' array");
-                return -1;
-            }
-            // Phase 15: apply the first group's chain to all voices.
-            const auto& group = j["groups"][0];
-
-            // Build chain
-            impl->pending_modules.clear();
-            impl->pending_connections.clear();
-
-            if (group.contains("chain")) {
-                for (const auto& m : group["chain"]) {
-                    std::string type = m.at("type").get<std::string>();
-                    std::string tag  = m.at("tag").get<std::string>();
-                    if (engine_add_module(handle, type.c_str(), tag.c_str()) != 0) {
-                        log.log_message("engine_load_patch",
-                            ("Unknown module type: " + type).c_str());
-                        return -1;
-                    }
-                }
-            }
-            if (group.contains("connections")) {
-                for (const auto& c : group["connections"]) {
-                    engine_connect_ports(handle,
-                        c.at("from_tag").get<std::string>().c_str(),
-                        c.at("from_port").get<std::string>().c_str(),
-                        c.at("to_tag").get<std::string>().c_str(),
-                        c.at("to_port").get<std::string>().c_str());
-                }
-            }
-            if (engine_bake(handle) != 0) {
-                log.log_message("engine_load_patch", "engine_bake() failed");
-                return -1;
-            }
-            // Apply parameters after bake (voices now exist with the new chain).
-            // Supports two formats:
-            //   v2 tag-keyed: {"VCO": {"saw_gain": 1.0}, "ENV": {"attack": 0.01}}
-            //   flat fallback: {"saw_gain": 1.0, "attack": 0.01}  (legacy / v1 compat)
-            if (group.contains("parameters")) {
-                for (const auto& [key, val] : group["parameters"].items()) {
-                    if (val.is_object()) {
-                        // Tag-keyed: key is a module tag, val is {param_name: value}
-                        for (const auto& [param_name, param_val] : val.items()) {
-                            impl->voice_manager->set_tag_parameter(key, param_name,
-                                static_cast<float>(param_val.get<double>()));
-                        }
-                    } else if (val.is_number()) {
-                        // Flat fallback: key is a param name, val is the value
-                        impl->voice_manager->set_parameter_by_name(key, val.get<float>());
-                    }
-                }
-            }
-            log.log_message("engine_load_patch", ("Loaded v2: " + j.value("name", "")).c_str());
-            return 0;
-
-        } else {
-            log.log_message("engine_load_patch", "v1 patch format is not supported — use v2");
-            return -1;
-        }
+        return do_load_patch_json(handle, impl, j, "engine_load_patch");
     } catch (const std::exception& e) {
         log.log_message("engine_load_patch", e.what());
+        return -1;
+    }
+}
+
+int engine_load_patch_json(EngineHandle handle, const char* json_str, int json_len) {
+    if (!handle || !json_str) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    auto& log = audio::AudioLogger::instance();
+    try {
+        const char* end = json_len > 0 ? json_str + json_len : nullptr;
+        auto j = end ? nlohmann::json::parse(json_str, end)
+                     : nlohmann::json::parse(json_str);
+        return do_load_patch_json(handle, impl, j, "engine_load_patch_json");
+    } catch (const std::exception& e) {
+        log.log_message("engine_load_patch_json", e.what());
+        return -1;
+    }
+}
+
+int engine_get_patch_json(EngineHandle handle, int /*group_index*/,
+                          char* buf, int max_len) {
+    if (!handle || !buf || max_len <= 0) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    try {
+        nlohmann::json j;
+        j["version"] = 3;
+        j["name"]    = impl->baked_patch_name;
+
+        nlohmann::json chain = nlohmann::json::array();
+        for (const auto& m : impl->baked_modules)
+            chain.push_back({{"type", m.type_name}, {"tag", m.tag}});
+
+        nlohmann::json conns = nlohmann::json::array();
+        for (const auto& c : impl->baked_connections)
+            conns.push_back({{"from_tag", c.from_tag}, {"from_port", c.from_port},
+                             {"to_tag",   c.to_tag},   {"to_port",   c.to_port}});
+
+        nlohmann::json params = nlohmann::json::object();
+        for (const auto& [tag, pmap] : impl->tag_param_cache) {
+            nlohmann::json tp = nlohmann::json::object();
+            for (const auto& [pname, pval] : pmap) tp[pname] = pval;
+            params[tag] = tp;
+        }
+
+        j["groups"] = nlohmann::json::array({{
+            {"id", 0},
+            {"chain", chain},
+            {"connections", conns},
+            {"parameters", params}
+        }});
+
+        if (!impl->post_chain_type_names.empty()) {
+            nlohmann::json pc = nlohmann::json::array();
+            for (size_t i = 0; i < impl->post_chain_type_names.size(); ++i) {
+                nlohmann::json fx;
+                fx["type"] = impl->post_chain_type_names[i];
+                if (i < impl->post_chain_param_cache.size()
+                        && !impl->post_chain_param_cache[i].empty()) {
+                    nlohmann::json fp = nlohmann::json::object();
+                    for (const auto& [pname, pval] : impl->post_chain_param_cache[i])
+                        fp[pname] = pval;
+                    fx["parameters"] = fp;
+                }
+                pc.push_back(fx);
+            }
+            j["post_chain"] = pc;
+        }
+
+        const std::string s = j.dump(2);
+        if (static_cast<int>(s.size()) >= max_len) return -2;
+        std::copy(s.begin(), s.end(), buf);
+        buf[s.size()] = '\0';
+        return static_cast<int>(s.size());
+    } catch (const std::exception& e) {
+        audio::AudioLogger::instance().log_message("engine_get_patch_json", e.what());
+        return -1;
+    }
+}
+
+int engine_save_patch(EngineHandle handle, const char* path) {
+    if (!handle || !path) return -1;
+    try {
+        // 64 KB covers all current patches; expand if needed.
+        std::vector<char> buf(65536);
+        int n = engine_get_patch_json(handle, 0, buf.data(), static_cast<int>(buf.size()));
+        if (n < 0) return n;
+        std::ofstream f(path);
+        if (!f.is_open()) return -1;
+        f.write(buf.data(), n);
+        return f.good() ? 0 : -1;
+    } catch (const std::exception& e) {
+        audio::AudioLogger::instance().log_message("engine_save_patch", e.what());
         return -1;
     }
 }
@@ -905,6 +1036,11 @@ int engine_bake(EngineHandle handle) {
         return -1;
     }
 
+    // Phase 27B: snapshot the spec for later serialization before clearing.
+    impl->baked_modules     = impl->pending_modules;
+    impl->baked_connections = impl->pending_connections;
+    impl->tag_param_cache.clear(); // new topology — discard stale param overrides
+
     // Clear pending spec so a new chain can be described after this.
     impl->pending_modules.clear();
     impl->pending_connections.clear();
@@ -975,6 +1111,8 @@ int engine_post_chain_push(EngineHandle handle, const char* type_name) {
     if (!fx) return -1;
 
     impl->post_chain.push_back(std::move(fx));
+    impl->post_chain_type_names.push_back(type_name);
+    impl->post_chain_param_cache.push_back({});
     return static_cast<int>(impl->post_chain.size()) - 1;
 }
 
@@ -982,13 +1120,22 @@ int engine_post_chain_set_param(EngineHandle handle, int fx_index,
                                 const char* name, float value) {
     if (!handle || !name || fx_index < 0) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
-    if (static_cast<size_t>(fx_index) >= impl->post_chain.size()) return -1;
-    return impl->post_chain[static_cast<size_t>(fx_index)]->apply_parameter(name, value) ? 0 : -1;
+    const auto idx = static_cast<size_t>(fx_index);
+    if (idx >= impl->post_chain.size()) return -1;
+    bool ok = impl->post_chain[idx]->apply_parameter(name, value);
+    if (ok) {
+        if (idx < impl->post_chain_param_cache.size())
+            impl->post_chain_param_cache[idx][name] = value;
+    }
+    return ok ? 0 : -1;
 }
 
 int engine_post_chain_clear(EngineHandle handle) {
     if (!handle) return -1;
-    static_cast<EngineHandleImpl*>(handle)->post_chain.clear();
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->post_chain.clear();
+    impl->post_chain_type_names.clear();
+    impl->post_chain_param_cache.clear();
     return 0;
 }
 
@@ -1002,6 +1149,7 @@ int engine_set_tag_param(EngineHandle handle, const char* tag, const char* name,
     if (!handle || !tag || !name) return -1;
     auto* impl = static_cast<EngineHandleImpl*>(handle);
     impl->voice_manager->set_tag_parameter(tag, name, value);
+    impl->tag_param_cache[tag][name] = value; // Phase 27B: track for serialization
     return 0;
 }
 
