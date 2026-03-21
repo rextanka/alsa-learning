@@ -127,6 +127,34 @@ AUDIO_API int engine_get_patch_json(EngineHandle handle, int group_index,
 // Serialize the current patch to a file.  Returns 0 on success.
 AUDIO_API int engine_save_patch(EngineHandle handle, const char* path);
 
+/* --- Phase 27C: I/O Processor API ---------------------------------------- */
+
+/**
+ * Set a string parameter on a tagged processor in the voice chain.
+ * Used for AUDIO_FILE_READER "path" and AUDIO_FILE_WRITER "path".
+ * Call after engine_bake(). Returns 0 on success, -1 on error.
+ */
+AUDIO_API int engine_set_tag_string_param(EngineHandle handle,
+                                          const char*  tag,
+                                          const char*  name,
+                                          const char*  value);
+
+/**
+ * Connect an AUDIO_INPUT processor (by device index) to a hardware audio input.
+ * The AUDIO_INPUT processor must be in the baked voice chain with the matching
+ * device_index parameter. Currently stores the device index; live HAL routing
+ * is deferred to Phase 25.
+ * Returns 0 on success, -1 on error.
+ */
+AUDIO_API int engine_open_audio_input(EngineHandle handle, int device_index);
+
+/**
+ * Flush all AUDIO_FILE_WRITER processors to disk (OS-level sync).
+ * Call when you need guaranteed persistence without destroying the engine.
+ * Returns 0 on success, -1 if handle is null.
+ */
+AUDIO_API int engine_file_writer_flush(EngineHandle handle);
+
 // Set a named parameter on all voices by module tag, effective immediately.
 // e.g. engine_set_tag_param(h, "VCF", "cutoff", 1200.0f)
 AUDIO_API int engine_set_tag_param(EngineHandle handle, const char* tag, const char* name, float value);

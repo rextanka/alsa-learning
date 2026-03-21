@@ -1074,7 +1074,81 @@ The patch is not loaded; the engine is never left in a partially-configured stat
 
 ---
 
-## 14  Known Limitations and Planned Features
+## 14  Audio File I/O (Phase 27C)
+
+Phase 27C adds two file-I/O processors and a live-input source, giving host applications the building blocks for offline rendering, sample playback, and future hardware capture.
+
+### 14.1  AUDIO_FILE_READER — WAV/AIFF Playback
+
+Place `AUDIO_FILE_READER` as the first node in a chain to use a file as the audio source. After `bake()`, set the file path via the string parameter API:
+
+```c
+engine_add_module(engine, "AUDIO_FILE_READER", "FILE_IN");
+engine_add_module(engine, "MOOG_FILTER", "VCF");
+engine_add_module(engine, "VCA", "VCA");
+engine_connect_ports(engine, "FILE_IN", "audio_out", "VCF", "audio_in");
+engine_connect_ports(engine, "VCF",     "audio_out", "VCA", "audio_in");
+engine_bake(engine);
+
+engine_set_tag_string_param(engine, "FILE_IN", "path", "/samples/loop.wav");
+engine_set_tag_parameter(engine, "FILE_IN", "loop", 1.0f);
+engine_start(engine);
+```
+
+**Supported formats**: WAV (PCM 16/24/32, float 32/64) and AIFF (PCM 16/24/32, float 32) via libsndfile 1.2.2. Mono and stereo files only. No compressed formats (MP3, AAC, OGG). If the file's sample rate differs from the engine's rate, libsamplerate 0.2.2 performs high-quality SRC off the audio thread before playback begins.
+
+### 14.2  AUDIO_FILE_WRITER — Real-Time WAV Capture
+
+Place `AUDIO_FILE_WRITER` as the last node in a chain to record the processed signal to disk:
+
+```c
+engine_add_module(engine, "COMPOSITE_GENERATOR", "VCO");
+engine_add_module(engine, "VCA", "VCA");
+engine_add_module(engine, "AUDIO_FILE_WRITER", "FILE_OUT");
+engine_connect_ports(engine, "VCO",      "audio_out", "VCA",      "audio_in");
+engine_connect_ports(engine, "VCA",      "audio_out", "FILE_OUT", "audio_in");
+engine_bake(engine);
+
+engine_set_tag_string_param(engine, "FILE_OUT", "path", "/tmp/render.wav");
+engine_start(engine);
+
+// Play notes, then flush and stop
+engine_file_writer_flush(engine);
+engine_stop(engine);
+```
+
+The WAV header is finalised and the file is closed on `engine_destroy` (automatic flush). Use `engine_file_writer_flush` for an explicit intermediate checkpoint while the engine continues running.
+
+**Limitations**: mono/stereo only; no compressed output; last chain node only (SINK role).
+
+### 14.3  AUDIO_INPUT — Hardware Capture Source
+
+`AUDIO_INPUT` is registered as a SOURCE and accepted by `bake()` at the chain head. **It currently outputs silence.** Live routing to actual hardware capture is deferred to Phase 25 (USB/HAL I/O). To prepare a chain that will use hardware input once Phase 25 lands:
+
+```c
+engine_add_module(engine, "AUDIO_INPUT", "MIC");
+engine_add_module(engine, "MOOG_FILTER", "VCF");
+// ...
+engine_bake(engine);
+
+// Associate with hardware device (currently a no-op until Phase 25)
+engine_open_audio_input(engine, 0);
+```
+
+### 14.4  AUDIO_OUTPUT — Explicit Chain Terminator
+
+`AUDIO_OUTPUT` is an optional SINK node that can be added as the last chain entry for patch editors that require an explicit output endpoint. Audio behaviour is identical whether or not it is present.
+
+```c
+engine_add_module(engine, "VCA",          "VCA");
+engine_add_module(engine, "AUDIO_OUTPUT", "OUT");
+engine_connect_ports(engine, "VCA", "audio_out", "OUT", "audio_in");
+engine_bake(engine);
+```
+
+---
+
+## 15  Known Limitations and Planned Features
 
 | Feature                         | Status                                                                                              |
 |---------------------------------|-----------------------------------------------------------------------------------------------------|
@@ -1096,10 +1170,15 @@ The patch is not loaded; the engine is never left in a partially-configured stat
 | Multi-timbral SMF playback      | Planned — Phase 23 (MIDI channel → VoiceGroup routing table)                                        |
 | Module introspection API        | **Implemented** — Phase 27A (`module_get_descriptor_json`, `module_registry_get_all_json`)           |
 | Patch serialization             | **Implemented** — Phase 27B (`engine_load_patch_json`, `engine_get_patch_json`, `engine_save_patch`); patch format v3 adds top-level `post_chain` array for global effects |
+| Role classification             | **Implemented** — Phase 27C; `"role"` field in every module's JSON descriptor (`SOURCE`, `SINK`, `PROCESSOR`); pure CV modules (`LFO`, `ADSR_ENVELOPE`, etc.) and `COMPOSITE_GENERATOR` are `PROCESSOR` |
+| `AUDIO_OUTPUT` chain terminator | **Implemented** — Phase 27C; explicit SINK node accepted as last chain node by `bake()` |
+| `AUDIO_INPUT` hardware source   | **Partially implemented** — Phase 27C; module registered and accepted by `bake()`; currently outputs silence; live HAL routing deferred to Phase 25 |
+| `AUDIO_FILE_READER` playback    | **Implemented** — Phase 27C; WAV/AIFF file loaded into memory, SRC via libsamplerate; mono/stereo only; no compressed formats (MP3, AAC, OGG); path set via `engine_set_tag_string_param` |
+| `AUDIO_FILE_WRITER` recorder    | **Implemented** — Phase 27C; real-time WAV capture to disk; auto-flush on `engine_destroy`; path set via `engine_set_tag_string_param`; mono/stereo only |
 
 ---
 
-## 15  Quick Reference — Parameter Names by Module
+## 16  Quick Reference — Parameter Names by Module
 
 | Module               | Parameters                                                                      |
 |----------------------|---------------------------------------------------------------------------------|
@@ -1132,6 +1211,10 @@ The patch is not loaded; the engine is never left in a partially-configured stat
 | `GATE_DELAY`         | `delay_ms`                                                                      |
 | `INVERTER`           | `scale` (default −1.0)                                                          |
 | `AUDIO_SPLITTER`     | `gain_0`–`gain_3` [0, 1]                                                        |
+| `AUDIO_OUTPUT`       | (none — transparent SINK passthrough)                                           |
+| `AUDIO_INPUT`        | `device_index` (0–16, default 0), `gain` [0, 4]                                 |
+| `AUDIO_FILE_READER`  | `loop` (0/1, default 0), `gain` [0, 4]; string param: `path` (via `engine_set_tag_string_param`) |
+| `AUDIO_FILE_WRITER`  | `max_seconds` [0, 86400], `max_file_mb` [0, 4096]; string param: `path` (via `engine_set_tag_string_param`) |
 
 ---
 

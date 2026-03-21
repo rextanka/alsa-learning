@@ -89,6 +89,38 @@ TEST(ModuleIntrospection, AllJsonEachEntryHasRequiredTopLevelKeys) {
         EXPECT_TRUE(entry.contains("ports")   && entry["ports"].is_array())
                                               << name << ": ports must be array";
         EXPECT_FALSE(entry["ports"].empty())  << name << ": ports array is empty";
+        // Phase 27C: role field
+        ASSERT_TRUE(entry.contains("role"))   << name << ": missing role field";
+        const std::string role = entry.value("role", "");
+        const bool valid_role = (role == "SOURCE" || role == "SINK" || role == "PROCESSOR");
+        EXPECT_TRUE(valid_role)               << name << ": unknown role '" << role << "'";
+    }
+}
+
+// Phase 27C: verify specific well-known roles (3-role model: SOURCE/SINK/PROCESSOR)
+TEST(ModuleIntrospection, KnownModuleRoles) {
+    static const std::pair<const char*, const char*> kExpected[] = {
+        // COMPOSITE_GENERATOR has fm_in (PORT_AUDIO IN) + audio_out → PROCESSOR
+        {"COMPOSITE_GENERATOR", "PROCESSOR"},
+        // WHITE_NOISE has only audio_out (no PORT_AUDIO IN) → SOURCE
+        {"WHITE_NOISE",         "SOURCE"},
+        // Phase 27C I/O processors
+        {"AUDIO_OUTPUT",        "SINK"},
+        {"AUDIO_INPUT",         "SOURCE"},
+        {"AUDIO_FILE_READER",   "SOURCE"},
+        {"AUDIO_FILE_WRITER",   "SINK"},
+        // Audio processors
+        {"MOOG_FILTER",         "PROCESSOR"},
+        {"VCA",                 "PROCESSOR"},
+        // LFO/ADSR have only PORT_CONTROL ports → no PORT_AUDIO → PROCESSOR
+        // (patch editors distinguish CV modules from audio processors via port listing)
+        {"LFO",                 "PROCESSOR"},
+        {"ADSR_ENVELOPE",       "PROCESSOR"},
+    };
+    for (const auto& [type, expected_role] : kExpected) {
+        const auto d = get_descriptor(type);
+        EXPECT_EQ(d.value("role", ""), expected_role)
+            << type << " expected role " << expected_role;
     }
 }
 

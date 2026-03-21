@@ -46,6 +46,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/oscillator)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/envelope)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/filter)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/fx)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/io)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/routing)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/analysis)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/dsp/dynamics)
@@ -54,6 +55,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/hal)
 
 # Optional: Enable profiling (can be controlled via CMake)
 option(AUDIO_ENABLE_PROFILING "Enable performance profiling" ON)
+
+# Optional: Enable libsndfile external codec libs (ogg/vorbis, FLAC, Opus, MPEG).
+# Requires the corresponding system libraries to be installed — see docs/DEPENDENCIES.md.
+option(AUDIO_ENGINE_SNDFILE_EXTERNAL_LIBS "Enable libsndfile optional format support (FLAC, Ogg/Vorbis, Opus, MPEG)" OFF)
 if(AUDIO_ENABLE_PROFILING)
     add_compile_definitions(AUDIO_ENABLE_PROFILING=1)
     message(STATUS "Performance profiling: ENABLED")
@@ -108,6 +113,11 @@ set(ENGINE_SOURCES
     src/dsp/routing/MathsProcessor.cpp
     src/dsp/routing/GateDelayProcessor.cpp
     src/dsp/routing/SampleHoldProcessor.cpp
+    # I/O (Phase 27C)
+    src/dsp/io/AudioOutputProcessor.cpp
+    src/dsp/io/AudioInputProcessor.cpp
+    src/dsp/io/AudioFileReaderProcessor.cpp
+    src/dsp/io/AudioFileWriterProcessor.cpp
     # Root DSP
     src/dsp/VcaProcessor.cpp
 )
@@ -126,18 +136,21 @@ target_include_directories(audio_engine PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hal
 )
 
-target_compile_options(audio_engine PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
-    -fvisibility=default
-)
+if(NOT MSVC)
+    target_compile_options(audio_engine PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+        -fvisibility=default
+    )
+endif()
 
 if(PLATFORM_LIBS)
     target_link_libraries(audio_engine PRIVATE ${PLATFORM_LIBS})
 endif()
 
 target_link_libraries(audio_engine PUBLIC nlohmann_json::nlohmann_json)
+target_link_libraries(audio_engine PUBLIC SndFile::sndfile SampleRate::samplerate)
 
 # --- Core Audio Engine Library (Shared) ---
 add_library(audio_engine_shared SHARED ${ENGINE_SOURCES})
@@ -148,41 +161,90 @@ target_include_directories(audio_engine_shared PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hal
 )
 
-target_compile_options(audio_engine_shared PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
-    -fvisibility=default
-)
+if(NOT MSVC)
+    target_compile_options(audio_engine_shared PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+        -fvisibility=default
+    )
+endif()
 
 if(PLATFORM_LIBS)
     target_link_libraries(audio_engine_shared PRIVATE ${PLATFORM_LIBS})
 endif()
 
 target_link_libraries(audio_engine_shared PUBLIC nlohmann_json::nlohmann_json)
+target_link_libraries(audio_engine_shared PUBLIC SndFile::sndfile SampleRate::samplerate)
 
 # Ensure the shared library is named consistently across platforms
 set_target_properties(audio_engine_shared PROPERTIES OUTPUT_NAME "audio_engine")
 
-# --- Testing Infrastructure (Phase 11) ---
+# --- Engine Runtime Dependencies (always required) ---
+# nlohmann/json, libsndfile, libsamplerate are production deps of the engine library,
+# not test-only. Placed outside if(BUILD_TESTING) so the engine builds without tests.
+
+include(FetchContent)
+
+FetchContent_Declare(
+  json
+  URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+)
+
+FetchContent_Declare(
+  libsndfile
+  GIT_REPOSITORY https://github.com/libsndfile/libsndfile.git
+  GIT_TAG        1.2.2
+  EXCLUDE_FROM_ALL  # CMake 3.28+: don't add libsndfile's tests to our CTest tree
+)
+set(BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+if(AUDIO_ENGINE_SNDFILE_EXTERNAL_LIBS)
+    set(ENABLE_EXTERNAL_LIBS ON CACHE BOOL "" FORCE)
+else()
+    set(ENABLE_EXTERNAL_LIBS OFF CACHE BOOL "" FORCE)
+endif()
+
+FetchContent_Declare(
+  libsamplerate
+  GIT_REPOSITORY https://github.com/libsndfile/libsamplerate.git
+  GIT_TAG        0.2.2
+)
+set(LIBSAMPLERATE_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(LIBSAMPLERATE_TESTS    OFF CACHE BOOL "" FORCE)
+
+# CMAKE_POLICY_VERSION_MINIMUM (CMake 4.x): allow subprojects with cmake_minimum_required
+# versions < 3.5 (libsndfile 1.2.2 declares 3.1..3.18, which CMake 4.x would otherwise reject).
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
 option(BUILD_TESTING "Build tests" ON)
+FetchContent_MakeAvailable(json libsndfile libsamplerate)
+
+# libsndfile 1.2.2 registers ~143 internal tests via enable_testing()/add_test() in its
+# CMakeLists.txt.  These appear as "Not Run" in our CTest tree because we don't build
+# libsndfile's test executables.  CMake writes CTestTestfile.cmake during the generate
+# phase (after all configure-time add_test() calls), so we can't suppress it during
+# configure.  Use an ALL custom target to overwrite the file immediately after generate
+# (i.e. after cmake --build, before ctest runs).
+add_custom_target(suppress_libsndfile_tests ALL
+    COMMAND ${CMAKE_COMMAND} -E echo
+        "# libsndfile internal tests suppressed — executables not built by this project."
+        > "${libsndfile_BINARY_DIR}/CTestTestfile.cmake"
+    COMMENT "Suppressing libsndfile internal tests from CTest"
+    VERBATIM
+)
+
+# --- Testing Infrastructure (Phase 11) ---
 
 if(BUILD_TESTING)
-    include(FetchContent)
     FetchContent_Declare(
       googletest
       URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz
     )
 
-    FetchContent_Declare(
-      json
-      URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
-    )
-
     # For Windows: prevent overriding the parent project's compiler/linker settings
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(googletest json)
+    FetchContent_MakeAvailable(googletest)
 
     enable_testing()
 

@@ -51,6 +51,18 @@ public:
      */
     bool set_tag_parameter(const std::string& tag, const std::string& name, float value);
 
+    /**
+     * @brief Set a named string parameter on the specific tagged processor.
+     * Finds the node by @p tag and calls Processor::apply_string_parameter(name, value).
+     */
+    bool set_tag_string_parameter(const std::string& tag, const std::string& name, const std::string& value);
+
+    /**
+     * @brief Call flush_to_disk() on every processor in the chain.
+     * Used by engine_file_writer_flush() to flush all I/O writers.
+     */
+    void flush_all_processors();
+
     void set_pan(float pan);
     float pan() const { return pan_param_.get(); }
 
@@ -78,9 +90,10 @@ public:
      * @brief Validate the chain and mark it ready for audio-thread use.
      *
      * Verifies that signal_chain_ is non-empty, that the first node outputs
-     * PORT_AUDIO (the audio generator), and that the last node outputs PORT_AUDIO
-     * (the chain sink). Throws std::logic_error if validation fails.
-     * Must be called after all add_processor() calls and before note_on().
+     * PORT_AUDIO (the audio generator), and that the last node either outputs
+     * PORT_AUDIO or is a SINK (audio_in with no audio_out — Phase 27C:
+     * AUDIO_OUTPUT, AUDIO_FILE_WRITER). Throws std::logic_error if validation
+     * fails. Must be called after all add_processor() calls and before note_on().
      */
     void bake();
 

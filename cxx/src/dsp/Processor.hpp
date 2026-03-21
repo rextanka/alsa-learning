@@ -261,6 +261,23 @@ public:
     virtual void on_note_off() {}
 
     /**
+     * @brief Apply a named string parameter.
+     *
+     * Used for non-numeric parameters such as file paths.
+     * Default: no-op (returns false). Override in I/O processors.
+     */
+    virtual bool apply_string_parameter(const std::string& /*name*/,
+                                        const std::string& /*value*/) { return false; }
+
+    /**
+     * @brief Flush any buffered output to its backing store (e.g. file).
+     *
+     * Default: no-op. Override in AudioFileWriterProcessor.
+     * Called by engine_file_writer_flush() for every processor in the graph.
+     */
+    virtual void flush_to_disk() {}
+
+    /**
      * @brief Declared input port type for bake() chain-level validation (Phase 14).
      * Default: PORT_AUDIO. Override for processors that consume a control-rate signal.
      *

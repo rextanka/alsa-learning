@@ -113,6 +113,10 @@ struct EngineHandleImpl : public HandleBase {
     std::unordered_map<std::string, std::unordered_map<std::string, float>> tag_param_cache;
     std::vector<std::unordered_map<std::string, float>> post_chain_param_cache;
 
+    int open_audio_input_device = -1;  ///< device opened via engine_open_audio_input (-1 = none)
+    std::unordered_map<std::string,
+        std::unordered_map<std::string, std::string>> tag_string_param_cache;
+
     // Scratch buffers for engine_process stereo path (avoids per-call allocation).
     std::vector<float> process_left;
     std::vector<float> process_right;
@@ -636,9 +640,16 @@ static int do_load_patch_json(EngineHandle handle, EngineHandleImpl* impl,
         for (const auto& [key, val] : group["parameters"].items()) {
             if (val.is_object()) {
                 for (const auto& [param_name, param_val] : val.items()) {
-                    float v = static_cast<float>(param_val.get<double>());
-                    impl->voice_manager->set_tag_parameter(key, param_name, v);
-                    impl->tag_param_cache[key][param_name] = v;
+                    if (param_val.is_string()) {
+                        // String parameter (e.g. AUDIO_FILE_READER "path")
+                        const std::string sv = param_val.get<std::string>();
+                        impl->voice_manager->set_tag_string_parameter(key, param_name, sv);
+                        impl->tag_string_param_cache[key][param_name] = sv;
+                    } else {
+                        float v = static_cast<float>(param_val.get<double>());
+                        impl->voice_manager->set_tag_parameter(key, param_name, v);
+                        impl->tag_param_cache[key][param_name] = v;
+                    }
                 }
             } else if (val.is_number()) {
                 impl->voice_manager->set_parameter_by_name(key, val.get<float>());
@@ -813,6 +824,37 @@ int engine_save_patch(EngineHandle handle, const char* path) {
         audio::AudioLogger::instance().log_message("engine_save_patch", e.what());
         return -1;
     }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 27C: I/O Processor API
+// ---------------------------------------------------------------------------
+
+int engine_set_tag_string_param(EngineHandle handle, const char* tag,
+                                 const char* name, const char* value) {
+    if (!handle || !tag || !name || !value) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->voice_manager->set_tag_string_parameter(tag, name, value);
+    impl->tag_string_param_cache[tag][name] = value;
+    return 0;
+}
+
+int engine_open_audio_input(EngineHandle handle, int device_index) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->open_audio_input_device = device_index;
+    // Apply device_index to any AUDIO_INPUT processor in the chain.
+    impl->voice_manager->set_tag_parameter("AUDIO_IN", "device_index",
+                                            static_cast<float>(device_index));
+    return 0;
+}
+
+int engine_file_writer_flush(EngineHandle handle) {
+    if (!handle) return -1;
+    auto* impl = static_cast<EngineHandleImpl*>(handle);
+    impl->voice_manager->flush_all_processors();
+    for (auto& proc : impl->post_chain) proc->flush_to_disk();
+    return 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -1208,6 +1250,7 @@ nlohmann::json descriptor_to_json(const audio::ModuleDescriptor& d) {
         ports.push_back(std::move(pj));
     }
     j["ports"] = std::move(ports);
+    j["role"] = std::string(audio::module_role_name(d.role));
 
     return j;
 }

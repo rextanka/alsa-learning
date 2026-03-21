@@ -20,6 +20,7 @@
 #define MODULE_REGISTRY_HPP
 
 #include "../dsp/Processor.hpp"
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <string>
@@ -27,6 +28,44 @@
 #include <vector>
 
 namespace audio {
+
+/**
+ * @brief Role classification for a registered module type (Phase 27C).
+ *
+ * Inferred automatically from a module's declared PORT_AUDIO ports at
+ * registration time. Used by patch editors and the introspection API
+ * to categorise modules.
+ *
+ * Three roles only — SOURCE / SINK / PROCESSOR:
+ *   SOURCE    — has PORT_AUDIO OUT, no PORT_AUDIO IN.
+ *               Includes audio generators (VCO, WHITE_NOISE) and CV generators
+ *               (LFO, ADSR, AD_ENVELOPE, SAMPLE_HOLD, GATE_DELAY).
+ *               "Can be placed at the start of a chain."
+ *   SINK      — has PORT_AUDIO IN, no PORT_AUDIO OUT (Phase 27C: AUDIO_OUTPUT,
+ *               AUDIO_FILE_WRITER). "Terminates the audio chain."
+ *   PROCESSOR — has both PORT_AUDIO IN and PORT_AUDIO OUT, OR has only
+ *               PORT_CONTROL ports (CV transformers: INVERTER, CV_MIXER, MATHS).
+ *               "Sits in the middle of a chain."
+ *
+ * CV generators (LFO, ADSR) are SOURCE despite having PORT_CONTROL IN ports:
+ * the port-based inference treats PORT_AUDIO presence as the determinant.
+ * Pure CV modules (no PORT_AUDIO at all) fall through to PROCESSOR, which a
+ * patch editor can detect from the port listing.
+ */
+enum class ModuleRole {
+    SOURCE,     ///< audio or CV generator — has audio_out (or only CV out); no audio_in
+    SINK,       ///< audio terminal — has audio_in, no audio_out
+    PROCESSOR   ///< everything else: audio transforms, CV transforms, routing
+};
+
+inline std::string_view module_role_name(ModuleRole r) noexcept {
+    switch (r) {
+        case ModuleRole::SOURCE:    return "SOURCE";
+        case ModuleRole::SINK:      return "SINK";
+        case ModuleRole::PROCESSOR: return "PROCESSOR";
+    }
+    return "PROCESSOR";
+}
 
 /**
  * @brief Descriptor for a registered module type.
@@ -46,7 +85,33 @@ struct ModuleDescriptor {
 
     /// Factory: create a fresh processor instance at the given sample rate.
     std::function<std::unique_ptr<Processor>(int sample_rate)> factory;
+
+    ModuleRole role = ModuleRole::PROCESSOR; ///< inferred at registration (Phase 27C)
 };
+
+/**
+ * @brief Infer the ModuleRole from a prototype processor's declared PORT_AUDIO ports.
+ *
+ * Only PORT_AUDIO ports determine the role:
+ *   - audio_out, no audio_in  → SOURCE (generators and CV modules with only cv_out)
+ *   - audio_in, no audio_out  → SINK
+ *   - both, or neither        → PROCESSOR
+ *
+ * CV modules (LFO, ADSR, CV_MIXER, etc.) have no PORT_AUDIO ports, so they
+ * fall through to PROCESSOR. The port listing distinguishes CV from audio
+ * processors for patch editors that need finer categorisation.
+ */
+inline ModuleRole infer_role(const Processor& p) noexcept {
+    bool audio_in = false, audio_out = false;
+    for (const auto& port : p.ports()) {
+        if (port.type != PortType::PORT_AUDIO) continue;
+        if (port.dir == PortDirection::IN)  audio_in  = true;
+        else                                audio_out = true;
+    }
+    if (audio_out && !audio_in)  return ModuleRole::SOURCE;
+    if (audio_in  && !audio_out) return ModuleRole::SINK;
+    return ModuleRole::PROCESSOR;
+}
 
 /**
  * @brief Meyers-singleton registry of all available module types.
@@ -101,6 +166,7 @@ public:
         desc.ports       = prototype->ports();
         desc.parameters  = prototype->parameters();
         desc.factory     = std::move(factory);
+        desc.role        = infer_role(*prototype);
 
         registry_[std::move(type_name)] = std::move(desc);
         return true;

@@ -230,6 +230,17 @@ void VoiceManager::set_tag_parameter(const std::string& tag, const std::string& 
     }
 }
 
+void VoiceManager::set_tag_string_parameter(const std::string& tag, const std::string& name,
+                                             const std::string& value) {
+    for (auto& slot : voices_)
+        if (slot.voice) slot.voice->set_tag_string_parameter(tag, name, value);
+}
+
+void VoiceManager::flush_all_processors() {
+    for (auto& slot : voices_)
+        if (slot.voice) slot.voice->flush_all_processors();
+}
+
 void VoiceManager::set_parameter_by_name(const std::string& name, float value) {
     for (auto& slot : voices_) {
         if (slot.voice) slot.voice->set_named_parameter(name, value);

@@ -202,3 +202,47 @@ TEST_F(BridgeTest, LoadPatchV2BadFileReturnsError) {
     EXPECT_EQ(engine_load_patch(engine, "/nonexistent/path/patch.json"), -1);
     engine_destroy(engine);
 }
+
+// ---------------------------------------------------------------------------
+// Phase 27C: AUDIO_OUTPUT SINK as last chain node
+// ---------------------------------------------------------------------------
+
+TEST_F(BridgeTest, AudioOutputSinkBakesSuccessfully) {
+    // WHITE_NOISE → AUDIO_OUTPUT should bake without error (SINK exception in bake()).
+    // WHITE_NOISE needs no parameter setup and always produces audio.
+    EngineHandle engine = engine_create(sample_rate);
+    ASSERT_NE(engine, nullptr);
+
+    EXPECT_EQ(engine_add_module(engine, "WHITE_NOISE",  "NOISE"), 0);
+    EXPECT_EQ(engine_add_module(engine, "AUDIO_OUTPUT", "OUT"),   0);
+    EXPECT_EQ(engine_connect_ports(engine, "NOISE", "audio_out", "OUT", "audio_in"), 0);
+    EXPECT_EQ(engine_bake(engine), 0) << "bake() must succeed with AUDIO_OUTPUT as last node";
+
+    // The chain must still produce audio (AUDIO_OUTPUT is a transparent SINK).
+    engine_note_on(engine, 60, 1.0f);
+    std::vector<float> buf(block_size * 2, 0.0f);
+    engine_process(engine, buf.data(), block_size);
+    float peak = 0.0f;
+    for (float s : buf) peak = std::max(peak, std::abs(s));
+    EXPECT_GT(peak, 1e-6f) << "WHITE_NOISE → AUDIO_OUTPUT chain must produce audio";
+
+    engine_destroy(engine);
+}
+
+TEST_F(BridgeTest, StringParamSetOnFileWriter) {
+    // Verify engine_set_tag_string_param doesn't crash (AUDIO_FILE_WRITER with no valid path
+    // is a no-op for file I/O, but must return 0 and not crash).
+    EngineHandle engine = engine_create(sample_rate);
+    ASSERT_NE(engine, nullptr);
+
+    EXPECT_EQ(engine_add_module(engine, "COMPOSITE_GENERATOR",  "VCO"), 0);
+    EXPECT_EQ(engine_add_module(engine, "AUDIO_FILE_WRITER",     "REC"), 0);
+    EXPECT_EQ(engine_connect_ports(engine, "VCO", "audio_out", "REC", "audio_in"), 0);
+    EXPECT_EQ(engine_bake(engine), 0);
+
+    // Setting path to empty string must not crash.
+    EXPECT_EQ(engine_set_tag_string_param(engine, "REC", "path", ""), 0);
+    EXPECT_EQ(engine_file_writer_flush(engine), 0);
+
+    engine_destroy(engine);
+}
