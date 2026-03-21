@@ -307,9 +307,11 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
                     entry.node->set_frequency(mod_freq > 20.0 ? mod_freq : base_frequency_);
 
                 } else if (conn.to_port == "pwm_cv") {
+                    // Map bipolar CV → pulse width [0.01, 0.49], then drive via
+                    // apply_parameter so do_pull reads the SmoothedParam correctly
+                    // (direct set_pulse_width was overwritten by do_pull each block).
                     const float pw = std::clamp(0.5f + cv_mean(cv) * 0.5f, 0.01f, 0.49f);
-                    if (auto* vco = dynamic_cast<CompositeGenerator*>(entry.node.get()))
-                        vco->pulse_osc().set_pulse_width(pw);
+                    entry.node->apply_parameter("pulse_width", pw);
 
                 } else {
                     // General CV dispatch: route any named port to the target node

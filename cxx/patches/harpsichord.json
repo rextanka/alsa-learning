@@ -1,28 +1,113 @@
 {
-  "version": 2,
+  "version": 3,
   "name": "Harpsichord",
   "groups": [
     {
       "id": 0,
+      "comment": "Roland System-100A style harpsichord (Fig 4-6): pulse VCO, ENV opens VCF on attack, INV modulates PWM for timbral shift on decay, HPF removes bass muddiness.",
       "chain": [
-        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
-        { "type": "MOOG_FILTER",         "tag": "VCF" },
-        { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
-        { "type": "INVERTER",            "tag": "INV" },
-        { "type": "VCA",                 "tag": "VCA" }
+        {
+          "type": "COMPOSITE_GENERATOR",
+          "tag": "VCO"
+        },
+        {
+          "type": "HIGH_PASS_FILTER",
+          "tag": "HPF"
+        },
+        {
+          "type": "MOOG_FILTER",
+          "tag": "VCF"
+        },
+        {
+          "type": "ADSR_ENVELOPE",
+          "tag": "ENV"
+        },
+        {
+          "type": "INVERTER",
+          "tag": "INV"
+        },
+        {
+          "type": "VCA",
+          "tag": "VCA"
+        }
       ],
       "connections": [
-        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"  },
-        { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"  },
-        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"   },
-        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "INV", "to_port": "cv_in"     },
-        { "from_tag": "INV", "from_port": "cv_out",       "to_tag": "VCF", "to_port": "cutoff_cv" }
+        {
+          "from_tag": "VCO",
+          "from_port": "audio_out",
+          "to_tag": "HPF",
+          "to_port": "audio_in"
+        },
+        {
+          "from_tag": "HPF",
+          "from_port": "audio_out",
+          "to_tag": "VCF",
+          "to_port": "audio_in"
+        },
+        {
+          "from_tag": "VCF",
+          "from_port": "audio_out",
+          "to_tag": "VCA",
+          "to_port": "audio_in"
+        },
+        {
+          "from_tag": "ENV",
+          "from_port": "envelope_out",
+          "to_tag": "VCA",
+          "to_port": "gain_cv"
+        },
+        {
+          "from_tag": "ENV",
+          "from_port": "envelope_out",
+          "to_tag": "VCF",
+          "to_port": "cutoff_cv"
+        },
+        {
+          "from_tag": "ENV",
+          "from_port": "envelope_out",
+          "to_tag": "INV",
+          "to_port": "cv_in"
+        },
+        {
+          "from_tag": "INV",
+          "from_port": "cv_out",
+          "to_tag": "VCO",
+          "to_port": "pwm_cv"
+        }
       ],
       "parameters": {
-        "VCO": { "pulse_gain": 1.0, "pulse_width": 0.35 },
-        "VCF": { "cutoff": 1200.0, "resonance": 0.3 },
-        "ENV": { "attack": 0.001, "decay": 0.5, "sustain": 0.0, "release": 0.1 },
-        "INV": { "scale": -0.6 }
+        "VCO": {
+          "pulse_gain": 1.0,
+          "pulse_width": 0.5,
+          "noise_gain": 0.08
+        },
+        "HPF": {
+          "cutoff": 300.0,
+          "resonance": 0.1
+        },
+        "VCF": {
+          "cutoff": 4800.0,
+          "resonance": 0.35
+        },
+        "ENV": {
+          "attack": 0.001,
+          "decay": 0.45,
+          "sustain": 0.0,
+          "release": 0.08
+        },
+        "INV": {
+          "scale": -0.8
+        }
+      }
+    }
+  ],
+  "post_chain": [
+    {
+      "type": "REVERB_FREEVERB",
+      "parameters": {
+        "room_size": 0.4,
+        "damping": 0.7,
+        "wet": 0.15
       }
     }
   ]

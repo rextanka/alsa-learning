@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "name": "Drawbar Organ (Full Ensemble)",
   "groups": [
     {
@@ -27,6 +27,12 @@
         },
         "ENV": { "attack": 0.005, "decay": 0.01, "sustain": 1.0, "release": 0.03 }
       }
+    }
+  ],
+  "post_chain": [
+    {
+      "type": "JUNO_CHORUS",
+      "parameters": {}
     }
   ]
 }

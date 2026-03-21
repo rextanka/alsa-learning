@@ -29,6 +29,7 @@
 
 #include "../Processor.hpp"
 #include "../SmoothedParam.hpp"
+#include "../TempoSync.hpp"
 #include <algorithm>
 #include <span>
 
@@ -84,6 +85,10 @@ private:
     float yr_prev_[kMaxStages]{};
     float fb_l_ = 0.0f;
     float fb_r_ = 0.0f;
+
+    // Tempo-sync (Phase 27D) — off by default, fully backward-compatible.
+    bool sync_     = false;
+    int  division_ = 1; ///< Index into kDivisionMultipliers; 1 = "half" (spec default)
 };
 
 } // namespace audio

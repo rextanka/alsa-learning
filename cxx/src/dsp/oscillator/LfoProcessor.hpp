@@ -8,6 +8,7 @@
 
 #include "../Processor.hpp"
 #include "../SmoothedParam.hpp"
+#include "../TempoSync.hpp"
 #include <cmath>
 
 namespace audio {
@@ -40,6 +41,11 @@ public:
 
     void reset() override;
 
+    void inject_cv(std::string_view port, std::span<const float> data) override {
+        if (port == "rate_cv")  rate_cv_in_  = data.empty() ? 0.0f : data[0];
+        if (port == "reset")    reset_cv_in_ = data.empty() ? 0.0f : data[0];
+    }
+
     PortType output_port_type() const override { return PortType::PORT_CONTROL; }
 
 protected:
@@ -59,6 +65,15 @@ private:
     SmoothedParam delay_time_{0.0f};
 
     size_t delay_samples_remaining_ = 0;
+
+    // Tempo-sync (Phase 27D) — off by default, fully backward-compatible.
+    bool sync_     = false;
+    int  division_ = 2; ///< Index into kDivisionMultipliers; 2 = "quarter"
+
+    // CV inputs (rate_cv / reset ports).
+    float rate_cv_in_  = 0.0f; ///< Additive Hz modulation of rate each block.
+    float reset_cv_in_ = 0.0f; ///< Phase reset on positive edge (prev≤0 → now>0).
+    float prev_reset_  = 0.0f; ///< Previous reset_cv value for edge detection.
 };
 
 } // namespace audio

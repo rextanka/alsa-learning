@@ -33,6 +33,29 @@ The library is consumed via a stable C API, enabling host integration in native 
 - **Linux**: Fedora 42+ (ALSA, ALSA rawmidi)
 - **Embedded Linux**: Raspberry Pi 4/5 running Raspberry Pi OS or similar lightweight Linux — Phases 25–26 target this explicitly
 
+### Musical Dimensions
+
+Music is modelled across four dimensions. Each maps to a dedicated module family, and all future
+phases should locate new features within this framework:
+
+| Dimension   | What it governs                                             | Module family |
+|-------------|-------------------------------------------------------------|---------------|
+| Pitch       | Frequency and harmonic content of the fundamental          | `COMPOSITE_GENERATOR`, `DRAWBAR_ORGAN`, `WHITE_NOISE` |
+| Timbre      | Spectral shape — which overtones reach the listener        | `MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`, `HIGH_PASS_FILTER`, `BAND_PASS_FILTER` |
+| Dynamics    | Amplitude level and how it evolves within a note           | `VCA`, `ADSR_ENVELOPE`, `AD_ENVELOPE` |
+| Temporality | Time structure — tempo, meter, beat-relative timing, modulation rate | `LFO`, `ECHO_DELAY`, `PHASER`, `MusicalClock` (engine transport) |
+
+**Envelopes span dynamics and temporality.** Their level parameters (peak, sustain) are dynamic;
+their timing parameters (attack, decay, release) are temporal. This is not an anomaly — it reflects
+that a note's loudness *evolves in time*, and the two dimensions are coupled at the note boundary.
+
+**Temporality has two layers:**
+- *Local temporal evolution* — how a note changes within its lifetime (envelope shapes, LFO cycles,
+  echo trails). Self-contained; requires no external clock.
+- *Global temporal structure* — where notes fall in musical time (tempo, meter, beat position).
+  Governed by `MusicalClock`. Beat-division sync wires local processors to the global transport
+  so the same patch sounds different at 80 BPM versus 140 BPM.
+
 ### Technical Pillars
 - **Pull-Based Heartbeat**: Sample-accurate timing driven by the `AudioDriver`. Output pulls from the graph; processors pull from their inputs.
 - **Modular Routing Vision**: Moving from fixed-function blocks to a dynamic graph of:
@@ -697,7 +720,7 @@ The CMake option (`AUDIO_STATIC_CONFIG`) and per-module enable/disable flags tha
 
 ## Module Introspection & Patch Serialization (Phase 27)
 
-Phase 27 has four sub-deliverables. **Phases 27A, 27B, and 27C are complete**. Phase 27D is planned. Recommended order: 27D → Phase 25 (USB MIDI HAL). 27C established the full I/O model; 27D establishes the transport clock that the MIDI HAL (Phase 25) and sequencer phases will depend on.
+Phase 27 has four sub-deliverables. **All four sub-phases (27A, 27B, 27C, 27D) are complete**. 27D established the transport clock that the MIDI HAL (Phase 25) and sequencer phases will depend on.
 
 ---
 
@@ -875,7 +898,7 @@ The engine is mono-until-SummingBus by design. Two explicit paths allow stereo w
 
 ---
 
-## Transport Clock & Tempo-Sync Effects (Phase 27D)
+## Transport Clock & Tempo-Sync Effects (Phase 27D — Complete)
 
 Establishes a canonical, engine-owned tempo and time-signature state that effects processors can read at audio rate without locks, and that the SMF player, sequencer, and MIDI clock output all write to from the same source.
 

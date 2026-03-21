@@ -27,6 +27,11 @@ LfoProcessor::LfoProcessor(int sample_rate)
     declare_parameter({"intensity", "LFO Intensity", 0.0f,   1.0f, 1.0f});
     declare_parameter({"waveform",  "LFO Waveform",  0.0f,   3.0f, 0.0f});
     declare_parameter({"delay",     "LFO Delay",     0.0f,  10.0f, 0.0f, true});
+    declare_parameter({"sync",      "Tempo Sync",    0.0f,   1.0f, 0.0f, false,
+                        "0=off, 1=on. When on, 'rate' is ignored; LFO period derived from bpm+division."});
+    declare_parameter({"division",  "Beat Division", 0.0f,  10.0f, 2.0f, false,
+                        "0=whole 1=half 2=quarter 3=dotted_quarter 4=eighth 5=dotted_eighth "
+                        "6=triplet_quarter 7=sixteenth 8=triplet_eighth 9=thirtysecond 10=sixtyfourth"});
 }
 
 bool LfoProcessor::apply_parameter(const std::string& name, float value) {
@@ -48,6 +53,14 @@ bool LfoProcessor::apply_parameter(const std::string& name, float value) {
         delay_samples_remaining_ = static_cast<size_t>(delay_time_.get() * static_cast<float>(sample_rate_));
         return true;
     }
+    if (name == "sync") {
+        sync_ = (value != 0.0f);
+        return true;
+    }
+    if (name == "division") {
+        division_ = std::clamp(static_cast<int>(value), 0, kDivisionCount - 1);
+        return true;
+    }
     return false;
 }
 
@@ -59,7 +72,14 @@ void LfoProcessor::reset() {
     delay_samples_remaining_ = static_cast<size_t>(delay_time_.get() * static_cast<float>(sample_rate_));
 }
 
-void LfoProcessor::do_pull(std::span<float> output, const VoiceContext* /*ctx*/) {
+void LfoProcessor::do_pull(std::span<float> output, const VoiceContext* ctx) {
+    // Tempo-sync: derive rate from bpm + division each block.
+    if (sync_ && ctx) {
+        const float period = beat_time_seconds(ctx->get_bpm(), division_);
+        const float synced_rate = (period > 0.0f) ? (1.0f / period) : 0.01f;
+        rate_.set_target(std::clamp(synced_rate, 0.01f, 20.0f), ramp_samples_);
+    }
+
     const int n = static_cast<int>(output.size());
     rate_.advance(n);
     intensity_.advance(n);
@@ -72,7 +92,16 @@ void LfoProcessor::do_pull(std::span<float> output, const VoiceContext* /*ctx*/)
         return;
     }
 
-    const double frequency = static_cast<double>(rate_.get());
+    // Hard-sync: reset phase on positive edge of reset_cv port.
+    if (reset_cv_in_ > 0.0f && prev_reset_ <= 0.0f) phase_ = 0.0;
+    prev_reset_  = reset_cv_in_;
+    reset_cv_in_ = 0.0f;
+
+    // rate_cv adds linearly to LFO rate (clamped to valid range).
+    const float effective_rate = std::clamp(rate_.get() + rate_cv_in_, 0.01f, 20.0f);
+    rate_cv_in_ = 0.0f;
+
+    const double frequency = static_cast<double>(effective_rate);
     const double phase_inc = frequency / static_cast<double>(sample_rate_);
     const size_t frames = output.size();
 

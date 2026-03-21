@@ -28,6 +28,7 @@
 #include "../Processor.hpp"
 #include "../SmoothedParam.hpp"
 #include "../DelayLine.hpp"
+#include "../TempoSync.hpp"
 
 namespace audio {
 
@@ -58,6 +59,10 @@ private:
     SmoothedParam mod_rate_{0.0f};
     SmoothedParam mod_intensity_{0.0f};
     double lfo_phase_;
+
+    // Tempo-sync (Phase 27D) — off by default, fully backward-compatible.
+    bool sync_     = false;
+    int  division_ = 2; ///< Index into kDivisionMultipliers; 2 = "quarter"
 };
 
 } // namespace audio

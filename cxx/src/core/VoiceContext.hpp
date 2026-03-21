@@ -40,6 +40,19 @@ public:
      * @brief Get the current note number (MIDI 0-127, or -1 if idle).
      */
     virtual float get_current_note() const = 0;
+
+    /**
+     * @brief Get the current engine tempo in BPM (Phase 27D).
+     *
+     * Pre-computed once per block from MusicalClock. Processors use this
+     * inside do_pull() to calculate beat-relative delay times and LFO rates.
+     */
+    virtual float get_bpm() const = 0;
+
+    /**
+     * @brief Get the current beats per bar (Phase 27D).
+     */
+    virtual int get_beats_per_bar() const = 0;
 };
 
 } // namespace audio

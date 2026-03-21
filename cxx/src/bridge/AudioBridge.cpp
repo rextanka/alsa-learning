@@ -41,6 +41,20 @@
 #include <algorithm>
 #include <unordered_map>
 
+// ---------------------------------------------------------------------------
+// Phase 27D: BlockContext — concrete VoiceContext carrying per-block transport
+// state from MusicalClock into processor do_pull() calls.
+// ---------------------------------------------------------------------------
+struct BlockContext : public audio::VoiceContext {
+    const audio::MusicalClock& clock_;
+    explicit BlockContext(const audio::MusicalClock& c) : clock_(c) {}
+    uint8_t get_velocity()     const override { return 64; }
+    uint8_t get_aftertouch()   const override { return 0; }
+    float   get_current_note() const override { return -1.0f; }
+    float   get_bpm()          const override { return static_cast<float>(clock_.bpm()); }
+    int     get_beats_per_bar()const override { return clock_.beats_per_bar(); }
+};
+
 // Handle type discrimination for tag-based safety
 enum class HandleType {
     Oscillator,
@@ -134,12 +148,14 @@ struct EngineHandleImpl : public HandleBase {
         , clock(static_cast<double>(sr))
         , sample_rate(sr)
     {
+        // Wire SMF player to engine clock so FF 51 tempo events update transport.
+        midi_player.set_clock(&clock);
 
         driver = hal::AudioDriver::create(sr, 512);
     // Link the driver to the voice manager (which uses SummingBus)
     driver->set_stereo_callback([this](audio::AudioBuffer& buffer) {
         if (!voice_manager) return;
-        
+
         // Advance clock and SMF sequencer by this block's frame count.
         const uint32_t block_frames = static_cast<uint32_t>(buffer.frames());
         clock.advance(static_cast<int32_t>(block_frames));
@@ -147,15 +163,17 @@ struct EngineHandleImpl : public HandleBase {
                             static_cast<uint32_t>(sample_rate),
                             *voice_manager);
 
-        // Pull with diagnostic tap
-        voice_manager->pull_with_tap(buffer, tap.get());
+        // Build per-block transport context and propagate to all processors.
+        BlockContext ctx(clock);
+
+        voice_manager->pull_with_tap(buffer, tap.get(), &ctx);
 
         if (chorus_enabled && chorus) {
             chorus->pull(buffer);
         }
 
         for (auto& fx : post_chain) {
-            fx->pull(buffer);
+            fx->pull(buffer, &ctx);
         }
     });
 
@@ -452,15 +470,18 @@ int engine_process(EngineHandle handle, float* output, size_t frames) {
                                   static_cast<uint32_t>(impl->sample_rate),
                                   *impl->voice_manager);
 
+        // Build per-block transport context and propagate to all processors.
+        BlockContext ctx(impl->clock);
+
         // Stereo pull: applies voice panning via SummingBus, same path as the HAL callback.
-        impl->voice_manager->pull_with_tap(buffer, impl->tap.get());
+        impl->voice_manager->pull_with_tap(buffer, impl->tap.get(), &ctx);
 
         if (impl->chorus_enabled && impl->chorus) {
             impl->chorus->pull(buffer);
         }
 
         for (auto& fx : impl->post_chain) {
-            fx->pull(buffer);
+            fx->pull(buffer, &ctx);
         }
 
         // Interleave L/R into the caller's stereo buffer: [L0, R0, L1, R1, ...]
@@ -513,6 +534,27 @@ int engine_set_meter(EngineHandle handle, int beats_per_bar) {
     auto* impl = static_cast<EngineHandleImpl*>(handle);
     impl->clock.set_meter(static_cast<int32_t>(beats_per_bar));
     return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 27D: canonical transport API
+// ---------------------------------------------------------------------------
+
+void engine_set_tempo(EngineHandle handle, float bpm) {
+    if (!handle) return;
+    static_cast<EngineHandleImpl*>(handle)->clock.set_bpm(static_cast<double>(bpm));
+}
+
+float engine_get_tempo(EngineHandle handle) {
+    if (!handle) return 120.0f;
+    return static_cast<float>(static_cast<EngineHandleImpl*>(handle)->clock.bpm());
+}
+
+void engine_set_time_signature(EngineHandle handle, int numerator, int /*denominator*/) {
+    // denominator affects note value per beat; MusicalClock tracks beats_per_bar only.
+    // denominator is stored for future use (MIDI clock output, SMF rendering).
+    if (!handle || numerator < 1) return;
+    static_cast<EngineHandleImpl*>(handle)->clock.set_meter(static_cast<int32_t>(numerator));
 }
 
 int engine_get_musical_time(EngineHandle handle, int* bar, int* beat, int* tick) {

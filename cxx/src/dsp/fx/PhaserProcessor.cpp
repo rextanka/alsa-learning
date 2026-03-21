@@ -25,6 +25,11 @@ PhaserProcessor::PhaserProcessor(int sample_rate)
     declare_parameter({"base_freq", "Base Freq (Hz)",    20.0f, 4000.0f, 400.0f});
     declare_parameter({"stages",    "Stages (4 or 8)",    4.0f,  8.0f,  4.0f});
     declare_parameter({"wet",       "Wet/Dry",            0.0f,  1.0f,  0.5f});
+    declare_parameter({"sync",      "Tempo Sync",         0.0f,  1.0f,  0.0f, false,
+                        "0=off, 1=on. When on, 'rate' is ignored; sweep period derived from bpm+division."});
+    declare_parameter({"division",  "Beat Division",      0.0f, 10.0f,  1.0f, false,
+                        "0=whole 1=half 2=quarter 3=dotted_quarter 4=eighth 5=dotted_eighth "
+                        "6=triplet_quarter 7=sixteenth 8=triplet_eighth 9=thirtysecond 10=sixtyfourth"});
 }
 
 bool PhaserProcessor::apply_parameter(const std::string& name, float value) {
@@ -34,10 +39,19 @@ bool PhaserProcessor::apply_parameter(const std::string& name, float value) {
     if (name == "base_freq") { base_freq_.set_target(std::clamp(value, 20.0f, 4000.0f), ramp_samples_); return true; }
     if (name == "stages")    { stages_ = (value >= 6.5f) ? 8 : 4; return true; }
     if (name == "wet")       { wet_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_);   return true; }
+    if (name == "sync")      { sync_ = (value != 0.0f); return true; }
+    if (name == "division")  { division_ = std::clamp(static_cast<int>(value), 0, kDivisionCount - 1); return true; }
     return false;
 }
 
-void PhaserProcessor::do_pull(AudioBuffer& buf, const VoiceContext*) {
+void PhaserProcessor::do_pull(AudioBuffer& buf, const VoiceContext* ctx) {
+    // Tempo-sync: derive sweep rate from bpm + division each block.
+    if (sync_ && ctx) {
+        const float period = beat_time_seconds(ctx->get_bpm(), division_);
+        const float synced_rate = (period > 0.0f) ? (1.0f / period) : 0.01f;
+        rate_.set_target(std::clamp(synced_rate, 0.01f, 20.0f), ramp_samples_);
+    }
+
     const int n = static_cast<int>(buf.frames());
     rate_.advance(n);
     depth_.advance(n);

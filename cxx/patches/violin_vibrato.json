@@ -1,24 +1,70 @@
 {
-  "version": 2,
+  "version": 3,
   "name": "Violin (Vibrato)",
   "groups": [
     {
       "id": 0,
       "chain": [
-        { "type": "LFO",                 "tag": "LFO1" },
-        { "type": "COMPOSITE_GENERATOR", "tag": "VCO"  },
-        { "type": "ADSR_ENVELOPE",       "tag": "ENV"  },
-        { "type": "VCA",                 "tag": "VCA"  }
+        {
+          "type": "LFO",
+          "tag": "LFO1"
+        },
+        {
+          "type": "COMPOSITE_GENERATOR",
+          "tag": "VCO"
+        },
+        {
+          "type": "ADSR_ENVELOPE",
+          "tag": "ENV"
+        },
+        {
+          "type": "VCA",
+          "tag": "VCA"
+        }
       ],
       "connections": [
-        { "from_tag": "LFO1", "from_port": "control_out",  "to_tag": "VCO", "to_port": "pitch_cv" },
-        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"  }
+        {
+          "from_tag": "LFO1",
+          "from_port": "control_out",
+          "to_tag": "VCO",
+          "to_port": "pitch_cv"
+        },
+        {
+          "from_tag": "ENV",
+          "from_port": "envelope_out",
+          "to_tag": "VCA",
+          "to_port": "gain_cv"
+        }
       ],
       "parameters": {
-        "VCO":  { "saw_gain": 1.0, "sub_gain": 0.2 },
-        "ENV":  { "attack": 0.3, "decay": 0.0, "sustain": 1.0, "release": 0.4 },
-        "VCF":  { "cutoff": 1600.0, "res": 0.1 },
-        "LFO1": { "rate": 5.5, "intensity": 0.003 }
+        "VCO": {
+          "saw_gain": 1.0,
+          "sub_gain": 0.2
+        },
+        "ENV": {
+          "attack": 0.3,
+          "decay": 0.0,
+          "sustain": 1.0,
+          "release": 0.4
+        },
+        "VCF": {
+          "cutoff": 1600.0,
+          "res": 0.1
+        },
+        "LFO1": {
+          "rate": 5.5,
+          "intensity": 0.003
+        }
+      }
+    }
+  ],
+  "post_chain": [
+    {
+      "type": "REVERB_FREEVERB",
+      "parameters": {
+        "room_size": 0.55,
+        "damping": 0.6,
+        "wet": 0.2
       }
     }
   ]
