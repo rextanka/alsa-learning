@@ -86,7 +86,10 @@ double MidiFilePlayer::tick_to_sample(uint64_t tick,
 void MidiFilePlayer::advance(uint32_t frames, uint32_t sample_rate,
                               VoiceManager& vm) {
     if (!playing_.load(std::memory_order_relaxed)) return;
-    if (data_.events.empty() || data_.ppq == 0) return;
+    if (data_.events.empty() || data_.ppq == 0) {
+        playing_.store(false, std::memory_order_release);  // nothing to play — auto-stop
+        return;
+    }
 
     const double block_end = playhead_samples_ + static_cast<double>(frames);
 

@@ -306,9 +306,15 @@ engine_midi_play(engine);
 engine_midi_stop(engine);    // pause — playhead stays
 engine_midi_rewind(engine);  // stop + seek to start
 
-// 5. Query playhead
+// 5. Query playhead position
 uint64_t tick;
 engine_midi_get_position(engine, &tick);
+
+// 6. Poll playback state (useful for offline render loops and audible tests)
+int playing = engine_midi_is_playing(engine);
+// Returns 1 while events remain to be dispatched, 0 when done or not started.
+// MidiFilePlayer auto-stops after the last event is dispatched — no manual
+// stop() needed for end-of-file detection.
 ```
 
 Playback is sample-accurate: `MidiFilePlayer::advance(frames, sr, vm)` is called once per audio block from both the HAL callback and `engine_process`. No `sleep()` or wall-clock timing.
@@ -318,10 +324,6 @@ Playback is sample-accurate: `MidiFilePlayer::advance(frames, sr, vm)` is called
 ---
 
 ## 11. Implementation Rules
-
----
-
-## 12. Implementation Rules
 
 * **C API only for functional tests**: Functional tests use only `CInterface.h`. No C++ headers or internal types. If a behaviour cannot be exercised through the C API it is not a supported feature.
 * **RT-Safety**: Bridge lookups are read-only after engine creation. No mutex locks on the audio thread.

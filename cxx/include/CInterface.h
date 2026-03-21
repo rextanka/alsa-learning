@@ -150,6 +150,9 @@ AUDIO_API int engine_midi_rewind(EngineHandle handle);
 /** Query current playhead position in SMF ticks. */
 AUDIO_API int engine_midi_get_position(EngineHandle handle, uint64_t* tick);
 
+/** Returns 1 if MIDI file playback is active, 0 if stopped/finished/not loaded. */
+AUDIO_API int engine_midi_is_playing(EngineHandle handle);
+
 // ---------------------------------------------------------------------------
 // Phase 20: Host Device Enumeration API
 //
