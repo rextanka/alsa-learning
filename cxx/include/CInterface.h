@@ -109,10 +109,23 @@ AUDIO_API int engine_get_xrun_count(EngineHandle handle);
 // set_param(h, "lfo_rate", hz) and set_param(h, "lfo_intensity", v) configure it.
 // ---------------------------------------------------------------------------
 
-// Patch Management
-// engine_save_patch removed — patch serialisation is not implemented (Phase 15 patches are
-// authored by hand and loaded via engine_load_patch; there is no round-trip save path).
+// Patch Management (Phase 27B: full round-trip serialization)
+
+// Load a patch from a JSON file.  Returns 0 on success.
 AUDIO_API int engine_load_patch(EngineHandle handle, const char* path);
+
+// Load a patch from an in-memory JSON string (same v2/v3 format as patch files).
+// json_len may be -1 to let the implementation use strlen().  Returns 0 on success.
+AUDIO_API int engine_load_patch_json(EngineHandle handle, const char* json_str, int json_len);
+
+// Serialize the current patch (voice chain + post-chain) to a caller-supplied buffer.
+// group_index is reserved for future multi-group support; pass 0.
+// Returns bytes written (excluding NUL), or -2 if buf is too small, or -1 on error.
+AUDIO_API int engine_get_patch_json(EngineHandle handle, int group_index,
+                                    char* buf, int max_len);
+
+// Serialize the current patch to a file.  Returns 0 on success.
+AUDIO_API int engine_save_patch(EngineHandle handle, const char* path);
 
 // Set a named parameter on all voices by module tag, effective immediately.
 // e.g. engine_set_tag_param(h, "VCF", "cutoff", 1200.0f)

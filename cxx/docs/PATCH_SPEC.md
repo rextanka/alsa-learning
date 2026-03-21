@@ -1,14 +1,15 @@
-# Patch Format Specification (v2)
+# Patch Format Specification (v2 / v3)
 
-This document defines the JSON patch file format used by `engine_load_patch`. The
-authoritative patch examples are the four reference files in `cxx/patches/`.
+This document defines the JSON patch file format accepted by `engine_load_patch`,
+`engine_load_patch_json`, and produced by `engine_get_patch_json` / `engine_save_patch`.
+The authoritative patch examples are the files in `cxx/patches/`.
 
 ---
 
-## Version 2 Format
+## Version 2 Format (baseline)
 
-All current patches use `"version": 2`. The v1 format (integer-enum `modulations` array)
-is no longer supported and must not be used in new patches.
+All patches use `"version": 2` as the baseline. The v1 format (integer-enum
+`modulations` array) is no longer supported and must not be used in new patches.
 
 ### Top-Level Structure
 
@@ -24,9 +25,10 @@ is no longer supported and must not be used in new patches.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `version` | int | yes | Must be `2` |
+| `version` | int | yes | `2` (baseline) or `3` (adds `post_chain`) |
 | `name` | string | no | Human-readable patch name |
 | `groups` | array | yes | One entry per voice group (typically one) |
+| `post_chain` | array | no | **v3 only** — global post-summing effects; see §Post-Chain below |
 
 ---
 
@@ -84,7 +86,7 @@ Module type names (complete registry as of Phase 26):
 
 > `SOURCE_MIXER` is **not in the module registry** — multi-oscillator mixing is handled by `AUDIO_MIXER` (4 audio inputs, wirable) or by `COMPOSITE_GENERATOR`'s internal waveform mixer (parameter-controlled). Do not use `SOURCE_MIXER` in patch files.
 
-> **Architecture note**: `REVERB_FREEVERB`, `REVERB_FDN`, and `PHASER` are primarily used as global post-chain effects via `engine_post_chain_push`. They are also valid as per-voice chain nodes (e.g. `acid_reverb.json` places `REVERB_FDN` in the voice chain).
+> **Architecture note**: `REVERB_FREEVERB`, `REVERB_FDN`, `PHASER`, and `JUNO_CHORUS` are **global post-chain modules** — place them in the top-level `post_chain` array, not in the per-voice `chain`. `ECHO_DELAY` is timbral when used as a BBD shimmer before VCA (e.g. `cymbal.json`) and should stay in the voice chain; use `post_chain` for spacial send-echo usage (e.g. `delay_lead.json`). `DISTORTION` is a per-voice saturation effect and belongs in the voice `chain`.
 
 See MODULE_DESC.md for port names, parameter ranges, and connection rules.
 
@@ -147,6 +149,31 @@ The patch loader maps each entry as `voice.find_by_tag(tag)->apply_parameter(nam
   "VCO2": { "saw_gain": 1.0, "detune": -7.0 }
 }
 ```
+
+---
+
+## Post-Chain Array (v3)
+
+Global effects applied after all voices are summed, before the HAL output. A single instance processes the full stereo mix — not duplicated per voice.
+
+```json
+"post_chain": [
+  { "type": "JUNO_CHORUS", "parameters": { "mode": 2, "rate": 0.5, "depth": 0.6 } },
+  { "type": "REVERB_FDN",  "parameters": { "decay": 1.5, "wet": 0.25 } }
+]
+```
+
+Effects run in the order listed. Each entry:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | yes | Registered module type name |
+| `parameters` | object | no | Initial parameter values (same format as group `parameters`) |
+
+**Post-chain-appropriate module types** (global, not per-voice):
+`JUNO_CHORUS`, `REVERB_FREEVERB`, `REVERB_FDN`, `PHASER`, `ECHO_DELAY` (send echo), `DISTORTION` (bus saturation)
+
+Loading a v3 patch clears the existing post-chain before applying the file's `post_chain`. Loading a v2 patch (no `post_chain` key) also clears the post-chain.
 
 ---
 

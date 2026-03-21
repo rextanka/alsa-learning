@@ -148,7 +148,7 @@ The registry is queryable via the C API (`engine_get_module_count`, `engine_get_
   - `PORT_CONTROL` in `rate_cv` (unipolar)
   - `PORT_CONTROL` in `reset` (unipolar, lifecycle-style trigger)
   - `PORT_CONTROL` out `control_out` (bipolar)
-- **Parameters**: `rate` (0.01–20 Hz — used when `sync=false`), `intensity` (0.0–1.0), `waveform` (enum: Sine=0, Triangle=1, Square=2, Saw=3; S&H planned), `delay` (0.0–10.0s, default 0.0 — time after note gate-on before modulation onset begins; output remains zero during the delay window then ramps to full depth), `sync` (bool, default `false` — when `true`, `rate` is ignored and LFO period is derived from engine tempo + `division`), `division` (enum, default `"quarter"` — beat subdivision when `sync=true`; see Transport Clock division table in ARCH_PLAN.md §Phase 27D)
+- **Parameters**: `rate` (0.01–20 Hz — used when `sync=false`), `intensity` (0.0–1.0), `waveform` (enum: Sine=0, Triangle=1, Square=2, Saw=3; S&H planned), `delay` (0.0–10.0s, default 0.0 — time after note gate-on before modulation onset begins; output remains zero during the delay window then ramps to full depth), `sync` (bool, default `false` — when `true`, `rate` is ignored and LFO period is derived from engine tempo + `division`) *(Phase 27D — not yet implemented)*, `division` (enum, default `"quarter"` — beat subdivision when `sync=true`; see Transport Clock division table in ARCH_PLAN.md §Phase 27D) *(Phase 27D — not yet implemented)*
 - **Modulation Logic**: Routing LFO output to `pitch_cv` produces vibrato (FM); routing to VCA `gain_cv` produces tremolo (AM); routing to VCF `cutoff_cv` produces **growl** — a wavering of tone color at the LFO rate (Roland §5-5). The `delay` parameter implements the Roland DEL knob used on flute and string patches to produce built-in delayed vibrato without requiring a separate `CV_MIXER` + second `ADSR_ENVELOPE`.
 - **Tempo sync** (Phase 27D): When `sync=true`, LFO period = `(60 / bpm) × division_multiplier` beats. A `"whole"` LFO at 120 BPM completes one cycle every 2 seconds — useful for tempo-locked filter sweeps and tremolo. Rate changes from tempo automation glide smoothly.
 - **Note**: Output is `PORT_CONTROL`. Must not be patched directly into an audio mix.
@@ -446,7 +446,7 @@ These modules operate entirely in the control domain.
 - **Ports**:
   - `PORT_AUDIO` in `audio_in`
   - `PORT_AUDIO` out `audio_out`
-- **Parameters**: `rate` (0.01–10 Hz — internal LFO sweep rate, used when `sync=false`), `depth` (0.0–1.0 — sweep depth), `feedback` (0.0–0.99 — resonance; sharper notches at high values), `stages` (int: 4 or 8; snap), `base_freq` (20–2000 Hz — centre frequency of sweep), `wet` (0.0–1.0 — wet/dry blend), `sync` (bool, default `false` — when `true`, `rate` is ignored and sweep rate is derived from engine tempo + `division`), `division` (enum, default `"half"` — beat subdivision when `sync=true`; see Transport Clock division table in ARCH_PLAN.md §Phase 27D)
+- **Parameters**: `rate` (0.01–10 Hz — internal LFO sweep rate, used when `sync=false`), `depth` (0.0–1.0 — sweep depth), `feedback` (0.0–0.99 — resonance; sharper notches at high values), `stages` (int: 4 or 8; snap), `base_freq` (20–2000 Hz — centre frequency of sweep), `wet` (0.0–1.0 — wet/dry blend), `sync` (bool, default `false` — when `true`, `rate` is ignored and sweep rate is derived from engine tempo + `division`) *(Phase 27D — not yet implemented)*, `division` (enum, default `"half"` — beat subdivision when `sync=true`; see Transport Clock division table in ARCH_PLAN.md §Phase 27D) *(Phase 27D — not yet implemented)*
 - **Tempo sync** (Phase 27D): When `sync=true`, one full sweep cycle = `(60 / bpm) × division_multiplier` seconds. A `"whole"` phaser at 120 BPM sweeps once every 2 seconds.
 - **Architecture Note**: **Global post-chain module only** — added via `engine_post_chain_push(h, "PHASER")`.
 
@@ -459,13 +459,13 @@ These modules operate entirely in the control domain.
   - `PORT_CONTROL` in `time_cv` (unipolar)
   - `PORT_CONTROL` in `feedback_cv` (unipolar)
 - **Parameters**:
-  - `time` (0.0–2.0s — absolute delay time; ignored when `sync=true`)
+  - `time` (0.0–5.0s — absolute delay time; ignored when `sync=true`)
   - `feedback` (0.0–0.99 — feedback gain; >0 produces cascading repeats that decay geometrically; 0.0 = single echo, 0.5 = ~3–4 audible repeats, 0.85 = long wash)
   - `mix` (0.0–1.0 — wet/dry blend; 0.0 = dry only, 1.0 = wet only, 0.4 = typical slapback)
   - `mod_rate` (0.1–20 Hz, default 0.0 — rate of the built-in LFO that sweeps delay time; 0.0 disables modulation)
   - `mod_intensity` (0.0–1.0, default 0.0 — depth of delay-time sweep; at 1.0 the delay oscillates ±50% of `time` at `mod_rate`, producing metallic shimmer — see Roland Cymbal patch, Vol 2 §3-5, Fig 3-16)
-  - `sync` (bool, default `false` — when `true`, `time` is ignored and delay length = `(60 / bpm) × division_multiplier`)
-  - `division` (enum, default `"quarter"` — beat subdivision when `sync=true`; see Transport Clock division table in ARCH_PLAN.md §Phase 27D)
+  - `sync` (bool, default `false` — when `true`, `time` is ignored and delay length = `(60 / bpm) × division_multiplier`) *(Phase 27D — not yet implemented)*
+  - `division` (enum, default `"quarter"` — beat subdivision when `sync=true`; see Transport Clock division table in ARCH_PLAN.md §Phase 27D) *(Phase 27D — not yet implemented)*
 - **Tempo sync** (Phase 27D): When `sync=true`, delay time tracks engine BPM in real time (SmoothedParam ramp to avoid click on tempo change). `"dotted_eighth"` (0.75×) at 120 BPM = 375 ms — the classic U2/Edge floating delay. `"quarter"` = one echo per beat. `"eighth"` = slapback.
 - **Repeat count**: Controlled by `feedback`. With `sync=true` and `feedback=0.65`, repeats decay by ~65% each cycle — at `"quarter"` division and 120 BPM you hear ~4 distinct repeats before they fall below noise. Set `feedback=0.0` for a clean single echo.
 - **Note**: Internal circular delay buffer handles self-feedback — no graph-level feedback connection needed.
