@@ -954,6 +954,11 @@ int engine_midi_get_position(EngineHandle handle, uint64_t* tick) {
     return 0;
 }
 
+int engine_midi_is_playing(EngineHandle handle) {
+    if (!handle) return 0;
+    return static_cast<EngineHandleImpl*>(handle)->midi_player.is_playing() ? 1 : 0;
+}
+
 // ---------------------------------------------------------------------------
 // Phase 19: Global Post-Processing Chain
 // ---------------------------------------------------------------------------

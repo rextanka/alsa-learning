@@ -295,12 +295,79 @@ if(BUILD_TESTING)
     add_functional_gtest(host_device_tests test_host_devices.cpp)
     add_functional_gtest(strings_postchain_tests test_strings_postchain.cpp)
 
+    # ---------------------------------------------------------------------------
+    # patch_test — generic patch + MIDI driver (audible playback + --smoke mode)
+    # ---------------------------------------------------------------------------
+    add_executable(patch_test tests/functional/patch_test.cpp)
+    target_include_directories(patch_test PRIVATE tests)
+    target_link_libraries(patch_test PRIVATE audio_engine nlohmann_json::nlohmann_json)
+
     # Copy patch JSON files and MIDI test data to the binary output directory
     # so tests can be run directly from build/bin without extra arguments.
+    # patches/ and assets/midi/ are stable — configure-time copy is sufficient.
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/patches
          DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets/midi
          DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+    # midi/ (gen_test_midi.py output) changes whenever fixtures are regenerated.
+    # Use a build-time custom target so 'cmake --build' always re-syncs the files.
+    file(GLOB MIDI_FIXTURE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/midi/*.mid)
+    add_custom_target(sync_midi_fixtures ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_CURRENT_SOURCE_DIR}/midi
+                ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/midi
+        COMMENT "Syncing midi/ fixtures to build output"
+        VERBATIM)
+    add_dependencies(patch_test sync_midi_fixtures)
+
+    # ---------------------------------------------------------------------------
+    # Patch smoke tests — offline render, no audio hardware, one per patch
+    # ---------------------------------------------------------------------------
+    function(add_patch_smoke name)
+        add_test(NAME smoke_${name}
+                 COMMAND patch_test --smoke
+                         --patch patches/${name}.json
+                         --midi  midi/${name}.mid
+                 WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    endfunction()
+
+    add_patch_smoke(acid_reverb)
+    add_patch_smoke(banjo)
+    add_patch_smoke(bass_drum)
+    add_patch_smoke(bell)
+    add_patch_smoke(bongo_drums)
+    add_patch_smoke(bowed_bass)
+    add_patch_smoke(brass)
+    add_patch_smoke(clarinet)
+    add_patch_smoke(cow_bell)
+    add_patch_smoke(cymbal)
+    add_patch_smoke(delay_lead)
+    add_patch_smoke(dog_whistle)
+    add_patch_smoke(english_horn)
+    add_patch_smoke(flute)
+    add_patch_smoke(glockenspiel)
+    add_patch_smoke(gong)
+    add_patch_smoke(gong_full)
+    add_patch_smoke(group_strings)
+    add_patch_smoke(harpsichord)
+    add_patch_smoke(juno_pad)
+    add_patch_smoke(juno_strings)
+    add_patch_smoke(organ_drawbar)
+    add_patch_smoke(percussion_noise)
+    add_patch_smoke(pizzicato_violin)
+    add_patch_smoke(rain)
+    add_patch_smoke(reverb_pad)
+    add_patch_smoke(sh_bass)
+    add_patch_smoke(snare_drum)
+    add_patch_smoke(strings_chorus_reverb)
+    add_patch_smoke(tb_bass)
+    add_patch_smoke(thunder)
+    add_patch_smoke(tom_tom)
+    add_patch_smoke(violin_vibrato)
+    add_patch_smoke(whistling)
+    add_patch_smoke(wind_surf)
+    add_patch_smoke(wood_blocks)
 
     add_test(NAME Functional_Phase10 COMMAND Phase10Tests)
     add_test(NAME Functional_Timing COMMAND TimingValidation)
