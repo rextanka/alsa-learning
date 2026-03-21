@@ -7,19 +7,40 @@ and *Practical Synthesis for Electronic Music, Vol. 2* (2nd Ed., R. D. Graham) w
 
 ---
 
-## 1  The Three Qualities of Sound
+## 1  The Dimensions of Musical Sound
 
-All synthesis reduces to three audible properties — pitch, timbre, and loudness — each controlled
-by a dedicated module family.
+A single sustained tone has three purely acoustic properties — pitch, timbre, and loudness.
+Music requires a fourth dimension: **temporality**, the organization of sound in time.
+This library models all four:
 
-| Quality  | Roland block | Library module(s)                                                                           |
-|----------|--------------|---------------------------------------------------------------------------------------------|
-| Pitch    | VCO          | `COMPOSITE_GENERATOR`, `DRAWBAR_ORGAN`, `WHITE_NOISE`                                       |
-| Timbre   | VCF          | `MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`, `HIGH_PASS_FILTER`, `BAND_PASS_FILTER` |
-| Loudness | VCA + ADSR   | `VCA`, `ADSR_ENVELOPE`, `AD_ENVELOPE`                                                       |
+| Dimension   | What it governs                                             | Primary module family |
+|-------------|-------------------------------------------------------------|-----------------------|
+| Pitch       | Frequency and harmonic content of the fundamental          | `COMPOSITE_GENERATOR`, `DRAWBAR_ORGAN`, `WHITE_NOISE` |
+| Timbre      | Spectral shape — which overtones reach the listener        | `MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`, `HIGH_PASS_FILTER`, `BAND_PASS_FILTER` |
+| Dynamics    | Amplitude level and how it evolves within a note           | `VCA`, `ADSR_ENVELOPE`, `AD_ENVELOPE` |
+| Temporality | Time structure — tempo, meter, beat-relative timing, modulation rate | `LFO`, `ECHO_DELAY`, `PHASER`, engine transport (`MusicalClock`) |
 
-The core design principle — a chain of `Processor` nodes pulled in order — directly mirrors the
-VCO → VCF → VCA signal flow diagrams in the Roland book.
+The core design — a chain of `Processor` nodes pulled in order — directly mirrors the
+VCO → VCF → VCA signal flow diagrams in the Roland synthesis texts.
+
+### Envelopes span dynamics and temporality
+
+`ADSR_ENVELOPE` and `AD_ENVELOPE` occupy both dimensions simultaneously: their *level*
+parameters (peak level, sustain level) are dynamic — they determine how loud; their *timing*
+parameters (attack time, decay time, release time) are temporal — they determine for how long.
+This is why envelopes are the most musically expressive single module type.
+
+### Two layers of temporality
+
+**Local temporal evolution** governs how a single note changes within its lifetime: an envelope
+fades in and out, an LFO cycles through a vibrato wave, an echo trail rings out. These processors
+are self-contained — they require no external clock.
+
+**Global temporal structure** governs where notes fall in musical time: tempo (beats per minute),
+meter (beats per bar), and beat position. The engine's `MusicalClock` is the authoritative source
+for global time. When a tempo-sync parameter is engaged on an LFO or delay, its rate is expressed
+as a beat division (e.g. "dotted quarter" = 1.5 beats) and recalculated whenever the clock tempo
+changes — the same patch sounds different at 80 BPM versus 140 BPM.
 
 ---
 

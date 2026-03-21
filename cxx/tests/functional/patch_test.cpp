@@ -237,8 +237,8 @@ static int run_audible(EngineHandle engine,
     while (engine_midi_is_playing(engine))
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-    // Let reverb tail ring out (1 second)
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    // Let envelope release + reverb tail ring out (3 seconds)
+    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
     engine_stop(engine);
     std::cout << "[play] Done.\n";

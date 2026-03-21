@@ -1,24 +1,72 @@
 {
-  "version": 2,
+  "version": 3,
   "name": "Clarinet",
   "groups": [
     {
       "id": 0,
       "chain": [
-        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
-        { "type": "SH_FILTER",           "tag": "VCF" },
-        { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
-        { "type": "VCA",                 "tag": "VCA" }
+        {
+          "type": "COMPOSITE_GENERATOR",
+          "tag": "VCO"
+        },
+        {
+          "type": "SH_FILTER",
+          "tag": "VCF"
+        },
+        {
+          "type": "ADSR_ENVELOPE",
+          "tag": "ENV"
+        },
+        {
+          "type": "VCA",
+          "tag": "VCA"
+        }
       ],
       "connections": [
-        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in" },
-        { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in" },
-        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"  }
+        {
+          "from_tag": "VCO",
+          "from_port": "audio_out",
+          "to_tag": "VCF",
+          "to_port": "audio_in"
+        },
+        {
+          "from_tag": "VCF",
+          "from_port": "audio_out",
+          "to_tag": "VCA",
+          "to_port": "audio_in"
+        },
+        {
+          "from_tag": "ENV",
+          "from_port": "envelope_out",
+          "to_tag": "VCA",
+          "to_port": "gain_cv"
+        }
       ],
       "parameters": {
-        "VCO": { "pulse_gain": 1.0, "pulse_width": 0.5 },
-        "VCF": { "cutoff": 2200.0, "resonance": 0.3 },
-        "ENV": { "attack": 0.012, "decay": 0.0, "sustain": 1.0, "release": 0.06 }
+        "VCO": {
+          "pulse_gain": 1.0,
+          "pulse_width": 0.5
+        },
+        "VCF": {
+          "cutoff": 2200.0,
+          "resonance": 0.3
+        },
+        "ENV": {
+          "attack": 0.012,
+          "decay": 0.0,
+          "sustain": 1.0,
+          "release": 0.06
+        }
+      }
+    }
+  ],
+  "post_chain": [
+    {
+      "type": "REVERB_FREEVERB",
+      "parameters": {
+        "room_size": 0.55,
+        "damping": 0.6,
+        "wet": 0.2
       }
     }
   ]

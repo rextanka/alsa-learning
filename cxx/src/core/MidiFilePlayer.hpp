@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SmfParser.hpp"
+#include "MusicalClock.hpp"
 #include <atomic>
 #include <cstdint>
 
@@ -50,6 +51,15 @@ public:
      */
     void rewind();
 
+    /**
+     * @brief Register the engine's MusicalClock so that FF 51 tempo meta-events
+     * in the SMF file are applied to the clock during playback (Phase 27D).
+     *
+     * Call once after constructing EngineHandleImpl, before any load()/play().
+     * Pass nullptr to detach.
+     */
+    void set_clock(MusicalClock* clock) noexcept { clock_ = clock; }
+
     bool is_loaded()  const noexcept { return !data_.events.empty(); }
     bool is_playing() const noexcept { return playing_.load(std::memory_order_relaxed); }
 
@@ -85,6 +95,8 @@ private:
     std::atomic<bool> playing_{false};
     double            playhead_samples_{0.0}; ///< Audio-thread only.
     size_t            next_event_idx_{0};     ///< Audio-thread only.
+    size_t            next_tempo_idx_{0};     ///< Audio-thread only — tracks tempo_map cursor.
+    MusicalClock*     clock_{nullptr};        ///< Non-owning; set by set_clock().
 };
 
 } // namespace audio

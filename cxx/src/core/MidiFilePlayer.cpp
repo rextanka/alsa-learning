@@ -18,6 +18,7 @@ void MidiFilePlayer::load(MidiFileData data) {
     data_             = std::move(data);
     playhead_samples_ = 0.0;
     next_event_idx_   = 0;
+    next_tempo_idx_   = 0;
 }
 
 void MidiFilePlayer::play() {
@@ -32,6 +33,7 @@ void MidiFilePlayer::rewind() {
     // Caller must stop() first to avoid a race on playhead state.
     playhead_samples_ = 0.0;
     next_event_idx_   = 0;
+    next_tempo_idx_   = 0;
 }
 
 uint64_t MidiFilePlayer::position_ticks() const noexcept {
@@ -117,6 +119,18 @@ void MidiFilePlayer::advance(uint32_t frames, uint32_t sample_rate,
         vm.processMidiBytes(msg, msg_len, offset);
 
         ++next_event_idx_;
+    }
+
+    // Apply any FF 51 tempo events that fall within this block to the engine clock.
+    if (clock_) {
+        while (next_tempo_idx_ < data_.tempo_map.size()) {
+            const auto& te = data_.tempo_map[next_tempo_idx_];
+            const double te_sample = tick_to_sample(te.abs_tick, sample_rate);
+            if (te_sample >= block_end) break;
+            const double bpm = 60.0e6 / static_cast<double>(te.us_per_beat);
+            clock_->set_bpm(bpm);
+            ++next_tempo_idx_;
+        }
     }
 
     playhead_samples_ = block_end;

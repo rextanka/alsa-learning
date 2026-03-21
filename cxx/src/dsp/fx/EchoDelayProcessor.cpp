@@ -31,6 +31,11 @@ EchoDelayProcessor::EchoDelayProcessor(int sample_rate)
     declare_parameter({"mix",           "Wet/Dry Mix",     0.0f,  1.0f,  0.5f});
     declare_parameter({"mod_rate",      "Mod Rate (Hz)",   0.0f, 20.0f,  0.0f});
     declare_parameter({"mod_intensity", "Mod Intensity",   0.0f,  1.0f,  0.0f});
+    declare_parameter({"sync",          "Tempo Sync",      0.0f,  1.0f,  0.0f,  false,
+                        "0=off, 1=on. When on, 'time' is ignored; delay is derived from bpm+division."});
+    declare_parameter({"division",      "Beat Division",   0.0f, 10.0f,  2.0f,  false,
+                        "0=whole 1=half 2=quarter 3=dotted_quarter 4=eighth 5=dotted_eighth "
+                        "6=triplet_quarter 7=sixteenth 8=triplet_eighth 9=thirtysecond 10=sixtyfourth"});
 }
 
 bool EchoDelayProcessor::apply_parameter(const std::string& name, float value) {
@@ -59,10 +64,24 @@ bool EchoDelayProcessor::apply_parameter(const std::string& name, float value) {
         mod_intensity_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_);
         return true;
     }
+    if (name == "sync") {
+        sync_ = (value != 0.0f);
+        return true;
+    }
+    if (name == "division") {
+        division_ = std::clamp(static_cast<int>(value), 0, kDivisionCount - 1);
+        return true;
+    }
     return false;
 }
 
-void EchoDelayProcessor::do_pull(std::span<float> output, const VoiceContext*) {
+void EchoDelayProcessor::do_pull(std::span<float> output, const VoiceContext* ctx) {
+    // Tempo-sync: recompute delay time from bpm + division each block.
+    if (sync_ && ctx) {
+        const float target = beat_time_seconds(ctx->get_bpm(), division_);
+        delay_time_.set_target(std::clamp(target, 0.001f, 5.0f), ramp_samples_);
+    }
+
     const int n = static_cast<int>(output.size());
     delay_time_.advance(n);
     feedback_.advance(n);

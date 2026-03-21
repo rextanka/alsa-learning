@@ -93,6 +93,14 @@ AUDIO_API int engine_stop(EngineHandle handle);
 AUDIO_API int engine_set_bpm(EngineHandle handle, double bpm);
 AUDIO_API double engine_get_bpm(EngineHandle handle);
 AUDIO_API int engine_set_meter(EngineHandle handle, int beats_per_bar);
+
+/* --- Phase 27D: canonical transport API ---------------------------------- */
+/** Set engine tempo. Overridden by SMF FF 51 tempo events during playback. */
+AUDIO_API void engine_set_tempo(EngineHandle handle, float bpm);
+/** Query current tempo (reflects SMF file tempo if playing). */
+AUDIO_API float engine_get_tempo(EngineHandle handle);
+/** Set time signature. numerator = beats per bar; denominator stored for future use. */
+AUDIO_API void engine_set_time_signature(EngineHandle handle, int numerator, int denominator);
 AUDIO_API int engine_get_musical_time(EngineHandle handle, int* bar, int* beat, int* tick);
 AUDIO_API int engine_get_total_ticks(EngineHandle handle, int64_t* ticks);
 AUDIO_API int engine_note_on_name(EngineHandle handle, const char* note_name, float velocity);

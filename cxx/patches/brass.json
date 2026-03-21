@@ -1,21 +1,56 @@
 {
-  "version": 2,
+  "version": 3,
   "name": "Brass / Horn",
   "groups": [
     {
       "id": 0,
       "chain": [
-        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
-        { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
-        { "type": "VCA",                 "tag": "VCA" }
+        {
+          "type": "COMPOSITE_GENERATOR",
+          "tag": "VCO"
+        },
+        {
+          "type": "ADSR_ENVELOPE",
+          "tag": "ENV"
+        },
+        {
+          "type": "VCA",
+          "tag": "VCA"
+        }
       ],
       "connections": [
-        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv" }
+        {
+          "from_tag": "ENV",
+          "from_port": "envelope_out",
+          "to_tag": "VCA",
+          "to_port": "gain_cv"
+        }
       ],
       "parameters": {
-        "VCO": { "saw_gain": 1.0, "pulse_gain": 0.3 },
-        "ENV": { "attack": 0.01, "decay": 0.08, "sustain": 0.65, "release": 0.15 },
-        "VCF": { "cutoff": 3200.0, "res": 0.28 }
+        "VCO": {
+          "saw_gain": 1.0,
+          "pulse_gain": 0.3
+        },
+        "ENV": {
+          "attack": 0.01,
+          "decay": 0.08,
+          "sustain": 0.65,
+          "release": 0.15
+        },
+        "VCF": {
+          "cutoff": 3200.0,
+          "res": 0.28
+        }
+      }
+    }
+  ],
+  "post_chain": [
+    {
+      "type": "REVERB_FREEVERB",
+      "parameters": {
+        "room_size": 0.55,
+        "damping": 0.6,
+        "wet": 0.2
       }
     }
   ]

@@ -1,28 +1,33 @@
 {
-  "version": 2,
+  "version": 3,
   "name": "Cymbal",
   "groups": [
     {
       "id": 0,
       "chain": [
         { "type": "WHITE_NOISE",   "tag": "NOISE" },
-        { "type": "MOOG_FILTER",   "tag": "VCF"   },
-        { "type": "ADSR_ENVELOPE", "tag": "ENV"   },
+        { "type": "MOOG_FILTER",   "tag": "VCF1"  },
+        { "type": "MOOG_FILTER",   "tag": "VCF2"  },
         { "type": "ECHO_DELAY",    "tag": "DLY"   },
+        { "type": "ADSR_ENVELOPE", "tag": "ENV"   },
+        { "type": "CV_SPLITTER",   "tag": "SPLIT" },
         { "type": "VCA",           "tag": "VCA"   }
       ],
       "connections": [
-        { "from_tag": "NOISE", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in" },
-        { "from_tag": "VCF",   "from_port": "audio_out",    "to_tag": "DLY", "to_port": "audio_in" },
-        { "from_tag": "DLY",   "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in" },
-        { "from_tag": "ENV",   "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"  },
-        { "from_tag": "DLY",   "from_port": "audio_out",    "to_tag": "DLY", "to_port": "audio_in", "feedback": true }
+        { "from_tag": "NOISE",  "from_port": "audio_out",    "to_tag": "VCF1",  "to_port": "audio_in"  },
+        { "from_tag": "VCF1",   "from_port": "audio_out",    "to_tag": "VCF2",  "to_port": "audio_in"  },
+        { "from_tag": "VCF2",   "from_port": "audio_out",    "to_tag": "DLY",   "to_port": "audio_in"  },
+        { "from_tag": "DLY",    "from_port": "audio_out",    "to_tag": "VCA",   "to_port": "audio_in"  },
+        { "from_tag": "ENV",    "from_port": "envelope_out", "to_tag": "SPLIT", "to_port": "cv_in"     },
+        { "from_tag": "SPLIT",  "from_port": "cv_out_1",     "to_tag": "VCA",   "to_port": "gain_cv"   },
+        { "from_tag": "SPLIT",  "from_port": "cv_out_2",     "to_tag": "VCF1",  "to_port": "cutoff_cv" }
       ],
       "parameters": {
         "NOISE": { "color": 0 },
-        "VCF":   { "cutoff": 6000.0, "resonance": 0.35, "hpf_cutoff": 2 },
-        "ENV":   { "attack": 0.001, "decay": 1.2, "sustain": 0.0, "release": 0.6 },
-        "DLY":   { "time": 0.025, "feedback": 0.55, "mix": 0.5, "mod_rate": 6.5, "mod_intensity": 0.4 }
+        "VCF1":  { "cutoff": 10000.0, "resonance": 0.2,  "hpf_cutoff": 3 },
+        "VCF2":  { "cutoff": 8000.0,  "resonance": 0.92, "hpf_cutoff": 3 },
+        "ENV":   { "attack": 0.001, "decay": 1.0, "sustain": 0.0, "release": 0.3 },
+        "DLY":   { "time": 0.022, "feedback": 0.82, "mix": 0.65, "mod_rate": 12.0, "mod_intensity": 0.6 }
       }
     }
   ]

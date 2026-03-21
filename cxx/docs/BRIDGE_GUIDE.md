@@ -476,7 +476,89 @@ engine_file_writer_flush(engine);
 
 ---
 
-## 14. Removed / Deprecated API
+## 14. Transport Clock & Tempo-Sync Effects (Phase 27D)
+
+The engine owns an authoritative `MusicalClock` that all tempo-sensitive processors read
+each block. Two write paths, one read path:
+
+- **Host/UI write** — `engine_set_tempo` / `engine_set_time_signature` set tempo and meter.
+- **SMF write** — `MidiFilePlayer` extracts FF 51 Set Tempo meta-events during playback and
+  automatically updates the clock. Host-set tempo is overridden while a file is playing.
+- **Processor read** — `BlockContext` (a concrete `VoiceContext`) carries `bpm` and
+  `beats_per_bar` pre-computed once per block. Processors receive it inside `do_pull()` —
+  zero allocations, zero locks.
+
+### New C API
+
+```c
+// Set tempo manually. Ignored while an SMF file with FF 51 events is playing.
+void engine_set_tempo(EngineHandle handle, float bpm);
+
+// Query current live tempo (reflects SMF tempo if playing, else manually set value).
+float engine_get_tempo(EngineHandle handle);
+
+// Set time signature. numerator = beats per bar; denominator reserved for future use.
+void engine_set_time_signature(EngineHandle handle, int numerator, int denominator);
+```
+
+> The legacy `engine_set_bpm`, `engine_get_bpm`, and `engine_set_meter` remain available
+> as aliases but prefer the new names for new code.
+
+### Beat Division Vocabulary
+
+Pass `division` as a float index 0–10 via `engine_post_chain_set_param` or
+`engine_set_tag_param`:
+
+| Index | Name | Multiplier | At 120 BPM |
+|-------|------|-----------|------------|
+| 0 | `whole` | 4.0 | 2000 ms |
+| 1 | `half` | 2.0 | 1000 ms |
+| 2 | `quarter` | 1.0 | 500 ms |
+| 3 | `dotted_quarter` | 1.5 | 750 ms |
+| 4 | `eighth` | 0.5 | 250 ms |
+| 5 | `dotted_eighth` | 0.75 | 375 ms |
+| 6 | `triplet_quarter` | 0.667 | 333 ms |
+| 7 | `sixteenth` | 0.25 | 125 ms |
+| 8 | `triplet_eighth` | 0.333 | 167 ms |
+| 9 | `thirtysecond` | 0.125 | 62.5 ms |
+| 10 | `sixtyfourth` | 0.0625 | 31.25 ms |
+
+`delay_time_seconds = (60 / bpm) × multiplier`
+
+### Usage Example — Tempo-Synced Delay
+
+```c
+// Build patch (VCO → ENV → VCA)
+engine_add_module(engine, "COMPOSITE_GENERATOR", "VCO");
+engine_add_module(engine, "ADSR_ENVELOPE",        "ENV");
+engine_add_module(engine, "VCA",                  "VCA");
+engine_connect_ports(engine, "ENV", "envelope_out", "VCA", "gain_cv");
+engine_bake(engine);
+
+// Add synced delay to global post-chain
+int dly = engine_post_chain_push(engine, "ECHO_DELAY");
+engine_post_chain_set_param(engine, dly, "sync",     1.0f);
+engine_post_chain_set_param(engine, dly, "division", 5.0f); // dotted_eighth → "Edge" delay
+engine_post_chain_set_param(engine, dly, "feedback", 0.4f);
+engine_post_chain_set_param(engine, dly, "mix",      0.35f);
+
+// Set tempo — delay time updates every block automatically
+engine_set_tempo(engine, 120.0f);
+```
+
+### Synced Processors
+
+| Module | Parameter | Default | Notes |
+|--------|-----------|---------|-------|
+| `ECHO_DELAY` | `sync` / `division` | 0 / 2 | Delay time derived from clock; `time` param ignored when `sync=1` |
+| `LFO` | `sync` / `division` | 0 / 2 | LFO period = one beat-division cycle; `rate` param ignored when `sync=1` |
+| `PHASER` | `sync` / `division` | 0 / 1 | Sweep period; `rate` param ignored when `sync=1` |
+
+When `sync=0` (default) behaviour is identical to pre-Phase 27D — fully backward-compatible.
+
+---
+
+## 15. Removed / Deprecated API
 
 | Function | Status | Replacement |
 |----------|--------|-------------|

@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "name": "Group Strings",
   "groups": [
     {
@@ -31,6 +31,16 @@
         "ENV":  { "attack": 0.35, "decay": 0.1, "sustain": 0.85, "release": 0.5 },
         "LFO1": { "rate": 0.35, "intensity": 0.002 }
       }
+    }
+  ],
+  "post_chain": [
+    {
+      "type": "JUNO_CHORUS",
+      "parameters": {}
+    },
+    {
+      "type": "REVERB_FREEVERB",
+      "parameters": { "room_size": 0.7, "damping": 0.5, "wet": 0.3 }
     }
   ]
 }

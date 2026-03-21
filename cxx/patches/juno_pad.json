@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "name": "Juno Pad",
   "groups": [
     {
@@ -19,9 +19,14 @@
       "parameters": {
         "VCO":  { "saw_gain": 1.0, "sine_gain": 0.3 },
         "ENV":  { "attack": 0.4, "decay": 0.1, "sustain": 0.8, "release": 0.6 },
-        "VCF":  { "cutoff": 2000.0, "res": 0.1 },
         "LFO1": { "rate": 0.5, "intensity": 0.004 }
       }
+    }
+  ],
+  "post_chain": [
+    {
+      "type": "JUNO_CHORUS",
+      "parameters": {}
     }
   ]
 }
