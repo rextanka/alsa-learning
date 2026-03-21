@@ -67,6 +67,18 @@ bool Voice::set_tag_parameter(const std::string& tag, const std::string& name, f
     return false;
 }
 
+bool Voice::set_tag_string_parameter(const std::string& tag, const std::string& name,
+                                      const std::string& value) {
+    auto* proc = find_by_tag(tag);
+    if (proc) return proc->apply_string_parameter(name, value);
+    return false;
+}
+
+void Voice::flush_all_processors() {
+    for (auto& entry : signal_chain_) entry.node->flush_to_disk();
+    for (auto& entry : mod_sources_)  entry.node->flush_to_disk();
+}
+
 void Voice::note_on(double frequency) {
     active_ = true;
     base_frequency_ = frequency;
@@ -377,9 +389,25 @@ void Voice::bake() {
         throw std::logic_error(
             "Voice::bake() failed: first node in signal_chain_ must output PORT_AUDIO");
     }
-    if (signal_chain_.back().node->output_port_type() != PortType::PORT_AUDIO) {
-        throw std::logic_error(
-            "Voice::bake() failed: last node in signal_chain_ must output PORT_AUDIO");
+    {
+        auto& back = signal_chain_.back();
+        // A SINK has audio_in but no audio_out (Phase 27C: AUDIO_OUTPUT, AUDIO_FILE_WRITER).
+        // Allow it as the last chain node — inline audio from the predecessor passes through.
+        const bool is_sink = std::any_of(
+            back.node->ports().begin(), back.node->ports().end(),
+            [](const PortDescriptor& p) {
+                return p.type == PortType::PORT_AUDIO && p.dir == PortDirection::IN;
+            }) &&
+            std::none_of(
+            back.node->ports().begin(), back.node->ports().end(),
+            [](const PortDescriptor& p) {
+                return p.type == PortType::PORT_AUDIO && p.dir == PortDirection::OUT;
+            });
+        if (!is_sink && back.node->output_port_type() != PortType::PORT_AUDIO) {
+            throw std::logic_error(
+                "Voice::bake() failed: last node must output PORT_AUDIO or be a SINK "
+                "(audio_in with no audio_out)");
+        }
     }
     // Phase 15: validate named port connections
     static constexpr std::string_view kLifecyclePorts[] = {"gate_in", "trigger_in"};

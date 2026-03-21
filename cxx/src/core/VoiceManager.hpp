@@ -88,6 +88,18 @@ public:
     void set_tag_parameter(const std::string& tag, const std::string& name, float value);
 
     /**
+     * @brief Set a named string parameter on the specific tagged module across all voices.
+     * Calls Processor::apply_string_parameter(). Used for e.g. AUDIO_FILE_READER "path".
+     */
+    void set_tag_string_parameter(const std::string& tag, const std::string& name, const std::string& value);
+
+    /**
+     * @brief Call flush_to_disk() on every processor in all voice chains.
+     * Used by engine_file_writer_flush() to flush all I/O writers.
+     */
+    void flush_all_processors();
+
+    /**
      * @brief Set a named parameter across all voices in a specific group.
      */
     void set_group_parameter(int group_id, const std::string& name, float value);

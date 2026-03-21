@@ -44,6 +44,10 @@
 #include "../dsp/fx/PhaserProcessor.hpp"
 #include "../dsp/fx/JunoChorus.hpp"
 #include "../dsp/fx/DistortionProcessor.hpp"
+#include "../dsp/io/AudioOutputProcessor.hpp"
+#include "../dsp/io/AudioInputProcessor.hpp"
+#include "../dsp/io/AudioFileReaderProcessor.hpp"
+#include "../dsp/io/AudioFileWriterProcessor.hpp"
 
 namespace audio {
 
@@ -199,6 +203,26 @@ void register_builtin_processors() {
         "DISTORTION",
         "Guitar-style distortion with pre/post emphasis and 4x oversampling — drive + character blend",
         [](int sr) { return std::make_unique<DistortionProcessor>(sr); }
+    );
+    reg.register_module(
+        "AUDIO_OUTPUT",
+        "Explicit audio chain terminator — marks the final output node for patch editors",
+        [](int sr) { return std::make_unique<AudioOutputProcessor>(sr); }
+    );
+    reg.register_module(
+        "AUDIO_INPUT",
+        "Hardware line/microphone input source — outputs silence until HAL integration (Phase 25+)",
+        [](int sr) { return std::make_unique<AudioInputProcessor>(sr); }
+    );
+    reg.register_module(
+        "AUDIO_FILE_READER",
+        "WAV/AIFF file playback source — loads at path-set time, loops optionally",
+        [](int sr) { return std::make_unique<AudioFileReaderProcessor>(sr); }
+    );
+    reg.register_module(
+        "AUDIO_FILE_WRITER",
+        "WAV file recorder sink — captures inline audio and writes to disk in real time",
+        [](int sr) { return std::make_unique<AudioFileWriterProcessor>(sr); }
     );
 }
 

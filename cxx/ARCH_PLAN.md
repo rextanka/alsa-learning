@@ -153,6 +153,28 @@ The project maintains a strict separation between **Platform HAL** and **Core DS
 
 ---
 
+## External Dependency Policy
+
+**Criteria for accepting an external dependency** — all four must hold:
+
+1. **Peripheral to library purpose**: The library's core value is DSP/synthesis. Dependencies that handle I/O formats, serialisation, or testing infrastructure are peripheral and acceptable. A linear algebra library or audio effects DSP library would be in-scope and therefore *not* acceptable.
+2. **High hand-roll cost**: Rolling our own would require substantial ongoing maintenance (e.g., codec correctness, cross-platform file I/O edge cases) with no learning benefit.
+3. **Well-established**: Has a stable public API, active maintenance, and widespread industry use. Not an experimental or single-author project.
+4. **Cross-platform**: Builds cleanly on macOS, Linux, and Windows without platform-specific workarounds on our side.
+
+**Approved dependencies:**
+
+| Dependency | Purpose | How pulled in |
+|---|---|---|
+| `nlohmann/json` | Patch serialisation — JSON parse/emit | CMake `FetchContent` |
+| `libsndfile` | `AUDIO_FILE_READER`/`AUDIO_FILE_WRITER` — WAV/AIFF file I/O | CMake `FetchContent` (Phase 27C) |
+| `libsamplerate` | Sample-rate conversion in `AUDIO_FILE_READER` | CMake `FetchContent` (Phase 27C) |
+| `GoogleTest` | Unit/integration test framework | CMake `FetchContent` |
+
+**Windows note**: All approved dependencies are available on Windows via vcpkg or their own CMake builds. `FetchContent` pulls source and builds from scratch — no vcpkg required for CI. The only Windows-specific gap is the WASAPI audio driver, which is explicitly deferred (see Cross-Platform Strategy).
+
+---
+
 ## Audio Terminology
 
 Precise use of these terms is mandatory throughout all source code, documentation, and API contracts. Ambiguity between "sample" and "frame" is a common source of buffer-sizing bugs.
@@ -235,7 +257,7 @@ The engine supports **44100 Hz and 48000 Hz** exclusively. These are the two rat
 | 27A   | **Module Introspection API**: `module_get_descriptor_json(type_name, buf, max_len)` and `module_registry_get_all_json(buf, max_len)` C API; returns JSON descriptor populated from Phase 26 extended declarations (`usage_notes`, parameter/port descriptions). Sorted alphabetically; no `EngineHandle` required — registry is read-only after static init. Works natively with Swift `JSONDecoder` and React/Tauri `JSON.parse`. `test_module_registry.cpp` (unit, 20 tests) + `test_module_introspection.cpp` (integration, 10 tests) — all structural invariants, no hardcoded module names. 51/51 tests pass. | Complete |
 | 27B   | **Patch Serialization**: `engine_get_patch_json(engine, group_index, buf, max_len)`, `engine_load_patch_json(engine, json, len)`, `engine_save_patch(engine, path)` — full round-trip patch serialization. Serialization state held in `EngineHandleImpl` (bridge layer): `baked_modules`/`baked_connections` snapshot on `engine_bake()`; `tag_param_cache` accumulates every `set_tag_parameter()` call; `post_chain_type_names`/`post_chain_param_cache` mirror the post-chain. Patch format v3 extends v2 with top-level `post_chain` array; v2 files load unmodified (post_chain defaults to empty). Both `engine_load_patch` (file) and `engine_load_patch_json` (string) share a single `do_load_patch_json()` helper and accept v2 and v3. Patch fixes: `juno_strings.json` JUNO_CHORUS, `acid_reverb.json` REVERB_FDN, `delay_lead.json` ECHO_DELAY — all moved from per-voice chain to `post_chain`; `cymbal.json` ECHO_DELAY (timbral BBD shimmer, pre-VCA) left in voice chain. CMakeLists: `sync_patch_fixtures ALL` custom target added (mirrors `sync_midi_fixtures`) so patches re-sync on every build. 6 new `PatchSerializationTest` integration tests (RoundTrip, ModSources, PostChainRoundTrip, SavePatch, BufferTooSmall, JunoStringsFix). | Complete |
 | 27D   | **Transport Clock & Tempo-Sync Effects**: (a) `engine_set_tempo(bpm)`, `engine_set_time_signature(num, denom)`, `engine_get_tempo()` C API; `MusicalClock` made authoritative — SMF player tempo map overrides host set, manual `engine_set_tempo` overrides when no SMF is loaded. (b) `VoiceContext` gains `bpm` (float) and `beats_per_bar` (int) fields — pre-computed before each block, passed to `do_pull`, no lock required in audio thread. (c) `ECHO_DELAY` gains `sync` (bool) + `division` (enum: `whole`, `half`, `quarter`, `eighth`, `sixteenth`, `thirtysecond`, `sixtyfourth`, `dotted_quarter`, `dotted_eighth`, `triplet_quarter`, `triplet_eighth`) parameters; when `sync=true` delay time = `(60 / bpm) × division_multiplier`; `time` parameter ignored. (d) `LFO` and `PHASER` gain the same `sync`/`division` parameters for rate locking. (e) Fully backward-compatible: `sync=false` (default) uses `time`/`rate` in seconds/Hz as today. Prerequisite for sequencer phase: tempo grid, MIDI clock output (0xF8), and pattern length in bars all depend on a canonical transport object. | Planned |
-| 27C   | **I/O Processor Family & Role Classification**: (a) `ModuleDescriptor` gains a `role` field (`"SOURCE"`, `"SINK"`, `"PROCESSOR"`, `"CV_SOURCE"`, `"CV_PROCESSOR"`) inferred from declared ports at registration; `module_get_descriptor_json` / `module_registry_get_all_json` include `"role"` in JSON output. (b) Four new registered processors: `AUDIO_OUTPUT` (HAL sink — explicit chain terminator with friendly UI name; `audio_in` port), `AUDIO_INPUT` (line input / microphone source; `audio_out` port + `device_index`, `gain` parameters), `AUDIO_FILE_READER` (WAV/AIFF source; `audio_out` port + `path`, `loop`, `gain`), `AUDIO_FILE_WRITER` (offline WAV sink; `audio_in` port + `path`). (c) `bake()` updated to allow `AUDIO_OUTPUT` as the last chain node (special-case: SINK role bypasses "last node must have audio_out" check). (d) New C API: `engine_open_audio_input(handle, device_index)`, `engine_file_writer_flush(handle)`. (e) `AUDIO_SPLITTER` mono-to-stereo usage documented (connect `audio_out_1` → L path, `audio_out_2` → R path of a stereo post-chain processor). Prerequisite for Phase 25 USB MIDI HAL (establishes the full I/O model). | Planned |
+| 27C   | **I/O Processor Family & Role Classification**: (a) `ModuleDescriptor` gains a `role` field (`"SOURCE"`, `"SINK"`, `"PROCESSOR"`) inferred from declared ports at registration; `module_get_descriptor_json` / `module_registry_get_all_json` include `"role"` in JSON output. (b) Four new registered processors: `AUDIO_OUTPUT` (HAL sink — explicit chain terminator with friendly UI name; `audio_in` port), `AUDIO_INPUT` (line input / microphone source; `audio_out` port + `device_index`, `gain` parameters; currently outputs silence — live HAL routing deferred to Phase 25; associate with hardware via `engine_open_audio_input(handle, device_index)`), `AUDIO_FILE_READER` (WAV/AIFF source; `audio_out` port + `loop`, `gain`; path set via `engine_set_tag_string_param`; mono/stereo only, no compressed formats), `AUDIO_FILE_WRITER` (real-time WAV recorder sink; `audio_in` port + `max_seconds`, `max_file_mb`; path set via `engine_set_tag_string_param`). (c) `bake()` updated to allow a SINK (audio_in only, no audio_out) as the last chain node. (d) New C API: `engine_set_tag_string_param(handle, tag, name, value)`, `engine_open_audio_input(handle, device_index)`, `engine_file_writer_flush(handle)`. (e) `libsndfile` 1.2.2 + `libsamplerate` 0.2.2 added as FetchContent dependencies. (f) `target_compile_options` guarded with `if(NOT MSVC)` for all engine targets (Windows portability). Prerequisite for Phase 25 USB MIDI HAL (establishes the full I/O model). | Complete |
 
 ---
 
@@ -675,7 +697,7 @@ The CMake option (`AUDIO_STATIC_CONFIG`) and per-module enable/disable flags tha
 
 ## Module Introspection & Patch Serialization (Phase 27)
 
-Phase 27 has four sub-deliverables. **Phases 27A and 27B are complete**. Phases 27C and 27D are planned. Recommended order: 27C → 27D → Phase 25 (USB MIDI HAL). 27C establishes the full I/O model; 27D establishes the transport clock that the MIDI HAL (Phase 25) and sequencer phases will depend on.
+Phase 27 has four sub-deliverables. **Phases 27A, 27B, and 27C are complete**. Phase 27D is planned. Recommended order: 27D → Phase 25 (USB MIDI HAL). 27C established the full I/O model; 27D establishes the transport clock that the MIDI HAL (Phase 25) and sequencer phases will depend on.
 
 ---
 
@@ -783,9 +805,9 @@ The serialized JSON is a valid v2 patch file — it can be loaded with `engine_l
 
 ---
 
-## I/O Processor Family & Role Classification (Phase 27C)
+## I/O Processor Family & Role Classification (Phase 27C) — Complete
 
-Phase 27C completes the I/O model before Phase 25 (USB MIDI HAL) by giving every module an explicit **role** and adding the four I/O processors that host applications (patch editors, guitar rig apps, offline renderers) need.
+Phase 27C completed the I/O model before Phase 25 (USB MIDI HAL) by giving every module an explicit **role** and adding the four I/O processors that host applications (patch editors, guitar rig apps, offline renderers) need.
 
 ### Role Classification
 
@@ -793,11 +815,9 @@ Add a `role` field to `ModuleDescriptor`, inferred automatically at `register_mo
 
 | Role | Criteria | Examples |
 |---|---|---|
-| `SOURCE` | PORT_AUDIO output, no PORT_AUDIO input | `COMPOSITE_GENERATOR`, `WHITE_NOISE`, `DRAWBAR_ORGAN`, `AUDIO_INPUT`, `AUDIO_FILE_READER` |
+| `SOURCE` | PORT_AUDIO output, no PORT_AUDIO input | `WHITE_NOISE`, `DRAWBAR_ORGAN`, `AUDIO_INPUT`, `AUDIO_FILE_READER` |
 | `SINK` | PORT_AUDIO input, no PORT_AUDIO output | `AUDIO_OUTPUT`, `AUDIO_FILE_WRITER` |
-| `PROCESSOR` | Both PORT_AUDIO input and output | All filters, FX, VCA, routing nodes |
-| `CV_SOURCE` | PORT_CONTROL output, no audio ports | `ADSR_ENVELOPE`, `AD_ENVELOPE`, `LFO` |
-| `CV_PROCESSOR` | PORT_CONTROL input and/or output, no audio | `CV_MIXER`, `CV_SPLITTER`, `MATHS`, `GATE_DELAY`, `SAMPLE_HOLD`, `INVERTER` |
+| `PROCESSOR` | Both PORT_AUDIO input and output, OR no PORT_AUDIO at all (pure CV) | All filters, FX, VCA, routing nodes; also `LFO`, `ADSR_ENVELOPE`, `AD_ENVELOPE`, `CV_MIXER`, `CV_SPLITTER`, `MATHS`, `GATE_DELAY`, `SAMPLE_HOLD`, `INVERTER`. `COMPOSITE_GENERATOR` has `fm_in` (PORT_AUDIO in) + `audio_out` → PROCESSOR. |
 
 `module_get_descriptor_json` and `module_registry_get_all_json` add `"role"` to the JSON output. No per-processor changes needed — the role is computed once per registration.
 
@@ -820,19 +840,23 @@ Live audio from hardware line input or microphone.
 - **Parameters**: `device_index` (int, default 0), `gain` (0.0–4.0, default 1.0)
 - **Platform**: CoreAudio full-duplex (native); ALSA capture PCM (separate `snd_pcm_open(SND_PCM_STREAM_CAPTURE)`)
 - **C API**: `engine_open_audio_input(handle, device_index)` — opens the capture path and binds it to the `AUDIO_INPUT` node.
+- **Current status**: Currently outputs silence. Live HAL routing is deferred to Phase 25. The processor is registered and accepted by `bake()` as a SOURCE at the chain head.
 
 #### `AUDIO_FILE_READER` (SOURCE)
 WAV/AIFF file playback source for offline processing or sample replay in a chain.
 - **Ports**: `PORT_AUDIO` out `audio_out`
-- **Parameters**: `path` (string), `loop` (bool, default false), `gain` (0.0–4.0, default 1.0)
-- On `engine_start`, the file is opened and pre-buffered. Underrun produces silence.
+- **Parameters**: `loop` (bool, default false), `gain` (0.0–4.0, default 1.0)
+- **String parameters**: `path` — set via `engine_set_tag_string_param(handle, tag, "path", "/file.wav")` after `bake()`.
+- File is loaded into memory at engine start; sample-rate conversion via libsamplerate is applied if the file sample rate differs from the engine sample rate. Underrun produces silence.
+- Mono and stereo files only. No compressed formats (MP3, AAC, OGG).
 
 #### `AUDIO_FILE_WRITER` (SINK)
-Offline WAV render sink. Captures everything arriving at `audio_in` to a file on disk.
+Real-time WAV recorder. Captures everything arriving at `audio_in` to a file on disk.
 - **Ports**: `PORT_AUDIO` in `audio_in`
-- **Parameters**: `path` (string)
-- **C API**: `engine_file_writer_flush(handle)` — closes and finalises the WAV header.
-- Opens on `engine_start`, flushes on `engine_stop` or explicit flush call.
+- **Parameters**: `max_seconds` (0–86400, default 0 = unlimited), `max_file_mb` (0–4096, default 0 = unlimited)
+- **String parameters**: `path` — set via `engine_set_tag_string_param(handle, tag, "path", "/output.wav")` after `bake()`.
+- **C API**: `engine_file_writer_flush(handle)` — explicitly syncs all `AUDIO_FILE_WRITER` processors. Auto-flush occurs on `engine_destroy`.
+- Last node in chain only (SINK role). `bake()` SINK exception applies.
 
 ### Mono-to-Stereo Paths
 
@@ -843,8 +867,8 @@ The engine is mono-until-SummingBus by design. Two explicit paths allow stereo w
 
 ### Testing
 
-- `role` field present in every module's JSON output (extend `test_module_registry.cpp`)
-- All SOURCE modules have no PORT_AUDIO input; all SINK modules have no PORT_AUDIO output
+- `role` field present in every module's JSON output (extend `test_module_registry.cpp`); valid values are `SOURCE`, `SINK`, `PROCESSOR` only
+- All SOURCE modules have no PORT_AUDIO input; all SINK modules have no PORT_AUDIO output; pure CV modules (LFO, ADSR, etc.) have role PROCESSOR
 - `AUDIO_OUTPUT` accepted as last chain node by `bake()` without error
 - `AUDIO_INPUT` chain produces non-silent output when a capture device is available
 - `AUDIO_FILE_WRITER` produces a valid WAV file containing the rendered frames
@@ -1056,6 +1080,7 @@ Candidate phase slot: **28** (after Phase 27B patch serialization is complete).
 | [docs/PATCH_SPEC.md](docs/PATCH_SPEC.md) | Patch file format | JSON v2 schema, chain/connection/parameter structure, patch library |
 | [docs/LIBRARY_USER_MANUAL.md](docs/LIBRARY_USER_MANUAL.md) | Developer user guide | Module catalog, patch cookbook, analysis tools, USB MIDI HAL (§12), static module config / embedded targets (§13), Known Limitations (§14) |
 | BUILD.md | Build & CI | CMake targets, dependency setup, ctest invocation |
+| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | External dependencies | Approved deps, versions, licenses, what-breaks-without-it, policy for adding new deps |
 
 ## References
 - Git workflow: [docs/GIT_POLICY.md](docs/GIT_POLICY.md) (branch naming, PR process, commit standards).

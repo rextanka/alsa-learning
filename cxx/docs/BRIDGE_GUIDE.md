@@ -121,7 +121,12 @@ char all[65536];
 int n = module_registry_get_all_json(all, sizeof(all));
 ```
 
-JSON schema per module: `{ "type_name", "brief", "usage_notes", "parameters": [...], "ports": [...] }`.
+JSON schema per module: `{ "type_name", "role", "brief", "usage_notes", "parameters": [...], "ports": [...] }`.
+The `"role"` field (added Phase 27C) is one of `"SOURCE"`, `"SINK"`, or `"PROCESSOR"`, inferred automatically from the module's declared ports:
+- `"SOURCE"` — PORT_AUDIO output, no PORT_AUDIO input (e.g. `WHITE_NOISE`, `AUDIO_FILE_READER`, `AUDIO_INPUT`). Use at the chain head.
+- `"SINK"` — PORT_AUDIO input, no PORT_AUDIO output (e.g. `AUDIO_OUTPUT`, `AUDIO_FILE_WRITER`). Use as the last chain node only.
+- `"PROCESSOR"` — everything else: modules with both PORT_AUDIO in and out (filters, FX, VCA), and pure CV modules with no PORT_AUDIO at all (`LFO`, `ADSR_ENVELOPE`, `CV_MIXER`, `MATHS`, `INVERTER`, etc.). `COMPOSITE_GENERATOR` has a PORT_AUDIO input (`fm_in`) and is therefore also PROCESSOR.
+Use `role` in patch editors to filter which modules are valid at each chain position (e.g. offer only SOURCEs at the head, only PROCESSORs or SINKs thereafter).
 Works directly with Swift `JSONDecoder` and `JSON.parse` in React/Tauri. See ARCH_PLAN.md §Phase 27A for the full schema.
 
 ---
@@ -149,7 +154,7 @@ int result = engine_bake(engine);
 
 `engine_bake` validates:
 - First node outputs `PORT_AUDIO`
-- Last node outputs `PORT_AUDIO`
+- Last node outputs `PORT_AUDIO`, **or** last node is a SINK-role module (audio_in only, no audio_out — e.g. `AUDIO_OUTPUT`, `AUDIO_FILE_WRITER`)
 - No consecutive `PORT_CONTROL` nodes
 - All named ports exist on declared modules
 - All connection port types match (`PORT_AUDIO`→`PORT_AUDIO`, `PORT_CONTROL`→`PORT_CONTROL`)
@@ -402,7 +407,76 @@ engine_save_patch(engine, "/tmp/my_patch.json");
 
 ---
 
-## 13. Removed / Deprecated API
+## 13. I/O Processor API (Phase 27C)
+
+Three new C API functions support the I/O processor family added in Phase 27C.
+
+### `engine_set_tag_string_param`
+
+```c
+// Set a string parameter on a tagged processor.
+// Returns 0 on success, -1 if the tag is not found.
+int engine_set_tag_string_param(EngineHandle handle,
+                                const char* tag,
+                                const char* name,
+                                const char* value);
+```
+
+Used to set the `"path"` string parameter on `AUDIO_FILE_READER` and `AUDIO_FILE_WRITER` nodes. Call after `engine_bake`. The tag identifies the chain node (e.g. `"FILE_IN"`, `"FILE_OUT"`).
+
+```c
+// Set input file path on a tagged AUDIO_FILE_READER
+engine_set_tag_string_param(engine, "FILE_IN",  "path", "/samples/loop.wav");
+
+// Set output file path on a tagged AUDIO_FILE_WRITER
+engine_set_tag_string_param(engine, "FILE_OUT", "path", "/tmp/capture.wav");
+```
+
+### `engine_open_audio_input`
+
+```c
+// Associate an AUDIO_INPUT node with a hardware capture device.
+// device_index corresponds to the index used in host_get_device_name / host_get_device_sample_rate.
+// Returns 0 on success, -1 on error (device not found or capture not supported).
+int engine_open_audio_input(EngineHandle handle, int device_index);
+```
+
+Opens the capture PCM path (CoreAudio full-duplex or ALSA `SND_PCM_STREAM_CAPTURE`) and binds it to all `AUDIO_INPUT` chain nodes. Until this is called — or until Phase 25 HAL routing is implemented — `AUDIO_INPUT` outputs silence.
+
+```c
+// Open default capture device (index 0)
+int rc = engine_open_audio_input(engine, 0);
+```
+
+### `engine_file_writer_flush`
+
+```c
+// Flush all AUDIO_FILE_WRITER processors — finalises WAV headers and syncs to disk.
+// Safe to call while the engine is running; recording continues after the flush.
+// Returns 0 on success.
+int engine_file_writer_flush(EngineHandle handle);
+```
+
+An automatic flush also occurs on `engine_destroy`. Use explicit flush for intermediate checkpoints or before reading a partially-written file.
+
+```c
+// Capture 5 seconds, then flush and inspect the file
+engine_start(engine);
+// ... wait 5 seconds ...
+engine_file_writer_flush(engine);
+```
+
+### API Reference Summary (Phase 27C additions)
+
+| Function | Description |
+|----------|-------------|
+| `engine_set_tag_string_param(handle, tag, name, value)` | Set string param (e.g. `"path"`) on a tagged processor |
+| `engine_open_audio_input(handle, device_index)` | Connect `AUDIO_INPUT` node to hardware capture device |
+| `engine_file_writer_flush(handle)` | Flush all `AUDIO_FILE_WRITER` processors to disk |
+
+---
+
+## 14. Removed / Deprecated API
 
 | Function | Status | Replacement |
 |----------|--------|-------------|

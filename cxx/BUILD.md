@@ -126,6 +126,7 @@ Before creating a PR, confirm the following "Green Build" loop passes:
 |---|---|---|
 | `BUILD_TESTING` | `ON` | Build GTest unit and functional tests |
 | `AUDIO_ENABLE_PROFILING` | `ON` | Compile `AUDIO_ENABLE_PROFILING=1` define |
+| `AUDIO_ENGINE_SNDFILE_EXTERNAL_LIBS` | `OFF` | Enable libsndfile optional format support (FLAC, Ogg/Vorbis, Opus, MPEG read-only). Requires corresponding system libraries — see `docs/DEPENDENCIES.md §libsndfile`. |
 
 ---
 

@@ -518,14 +518,63 @@ These modules operate entirely in the control domain.
   - **Bell patch**: VCO1 (sine, fundamental) → `audio_in_a`; VCO2 (sine, non-integer ratio e.g. 2.756×) → `audio_in_b`; RING_MOD output → percussive VCA envelope. See `patches/bell.json`.
   - **Choral/vocal formant patch**: one VCO + one VCO tuned to a voice-tract formant frequency → RING_MOD → VCA.
 
+### Audio Output
+- **Type name**: `AUDIO_OUTPUT`
+- **Purpose**: Transparent chain-terminator sink. Provides an explicit, named output endpoint for patch editors that require one. Role: **SINK**.
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in`
+- **Parameters**: none
+- **Behavioural notes**:
+  - Inline audio from the preceding chain node passes through unchanged to the engine's summing bus.
+  - Engine behaviour is identical whether or not `AUDIO_OUTPUT` is present — it is additive, not required.
+  - `bake()` SINK exception: a SINK node (audio_in only, no audio_out) is permitted as the last chain node. The "last node must output PORT_AUDIO" check is bypassed for SINK-role modules.
+- **Usage**: Add as the last chain node in patch JSON when your patch editor or UI requires an explicit output endpoint.
+
 ### Audio Input
 - **Type name**: `AUDIO_INPUT`
 - **Purpose**: Live audio source from a hardware line input or microphone (e.g. guitar into an effects chain, side-chain vocoder input). Role: **SOURCE**.
 - **Ports**:
   - `PORT_AUDIO` out `audio_out`
-- **Parameters**: `device_index` (int, default 0), `gain` (0.0–4.0, default 1.0)
+- **Parameters**: `device_index` (int, 0–16, default 0), `gain` (0.0–4.0, default 1.0)
 - **Note**: Requires the audio driver to open a capture PCM path alongside the playback path. CoreAudio supports full-duplex natively; ALSA requires a separate `snd_pcm_open` in `SND_PCM_STREAM_CAPTURE`. Dispatched to the engine via the same block-pull mechanism as oscillators.
-- **Status**: Planned — Phase 27C (I/O Processor Family & Role Classification).
+- **Current status**: Currently outputs silence. Live HAL routing deferred to Phase 25. The module is registered and accepted by `bake()` as a SOURCE at the chain head.
+- **C API**: Call `engine_open_audio_input(handle, device_index)` to associate the node with a hardware capture device.
+- **Usage**: Add as the first chain node.
+
+### Audio File Reader
+- **Type name**: `AUDIO_FILE_READER`
+- **Purpose**: WAV/AIFF file playback source. Loads a file into memory and outputs it block by block, optionally looping. Role: **SOURCE**.
+- **Ports**:
+  - `PORT_AUDIO` out `audio_out`
+- **Parameters**: `loop` (0/1, default 0), `gain` (0.0–4.0, default 1.0)
+- **String parameters**: `path` (file path to WAV or AIFF file) — set via `engine_set_tag_string_param(handle, tag, "path", "/path/to/file.wav")` after `bake()`.
+- **Behavioural notes**:
+  - File is loaded into memory at engine start. Sample-rate conversion via libsamplerate is applied off the audio thread when the file's sample rate differs from the engine's rate.
+  - Underrun (end of file when `loop=0`) produces silence.
+  - Supported formats: WAV (PCM 16/24/32, float 32/64) and AIFF (PCM 16/24/32, float 32). Mono and stereo files only. No compressed formats (MP3, AAC, OGG).
+- **Dependencies**: requires libsndfile 1.2.2 and libsamplerate 0.2.2 (both pulled via CMake FetchContent).
+- **Usage**: Add as the first chain node. Set the file path after `bake()`:
+  ```c
+  engine_set_tag_string_param(handle, "FILE_IN", "path", "/samples/loop.wav");
+  ```
+
+### Audio File Writer
+- **Type name**: `AUDIO_FILE_WRITER`
+- **Purpose**: Real-time WAV recorder. Captures the inline audio arriving at `audio_in` and writes it to a WAV file on disk. Role: **SINK**.
+- **Ports**:
+  - `PORT_AUDIO` in `audio_in`
+- **Parameters**: `max_seconds` (0–86400, default 0 = unlimited), `max_file_mb` (0–4096, default 0 = unlimited)
+- **String parameters**: `path` (output WAV file path) — set via `engine_set_tag_string_param(handle, tag, "path", "/path/to/output.wav")` after `bake()`.
+- **Behavioural notes**:
+  - The output file is opened on `engine_start` and flushed (WAV header finalised) on `engine_destroy`.
+  - Call `engine_file_writer_flush(handle)` for an explicit intermediate sync without stopping the engine.
+  - Recording stops automatically when `max_seconds` or `max_file_mb` is reached (if non-zero).
+  - `bake()` SINK exception applies — this node is permitted as the last chain entry.
+- **Dependencies**: requires libsndfile 1.2.2 (pulled via CMake FetchContent).
+- **Usage**: Add as the last chain node. Set the file path after `bake()`:
+  ```c
+  engine_set_tag_string_param(handle, "FILE_OUT", "path", "/tmp/capture.wav");
+  ```
 
 ---
 
@@ -540,7 +589,7 @@ These modules operate entirely in the control domain.
 - **Dynamic routing**: Modules are not hardcoded in `Voice`. `Voice` manages two lists — `signal_chain_` (PORT_AUDIO nodes) and `mod_sources_` (PORT_CONTROL generators) — with instance tags (e.g. `"VCO"`, `"ENV"`, `"LFO1"`) for parameter targeting and port connection. `add_processor()` routes each node automatically based on its output port type.
 - **Global vs per-voice**: Per-voice modules live in `signal_chain_` or `mod_sources_`. Global modules (chorus, reverb, master bus) live in a separate global FX chain applied after voice summing. Do not instantiate global modules per-voice.
 - **Mono-to-stereo paths**: The engine is mono-until-SummingBus. Two explicit paths introduce stereo before the bus: (1) Stereo FX processors (`JUNO_CHORUS`, `REVERB_FDN`, `REVERB_FREEVERB`) in the global post-chain — place via `engine_post_chain_push`; they receive summed mono and output stereo. (2) `AUDIO_SPLITTER` explicit copy — connect one mono source to `audio_in`, then `audio_out_1` → left path and `audio_out_2` → right path feeding a spatial/stereo processor downstream. Direct stereo within per-voice chains is not supported in the current architecture.
-- **Role classification** (Phase 27C): Every registered module has an inferred `role` (`SOURCE`, `SINK`, `PROCESSOR`, `CV_SOURCE`, `CV_PROCESSOR`) exposed via the JSON introspection API. UI tools should use `role` to filter modules when building a chain (e.g. only offer SOURCEs at the chain head, only offer SINKs or PROCESSORs as subsequent nodes).
+- **Role classification** (Phase 27C): Every registered module has an inferred `role` (`SOURCE`, `SINK`, or `PROCESSOR`) exposed via the JSON introspection API. `SOURCE` = PORT_AUDIO out, no PORT_AUDIO in. `SINK` = PORT_AUDIO in, no PORT_AUDIO out. `PROCESSOR` = everything else, including pure CV modules (`LFO`, `ADSR_ENVELOPE`, `CV_MIXER`, `MATHS`, `INVERTER`, etc.) which have no PORT_AUDIO ports at all, and `COMPOSITE_GENERATOR` (has PORT_AUDIO `fm_in`). UI tools should use `role` to filter modules when building a chain (e.g. only offer SOURCEs at the chain head, only offer SINKs or PROCESSORs as subsequent nodes).
 - **Tempo-sync parameters** (Phase 27D): `ECHO_DELAY`, `LFO`, and `PHASER` gain `sync` (bool) + `division` (enum) parameters. When `sync=true` the processor's time/rate is derived from the engine's transport clock (`engine_set_tempo`, or automatically from SMF file tempo). Division vocabulary is beat-relative and works in any time signature. See ARCH_PLAN.md §Phase 27D for the full division table and `VoiceContext` BPM propagation design.
 - **Sample rate**: All internal timing (ADSR curves, LFO rates, delay times) must derive from the runtime `sample_rate_` passed at construction. No hardcoded sample rate assumptions. Supported rates: 44100 Hz and 48000 Hz. If hardware reports a rate above 48000, the engine negotiates down to 48000.
 - **Filter chain placement**: All four filter types (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`) are first-class chain nodes. Add them via `engine_add_module("MOOG_FILTER", "VCF")` and wire audio with `engine_connect_ports`. `Voice` no longer contains an internal `filter_` member — the hardcoded fallback path has been removed. Minimum filter chain: `COMPOSITE_GENERATOR → MOOG_FILTER → ADSR_ENVELOPE → VCA`.
