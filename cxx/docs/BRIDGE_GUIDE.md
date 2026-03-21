@@ -159,9 +159,9 @@ int result = engine_bake(engine);
 
 ---
 
-## 6. Patch Format v2 — Multi-Group JSON
+## 6. Patch Format v2 / v3 — Multi-Group JSON
 
-A patch file describes one or more voice group topologies, their connections, and initial parameters. The `"version": 2` field is required.
+A patch file describes one or more voice group topologies, their connections, and initial parameters. Version 2 is the baseline format; version 3 extends it with a top-level `post_chain` array for global effects. Both versions are accepted by `engine_load_patch` and `engine_load_patch_json`.
 
 ```json
 {
@@ -203,8 +203,11 @@ Delay feedback must be marked explicitly:
 ### Loading a Patch
 
 ```c
-// Load patch — returns 0 on success, -1 on file/parse error
+// Load from file — returns 0 on success, -1 on file/parse error
 int result = engine_load_patch(engine, "/path/to/sh_bass.json");
+
+// Load from in-memory string — pass -1 for json_len to use strlen()
+int result = engine_load_patch_json(engine, json_str, (int)strlen(json_str));
 ```
 
 If the patch topology for a group matches the current chain (same module types and tags in the same order), the chain is **not rebuilt** — only parameters and connections are updated. This avoids audio interruption when switching between patches that share a topology.
@@ -334,13 +337,77 @@ Playback is sample-accurate: `MidiFilePlayer::advance(frames, sr, vm)` is called
 
 ---
 
+## 12. Patch Serialization (Phase 27B)
+
+Serialize the current engine state to JSON and reload it — full round-trip fidelity.
+
+```c
+// Serialize voice chain + post-chain to a caller buffer.
+// Returns bytes written (excl. NUL), -2 if buf too small, -1 on error.
+// group_index is reserved for future multi-group support; pass 0.
+int engine_get_patch_json(EngineHandle handle, int group_index,
+                          char* buf, int max_len);
+
+// Load a patch from an in-memory JSON string (v2 or v3 format).
+// json_len may be -1 to use strlen(). Returns 0 on success.
+int engine_load_patch_json(EngineHandle handle, const char* json_str, int json_len);
+
+// Serialize and write to a file. Returns 0 on success.
+int engine_save_patch(EngineHandle handle, const char* path);
+```
+
+### Patch Format v3 — Post-Chain Array
+
+`engine_get_patch_json` always outputs v3. The only addition over v2 is a top-level `post_chain` array; v2 files (no `post_chain` key) continue to load unchanged.
+
+```json
+{
+  "version": 3,
+  "name": "Juno Strings",
+  "groups": [ { ... } ],
+  "post_chain": [
+    { "type": "JUNO_CHORUS", "parameters": { "mode": 2, "rate": 0.5, "depth": 0.6 } }
+  ]
+}
+```
+
+Loading a v3 patch clears any existing post-chain then replaces it with the entries in `post_chain`. Loading a v2 patch clears the post-chain (it has no `post_chain` key).
+
+### Round-Trip Example
+
+```c
+// Serialize current patch to a buffer
+char buf[65536];
+int n = engine_get_patch_json(engine, 0, buf, sizeof(buf));
+// n == -2 if buf too small; increase buffer and retry
+
+// Reload from the serialized string — identical to reloading the original file
+engine_load_patch_json(engine2, buf, n);
+
+// Or save to disk for later
+engine_save_patch(engine, "/tmp/my_patch.json");
+```
+
+### Serialization Scope
+
+| Source | What is captured |
+|--------|-----------------|
+| `signal_chain_` | All PORT_AUDIO nodes (generators, filters, effects) in order |
+| `mod_sources_` | PORT_CONTROL generators (LFOs, envelopes) — not reachable from audio output |
+| `connections_` | All named port connections (audio-rate and control-rate) |
+| Per-node parameters | Every `apply_parameter` call made since the last `engine_bake` |
+| `post_chain` | Type name and parameters of every `engine_post_chain_push` entry |
+
+> **Graph traversal alone is insufficient.** `mod_sources_` entries (LFOs wired only to CV inputs) have no audio-path predecessor — the serializer walks both `signal_chain_` and `mod_sources_` explicitly.
+
+---
+
 ## 13. Removed / Deprecated API
 
 | Function | Status | Replacement |
 |----------|--------|-------------|
 | `engine_set_modulation(source_int, target_int, intensity)` | **Removed** (Phase 15) | `engine_connect_ports(from_tag, from_port, to_tag, to_port)` |
 | `VoiceFactory::createSH101()` (C++ internal) | **Removed** (Phase 15) | `engine_load_patch` or `engine_add_module` / `engine_connect_ports` / `engine_bake` |
-| `engine_save_patch(handle, path)` | **Removed** (Phase 15) | No replacement — patch serialisation is not implemented. Patches are authored by hand and loaded via `engine_load_patch`. |
 | `engine_connect_mod(handle, src, voices, tgt, intensity)` | **Removed** (Phase 16) | `engine_connect_ports` — named port connections |
 | `engine_create_processor(handle, type)` | **Removed** (Phase 16) | `engine_add_module(handle, type, tag)` |
 | `engine_get_modulation_report(handle, buf, size)` | **Removed** (Phase 16) | No replacement; use named port connections and patch files. |

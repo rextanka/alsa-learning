@@ -1095,7 +1095,7 @@ The patch is not loaded; the engine is never left in a partially-configured stat
 | USB MIDI HAL                    | Planned — Phase 25 (`midi_open_input`, `midi_connect_to_engine` C API)                              |
 | Multi-timbral SMF playback      | Planned — Phase 23 (MIDI channel → VoiceGroup routing table)                                        |
 | Module introspection API        | **Implemented** — Phase 27A (`module_get_descriptor_json`, `module_registry_get_all_json`)           |
-| Patch serialization             | Planned — Phase 27B (`engine_get_patch_json`, `engine_save_patch`)                                  |
+| Patch serialization             | **Implemented** — Phase 27B (`engine_load_patch_json`, `engine_get_patch_json`, `engine_save_patch`); patch format v3 adds top-level `post_chain` array for global effects |
 
 ---
 
