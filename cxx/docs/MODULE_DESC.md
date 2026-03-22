@@ -345,9 +345,12 @@ These modules operate entirely in the control domain.
 - **Ports**:
   - `PORT_CONTROL` in `cv_in_1` … `cv_in_4` (bipolar)
   - `PORT_CONTROL` out `cv_out` (bipolar)
+  - `PORT_CONTROL` out `inv_out` (bipolar — always −1 × `cv_out`; M-132 INV OUT precedent; Phase 27E addition)
 - **Parameters**: `gain_1` … `gain_4` (−1.0–1.0), `offset` (−1.0–1.0, default 0.0)
 - **Bias / DC Offset**: The `offset` parameter injects a constant DC level into the output signal. This is the electronic equivalent of adding a bias voltage and is used to shift a bipolar signal (e.g. LFO output in [−1, 1]) into unipolar territory so a single VCA can produce tremolo without fully gating off on the negative LFO half-cycle. Example: `offset=0.5` + `gain_1=0.5` on a full-range bipolar LFO yields a unipolar tremolo depth in [0, 1].
 - **Delayed Vibrato**: Route LFO `control_out` → `CV_MIXER` `cv_in_1`. Route a second `ADSR_ENVELOPE` `envelope_out` → `CV_MIXER` `cv_in_2` (acts as VCA for the LFO signal). The slow-attack envelope ramps the LFO gain from zero, producing vibrato that only appears after the note onset — the characteristic technique for bowed-string and woodwind patches. Connect `CV_MIXER` `cv_out` → `VCO` `pitch_cv`.
+- **Counter-phase routing** (`inv_out`): Connect `cv_out` → VCF `cutoff_cv` and `inv_out` → VCA `gain_cv` so the filter opens as the VCA closes — without a separate `INVERTER` node.
+- **M-132 gate-bias pattern** (Phase 27E): Mix `MIDI_CV.gate_cv` into `cv_in_2` (`gain_2=1.0`) alongside an LFO in `cv_in_1`, then set `offset=-0.5`. The gate pulse raises the net output above zero only while a key is held, so the LFO re-triggers `ADSR.ext_gate_in` only during key-held intervals — replicating the Roland M-132 −10V bias trick used in the Fig 3-4 banjo repeating-trigger patch. See BRIDGE_GUIDE.md §15.5 for the full patch JSON.
 ### CV Splitter
 - **Type name**: `CV_SPLITTER`
 - **Purpose**: Fans one control signal out to up to four destinations. Unity-gain fan-out is the default; unused outputs are ignored.
