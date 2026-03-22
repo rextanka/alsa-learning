@@ -114,6 +114,7 @@ set(ENGINE_SOURCES
     src/dsp/routing/MathsProcessor.cpp
     src/dsp/routing/GateDelayProcessor.cpp
     src/dsp/routing/SampleHoldProcessor.cpp
+    src/dsp/routing/MidiCvProcessor.cpp
     # I/O (Phase 27C)
     src/dsp/io/AudioOutputProcessor.cpp
     src/dsp/io/AudioInputProcessor.cpp

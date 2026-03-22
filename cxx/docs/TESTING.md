@@ -112,12 +112,10 @@ If a test produces no audio, follow this binary search path — do not guess:
 | `metronome_test.cpp` | 1 | Rhythmic click timing |
 | `Phase10Tests.cpp` | 2 | BPM/clock and note-name API |
 | `stereo_poly_test.cpp` | 2 | Polyphonic voice panning |
-| `test_sh101_chain.cpp` | 3 | SH-101 bass chain + LFO PWM |
 | `test_tremulant_preset.cpp` | 2 | LFO→pitch vibrato via chain-placed LFO node |
 | `test_lfo_modulation.cpp` | 2 | LFO chain node: vibrato variance, cutoff modulation |
 | `test_juno_chorus.cpp` | 2 | Juno chorus stereo separation |
 | `Functional_BachMidi.cpp` | 3 | MIDI polyphony, DrawbarOrgan |
-| `BachOrganTest.cpp` | 3 | DrawbarOrgan register blend |
 | `Functional_SH101_Live.cpp` | 3 | Patch load + live pluck sequence |
 | `patch_sequence_test.cpp` | 3 | Four reference patches: SH-101 ostinato, TB-303 acid sweep, Juno pad melody, Drawbar Organ chorale |
 | `processor_check.cpp` | 2 | Oscillator frequency fidelity via hysteresis zero-crossing and symmetry analysis |
@@ -130,16 +128,20 @@ If a test produces no audio, follow this binary search path — do not guess:
 | `test_tb_bass_patch.cpp` | 3 | TB-303 bass patch + diode filter character |
 | `test_cymbal_patch.cpp` | 3 | Cymbal: ECHO_DELAY shimmer, echo tail persistence |
 | `test_bowed_bass_patch.cpp` | 3 | Bowed bass: slow attack RMS rise |
-| `test_brass_patch.cpp` | 3 | Brass/horn: fast attack, filter character |
+| `test_brass_patch.cpp` | 3 | Brass/horn/trumpet/trombone/tuba: fast attack, filter character (Roland Fig 1-6) |
+| `test_trumpet_patch.cpp` | 3 | Trumpet: brighter cutoff variant of brass topology |
+| `test_trombone_patch.cpp` | 3 | Trombone: slower attack variant of brass topology |
+| `test_tuba_patch.cpp` | 3 | Tuba: sub-octave saw, low cutoff variant of brass topology |
 | `test_flute_patch.cpp` | 3 | Flute: attack ramp, LFO vibrato |
+| `test_oboe_patch.cpp` | 3 | Oboe: pulse mix, nasal character |
 | `test_juno_pad_patch.cpp` | 3 | Juno pad: slow attack, chorus character |
 | `test_organ_drawbar_patch.cpp` | 3 | Organ drawbar: register blend, Bach chorale |
 | `test_percussion_noise_patch.cpp` | 3 | Percussion noise: percussive decay |
 | `test_violin_vibrato_patch.cpp` | 3 | Violin vibrato: attack swell, pitch modulation |
 | `test_bell_patch.cpp` | 3 | Bell: RING_MOD sidebands, percussive decay |
 | `test_reverb_patch.cpp` | 3 | Reverb FDN/Freeverb: wet energy, stereo correlation |
-| `test_acid_reverb_patch.cpp` | 3 | Acid reverb: TB-303 chain + FDN reverb, onset RMS |
-| `test_banjo_patch.cpp` | 3 | Banjo: AD_ENVELOPE 1ms attack, onset signal |
+| `test_acid_reverb_patch.cpp` | 3 | Acid reverb: TB-303 two-envelope (AD_ENV→VCF, ADSR→VCA) + FDN reverb |
+| `test_banjo_patch.cpp` | 3 | Banjo: Roland Fig 3-4 repeating trigger (LFO→ADSR.ext_gate_in), onset + 400ms RMS |
 | `test_bass_drum_patch.cpp` | 3 | Bass drum: sine+triangle VCO + AD envelope, onset RMS |
 | `test_bongo_drums_patch.cpp` | 3 | Bongo drums: resonant LP filter + AD envelope, onset RMS |
 | `test_clarinet_patch.cpp` | 3 | Clarinet: pulse VCO + LP filter, signal after 12ms attack |

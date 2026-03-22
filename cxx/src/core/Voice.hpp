@@ -23,7 +23,7 @@ class Voice : public Processor {
 public:
     explicit Voice(int sample_rate);
 
-    void note_on(double frequency);
+    void note_on(double frequency, float velocity = 1.0f);
     void note_off();
 
     bool is_active() const;

@@ -13,8 +13,13 @@ CvMixerProcessor::CvMixerProcessor(int sample_rate) {
     declare_port({"cv_in_1", PORT_CONTROL, PortDirection::IN,  false});
     declare_port({"cv_in_2", PORT_CONTROL, PortDirection::IN,  false});
     declare_port({"cv_in_3", PORT_CONTROL, PortDirection::IN,  false});
-    declare_port({"cv_in_4", PORT_CONTROL, PortDirection::IN,  false});
-    declare_port({"cv_out",  PORT_CONTROL, PortDirection::OUT, false});
+    declare_port({"cv_in_4",   PORT_CONTROL, PortDirection::IN,  false});
+    declare_port({"cv_out",    PORT_CONTROL, PortDirection::OUT, false});
+    declare_port({"cv_out_inv",PORT_CONTROL, PortDirection::OUT, false,
+                  "Inverted sum output — always exactly -1 x cv_out. "
+                  "M-132 INV OUT precedent. Use for counter-phase routing "
+                  "(filter opens while VCA closes) without a downstream INVERTER. "
+                  "The _inv suffix is handled by Voice::pull_mono — no separate buffer needed."});
 
     declare_parameter({"gain_1", "Gain 1", -1.0f, 1.0f, 1.0f});
     declare_parameter({"gain_2", "Gain 2", -1.0f, 1.0f, 1.0f});

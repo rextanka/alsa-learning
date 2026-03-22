@@ -38,6 +38,7 @@
 #include "../dsp/routing/RingModProcessor.hpp"
 #include "../dsp/routing/AudioSplitterProcessor.hpp"
 #include "../dsp/routing/AudioMixerProcessor.hpp"
+#include "../dsp/routing/MidiCvProcessor.hpp"
 #include "../dsp/dynamics/NoiseGateProcessor.hpp"
 #include "../dsp/dynamics/EnvelopeFollowerProcessor.hpp"
 #include "../dsp/fx/FreeverbProcessor.hpp"
@@ -229,6 +230,11 @@ void register_builtin_processors() {
         "AUDIO_FILE_WRITER",
         "WAV file recorder sink — captures inline audio and writes to disk in real time",
         [](int sr) { return std::make_unique<AudioFileWriterProcessor>(sr); }
+    );
+    reg.register_module(
+        "MIDI_CV",
+        "MIDI-to-CV source — exposes keyboard pitch, gate, velocity, and aftertouch as patchable CV",
+        [](int sr) { return std::make_unique<MidiCvProcessor>(sr); }
     );
 }
 
