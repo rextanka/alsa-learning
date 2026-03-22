@@ -2,15 +2,14 @@
  * @file test_harpsichord_patch.cpp
  * @brief Functional tests for harpsichord.json (Phase 17 INVERTER fix).
  *
- * Patch topology:
- *   VCO (pulse) → VCF (MOOG_FILTER, cutoff=1200 Hz) → VCA ← ENV (attack=1ms, decay=500ms)
- *                                                ↑ cutoff_cv
- *                                    INV (scale=-0.6) ← ENV
+ * Patch topology (Roland System 100M Fig 4-6):
+ *   VCO (pulse) → HPF → VCF (MOOG_FILTER, cutoff=2400 Hz, static) → VCA ← ENV
+ *                                                                            ↓
+ *                                                             ENV → INV (scale=-0.8) → VCO pwm_cv
  *
- * Before Phase 17, InverterProcessor.do_pull() returned a constant -0.6 DC value,
- * so the filter was stuck at 1200 * 2^(-0.6) ≈ 792 Hz. After the fix, the INVERTER
- * maps the decaying envelope (1→0 over 500ms) to cutoff_cv (-0.6→0), so the filter
- * opens from ~792 Hz to 1200 Hz over the note's decay.
+ * ENV: attack=1ms, decay=650ms, sustain=0, release=600ms. Gate triggers ENV.
+ * VCA amplitude follows ENV directly. PWM is shifted away from 50% at attack
+ * (bright/nasal) and returns to 50% as ENV decays (mellows). VCF is static.
  *
  * Tests (options 1, 2, 4 selected by user):
  *   1. Smoke         — patch and Handel Gavotte MIDI load without error.
@@ -78,8 +77,8 @@ TEST_F(HarpsichordPatchTest, MidiPlaybackRmsNonTrivial) {
     PRINT_TEST_HEADER(
         "Harpsichord — RMS Non-Trivial",
         "MIDI playback of Handel Gavotte through harpsichord patch produces non-silent audio.",
-        "engine_load_patch → engine_load_midi → engine_midi_play → engine_process (seek first note)",
-        "RMS > 0.001 across 128 blocks after first MIDI note fires.",
+        "engine_load_patch → engine_load_midi → engine_midi_play → engine_process (350 blocks)",
+        "RMS > 0.001 across 350 offline blocks (~3.7s, covers first bar of Gavotte at 92 BPM).",
         sample_rate
     );
 
@@ -91,52 +90,44 @@ TEST_F(HarpsichordPatchTest, MidiPlaybackRmsNonTrivial) {
     ASSERT_EQ(engine_load_midi(engine(), kMidi), 0);
     engine_midi_play(engine());
 
-    const size_t FRAMES = 512;
+    // Process a fixed window covering the first bar of the Gavotte.
+    // At 92 BPM, 1 bar ≈ 2.6s = ~244 blocks at 48kHz/512. 350 blocks gives
+    // comfortable margin. Even a few note blocks (RMS ~0.05 each) push the
+    // window average well above 0.001.
+    constexpr size_t FRAMES  = 512;
+    constexpr int    NBLOCKS = 350;
     std::vector<float> out(FRAMES * 2, 0.0f);
-
-    // Skip up to 256 blocks (~2.7s at 48kHz/512) to reach the first note,
-    // then require non-zero RMS within the following 128 blocks (~1.4s).
-    double sum_sq   = 0.0;
-    int    counted  = 0;
-    bool   got_note = false;
-    for (int b = 0; b < 384; ++b) {
+    double sum_sq = 0.0;
+    for (int b = 0; b < NBLOCKS; ++b) {
         engine_process(engine(), out.data(), FRAMES);
-        if (!got_note) {
-            // Look for first non-trivial block to confirm notes have started
-            for (float s : out) { if (std::abs(s) > 0.0001f) { got_note = true; break; } }
-        }
-        if (got_note) {
-            for (float s : out) sum_sq += double(s) * double(s);
-            ++counted;
-            if (counted >= 128) break;
-        }
+        for (float s : out) sum_sq += double(s) * double(s);
     }
-    ASSERT_TRUE(got_note) << "No audio produced within 256 blocks — MIDI may not be firing";
-    float rms = float(std::sqrt(sum_sq / double(FRAMES * 2 * counted)));
-    std::cout << "[Harpsichord] Gavotte playback RMS: " << rms
-              << " (over " << counted << " blocks after first note)\n";
+    const float rms = float(std::sqrt(sum_sq / double(FRAMES * 2 * NBLOCKS)));
+    std::cout << "[Harpsichord] Gavotte RMS over " << NBLOCKS << " blocks: " << rms << "\n";
     EXPECT_GT(rms, 0.001f) << "Expected non-silent output during MIDI playback";
 
     engine_midi_stop(engine());
 }
 
 // ---------------------------------------------------------------------------
-// Test 3: Filter sweep — spectral centroid rises over note decay
+// Test 3: PWM timbral shift — spectral centroid falls over note decay
 //
-// ENV: attack=1ms, decay=500ms, sustain=0. INVERTER scale=-0.6.
-// At attack peak:  cutoff_cv ≈ -0.6  →  effective cutoff ≈ 1200 * 2^(-0.6) ≈ 792 Hz
-// At 350ms:        cutoff_cv ≈ -0.18 →  effective cutoff ≈ 1200 * 2^(-0.18) ≈ 1060 Hz
+// ENV: attack=1ms, decay=650ms, sustain=0. ENV → INV (scale=-0.8) → VCO pwm_cv.
+// At attack peak:  pwm_cv ≈ -0.8  →  pulse skewed from 50%, bright/nasal timbre
+// At 350ms:        pwm_cv ≈ -0.3  →  returning toward 50%, mellowing
+// At decay end:    pwm_cv = 0.0   →  50% square wave, darkest timbre
 //
+// VCF is static (no ENV→VCF). The centroid change is driven by PWM modulation.
 // We capture a 2048-sample "early" window (~50ms) and a "late" window (~350ms),
-// compute DCT spectral centroid for each, and assert late > early.
+// compute DCT spectral centroid for each, and assert early > late.
 // ---------------------------------------------------------------------------
 
-TEST_F(HarpsichordPatchTest, FilterSweepCentroidRises) {
+TEST_F(HarpsichordPatchTest, FilterSweepCentroidFalls) {
     PRINT_TEST_HEADER(
-        "Harpsichord — INVERTER Filter Sweep (automated)",
-        "Spectral centroid rises over note decay as INVERTER opens the Moog filter cutoff.",
+        "Harpsichord — PWM timbral shift (automated)",
+        "Spectral centroid falls over note decay as INV-driven PWM returns toward 50% duty cycle.",
         "engine_load_patch → note_on → engine_process → DCT centroid (early vs late)",
-        "centroid_late > centroid_early (filter opens as ENV decays from 1 to 0).",
+        "centroid_early > centroid_late (PWM skew reduces as ENV decays from 1 to 0).",
         sample_rate
     );
 
@@ -178,8 +169,8 @@ TEST_F(HarpsichordPatchTest, FilterSweepCentroidRises) {
     std::cout << "[Harpsichord] Centroid early (~50ms):  " << centroid_early << " Hz\n";
     std::cout << "[Harpsichord] Centroid late  (~350ms): " << centroid_late  << " Hz\n";
 
-    EXPECT_GT(centroid_late, centroid_early)
-        << "Expected spectral centroid to rise as INVERTER lets filter open during decay\n"
+    EXPECT_GT(centroid_early, centroid_late)
+        << "Expected spectral centroid to fall as PWM returns toward 50% during ENV decay\n"
         << "  early=" << centroid_early << " Hz  late=" << centroid_late << " Hz";
 }
 
@@ -205,9 +196,10 @@ TEST_F(HarpsichordPatchTest, GavotteAudible) {
     ASSERT_EQ(engine_load_midi(engine(), kMidi), 0);
     engine_midi_play(engine());
 
-    std::cout << "[Harpsichord] Playing Handel Gavotte HWV 491 (~30s)…\n";
+    // 2 bars at 92 BPM = ~5.2s; allow 7s for pickup + tail.
+    std::cout << "[Harpsichord] Playing Handel Gavotte HWV 491 (first 2 bars)…\n";
     std::cout << "[Harpsichord] Source: Mutopia Project, CC0 (public domain)\n";
-    test::wait_while_running(35);
+    test::wait_while_running(7);
 
     engine_midi_stop(engine());
 }

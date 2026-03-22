@@ -243,6 +243,18 @@ public:
     virtual void inject_audio(std::string_view /*port_name*/, std::span<const float> /*audio*/) {}
 
     /**
+     * @brief Retrieve a named secondary output buffer produced during the last do_pull().
+     *
+     * Used by Voice to route sync_out triggers from a master COMPOSITE_GENERATOR
+     * to a slave's sync_in without requiring a separate borrowed buffer in the audio bus.
+     * Called after the source node has been pulled.
+     * Default: empty span (no secondary output).
+     */
+    virtual std::span<const float> get_secondary_output(std::string_view /*port_name*/) const {
+        return {};
+    }
+
+    /**
      * @brief Notification that a note-on event has occurred.
      *
      * Called by Voice::note_on() for all mod_sources before audio processing.

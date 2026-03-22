@@ -4,26 +4,28 @@
   "groups": [
     {
       "id": 0,
-      "comment": "TB-303 style: sawtooth → diode filter → VCA → distortion → reverb. AD envelope sweeps VCA gain and filter cutoff. Post-VCA distortion replicates plugging the 303 output into a pedal. REVERB_FDN is global post-chain (single reverb bus, not 16 per-voice instances).",
+      "comment": "TB-303 style (monophonic — Phase 27E): saw → diode filter → VCA → distortion → FDN reverb. Two envelopes match the 303 architecture: GATE (ADSR, S=1 R=20ms) opens/closes the VCA like the 303 gate; ENV (AD, decay=0.25s) sweeps only the filter cutoff via env_depth. Post-VCA distortion replicates plugging the 303 into a pedal.",
       "chain": [
-        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
-        { "type": "DIODE_FILTER",        "tag": "VCF" },
-        { "type": "AD_ENVELOPE",         "tag": "ENV" },
-        { "type": "VCA",                 "tag": "VCA" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO"  },
+        { "type": "DIODE_FILTER",        "tag": "VCF"  },
+        { "type": "AD_ENVELOPE",         "tag": "ENV"  },
+        { "type": "ADSR_ENVELOPE",       "tag": "GATE" },
+        { "type": "VCA",                 "tag": "VCA"  },
         { "type": "DISTORTION",          "tag": "DIST" }
       ],
       "connections": [
         { "from_tag": "VCO",  "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"  },
         { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"  },
-        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"   },
+        { "from_tag": "GATE", "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"   },
         { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCF",  "to_port": "cutoff_cv" },
         { "from_tag": "VCA",  "from_port": "audio_out",    "to_tag": "DIST", "to_port": "audio_in"  }
       ],
       "parameters": {
         "VCO":  { "saw_gain": 1.0 },
-        "VCF":  { "cutoff": 800.0, "resonance": 0.92, "env_depth": 3.0 },
+        "VCF":  { "cutoff": 800.0, "resonance": 0.92, "env_depth": 6.0 },
         "DIST": { "drive": 8.0, "character": 0.3 },
-        "ENV":  { "attack": 0.003, "decay": 0.25 }
+        "ENV":  { "attack": 0.003, "decay": 0.25 },
+        "GATE": { "attack": 0.003, "decay": 0.0, "sustain": 1.0, "release": 0.020 }
       }
     }
   ],

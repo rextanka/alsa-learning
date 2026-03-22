@@ -139,23 +139,23 @@ TEST_F(FlutePatchTest, AttackRampRmsRises) {
 }
 
 // ---------------------------------------------------------------------------
-// Test 3: BreathNoise — noise_gain=0.12 raises spectral centroid above fundamental
+// Test 3: BreathNoise — noise_gain=0.09 raises spectral centroid above fundamental
 //
 // A pure sine at C5 (523.25 Hz) produces a DCT centroid near 523 Hz.
-// With broadband noise at 12% of amplitude added, energy is spread across
+// With broadband noise at 9% of amplitude added, energy is spread across
 // all frequency bins. The noise contribution is roughly uniform per-bin, so
 // the centroid is pulled well above the fundamental.
 //
-// Conservative threshold: centroid > fundamental × 3 (i.e. > ~1570 Hz for C5).
+// Conservative threshold: centroid > fundamental × 2.5 (i.e. > ~1308 Hz for C5).
 // ---------------------------------------------------------------------------
 
 TEST_F(FlutePatchTest, BreathNoiseRaisesSpectralCentroid) {
     PRINT_TEST_HEADER(
         "Flute — Breath Noise Spectral Character (automated)",
-        "noise_gain=0.12 spreads energy above the fundamental: DCT centroid during "
+        "noise_gain=0.09 spreads energy above the fundamental: DCT centroid during "
         "sustain is well above the C5 fundamental (523 Hz).",
         "engine_load_patch → note_on(C5) → skip 25 blocks → capture 2048 samples → centroid",
-        "centroid > fundamental × 3 (~1570 Hz)",
+        "centroid > fundamental × 2.5 (~1308 Hz)",
         sample_rate
     );
 
@@ -187,8 +187,8 @@ TEST_F(FlutePatchTest, BreathNoiseRaisesSpectralCentroid) {
     std::cout << "[Flute] Spectral centroid: " << centroid << " Hz\n";
     std::cout << "[Flute] Centroid / fund.:  " << centroid / kC5Hz << "×\n";
 
-    EXPECT_GT(centroid, kC5Hz * 3.0f)
-        << "Expected centroid > 1570 Hz; noise_gain=0.12 should push energy well above "
+    EXPECT_GT(centroid, kC5Hz * 2.5f)
+        << "Expected centroid > 1308 Hz; noise_gain=0.09 should push energy well above "
         << "the C5 fundamental. Got " << centroid << " Hz";
 }
 

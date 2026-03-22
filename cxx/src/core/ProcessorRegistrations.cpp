@@ -31,6 +31,7 @@
 #include "../dsp/routing/InverterProcessor.hpp"
 #include "../dsp/routing/CvMixerProcessor.hpp"
 #include "../dsp/routing/CvSplitterProcessor.hpp"
+#include "../dsp/routing/CvScalerProcessor.hpp"
 #include "../dsp/routing/MathsProcessor.hpp"
 #include "../dsp/routing/GateDelayProcessor.hpp"
 #include "../dsp/routing/SampleHoldProcessor.hpp"
@@ -128,6 +129,11 @@ void register_builtin_processors() {
         "CV_SPLITTER",
         "1-to-4 CV fan-out with per-output gain scaling",
         [](int sr) { return std::make_unique<CvSplitterProcessor>(sr); }
+    );
+    reg.register_module(
+        "CV_SCALER",
+        "CV amplifier/attenuverter — scales a control signal by an arbitrary factor",
+        [](int sr) { return std::make_unique<CvScalerProcessor>(sr); }
     );
     reg.register_module(
         "MATHS",

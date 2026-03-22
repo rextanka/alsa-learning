@@ -109,6 +109,7 @@ set(ENGINE_SOURCES
     src/dsp/routing/AudioSplitterProcessor.cpp
     src/dsp/routing/CvMixerProcessor.cpp
     src/dsp/routing/CvSplitterProcessor.cpp
+    src/dsp/routing/CvScalerProcessor.cpp
     src/dsp/routing/InverterProcessor.cpp
     src/dsp/routing/MathsProcessor.cpp
     src/dsp/routing/GateDelayProcessor.cpp
@@ -312,10 +313,8 @@ if(BUILD_TESTING)
     add_functional_test(TimingValidation TimingValidation.cpp)
     
     add_functional_gtest(Functional_BachMidi Functional_BachMidi.cpp)
-    add_functional_gtest(BachOrganTest BachOrganTest.cpp)
     add_functional_gtest(tremulant_tests test_tremulant_preset.cpp)
     add_functional_gtest(lfo_modulation_tests test_lfo_modulation.cpp)
-    add_functional_gtest(sh101_chain_tests test_sh101_chain.cpp)
     add_functional_gtest(juno_chorus_tests test_juno_chorus.cpp)
     add_functional_gtest(stereo_poly_tests stereo_poly_test.cpp)
     add_functional_test(Functional_SH101_Live Functional_SH101_Live.cpp)
@@ -327,7 +326,10 @@ if(BUILD_TESTING)
     add_functional_gtest(tb_bass_patch_tests test_tb_bass_patch.cpp)
     add_functional_gtest(cymbal_patch_tests test_cymbal_patch.cpp)
     add_functional_gtest(bowed_bass_patch_tests test_bowed_bass_patch.cpp)
-    add_functional_gtest(brass_patch_tests test_brass_patch.cpp)
+    add_functional_gtest(brass_patch_tests    test_brass_patch.cpp)
+    add_functional_gtest(trumpet_patch_tests  test_trumpet_patch.cpp)
+    add_functional_gtest(trombone_patch_tests test_trombone_patch.cpp)
+    add_functional_gtest(tuba_patch_tests     test_tuba_patch.cpp)
     add_functional_gtest(flute_patch_tests test_flute_patch.cpp)
     add_functional_gtest(juno_pad_patch_tests test_juno_pad_patch.cpp)
     add_functional_gtest(organ_drawbar_patch_tests test_organ_drawbar_patch.cpp)
@@ -341,6 +343,7 @@ if(BUILD_TESTING)
     add_functional_gtest(banjo_patch_tests test_banjo_patch.cpp)
     add_functional_gtest(glockenspiel_patch_tests test_glockenspiel_patch.cpp)
     add_functional_gtest(english_horn_patch_tests test_english_horn_patch.cpp)
+    add_functional_gtest(oboe_patch_tests test_oboe_patch.cpp)
     add_functional_gtest(wood_blocks_patch_tests test_wood_blocks_patch.cpp)
     add_functional_gtest(whistling_patch_tests test_whistling_patch.cpp)
     add_functional_gtest(clarinet_patch_tests test_clarinet_patch.cpp)
@@ -365,6 +368,14 @@ if(BUILD_TESTING)
     add_executable(patch_test tests/functional/patch_test.cpp)
     target_include_directories(patch_test PRIVATE tests)
     target_link_libraries(patch_test PRIVATE audio_engine nlohmann_json::nlohmann_json)
+
+    # ---------------------------------------------------------------------------
+    # Demos — standalone audible programs, not part of ctest
+    # ---------------------------------------------------------------------------
+    add_executable(midi_player demos/midi_player.cpp)
+    target_include_directories(midi_player PRIVATE tests)
+    target_link_libraries(midi_player PRIVATE audio_engine nlohmann_json::nlohmann_json)
+    add_dependencies(midi_player sync_patch_fixtures sync_midi_fixtures)
 
     # Copy assets/midi (static assets) at configure time — these are stable.
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets/midi

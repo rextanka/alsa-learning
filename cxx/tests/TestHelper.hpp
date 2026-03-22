@@ -103,9 +103,11 @@ inline void print_test_header(const char* test_name,
     std::cout << "Intent:   " << intent << std::endl;
     std::cout << "Chain:    " << signal_chain << std::endl;
     std::cout << "Expected: " << expected << std::endl;
-    std::cout << "Hardware: " << sample_rate << "Hz | ~" 
+    std::cout << "Hardware: " << sample_rate << "Hz | ~"
               << std::fixed << std::setprecision(1) << latency_ms << "ms latency (512 samples)" << std::endl;
     std::cout << "================================================================" << std::endl;
+    // Reset stream formatting so callers see default float output, not fixed/1dp.
+    std::cout << std::defaultfloat << std::setprecision(6);
 }
 
 #define PRINT_TEST_HEADER(name, intent, chain, expected, rate) \

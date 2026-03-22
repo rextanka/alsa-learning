@@ -1,9 +1,9 @@
 {
   "version": 3,
-  "name": "Brass / Horn",
+  "name": "Trombone",
   "groups": [{
     "id": 0,
-    "comment": "Roland System 100M Fig 1-6: VCO (saw, 8') → VCF → VCA. ADSR fans via CV_SPLITTER to VCA amplitude and (via CV_SCALER scale=0.5) to VCF cutoff. Keyboard CV auto-tracked into VCF.",
+    "comment": "Roland System 100M Fig 1-6 Trombone variant: VCO (saw, 8') → VCF → VCA. VCF MOD IN at 90% (scale=0.9) gives stronger filter sweep than Horn. Sawtooth waveform, slightly lower cutoff (1800Hz) for the warm low-brass body.",
     "chain": [
       {"type": "COMPOSITE_GENERATOR", "tag": "VCO"},
       {"type": "ADSR_ENVELOPE",        "tag": "ENV"},
@@ -22,12 +22,12 @@
     ],
     "parameters": {
       "VCO":  {"saw_gain": 1.0, "footage": 8},
-      "VCF":  {"cutoff": 2000.0, "resonance": 0.2},
+      "VCF":  {"cutoff": 1800.0, "resonance": 0.2},
       "ENV":  {"attack": 0.01, "decay": 0.08, "sustain": 0.65, "release": 0.15},
-      "VMOD": {"scale": 0.5}
+      "VMOD": {"scale": 0.9}
     }
   }],
   "post_chain": [
-    {"type": "REVERB_FREEVERB", "parameters": {"room_size": 0.55, "damping": 0.6, "wet": 0.2}}
+    {"type": "REVERB_FREEVERB", "parameters": {"room_size": 0.6, "damping": 0.65, "wet": 0.25}}
   ]
 }

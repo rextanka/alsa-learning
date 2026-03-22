@@ -35,6 +35,8 @@ public:
         reset_oscillator_state();
     }
 
+    double get_phase() const { return phase_; }
+
 protected:
     double phase_;  // Phase accumulator (0.0 to 1.0)
 

@@ -4,70 +4,63 @@
   "groups": [
     {
       "id": 0,
+      "comment": "Roland System 100M Fig 1-14: two-VCO additive synthesis with hard sync. VCO2 (saw, master) syncs VCO1 (pulse, slave) — slave phase resets each master cycle, adding harmonic brightness dependent on pitch ratio. Both mix via AUDIO_MIXER before VCF. ADSR fans via CV_SPLITTER to VCA amplitude and VCF cutoff. Keyboard CV auto-tracked into VCF.",
       "chain": [
-        {
-          "type": "COMPOSITE_GENERATOR",
-          "tag": "VCO"
-        },
-        {
-          "type": "SH_FILTER",
-          "tag": "VCF"
-        },
-        {
-          "type": "ADSR_ENVELOPE",
-          "tag": "ENV"
-        },
-        {
-          "type": "VCA",
-          "tag": "VCA"
-        }
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO1" },
+        { "type": "AUDIO_MIXER",         "tag": "MIX"  },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV"  },
+        { "type": "CV_SPLITTER",         "tag": "SPL"  },
+        { "type": "SH_FILTER",           "tag": "VCF"  },
+        { "type": "VCA",                 "tag": "VCA"  }
       ],
       "connections": [
         {
-          "from_tag": "VCO",
-          "from_port": "audio_out",
-          "to_tag": "VCF",
-          "to_port": "audio_in"
+          "from_tag": "VCO2", "from_port": "sync_out",
+          "to_tag":   "VCO1", "to_port":   "sync_in"
         },
         {
-          "from_tag": "VCF",
-          "from_port": "audio_out",
-          "to_tag": "VCA",
-          "to_port": "audio_in"
+          "from_tag": "VCO1", "from_port": "audio_out",
+          "to_tag":   "MIX",  "to_port":   "audio_in_1"
         },
         {
-          "from_tag": "ENV",
-          "from_port": "envelope_out",
-          "to_tag": "VCA",
-          "to_port": "gain_cv"
+          "from_tag": "VCO2", "from_port": "audio_out",
+          "to_tag":   "MIX",  "to_port":   "audio_in_2"
+        },
+        {
+          "from_tag": "MIX",  "from_port": "audio_out",
+          "to_tag":   "VCF",  "to_port":   "audio_in"
+        },
+        {
+          "from_tag": "VCF",  "from_port": "audio_out",
+          "to_tag":   "VCA",  "to_port":   "audio_in"
+        },
+        {
+          "from_tag": "ENV",  "from_port": "envelope_out",
+          "to_tag":   "SPL",  "to_port":   "cv_in"
+        },
+        {
+          "from_tag": "SPL",  "from_port": "cv_out_1",
+          "to_tag":   "VCA",  "to_port":   "gain_cv"
+        },
+        {
+          "from_tag": "SPL",  "from_port": "cv_out_2",
+          "to_tag":   "VCF",  "to_port":   "cutoff_cv"
         }
       ],
       "parameters": {
-        "VCO": {
-          "pulse_gain": 1.0,
-          "pulse_width": 0.5
-        },
-        "VCF": {
-          "cutoff": 2200.0,
-          "resonance": 0.3
-        },
-        "ENV": {
-          "attack": 0.012,
-          "decay": 0.0,
-          "sustain": 1.0,
-          "release": 0.06
-        }
+        "VCO1": { "pulse_gain": 1.0, "pulse_width": 0.5 },
+        "VCO2": { "saw_gain":   1.0 },
+        "MIX":  { "gain_1": 0.6, "gain_2": 0.4 },
+        "VCF":  { "cutoff": 2200.0, "resonance": 0.3 },
+        "ENV":  { "attack": 0.012, "decay": 0.0, "sustain": 1.0, "release": 0.06 }
       }
     }
   ],
   "post_chain": [
     {
       "type": "REVERB_FREEVERB",
-      "parameters": {
-        "room_size": 0.55,
-        "damping": 0.6,
-        "wet": 0.2
-      }
+      "parameters": { "room_size": 0.55, "damping": 0.6, "wet": 0.2 }
     }
   ]
 }

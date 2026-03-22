@@ -83,7 +83,20 @@ public:
      */
     void inject_audio(std::string_view port_name,
                       std::span<const float> audio) override {
-        if (port_name == "fm_in") fm_in_ = audio;
+        if (port_name == "fm_in")   fm_in_   = audio;
+        if (port_name == "sync_in") sync_in_ = audio;
+    }
+
+    /**
+     * @brief Expose sync_out trigger buffer produced during the last do_pull().
+     *
+     * Returns a span of 1.0f pulses (one per saw-phase-wrap sample) for routing
+     * to a slave COMPOSITE_GENERATOR's sync_in via Voice::pull_mono().
+     */
+    std::span<const float> get_secondary_output(std::string_view port_name) const override {
+        if (port_name == "sync_out" && sync_buf_size_ > 0)
+            return std::span<const float>(sync_buf_.data(), sync_buf_size_);
+        return {};
     }
 
 protected:
@@ -112,6 +125,12 @@ private:
     SmoothedParam fm_depth_{0.0f};
 
     std::span<const float> fm_in_;
+    std::span<const float> sync_in_;
+
+    // Sync output: filled during do_pull() with 1.0f on saw-phase-wrap samples.
+    static constexpr size_t kMaxBlockSize = 4096;
+    std::array<float, kMaxBlockSize> sync_buf_{};
+    size_t sync_buf_size_ = 0;
 
     std::unique_ptr<PulseOscillatorProcessor>    pulse_osc_;
     std::unique_ptr<SubOscillator>               sub_osc_;

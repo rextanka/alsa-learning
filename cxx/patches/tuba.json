@@ -1,9 +1,9 @@
 {
   "version": 3,
-  "name": "Brass / Horn",
+  "name": "Tuba",
   "groups": [{
     "id": 0,
-    "comment": "Roland System 100M Fig 1-6: VCO (saw, 8') → VCF → VCA. ADSR fans via CV_SPLITTER to VCA amplitude and (via CV_SCALER scale=0.5) to VCF cutoff. Keyboard CV auto-tracked into VCF.",
+    "comment": "Roland System 100M Fig 1-6 Tuba variant: VCO (saw, 32') → VCF → VCA. footage=32 shifts pitch down 2 octaves (-24 semitones) for the sub-bass tuba register. Shorter ADSR (A=20ms D=20ms S=60% R=20ms) per book. Lower VCF cutoff (1500Hz) for dark tubby character.",
     "chain": [
       {"type": "COMPOSITE_GENERATOR", "tag": "VCO"},
       {"type": "ADSR_ENVELOPE",        "tag": "ENV"},
@@ -21,13 +21,13 @@
       {"from_tag":"VMOD","from_port":"cv_out",       "to_tag":"VCF",  "to_port":"cutoff_cv"}
     ],
     "parameters": {
-      "VCO":  {"saw_gain": 1.0, "footage": 8},
-      "VCF":  {"cutoff": 2000.0, "resonance": 0.2},
-      "ENV":  {"attack": 0.01, "decay": 0.08, "sustain": 0.65, "release": 0.15},
+      "VCO":  {"saw_gain": 1.0, "footage": 32},
+      "VCF":  {"cutoff": 1500.0, "resonance": 0.15},
+      "ENV":  {"attack": 0.02, "decay": 0.02, "sustain": 0.60, "release": 0.02},
       "VMOD": {"scale": 0.5}
     }
   }],
   "post_chain": [
-    {"type": "REVERB_FREEVERB", "parameters": {"room_size": 0.55, "damping": 0.6, "wet": 0.2}}
+    {"type": "REVERB_FREEVERB", "parameters": {"room_size": 0.65, "damping": 0.7, "wet": 0.25}}
   ]
 }

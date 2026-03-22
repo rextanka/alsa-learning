@@ -4,7 +4,7 @@
   "groups": [
     {
       "id": 0,
-      "comment": "Roland System-100A style harpsichord (Fig 4-6): pulse VCO, ENV opens VCF on attack, INV modulates PWM for timbral shift on decay, HPF removes bass muddiness.",
+      "comment": "Roland System 100M style harpsichord (M-110/M-120/M-130): pulse VCO, ENV drives VCA amplitude and (via INV) modulates PWM for timbral pluck, HPF removes bass muddiness. VCF is static.",
       "chain": [
         {
           "type": "COMPOSITE_GENERATOR",
@@ -59,12 +59,6 @@
         {
           "from_tag": "ENV",
           "from_port": "envelope_out",
-          "to_tag": "VCF",
-          "to_port": "cutoff_cv"
-        },
-        {
-          "from_tag": "ENV",
-          "from_port": "envelope_out",
           "to_tag": "INV",
           "to_port": "cv_in"
         },
@@ -86,14 +80,14 @@
           "resonance": 0.1
         },
         "VCF": {
-          "cutoff": 4800.0,
+          "cutoff": 2400.0,
           "resonance": 0.35
         },
         "ENV": {
           "attack": 0.001,
-          "decay": 0.45,
+          "decay": 0.65,
           "sustain": 0.0,
-          "release": 0.08
+          "release": 0.6
         },
         "INV": {
           "scale": -0.8

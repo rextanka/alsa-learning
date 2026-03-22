@@ -1189,6 +1189,15 @@ engine_bake(engine);
 | Selective module stripping      | Not yet — CMake presets exist but all 30 modules compile in every preset; future phase              |
 | USB MIDI HAL                    | Planned — Phase 25 (`midi_open_input`, `midi_connect_to_engine` C API)                              |
 | Multi-timbral SMF playback      | Planned — Phase 23 (MIDI channel → VoiceGroup routing table)                                        |
+| `MIDI_CV` source module         | **Planned — Phase 27E**; routable `pitch_cv`, `gate_cv`, `velocity_cv`, `aftertouch_cv` output ports; replaces implicit lifecycle callbacks |
+| Two-port pitch on `COMPOSITE_GENERATOR` | **Planned — Phase 27E**; `pitch_base_cv` (absolute, from `MIDI_CV`) + `pitch_cv` (mod offset, from LFO/portamento) sum at oscillator |
+| Gate-only trigger model         | **Planned — Phase 27E**; `engine_note_on/off` drive `MIDI_CV` state; `on_note_on/off` callbacks removed from public API |
+| `LFO.control_out_inv` port      | **Planned — Phase 27E**; inverted output port (−1 × `control_out`); eliminates `INVERTER` for counter-phase routing |
+| `CV_MIXER.inv_out` port         | **Planned — Phase 27E**; inverted sum output (−1 × `cv_out`); M-132 INV OUT precedent; counter-phase routing without a downstream `INVERTER` |
+| Roland M-132 gate-bias pattern  | **Planned — Phase 27E**; `MIDI_CV.gate_cv` → `CV_MIXER` + `offset` bias replicates M-132 gated LFO trigger (banjo Fig 3-4 canonical wiring); see BRIDGE_GUIDE.md §15.5 |
+| `ECHO_DELAY.time_cv` port       | **Planned — Phase 27E**; additive delay-time CV modulation (seconds); M-172 BBD clock CV precedent |
+| `GATE_DELAY` enhancements       | **Planned — Phase 27E**; `gate_in_b` OR input, `gate_time` fixed-pulse parameter, `delay_time` extended to 6 s |
+| Patch audit — Phase 27E migration | **Deferred**; 29 patches reviewed against Roland service notes after Phase 27E implementation; 10 patches verified in arch-audit (2026-03-21) |
 | Module introspection API        | **Implemented** — Phase 27A (`module_get_descriptor_json`, `module_registry_get_all_json`)           |
 | Patch serialization             | **Implemented** — Phase 27B (`engine_load_patch_json`, `engine_get_patch_json`, `engine_save_patch`); patch format v3 adds top-level `post_chain` array for global effects |
 | Role classification             | **Implemented** — Phase 27C; `"role"` field in every module's JSON descriptor (`SOURCE`, `SINK`, `PROCESSOR`); pure CV modules (`LFO`, `ADSR_ENVELOPE`, etc.) and `COMPOSITE_GENERATOR` are `PROCESSOR` |
@@ -1226,8 +1235,9 @@ engine_bake(engine);
 | `DISTORTION`         | `drive` [1, 40], `character` [0, 1]                                             |
 | `NOISE_GATE`         | `threshold` [0, 1], `attack` (s), `release` (s)                                |
 | `ENVELOPE_FOLLOWER`  | `attack` (s), `release` (s)                                                     |
-| `CV_MIXER`           | `gain_1`–`gain_4` [-1, 1], `offset` [-1, 1]; ports: `cv_in_1`–`cv_in_4`, `cv_out` |
-| `CV_SPLITTER`        | `gain_1`–`gain_4` [0, 1]; ports: `cv_in`, `cv_out_1`–`cv_out_4`                |
+| `CV_MIXER`           | `gain_1`–`gain_4` [-1, 1], `offset` [-1, 1]; ports: `cv_in_1`–`cv_in_4`, `cv_out`, `inv_out` (always −1 × `cv_out`; Phase 27E) |
+| `CV_SPLITTER`        | `gain_1`–`gain_4` [0, 1]; ports: `cv_in`, `cv_out_1`–`cv_out_4`; all outputs share one buffer — only `gain_1` applied by executor; use downstream `CV_SCALER` for per-branch depth |
+| `CV_SCALER`          | `gain` [-4, 4] (default 1.0); ports: `cv_in`, `cv_out`; scales a CV signal by an arbitrary factor (attenuator, inverter, or amplifier) |
 | `SAMPLE_HOLD`        | (none — driven by clock_in port)                                                |
 | `GATE_DELAY`         | `delay_ms`                                                                      |
 | `INVERTER`           | `scale` (default −1.0)                                                          |
