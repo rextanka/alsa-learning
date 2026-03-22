@@ -34,7 +34,8 @@ the companion test thresholds and MIDI fixture to match.
 
 ## Patch format
 
-Patches are JSON v2 (v3 adds `voice_mode`, `voice_count`, `post_chain` —
-see ARCH_PLAN.md §Phase 27B for the full specification).
+Patches are JSON v2 (v3 adds a top-level `post_chain` array for global
+effects — see ARCH_PLAN.md §Phase 27B for the full specification).
+`voice_mode` and `voice_count` fields are reserved but not yet implemented.
 
 See `docs/PATCH_SPEC.md` for the complete format reference.

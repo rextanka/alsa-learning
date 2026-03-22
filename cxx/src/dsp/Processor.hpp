@@ -225,7 +225,7 @@ public:
      * not store the span pointer across blocks.
      *
      * Default: no-op. Override in processors that consume CV inputs
-     * (CV_MIXER, CV_SPLITTER, MATHS, SAMPLE_HOLD, INVERTER, ADSR ext_gate_in).
+     * (CV_MIXER, CV_SPLITTER, MATHS, SAMPLE_HOLD, INVERTER, ADSR gate_cv/trig_cv).
      */
     virtual void inject_cv(std::string_view /*port_name*/, std::span<const float> /*cv*/) {}
 
@@ -255,6 +255,28 @@ public:
     }
 
     /**
+     * @brief Returns true if this node provides a distinct scalar CV value for
+     *        the named port (beyond the primary do_pull buffer).
+     *
+     * Override in multi-port CV sources (e.g., MIDI_CV) to declare secondary
+     * output ports (gate_cv, velocity_cv, aftertouch_cv).  Voice uses this to
+     * allocate a separate block-wide buffer filled with get_cv_output(port).
+     * Default: false (single-output sources like LFO, ADSR, CV_MIXER).
+     */
+    virtual bool provides_named_cv(std::string_view /*port*/) const { return false; }
+
+    /**
+     * @brief Returns the current scalar CV value for the named output port.
+     *
+     * Called only for ports where provides_named_cv() returns true.
+     * Voice fills a full-block buffer with this value so downstream nodes
+     * (CV_MIXER, VCA) receive it as a properly-sized span via inject_cv or
+     * apply_parameter dispatch.
+     * Default: 0.0f.
+     */
+    virtual float get_cv_output(std::string_view /*port*/) const { return 0.0f; }
+
+    /**
      * @brief Notification that a note-on event has occurred.
      *
      * Called by Voice::note_on() for all mod_sources before audio processing.
@@ -263,6 +285,16 @@ public:
      * (AdsrEnvelopeProcessor, GateDelayProcessor).
      */
     virtual void on_note_on(double /*frequency*/) {}
+
+    /**
+     * @brief Notification of the velocity for the upcoming note-on event.
+     *
+     * Called by Voice::note_on() for all mod_sources immediately before
+     * on_note_on().  Override in processors that carry velocity state
+     * (e.g., MIDI_CV stores it so velocity_cv is ready when on_note_on fires).
+     * Default: no-op.
+     */
+    virtual void on_note_velocity(float /*velocity*/) {}
 
     /**
      * @brief Notification that a note-off event has occurred.

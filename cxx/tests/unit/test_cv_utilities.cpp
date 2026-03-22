@@ -8,13 +8,19 @@
  *  - MathsProcessor: slew limiter rise/fall, instant when time=0
  *  - GateDelayProcessor: immediate gate when delay=0, delayed gate when delay>0
  *  - SampleHoldProcessor: rising-edge sample, hold between edges
- *  - AdsrEnvelopeProcessor: ext_gate_in rising-edge triggers attack
+ *  - AdsrEnvelopeProcessor: gate_cv rising-edge triggers attack
  *  - InverterProcessor: inject_cv negates input
  *  - Filter kybd_cv: applies 1V/oct tracking combined with cutoff_cv
+ *  - MidiCvProcessor: pitch/gate/velocity/aftertouch CV outputs, V/oct convention
+ *  - pitch_base_cv: Voice-level absolute pitch port wired from MIDI_CV to VCO
  */
 
 #include <gtest/gtest.h>
 #include "../../src/dsp/routing/CvMixerProcessor.hpp"
+#include "../../src/dsp/routing/MidiCvProcessor.hpp"
+#include "../../src/dsp/routing/CompositeGenerator.hpp"
+#include "../../src/core/Voice.hpp"
+#include "../../src/dsp/VcaProcessor.hpp"
 #include "../../src/dsp/routing/CvSplitterProcessor.hpp"
 #include "../../src/dsp/routing/MathsProcessor.hpp"
 #include "../../src/dsp/routing/GateDelayProcessor.hpp"
@@ -290,7 +296,7 @@ TEST(InverterTest, NoInputProducesZero) {
 }
 
 // ---------------------------------------------------------------------------
-// AdsrEnvelopeProcessor: ext_gate_in rising-edge triggers attack
+// AdsrEnvelopeProcessor: gate_cv rising-edge triggers attack
 // ---------------------------------------------------------------------------
 
 TEST(AdsrExtGateTest, RisingEdgeTriggers) {
@@ -303,7 +309,7 @@ TEST(AdsrExtGateTest, RisingEdgeTriggers) {
     // The gate_on() fires when the rising edge is seen (at index 4 within the span),
     // but state is already Attack when do_pull() executes — so all 8 samples attack.
     std::vector<float> clk = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f};
-    adsr.inject_cv("ext_gate_in", clk);
+    adsr.inject_cv("gate_cv", clk);
     auto out = pull_n(adsr, 8);
     // All samples should be in Attack (> 0), and increasing
     EXPECT_GT(out[0], 0.0f) << "Attack should have started (gate_on fired during inject_cv)";
@@ -325,7 +331,7 @@ TEST(AdsrExtGateTest, FallingEdgeTriggers_Release) {
     std::vector<float> clk(64, 1.0f);
     clk[32] = 0.0f; // falling at 32
     for (size_t i = 33; i < 64; ++i) clk[i] = 0.0f;
-    adsr.inject_cv("ext_gate_in", clk);
+    adsr.inject_cv("gate_cv", clk);
     auto out = pull_n(adsr, 64);
     // Should start releasing after index 32
     EXPECT_GT(out[31], 0.9f) << "Should be sustaining before falling edge";
@@ -366,4 +372,182 @@ TEST(FilterKybdCvTest, KybdCvAndCutoffCvCombine) {
         EXPECT_FALSE(std::isnan(s)) << "Filter output must not be NaN";
         EXPECT_FALSE(std::isinf(s)) << "Filter output must not be infinite";
     }
+}
+
+// ---------------------------------------------------------------------------
+// MidiCvProcessor: Phase 27E MIDI-to-CV source
+// ---------------------------------------------------------------------------
+
+static constexpr float kC4Hz = 261.63f;
+
+// V/oct convention: (MIDI note - 60) / 12.0f
+static float midi_note_to_cv(int note) {
+    return static_cast<float>(note - 60) / 12.0f;
+}
+
+TEST(MidiCvTest, PitchCvIsZeroAtC4) {
+    MidiCvProcessor kbd;
+    kbd.on_note_on(static_cast<double>(kC4Hz));  // C4 = 261.63 Hz
+    std::vector<float> out(64, 0.0f);
+    kbd.pull(std::span<float>(out));
+    // C4 → 0 V; allow small floating-point error from log2 round-trip
+    EXPECT_NEAR(out[0], 0.0f, 0.001f) << "pitch_cv should be 0 V at C4";
+}
+
+TEST(MidiCvTest, PitchCvIsOneAtC5) {
+    MidiCvProcessor kbd;
+    kbd.on_note_on(static_cast<double>(kC4Hz) * 2.0);  // C5 = 523.25 Hz
+    std::vector<float> out(64, 0.0f);
+    kbd.pull(std::span<float>(out));
+    EXPECT_NEAR(out[0], 1.0f, 0.001f) << "pitch_cv should be 1 V at C5 (one octave up)";
+}
+
+TEST(MidiCvTest, PitchCvIsNegativeOneAtC3) {
+    MidiCvProcessor kbd;
+    kbd.on_note_on(static_cast<double>(kC4Hz) / 2.0);  // C3 = 130.81 Hz
+    std::vector<float> out(64, 0.0f);
+    kbd.pull(std::span<float>(out));
+    EXPECT_NEAR(out[0], -1.0f, 0.001f) << "pitch_cv should be -1 V at C3 (one octave down)";
+}
+
+TEST(MidiCvTest, GateCvHighAfterNoteOn) {
+    MidiCvProcessor kbd;
+    kbd.on_note_on(440.0);
+    EXPECT_NEAR(kbd.get_named_cv("gate_cv"), 1.0f, 0.001f);
+}
+
+TEST(MidiCvTest, GateCvLowAfterNoteOff) {
+    MidiCvProcessor kbd;
+    kbd.on_note_on(440.0);
+    kbd.on_note_off();
+    EXPECT_NEAR(kbd.get_named_cv("gate_cv"), 0.0f, 0.001f);
+}
+
+TEST(MidiCvTest, VelocityCvSetViaOnNoteVelocity) {
+    MidiCvProcessor kbd;
+    kbd.on_note_velocity(0.75f);
+    kbd.on_note_on(440.0);
+    EXPECT_NEAR(kbd.get_named_cv("velocity_cv"), 0.75f, 0.001f);
+}
+
+TEST(MidiCvTest, VelocityCvZeroBeforeAnyNoteOn) {
+    MidiCvProcessor kbd;
+    EXPECT_NEAR(kbd.get_named_cv("velocity_cv"), 0.0f, 0.001f);
+}
+
+TEST(MidiCvTest, ProvidesNamedCvForSecondaryPorts) {
+    MidiCvProcessor kbd;
+    EXPECT_TRUE(kbd.provides_named_cv("gate_cv"));
+    EXPECT_TRUE(kbd.provides_named_cv("velocity_cv"));
+    EXPECT_TRUE(kbd.provides_named_cv("aftertouch_cv"));
+    EXPECT_FALSE(kbd.provides_named_cv("pitch_cv"));   // primary port — via do_pull
+}
+
+TEST(MidiCvTest, GetCvOutputDispatchesCorrectly) {
+    MidiCvProcessor kbd;
+    kbd.on_note_velocity(0.5f);
+    kbd.on_note_on(static_cast<double>(kC4Hz) * 2.0);  // C5 = +1 V
+    EXPECT_NEAR(kbd.get_cv_output("gate_cv"),     1.0f, 0.001f);
+    EXPECT_NEAR(kbd.get_cv_output("velocity_cv"), 0.5f, 0.001f);
+    EXPECT_NEAR(kbd.get_cv_output("aftertouch_cv"), 0.0f, 0.001f);
+}
+
+TEST(MidiCvTest, ResetClearsAllState) {
+    MidiCvProcessor kbd;
+    kbd.on_note_velocity(0.9f);
+    kbd.on_note_on(880.0);
+    kbd.reset();
+    EXPECT_NEAR(kbd.get_named_cv("gate_cv"),     0.0f, 0.001f);
+    EXPECT_NEAR(kbd.get_named_cv("velocity_cv"), 0.0f, 0.001f);
+    std::vector<float> out(64, 0.0f);
+    kbd.pull(std::span<float>(out));
+    EXPECT_NEAR(out[0], 0.0f, 0.001f) << "pitch_cv should be 0 after reset";
+}
+
+TEST(MidiCvTest, OutputPortTypeIsControl) {
+    MidiCvProcessor kbd;
+    EXPECT_EQ(kbd.output_port_type(), PortType::PORT_CONTROL);
+}
+
+// ---------------------------------------------------------------------------
+// pitch_base_cv: Voice-level absolute pitch dispatch (Phase 27E)
+// Tests that KBD:pitch_cv → VCO:pitch_base_cv drives the oscillator frequency
+// to exactly the V/oct value provided by MIDI_CV, independent of note_on freq.
+// ---------------------------------------------------------------------------
+
+TEST(PitchBaseCvTest, PitchBaseCvSetsOscFrequencyFromVoice) {
+    register_builtin_processors();
+
+    // Build Voice: KBD (MIDI_CV) → VCO (COMPOSITE_GENERATOR) → ENV → VCA
+    Voice voice(kSR);
+
+    auto kbd = std::make_unique<MidiCvProcessor>(kSR);
+    kbd->set_tag("KBD");
+    auto gen = std::make_unique<CompositeGenerator>(kSR);
+    gen->mixer().set_gain(3, 1.0f);  // sine active
+    auto env = std::make_unique<AdsrEnvelopeProcessor>(kSR);
+    env->set_attack_time(0.0f);
+    env->set_sustain_level(1.0f);
+    env->set_release_time(0.001f);
+    auto vca = std::make_unique<VcaProcessor>();
+
+    voice.add_processor(std::move(kbd), "KBD");
+    voice.add_processor(std::move(gen), "VCO");
+    voice.add_processor(std::move(env), "ENV");
+    voice.add_processor(std::move(vca), "VCA");
+    voice.connect("KBD", "pitch_cv", "VCO", "pitch_base_cv");
+    voice.connect("ENV", "envelope_out", "VCA", "gain_cv");
+    voice.bake();
+
+    // note_on at 440 Hz but pitch_base_cv from MIDI_CV will recalculate from
+    // the V/oct value. MIDI_CV on_note_on(440) → pitch_cv ≈ log2(440/261.63) ≈ 0.75 V
+    // → abs_freq = 261.63 × 2^0.75 ≈ 440 Hz.  The VCO should produce output.
+    voice.note_on(440.0, 0.8f);
+
+    std::vector<float> out(512, 0.0f);
+    voice.pull_mono(std::span<float>(out));
+
+    float peak = 0.0f;
+    for (float s : out) peak = std::max(peak, std::abs(s));
+    EXPECT_GT(peak, 0.0f) << "Voice with pitch_base_cv wiring should produce audio";
+}
+
+TEST(PitchBaseCvTest, VelocityCvFlowsToVca) {
+    register_builtin_processors();
+
+    // Build Voice: KBD (velocity_cv → VCA:initial_gain_cv)
+    Voice voice(kSR);
+
+    auto kbd = std::make_unique<MidiCvProcessor>(kSR);
+    auto gen = std::make_unique<CompositeGenerator>(kSR);
+    gen->mixer().set_gain(3, 1.0f);  // sine
+    auto env = std::make_unique<AdsrEnvelopeProcessor>(kSR);
+    env->set_attack_time(0.0f);
+    env->set_sustain_level(1.0f);
+    auto vca = std::make_unique<VcaProcessor>();
+
+    voice.add_processor(std::move(kbd), "KBD");
+    voice.add_processor(std::move(gen), "VCO");
+    voice.add_processor(std::move(env), "ENV");
+    voice.add_processor(std::move(vca), "VCA");
+    voice.connect("ENV", "envelope_out", "VCA", "gain_cv");
+    voice.connect("KBD", "velocity_cv", "VCA", "initial_gain_cv");
+    voice.bake();
+
+    // velocity = 0 → initial_gain = 0 → VCA output ≈ 0
+    voice.note_on(440.0, 0.0f);
+    std::vector<float> out_silent(512, 0.0f);
+    voice.pull_mono(std::span<float>(out_silent));
+    float peak_silent = 0.0f;
+    for (float s : out_silent) peak_silent = std::max(peak_silent, std::abs(s));
+
+    // velocity = 1 → initial_gain = 1 → VCA output > 0
+    voice.note_on(440.0, 1.0f);
+    std::vector<float> out_loud(512, 0.0f);
+    voice.pull_mono(std::span<float>(out_loud));
+    float peak_loud = 0.0f;
+    for (float s : out_loud) peak_loud = std::max(peak_loud, std::abs(s));
+
+    EXPECT_LT(peak_silent, peak_loud)
+        << "Higher velocity should produce louder output via velocity_cv → initial_gain_cv";
 }

@@ -7,6 +7,7 @@
  * Ports (PORT_CONTROL):
  *   cv_in_1 … cv_in_4  IN  bipolar [-1,1]
  *   cv_out              OUT bipolar [-1,1]
+ *   cv_out_inv          OUT bipolar [-1,1] — always -1 x cv_out (M-132 INV OUT)
  *
  * Parameters:
  *   gain_1 … gain_4  (-1.0 – 1.0, default 1.0) — per-input scale; negative = inversion

@@ -46,7 +46,7 @@ void VoiceManager::set_voice_spread(float spread) {
     voice_spread_ = std::clamp(spread, 0.0f, 1.0f);
 }
 
-void VoiceManager::note_on(int note, float /* velocity */, double frequency) {
+void VoiceManager::note_on(int note, float velocity, double frequency) {
     double freq = (frequency > 0.0) ? frequency : note_to_freq(note);
 
     // 1. Check if the note is already playing (re-trigger)
@@ -55,7 +55,7 @@ void VoiceManager::note_on(int note, float /* velocity */, double frequency) {
         auto& slot = voices_[existing_voice_idx];
         if (slot.active && slot.current_note == note) {
             slot.last_note_on_time = next_timestamp();
-            slot.voice->note_on(freq);
+            slot.voice->note_on(freq, velocity);
             return;
         }
     }
@@ -76,11 +76,11 @@ void VoiceManager::note_on(int note, float /* velocity */, double frequency) {
         slot.active = true;
         slot.last_note_on_time = next_timestamp();
         note_to_voice_map_[note & 0x7F] = idle_idx;
-        
+
         float pan_pos = (idle_idx % 2 == 0) ? -1.0f : 1.0f;
         slot.voice->set_pan(pan_pos * voice_spread_);
-        
-        slot.voice->note_on(freq);
+
+        slot.voice->note_on(freq, velocity);
         return;
     }
 
@@ -113,8 +113,8 @@ void VoiceManager::note_on(int note, float /* velocity */, double frequency) {
         AudioLogger::instance().log_message("VoiceSteal", "stealing");
         auto& candidate = voices_[candidate_idx];
         AudioLogger::instance().log_event("VoiceSteal", static_cast<float>(candidate.current_note));
-        
-        candidate.voice->reset(); 
+
+        candidate.voice->reset();
 
         if (candidate.current_note != -1) {
             note_to_voice_map_[candidate.current_note & 0x7F] = -1;
@@ -125,11 +125,11 @@ void VoiceManager::note_on(int note, float /* velocity */, double frequency) {
         candidate.last_note_on_time = next_timestamp();
         note_to_voice_map_[note & 0x7F] = candidate_idx;
         candidate.voice->set_pan(0.0f);
-        candidate.voice->note_on(freq);
+        candidate.voice->note_on(freq, velocity);
     }
 }
 
-void VoiceManager::note_on(int note, float /* velocity */, int group_id, double frequency) {
+void VoiceManager::note_on(int note, float velocity, int group_id, double frequency) {
     double freq = (frequency > 0.0) ? frequency : note_to_freq(note);
 
     // Re-trigger check within group
@@ -138,7 +138,7 @@ void VoiceManager::note_on(int note, float /* velocity */, int group_id, double 
         auto& slot = voices_[existing_idx];
         if (slot.active && slot.current_note == note && slot.group_id == group_id) {
             slot.last_note_on_time = next_timestamp();
-            slot.voice->note_on(freq);
+            slot.voice->note_on(freq, velocity);
             return;
         }
     }
@@ -159,7 +159,7 @@ void VoiceManager::note_on(int note, float /* velocity */, int group_id, double 
         slot.last_note_on_time = next_timestamp();
         note_to_voice_map_[note & 0x7F] = idle_idx;
         slot.voice->set_pan((idle_idx % 2 == 0) ? -1.0f * voice_spread_ : voice_spread_);
-        slot.voice->note_on(freq);
+        slot.voice->note_on(freq, velocity);
         return;
     }
 
@@ -194,7 +194,7 @@ void VoiceManager::note_on(int note, float /* velocity */, int group_id, double 
         candidate.last_note_on_time = next_timestamp();
         note_to_voice_map_[note & 0x7F] = candidate_idx;
         candidate.voice->set_pan(0.0f);
-        candidate.voice->note_on(freq);
+        candidate.voice->note_on(freq, velocity);
     }
 }
 

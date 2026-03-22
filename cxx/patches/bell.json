@@ -8,17 +8,26 @@
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO1" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
         { "type": "RING_MOD",            "tag": "RM"   },
+        { "type": "AUDIO_MIXER",         "tag": "MIX"  },
+        { "type": "MOOG_FILTER",         "tag": "VCF"  },
         { "type": "ADSR_ENVELOPE",       "tag": "ENV"  },
         { "type": "VCA",                 "tag": "VCA"  }
       ],
       "connections": [
         { "from_tag": "VCO1", "from_port": "audio_out",    "to_tag": "RM",  "to_port": "audio_in_a" },
         { "from_tag": "VCO2", "from_port": "audio_out",    "to_tag": "RM",  "to_port": "audio_in_b" },
+        { "from_tag": "RM",   "from_port": "audio_out",    "to_tag": "MIX", "to_port": "audio_in_1" },
+        { "from_tag": "VCO1", "from_port": "audio_out",    "to_tag": "MIX", "to_port": "audio_in_2" },
+        { "from_tag": "VCO2", "from_port": "audio_out",    "to_tag": "MIX", "to_port": "audio_in_3" },
+        { "from_tag": "MIX",  "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"   },
+        { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"   },
         { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"    }
       ],
       "parameters": {
-        "VCO1": { "sine_gain": 1.0 },
-        "VCO2": { "sine_gain": 1.0, "transpose": 19, "detune": 63 },
+        "VCO1": { "triangle_gain": 1.0, "footage": 4 },
+        "VCO2": { "triangle_gain": 1.0, "footage": 4, "transpose": 3 },
+        "MIX":  { "gain_1": 1.0, "gain_2": 0.6, "gain_3": 0.6 },
+        "VCF":  { "cutoff": 7000.0, "resonance": 0.0 },
         "ENV":  { "attack": 0.001, "decay": 1.2, "sustain": 0.0, "release": 0.8 },
         "RM":   { "mix": 1.0 }
       }

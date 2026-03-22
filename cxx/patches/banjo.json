@@ -4,9 +4,11 @@
   "groups": [
     {
       "id": 0,
-      "comment": "Roland System 100M Fig 3-4 Repeating Trigger: VCO → VCF → VCA. LFO square wave re-triggers ADSR at strum rate via ext_gate_in, producing a rapid repeated pluck while key is held. On the original, a CV_MIXER biases the LFO negative (−10V) so it only triggers when the keyboard gate pulse cancels the bias — replicated here by the ADSR lifecycle gate keeping the envelope quiet between notes. ADSR → VCA only; VCF tracks keyboard pitch. Sawtooth oscillator for rich harmonic content of plucked metal strings.",
+      "comment": "Roland System 100M Fig 3-4 Repeating Trigger (faithful): KBD gate_cv + LFO square → CV_MIXER with -0.6 offset (≡ Roland -10V bias) → ADSR gate_cv. Without key held, LFO+bias peaks at +0.4 (below threshold) — silent. With key held, gate lifts sum to +1.0 — LFO re-triggers ADSR at strum rate. KBD pitch_cv → VCF kybd_cv for explicit filter tracking. ADSR → VCA only.",
       "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD" },
         { "type": "LFO",                 "tag": "LFO" },
+        { "type": "CV_MIXER",            "tag": "MIX" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
         { "type": "SH_FILTER",           "tag": "VCF" },
         { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
@@ -15,12 +17,16 @@
       "connections": [
         { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"    },
         { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"    },
-        { "from_tag": "LFO", "from_port": "control_out",  "to_tag": "ENV", "to_port": "ext_gate_in" },
-        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"     }
+        { "from_tag": "LFO", "from_port": "control_out",  "to_tag": "MIX", "to_port": "cv_in_1"     },
+        { "from_tag": "KBD", "from_port": "gate_cv",      "to_tag": "MIX", "to_port": "cv_in_2"     },
+        { "from_tag": "MIX", "from_port": "cv_out",       "to_tag": "ENV", "to_port": "gate_cv"     },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"     },
+        { "from_tag": "KBD", "from_port": "pitch_cv",     "to_tag": "VCF", "to_port": "kybd_cv"    }
       ],
       "parameters": {
         "VCO": { "saw_gain": 1.0 },
         "LFO": { "waveform": 2, "rate": 2.5, "intensity": 1.0 },
+        "MIX": { "gain_1": 1.0, "gain_2": 1.0, "offset": -0.6 },
         "VCF": { "cutoff": 2500.0, "resonance": 0.3 },
         "ENV": { "attack": 0.001, "decay": 0.10, "sustain": 0.15, "release": 0.05 }
       }

@@ -4,7 +4,7 @@
   "groups": [
     {
       "id": 0,
-      "comment": "TB-303 style (monophonic — Phase 27E): saw → diode filter → VCA → distortion → FDN reverb. Two envelopes match the 303 architecture: GATE (ADSR, S=1 R=20ms) opens/closes the VCA like the 303 gate; ENV (AD, decay=0.25s) sweeps only the filter cutoff via env_depth. Post-VCA distortion replicates plugging the 303 into a pedal.",
+      "comment": "TB-303 faithful: saw → diode filter → VCA → distortion → FDN reverb. AD envelope sweeps filter cutoff only. GATE ADSR (A=0, S=1, R=5ms) gives VCA a micro-release to prevent hard-cut click at note-off, matching the 303 RC gate circuit.",
       "chain": [
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO"  },
         { "type": "DIODE_FILTER",        "tag": "VCF"  },
@@ -16,8 +16,8 @@
       "connections": [
         { "from_tag": "VCO",  "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"  },
         { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"  },
-        { "from_tag": "GATE", "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"   },
         { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCF",  "to_port": "cutoff_cv" },
+        { "from_tag": "GATE", "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"   },
         { "from_tag": "VCA",  "from_port": "audio_out",    "to_tag": "DIST", "to_port": "audio_in"  }
       ],
       "parameters": {
@@ -25,11 +25,11 @@
         "VCF":  { "cutoff": 800.0, "resonance": 0.92, "env_depth": 6.0 },
         "DIST": { "drive": 8.0, "character": 0.3 },
         "ENV":  { "attack": 0.003, "decay": 0.25 },
-        "GATE": { "attack": 0.003, "decay": 0.0, "sustain": 1.0, "release": 0.020 }
+        "GATE": { "attack": 0.0, "decay": 0.0, "sustain": 1.0, "release": 0.005 }
       }
     }
   ],
   "post_chain": [
-    { "type": "REVERB_FDN", "parameters": { "decay": 1.2, "wet": 0.20, "room_size": 0.5, "damping": 0.4 } }
+    { "type": "REVERB_FDN", "parameters": { "decay": 1.2, "wet": 0.10, "room_size": 0.5, "damping": 0.4 } }
   ]
 }

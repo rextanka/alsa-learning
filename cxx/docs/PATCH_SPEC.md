@@ -81,6 +81,9 @@ Module type names (complete registry as of Phase 26):
 `INVERTER`, `CV_MIXER`, `CV_SPLITTER`, `CV_SCALER`, `MATHS`, `GATE_DELAY`, `SAMPLE_HOLD`,
 `RING_MOD`, `AUDIO_SPLITTER`, `AUDIO_MIXER`
 
+**Keyboard / MIDI source:**
+`MIDI_CV`
+
 **FX:**
 `ECHO_DELAY`, `PHASER`, `JUNO_CHORUS`, `DISTORTION`, `REVERB_FREEVERB`, `REVERB_FDN`
 
@@ -114,6 +117,46 @@ For feedback connections (e.g. delay feedback) add `"feedback": true` to break t
 Port type rules enforced at load time:
 - `PORT_AUDIO` out → `PORT_AUDIO` in only
 - `PORT_CONTROL` out → `PORT_CONTROL` in only
+
+**Lifecycle ports** (`gate_in`, `trigger_in`) are driven by the Voice note_on/off
+lifecycle and **must not** appear as `to_port` in connections. Use the explicit CV
+ports instead (see §MIDI_CV below).
+
+---
+
+## MIDI_CV Module (Phase 27E Explicit Routing)
+
+`MIDI_CV` exposes keyboard state as patchable CV signals. Use tag `KBD` by convention.
+
+| Port | Direction | Description |
+|------|-----------|-------------|
+| `pitch_cv` | OUT | 1 V/oct; C4 (MIDI 60) = 0 V; +1 V per octave |
+| `gate_cv` | OUT | 1.0 while key held, 0.0 released |
+| `velocity_cv` | OUT | Note-on velocity normalised [0, 1] |
+| `aftertouch_cv` | OUT | Channel aftertouch normalised [0, 1] |
+
+**Canonical wiring (Phase 27E patch):**
+
+```json
+{ "from_tag": "KBD", "from_port": "gate_cv",     "to_tag": "ENV", "to_port": "gate_cv"     },
+{ "from_tag": "KBD", "from_port": "velocity_cv",  "to_tag": "VCA", "to_port": "initial_gain_cv" },
+{ "from_tag": "KBD", "from_port": "pitch_cv",     "to_tag": "VCF", "to_port": "kybd_cv"     }
+```
+
+**Behaviour when MIDI_CV is present**: the Voice's automatic `kybd_cv` injection
+(which previously broadcast keyboard pitch to every filter in the chain) is
+**suppressed**. Patches that need filter keyboard tracking must wire
+`KBD:pitch_cv → VCF:kybd_cv` explicitly. Patches that do not want filter tracking
+(e.g. bongo drums) simply omit the connection.
+
+**ADSR gate ports:**
+
+| Port | Semantics |
+|------|-----------|
+| `gate_cv` | Wirable sustained gate — rising edge → attack, falling edge → release |
+| `trig_cv` | Wirable trigger — rising edge → attack only, no release on falling (Roland GATE+TRIG retrigger pattern) |
+
+`gate_in` and `trigger_in` are lifecycle-only (driven by `note_on`/`note_off`) and must not be wired.
 
 ---
 
@@ -229,6 +272,29 @@ Loading a v3 patch clears the existing post-chain before applying the file's `po
   ]
 }
 ```
+
+---
+
+## Translating Roland System 100M Module Patches
+
+When implementing patches from the Roland *Practical Synthesis* books, the module hardware has internal routings that are not visible in the patch diagrams. These must be replicated explicitly in JSON connections.
+
+### M-121 Dual VCF — Shared MOD1 Input
+
+The M-121 is a two-VCF module. Its first modulation input (**MOD1**) is internally shared between both filter halves at the hardware level — a single jack drives both VCF-1 and VCF-2 cutoff simultaneously. This is confirmed in the M-121 service schematic (System 100M Service Notes, Dec. 15 1980, p. 4), which shows the MOD1 summing node connected to both filter cores via PCB jumpers.
+
+**Consequence:** any patch diagram showing a single modulation cable into the M-121 MOD1 jack is implicitly modulating *both* filters at once. When translating to JSON, replicate this as two separate `cutoff_cv` connections from the same source:
+
+```json
+{ "from_tag": "SPLIT", "from_port": "cv_out_1", "to_tag": "VCF1", "to_port": "cutoff_cv" },
+{ "from_tag": "SPLIT", "from_port": "cv_out_1", "to_tag": "VCF2", "to_port": "cutoff_cv" }
+```
+
+**Example — bass drum (Fig 3-11):** the ADSR drives VCA2 (100%) and MOD1 (40% via `CV_SPLITTER`). Because MOD1 is shared, the ADSR simultaneously sweeps VCF1 (self-oscillating body tone) down in pitch during the decay, producing the characteristic bass drum pitch fall. Without this connection VCF1 stays locked at its base frequency and the drum sounds tonally static.
+
+### M-121 Dual VCF — Keyboard Tracking
+
+Both VCF halves in the M-121 receive the keyboard CV (1 V/oct) for pitch tracking. This is handled automatically — `kybd_cv` is auto-injected by the engine to all `SH_FILTER` nodes in the voice chain. No explicit connection is needed.
 
 ---
 

@@ -26,7 +26,12 @@ CompositeGenerator::CompositeGenerator(int sample_rate)
 
     declare_port({"audio_out", PORT_AUDIO,   PortDirection::OUT});
     declare_port({"sync_out",  PORT_AUDIO,   PortDirection::OUT});
-    declare_port({"pitch_cv",  PORT_CONTROL, PortDirection::IN,  false});
+    declare_port({"pitch_base_cv", PORT_CONTROL, PortDirection::IN, false,
+                  "Absolute 1 V/oct pitch from MIDI_CV (C4 = 0 V). Sums with pitch_cv "
+                  "modulation offset. Hardware: M-110 KBD CV input."});
+    declare_port({"pitch_cv",  PORT_CONTROL, PortDirection::IN,  false,
+                  "Modulation pitch offset in V/oct (LFO vibrato, portamento, bend). "
+                  "Adds to pitch_base_cv (or to base_frequency_ when MIDI_CV is absent)."});
     declare_port({"pwm_cv",    PORT_CONTROL, PortDirection::IN,  false});
     declare_port({"fm_in",     PORT_AUDIO,   PortDirection::IN});
     declare_port({"sync_in",   PORT_AUDIO,   PortDirection::IN});

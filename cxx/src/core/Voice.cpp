@@ -36,8 +36,8 @@ bool Voice::set_named_parameter(const std::string& name, float value) {
     // Voice-level parameters (not stored on any processor node)
     if (name == "osc_frequency") {
         base_frequency_ = static_cast<double>(value);
-        if (!signal_chain_.empty())
-            signal_chain_.front().node->set_frequency(base_frequency_);
+        for (auto& entry : signal_chain_)
+            entry.node->set_frequency(base_frequency_);
         return true;
     }
     if (name == "amp_base") {
@@ -79,16 +79,20 @@ void Voice::flush_all_processors() {
     for (auto& entry : mod_sources_)  entry.node->flush_to_disk();
 }
 
-void Voice::note_on(double frequency) {
+void Voice::note_on(double frequency, float velocity) {
     active_ = true;
     base_frequency_ = frequency;
     for (auto& entry : signal_chain_)
         if (entry.node->reset_on_note_on()) entry.node->reset();
     for (auto& entry : mod_sources_) entry.node->reset();
-    // signal_chain_[0] is guaranteed by bake() to be the audio generator.
-    if (!signal_chain_.empty()) {
-        signal_chain_.front().node->set_frequency(frequency);
-    }
+    // Broadcast to all signal_chain_ nodes — non-generators ignore via base no-op.
+    // This ensures multiple oscillators (e.g. glockenspiel VCO-1 + VCO-2) all
+    // receive the keyboard pitch so transpose/detune offsets apply correctly.
+    for (auto& entry : signal_chain_)
+        entry.node->set_frequency(frequency);
+    // Broadcast velocity before on_note_on so CV sources (MIDI_CV) can latch it
+    // into their pending state — velocity_cv will reflect it on the first block pull.
+    for (auto& entry : mod_sources_) entry.node->on_note_velocity(velocity);
     for (auto& entry : mod_sources_) entry.node->on_note_on(frequency);
 }
 
@@ -148,9 +152,25 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
     const char*           ctrl_tags_arr[kMaxCtrl];
     size_t                num_ctrl = 0;
 
-    // Helper: find the ctrl span for a given source tag (must be defined before Pass 1
-    // so inter-mod injection can call it while mod_sources_ are being pulled).
-    auto find_ctrl = [&](const std::string& tag) -> std::span<float> {
+    // Secondary CV spans: one buffer per unique (tag, port) for multi-output CV sources
+    // (e.g., MIDI_CV gate_cv, velocity_cv, aftertouch_cv). Populated inline during Pass 1
+    // immediately after each mod_source is pulled, so subsequent nodes can inject them.
+    static constexpr size_t kMaxSecondary = 8;
+    struct SecondaryCtrl { const char* tag; const char* port; std::span<float> span; };
+    BufferPool::BufferPtr secondary_ptrs[kMaxSecondary];
+    SecondaryCtrl         secondary_ctrls[kMaxSecondary];
+    size_t                num_secondary = 0;
+
+    // Helper: find the ctrl span for a given (source tag, source port) pair.
+    // Checks secondary spans first so multi-port CV sources (MIDI_CV gate_cv etc.)
+    // override the primary do_pull buffer when from_port identifies a secondary output.
+    // Falls back to the primary tag-only lookup when no secondary entry matches.
+    auto find_ctrl = [&](const std::string& tag, std::string_view from_port = "") -> std::span<float> {
+        if (!from_port.empty()) {
+            for (size_t j = 0; j < num_secondary; ++j)
+                if (tag == secondary_ctrls[j].tag && from_port == secondary_ctrls[j].port)
+                    return secondary_ctrls[j].span;
+        }
         for (size_t i = 0; i < num_ctrl; ++i)
             if (tag == ctrl_tags_arr[i]) return ctrl_spans[i];
         return {};
@@ -177,20 +197,46 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
         // Inject inter-mod CV inputs for this node (e.g. LFO → CV_MIXER:cv_in_1).
         // find_ctrl searches already-pulled sources (num_ctrl doesn't include current entry
         // yet), so only sources earlier in mod_sources_ are available — ordering matters.
+        // Pass from_port so secondary spans (MIDI_CV gate_cv etc.) are resolved correctly.
         for (const auto& conn : connections_) {
             if (conn.to_tag != entry.tag) continue;
-            auto cv = find_ctrl(conn.from_tag);
+            auto cv = find_ctrl(conn.from_tag, conn.from_port);
             if (!cv.empty()) entry.node->inject_cv(conn.to_port, cv);
         }
 
         entry.node->pull(ctrl_spans[num_ctrl], context);
+
+        // For multi-port CV sources (e.g., MIDI_CV), register a secondary buffer
+        // for each outgoing connection whose from_port provides a distinct named value.
+        // Must happen immediately after pull so the next mod_source (e.g., CV_MIXER)
+        // can inject the correct span during its inter-mod injection pass.
+        for (const auto& conn : connections_) {
+            if (conn.from_tag != entry.tag) continue;
+            if (!entry.node->provides_named_cv(conn.from_port)) continue;
+            if (num_secondary >= kMaxSecondary) break;
+            // Dedup: one buffer per unique (tag, port).
+            bool already = false;
+            for (size_t j = 0; j < num_secondary; ++j)
+                if (secondary_ctrls[j].tag == entry.tag.c_str() &&
+                    std::string_view(secondary_ctrls[j].port) == conn.from_port)
+                    { already = true; break; }
+            if (already) continue;
+            secondary_ptrs[num_secondary] = graph_->borrow_buffer();
+            auto sec = std::span<float>(secondary_ptrs[num_secondary]->left.data(), output.size());
+            std::fill(sec.begin(), sec.end(), entry.node->get_cv_output(conn.from_port));
+            secondary_ctrls[num_secondary] = {entry.tag.c_str(), conn.from_port.c_str(), sec};
+            ++num_secondary;
+        }
+
         ++num_ctrl;
     }
 
     // Auto-inject keyboard tracking CV to cached kybd_cv nodes (populated at bake time).
     // Computed as 1V/oct relative to C4 (261.63 Hz). Combines additively with cutoff_cv
     // in the filter's apply_parameter("kybd_cv") handler.
-    if (!kybd_cv_nodes_.empty()) {
+    // Skipped when MIDI_CV is present — those patches use explicit pitch_cv connections
+    // and do not want implicit filter tracking imposed on every filter in the chain.
+    if (!has_midi_cv_ && !kybd_cv_nodes_.empty()) {
         static constexpr float kC4Hz = 261.63f;
         const float kybd_cv = static_cast<float>(
             std::log2(base_frequency_ / static_cast<double>(kC4Hz)));
@@ -248,7 +294,7 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
             std::span<float> gain_cv;
             for (const auto& conn : connections_) {
                 if (conn.to_tag == entry.tag && conn.to_port == "gain_cv") {
-                    gain_cv = find_ctrl(conn.from_tag);
+                    gain_cv = find_ctrl(conn.from_tag, conn.from_port);
                     break;
                 }
             }
@@ -258,7 +304,7 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
             std::span<float> initial_gain_cv;
             for (const auto& conn : connections_) {
                 if (conn.to_tag == entry.tag && conn.to_port == "initial_gain_cv") {
-                    initial_gain_cv = find_ctrl(conn.from_tag);
+                    initial_gain_cv = find_ctrl(conn.from_tag, conn.from_port);
                     break;
                 }
             }
@@ -310,7 +356,7 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
             // PORT_AUDIO node: apply any incoming CV connections first.
             for (const auto& conn : connections_) {
                 if (conn.to_tag != entry.tag) continue;
-                auto cv = find_ctrl(conn.from_tag);
+                auto cv = find_ctrl(conn.from_tag, conn.from_port);
                 if (cv.empty()) continue;
 
                 // Port-name convention: a source port ending in "_inv" (e.g.
@@ -318,7 +364,16 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
                 // output. Negate the block-mean value before dispatching.
                 const float sign = conn.from_port.ends_with("_inv") ? -1.0f : 1.0f;
 
-                if (conn.to_port == "pitch_cv") {
+                if (conn.to_port == "pitch_base_cv") {
+                    // Absolute 1 V/oct pitch from MIDI_CV. C4 = 0 V; +1 V = one octave up.
+                    // f = 261.63 Hz × 2^cv  (261.63 = middle C, MIDI 60).
+                    // Replaces base_frequency_ for this block — pitch_cv can still add offset.
+                    const float cv_v = sign * cv_mean(cv);
+                    const double abs_freq = 261.63 * std::pow(2.0, static_cast<double>(cv_v));
+                    base_frequency_ = abs_freq > 20.0 ? abs_freq : 20.0;
+                    entry.node->set_frequency(base_frequency_);
+
+                } else if (conn.to_port == "pitch_cv") {
                     const float mod = sign * cv_mean(cv);
                     const double mod_freq = base_frequency_ * std::pow(2.0, static_cast<double>(mod));
                     entry.node->set_frequency(mod_freq > 20.0 ? mod_freq : base_frequency_);
@@ -473,6 +528,17 @@ void Voice::bake() {
     for (auto& entry : signal_chain_) {
         if (entry.node->find_port("kybd_cv"))
             kybd_cv_nodes_.push_back(entry.node.get());
+    }
+
+    // Detect MIDI_CV presence — any mod_source with a "pitch_cv" output port.
+    // When present, patches use explicit connections for CV/gate routing instead
+    // of the auto-injection loop, so kybd_cv broadcasting is suppressed in pull_mono.
+    has_midi_cv_ = false;
+    for (auto& entry : mod_sources_) {
+        if (entry.node->find_port("pitch_cv")) {
+            has_midi_cv_ = true;
+            break;
+        }
     }
 
     baked_ = true;

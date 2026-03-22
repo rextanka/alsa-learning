@@ -114,6 +114,7 @@ set(ENGINE_SOURCES
     src/dsp/routing/MathsProcessor.cpp
     src/dsp/routing/GateDelayProcessor.cpp
     src/dsp/routing/SampleHoldProcessor.cpp
+    src/dsp/routing/MidiCvProcessor.cpp
     # I/O (Phase 27C)
     src/dsp/io/AudioOutputProcessor.cpp
     src/dsp/io/AudioInputProcessor.cpp
@@ -336,6 +337,7 @@ if(BUILD_TESTING)
     add_functional_gtest(percussion_noise_patch_tests test_percussion_noise_patch.cpp)
     add_functional_gtest(violin_vibrato_patch_tests test_violin_vibrato_patch.cpp)
     add_functional_gtest(bell_patch_tests test_bell_patch.cpp)
+    add_functional_gtest(bell_sine_patch_tests test_bell_sine_patch.cpp)
     add_functional_gtest(reverb_patch_tests test_reverb_patch.cpp)
     add_functional_gtest(wind_surf_patch_tests test_wind_surf_patch.cpp)
     add_functional_gtest(pizzicato_violin_patch_tests test_pizzicato_violin_patch.cpp)

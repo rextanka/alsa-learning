@@ -2,27 +2,28 @@
  * @file test_glockenspiel_patch.cpp
  * @brief Functional tests for glockenspiel.json — metallic bar percussion.
  *
- * Patch topology (Practical Synthesis Vol.1 §1-4 additive / §2-5 ring-mod):
- *   VCO1 (sine) × VCO2 (sine, transpose=+3 semitones, detune=20 ¢)
- *       → RING_MOD → AD_ENVELOPE (attack=1ms, decay=0.6s) → VCA
+ * Patch topology (Roland System 100M Fig. 2-16):
+ *   VCO1 (sine, 2') × VCO2 (sine, 2', transpose=+3 semitones)
+ *       → RING_MOD → VCA ← ADSR (A=1ms, D=0.4s, S=0, R=0.4s)
  *
  * The ring modulator produces sum and difference sidebands between the two
  * partials.  With VCO2 tuned a minor-3rd above VCO1 the sidebands are
- * inharmonic, giving the glassy metallic tinkle of a struck metal bar.
- * The detune (20 ¢) adds a subtle shimmer from the closely-spaced beat
- * frequencies, modelling the natural slight pitch spread in a real bar.
+ * inharmonic, giving the metallic tinkle of a struck metal bar.
+ * Both VCOs at 2' footage (two octaves above concert pitch — glockenspiel range).
+ * Pure ring-mod output to VCA — no direct VCO path (that is an optional experiment
+ * described in the Roland book text but not shown in Fig. 2-16).
  *
  * Key assertions:
- *   1. Smoke         — note_on produces immediate audio (1ms attack).
+ *   1. Smoke             — note_on produces immediate audio (1ms attack).
  *   2. InharmonicContent — spectral centroid at onset > fundamental × 1.3
  *                          (ring mod has pushed energy above the fundamental).
- *   3. PercussiveDecay  — onset RMS >> tail RMS (AD, no sustain).
- *   4. Audible          — G major pentatonic arpeggio (G4/A4/B4/D5/E5).
+ *   3. PercussiveDecay   — onset RMS >> tail RMS (ADSR sustain=0).
+ *   4. Audible           — G major pentatonic arpeggio (G4/A4/B4/D5/E5).
  *
  * Timing at 48 kHz, block=512 (~10.67ms/block):
- *   decay=0.6s ≈ 56 blocks
+ *   decay=0.4s ≈ 37.5 blocks per time constant
  *   Onset: blocks 1–4   (~10–43ms, near peak)
- *   Tail:  blocks 50–56 (~533–597ms ≈ 1× decay constant)
+ *   Tail:  blocks 45–55 (~480–587ms ≈ 1.2× decay constant, env ≈ 0.30)
  */
 
 #include <gtest/gtest.h>
@@ -60,7 +61,7 @@ protected:
 TEST_F(GlockenspielPatchTest, NoteOnProducesAudio) {
     PRINT_TEST_HEADER(
         "Glockenspiel — Smoke",
-        "AD_ENVELOPE attack=1ms: first blocks after note_on should carry signal.",
+        "ADSR_ENVELOPE attack=1ms: first blocks after note_on should carry signal.",
         "engine_load_patch(glockenspiel.json) → note_on(C5) → 5 blocks",
         "RMS > 0.001",
         sample_rate
@@ -134,16 +135,16 @@ TEST_F(GlockenspielPatchTest, InharmonicContent) {
 // ---------------------------------------------------------------------------
 // Test 3: PercussiveDecay — onset RMS >> tail RMS
 //
-// onset: blocks 1–4   (~10–43ms, near peak)
-// tail:  blocks 50–56 (~533–597ms, ≈ 1× decay constant from note_on)
+// onset: blocks 1–4  (~10–43ms, near peak)
+// tail:  blocks 45–55 (~480–587ms ≈ 1.2× decay constant, env ≈ 0.30)
 // Expected: rms_onset / rms_tail ≥ 3.0
 // ---------------------------------------------------------------------------
 
 TEST_F(GlockenspielPatchTest, PercussiveDecay) {
     PRINT_TEST_HEADER(
         "Glockenspiel — Percussive Decay (automated)",
-        "AD_ENVELOPE decay=0.6s: onset RMS (~40ms) ≥ 3× tail RMS (~565ms).",
-        "engine_load_patch → note_on(C5) → 56 blocks → compare onset vs tail RMS",
+        "ADSR_ENVELOPE decay=0.4s, sustain=0: onset RMS (~40ms) ≥ 3× tail RMS (~530ms).",
+        "engine_load_patch → note_on(C5) → 55 blocks → compare onset vs tail RMS",
         "rms_onset / rms_tail ≥ 3.0",
         sample_rate
     );
@@ -154,14 +155,14 @@ TEST_F(GlockenspielPatchTest, PercussiveDecay) {
     const size_t FRAMES      = 512;
     const int    ONSET_START = 1;
     const int    ONSET_END   = 5;   // ~10–53ms
-    const int    TAIL_START  = 50;
-    const int    TAIL_END    = 56;  // ~533–597ms
+    const int    TAIL_START  = 45;
+    const int    TAIL_END    = 55;  // ~480–587ms, ≈1.2 decay time constants
 
     std::vector<float> buf(FRAMES * 2);
     double onset_sq = 0.0; int onset_n = 0;
     double tail_sq  = 0.0; int tail_n  = 0;
 
-    for (int b = 0; b < TAIL_END; ++b) {
+    for (int b = 0; b < TAIL_END + 1; ++b) {
         engine_process(engine(), buf.data(), FRAMES);
         double block_sq = 0.0;
         for (size_t i = 0; i < FRAMES; ++i) block_sq += double(buf[i * 2]) * double(buf[i * 2]);
@@ -175,12 +176,12 @@ TEST_F(GlockenspielPatchTest, PercussiveDecay) {
     float ratio     = rms_tail > 1e-9f ? rms_onset / rms_tail : 0.0f;
 
     std::cout << "[Glockenspiel] RMS onset (~10–53ms):   " << rms_onset << "\n";
-    std::cout << "[Glockenspiel] RMS tail  (~533–597ms): " << rms_tail  << "\n";
+    std::cout << "[Glockenspiel] RMS tail  (~480–587ms): " << rms_tail  << "\n";
     std::cout << "[Glockenspiel] Ratio onset/tail:        " << ratio     << "\n";
 
     EXPECT_GT(rms_onset, 0.001f) << "No signal at onset — check patch connectivity";
     EXPECT_GT(ratio, 3.0f)
-        << "Expected onset/tail ratio ≥ 3 (AD decay=0.6s); got " << ratio;
+        << "Expected onset/tail ratio ≥ 3 (ADSR decay=0.4s, sustain=0); got " << ratio;
 }
 
 // ---------------------------------------------------------------------------
@@ -192,7 +193,7 @@ TEST_F(GlockenspielPatchTest, PentatonicArpeggioAudible) {
         "Glockenspiel — G Major Pentatonic (audible)",
         "Bright metallic bar strikes across G4/A4/B4/D5/E5.",
         "engine_load_patch(glockenspiel.json) → engine_start → G4/A4/B4/D5/E5",
-        "Audible glassy inharmonic bell tones with 0.6s ring.",
+        "Audible glassy inharmonic bell tones with ~1s ring.",
         sample_rate
     );
 
@@ -200,7 +201,7 @@ TEST_F(GlockenspielPatchTest, PentatonicArpeggioAudible) {
     ASSERT_ENGINE_START(engine());
 
     constexpr int NOTE_MS    = 40;   // short strike
-    constexpr int RELEASE_MS = 700;  // let the 0.6s decay ring out
+    constexpr int RELEASE_MS = 1200;  // let the 1.0s decay ring out
 
     // G major pentatonic: G4=67, A4=69, B4=71, D5=74, E5=76
     const int notes[] = {67, 69, 71, 74, 76};

@@ -19,18 +19,23 @@
 #define VCA_PROCESSOR_HPP
 
 #include "Processor.hpp"
-#include "SmoothedParam.hpp"
 #include <algorithm>
+#include <cmath>
 #include <span>
 
 namespace audio {
 
 class VcaProcessor : public Processor {
 public:
-    static constexpr float kRampSeconds = 0.010f; // 10 ms
+    /**
+     * Exponential dynamic range: ln(10^(60/20)) = ln(1000) ≈ 6.908.
+     * M-130 spec: 10dB/oct. 60dB total range over the normalised [0,1] CV span
+     * gives a tight, punchy characteristic matching the Roland hardware.
+     * At g=1 → exp(0)=1.0 (unity); at g=0 → exp(-6.908)≈0.001 (-60dB ≈ silence).
+     */
+    static constexpr float kLogRange = 6.908f;
 
-    explicit VcaProcessor(int sample_rate = 48000) {
-        ramp_samples_ = static_cast<int>(static_cast<float>(sample_rate) * kRampSeconds);
+    explicit VcaProcessor(int /*sample_rate*/ = 48000) {
         // Phase 15: named port declarations
         declare_port({"audio_in",        PORT_AUDIO,   PortDirection::IN});
         declare_port({"audio_out",       PORT_AUDIO,   PortDirection::OUT});
@@ -44,7 +49,7 @@ public:
     }
 
     bool apply_parameter(const std::string& name, float value) override {
-        if (name == "initial_gain")   { initial_gain_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_); return true; }
+        if (name == "initial_gain")   { initial_gain_ = std::clamp(value, 0.0f, 1.0f); return true; }
         if (name == "response_curve") { response_curve_ = std::clamp(value, 0.0f, 1.0f); return true; }
         return false;
     }
@@ -59,24 +64,25 @@ public:
      * @param scale          Static amplitude scale — initial_gain * base_amplitude_.
      *                       Defaults to 1.0 (unity).
      * @param response_curve Blend between linear (0.0) and exponential (1.0) law.
-     *                       effective_gain = lerp(g, g², response_curve).
+     *                       Exponential follows M-130 spec (10dB/oct, 60dB range):
+     *                       exp_gain = exp((g-1)*kLogRange), normalised so g=1→1.0.
      *                       Defaults to 0.0 (linear, backward-compatible).
      */
     static void apply(std::span<float> audio,
                       std::span<const float> gain_cv,
                       float scale = 1.0f,
                       float response_curve = 0.0f) noexcept {
-        // RT-SAFE: no allocations, no locks
         const size_t n = std::min(audio.size(), gain_cv.size());
         if (response_curve < 1e-4f) {
             // Fast path: linear (default)
             for (size_t i = 0; i < n; ++i)
                 audio[i] *= gain_cv[i] * scale;
         } else {
-            // Blended path: lerp between linear (g) and exponential (g²)
+            // Exponential path: M-130 10dB/oct characteristic.
+            // exp_gain = exp((g-1)*kLogRange), blend with linear via response_curve.
             for (size_t i = 0; i < n; ++i) {
-                const float g = gain_cv[i];
-                const float g_exp = g * g;
+                const float g     = gain_cv[i];
+                const float g_exp = (g > 0.0f) ? std::exp((g - 1.0f) * kLogRange) : 0.0f;
                 audio[i] *= (g + response_curve * (g_exp - g)) * scale;
             }
         }
@@ -84,7 +90,7 @@ public:
 
     void reset() override {}
 
-    float initial_gain()   const { return initial_gain_.get(); }
+    float initial_gain()   const { return initial_gain_; }
     float response_curve() const { return response_curve_; }
 
     // VcaProcessor consumes a PORT_CONTROL gain signal (from AdsrEnvelopeProcessor).
@@ -99,9 +105,8 @@ protected:
     }
 
 private:
-    int ramp_samples_             = 480; // default ~10ms at 48kHz
-    SmoothedParam initial_gain_{1.0f};
-    float response_curve_ = 0.0f; // 0=linear, 1=exponential (implemented Phase 26)
+    float initial_gain_  = 1.0f; // multiplicative scale on base_amplitude_ (velocity/level)
+    float response_curve_ = 0.0f; // 0=linear, 1=true exponential (M-130 10dB/oct)
 };
 
 } // namespace audio
