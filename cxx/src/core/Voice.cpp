@@ -294,6 +294,18 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
                 if (!abus.empty())
                     entry.node->inject_audio(conn.to_port, std::span<const float>(abus));
             }
+            // Inject sync_in: retrieve sync_out secondary output from the source node.
+            // The source must be earlier in signal_chain_ (already pulled this block).
+            for (const auto& conn : connections_) {
+                if (conn.to_tag != entry.tag) continue;
+                if (conn.to_port != "sync_in") continue;
+                auto* src = find_by_tag(conn.from_tag);
+                if (src) {
+                    auto sync_data = src->get_secondary_output("sync_out");
+                    if (!sync_data.empty())
+                        entry.node->inject_audio("sync_in", sync_data);
+                }
+            }
 
             // PORT_AUDIO node: apply any incoming CV connections first.
             for (const auto& conn : connections_) {
@@ -301,8 +313,13 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
                 auto cv = find_ctrl(conn.from_tag);
                 if (cv.empty()) continue;
 
+                // Port-name convention: a source port ending in "_inv" (e.g.
+                // LFO:control_out_inv) is the inverted complement of the primary
+                // output. Negate the block-mean value before dispatching.
+                const float sign = conn.from_port.ends_with("_inv") ? -1.0f : 1.0f;
+
                 if (conn.to_port == "pitch_cv") {
-                    const float mod = cv_mean(cv);
+                    const float mod = sign * cv_mean(cv);
                     const double mod_freq = base_frequency_ * std::pow(2.0, static_cast<double>(mod));
                     entry.node->set_frequency(mod_freq > 20.0 ? mod_freq : base_frequency_);
 
@@ -310,7 +327,7 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
                     // Map bipolar CV → pulse width [0.01, 0.49], then drive via
                     // apply_parameter so do_pull reads the SmoothedParam correctly
                     // (direct set_pulse_width was overwritten by do_pull each block).
-                    const float pw = std::clamp(0.5f + cv_mean(cv) * 0.5f, 0.01f, 0.49f);
+                    const float pw = std::clamp(0.5f + sign * cv_mean(cv) * 0.5f, 0.01f, 0.49f);
                     entry.node->apply_parameter("pulse_width", pw);
 
                 } else {
@@ -318,7 +335,7 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
                     // via apply_parameter. Filters handle cutoff_cv / res_cv internally
                     // (exponential scaling, base preservation, etc.).
                     auto* target = find_by_tag(conn.to_tag);
-                    if (target) target->apply_parameter(conn.to_port, cv_mean(cv));
+                    if (target) target->apply_parameter(conn.to_port, sign * cv_mean(cv));
                 }
             }
 

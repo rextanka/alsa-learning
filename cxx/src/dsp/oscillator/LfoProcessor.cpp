@@ -22,6 +22,10 @@ LfoProcessor::LfoProcessor(int sample_rate)
     declare_port({"rate_cv",     PORT_CONTROL, PortDirection::IN,  true});
     declare_port({"reset",       PORT_CONTROL, PortDirection::IN,  true});
     declare_port({"control_out", PORT_CONTROL, PortDirection::OUT, false});
+    declare_port({"control_out_inv", PORT_CONTROL, PortDirection::OUT, false,
+                  "Inverted copy of control_out; always exactly -1 x control_out. "
+                  "Hardware: Roland M-150 OUT B. Eliminates a separate INVERTER node "
+                  "when two destinations need counter-phase modulation."});
 
     declare_parameter({"rate",      "LFO Rate",      0.01f, 20.0f, 1.0f, true});
     declare_parameter({"intensity", "LFO Intensity", 0.0f,   1.0f, 1.0f});

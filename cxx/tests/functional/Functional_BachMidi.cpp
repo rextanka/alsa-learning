@@ -113,3 +113,42 @@ TEST_F(FunctionalBachMidi, BWV846_Arpeggio_Clarity) {
 
     std::this_thread::sleep_for(std::chrono::milliseconds(700));
 }
+
+// Tests engine_process_midi_bytes (raw MIDI input path) + MIDI Running Status parsing.
+// Running Status: after the first status byte, subsequent note-on events may omit it.
+TEST_F(FunctionalBachMidi, ProcessMidiBytes_RunningStatus) {
+    EngineHandle engine = engine_wrapper->get();
+
+    // Calibrate tick rate over 200 ms
+    int64_t t0 = 0, t1 = 0;
+    engine_get_total_ticks(engine, &t0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    engine_get_total_ticks(engine, &t1);
+    const double ticks_per_ms = static_cast<double>(t1 - t0) / 200.0;
+
+    // G4, A4, B4 — first event has status byte; subsequent use Running Status
+    const std::vector<uint8_t> note_ons = {
+        0x90, 0x43, 0x64,  // G4 note on (status present)
+              0x45, 0x64,  // A4 (Running Status — status byte omitted)
+              0x47, 0x64   // B4 (Running Status)
+    };
+    engine_process_midi_bytes(engine, note_ons.data(), note_ons.size(), 0);
+
+    // Hold notes for ~300 ms using tick-based wait (exercises engine_get_total_ticks)
+    engine_get_total_ticks(engine, &t0);
+    const int64_t wait_ticks = static_cast<int64_t>(300.0 * ticks_per_ms);
+    while (test::g_keep_running) {
+        engine_get_total_ticks(engine, &t1);
+        if (t1 - t0 >= wait_ticks) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+
+    const std::vector<uint8_t> note_offs = {
+        0x80, 0x43, 0x00,
+        0x80, 0x45, 0x00,
+        0x80, 0x47, 0x00
+    };
+    engine_process_midi_bytes(engine, note_offs.data(), note_offs.size(), 0);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(400)); // release tail
+}

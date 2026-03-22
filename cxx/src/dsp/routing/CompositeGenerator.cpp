@@ -25,9 +25,11 @@ CompositeGenerator::CompositeGenerator(int sample_rate)
     set_tag("VCO");
 
     declare_port({"audio_out", PORT_AUDIO,   PortDirection::OUT});
+    declare_port({"sync_out",  PORT_AUDIO,   PortDirection::OUT});
     declare_port({"pitch_cv",  PORT_CONTROL, PortDirection::IN,  false});
     declare_port({"pwm_cv",    PORT_CONTROL, PortDirection::IN,  false});
     declare_port({"fm_in",     PORT_AUDIO,   PortDirection::IN});
+    declare_port({"sync_in",   PORT_AUDIO,   PortDirection::IN});
 
     declare_parameter({"saw_gain",       "Sawtooth Level",  0.0f, 1.0f, 0.0f});
     declare_parameter({"pulse_gain",     "Pulse Level",     0.0f, 1.0f, 0.0f});
@@ -39,6 +41,7 @@ CompositeGenerator::CompositeGenerator(int sample_rate)
     declare_parameter({"pulse_width",    "Pulse Width",      0.0f,  0.5f,   0.5f});
     declare_parameter({"wavetable_type", "Wavetable Type",   0.0f,  8.0f,   0.0f});
     declare_parameter({"transpose",      "Transpose",      -24.0f, 24.0f,   0.0f});
+    declare_parameter({"footage",        "Footage (2/4/8/16/32)", 2.0f, 32.0f, 8.0f});
     declare_parameter({"detune",         "Detune (cents)", -100.f, 100.0f,  0.0f});
     declare_parameter({"fm_depth",       "FM Depth",        0.0f,  1.0f,   0.0f});
 }
@@ -85,6 +88,23 @@ bool CompositeGenerator::apply_parameter(const std::string& name, float value) {
     }
     if (name == "osc_frequency") {
         set_frequency(static_cast<double>(value)); return true;
+    }
+    // footage: Roland-style range selector (2/4/8/16/32 foot) → semitone transpose.
+    // 32' = -24 st, 16' = -12 st, 8' = 0 st (concert pitch), 4' = +12 st, 2' = +24 st.
+    if (name == "footage") {
+        const int ft = static_cast<int>(std::round(value));
+        int semitones = 0;
+        switch (ft) {
+            case  2: semitones = +24; break;
+            case  4: semitones = +12; break;
+            case  8: semitones =   0; break;
+            case 16: semitones = -12; break;
+            case 32: semitones = -24; break;
+            default: break;  // unknown footage — no-op
+        }
+        transpose_ = static_cast<double>(semitones);
+        set_frequency(base_freq_);
+        return true;
     }
     return false;
 }
@@ -135,9 +155,24 @@ void CompositeGenerator::do_pull(std::span<float> output, const VoiceContext* co
     auto* pulse = pulse_osc_.get();
     auto* sub   = sub_osc_.get();
     const float fm_depth_val = fm_depth_.get();
-    const bool has_fm = !fm_in_.empty() && fm_depth_val > 0.0f;
+    const bool has_fm   = !fm_in_.empty() && fm_depth_val > 0.0f;
+    const bool has_sync = !sync_in_.empty();
 
-    for (size_t i = 0; i < output.size(); ++i) {
+    // Prepare sync output buffer.
+    sync_buf_size_ = std::min(static_cast<size_t>(n), kMaxBlockSize);
+    std::fill(sync_buf_.begin(), sync_buf_.begin() + sync_buf_size_, 0.0f);
+
+    for (size_t i = 0; i < n; ++i) {
+        // Hard sync: reset all oscillator phases when master triggers.
+        if (has_sync && sync_in_[i] > 0.5f) {
+            pulse_osc_->reset_phase();
+            saw_osc_->reset_phase();
+            sine_osc_->reset_phase();
+            tri_osc_->reset_phase();
+            wavetable_osc_->reset();
+            sub_osc_->reset();
+        }
+
         if (has_fm) {
             const double fm_oct = static_cast<double>(fm_depth_val * fm_in_[i]);
             const double f_mod  = base_freq_
@@ -150,6 +185,9 @@ void CompositeGenerator::do_pull(std::span<float> output, const VoiceContext* co
             tri_osc_->set_frequency(f_mod);
             wavetable_osc_->setFrequency(f_mod);
         }
+
+        // Capture saw phase before tick to detect wrap (sync_out master logic).
+        const double saw_phase_before = saw_osc_->get_phase();
 
         float p_sample    = static_cast<float>(pulse->tick());
         float s_sample    = static_cast<float>(sub->generate_sample(pulse->get_phase()));
@@ -171,8 +209,13 @@ void CompositeGenerator::do_pull(std::span<float> output, const VoiceContext* co
         inputs[6] = noise_osc_->tick();
 
         output[i] = mixer_->mix(inputs);
+
+        // Emit sync pulse when saw phase wrapped this sample.
+        if (i < kMaxBlockSize)
+            sync_buf_[i] = (saw_osc_->get_phase() < saw_phase_before) ? 1.0f : 0.0f;
     }
-    fm_in_ = {};
+    fm_in_   = {};
+    sync_in_ = {};
 }
 
 namespace {

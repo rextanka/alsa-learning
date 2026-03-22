@@ -45,6 +45,10 @@ public:
 
     bool apply_parameter(const std::string& name, float value) override;
 
+    void inject_cv(std::string_view port, std::span<const float> data) override {
+        if (port == "time_cv") time_cv_in_ = data.empty() ? 0.0f : data[0];
+    }
+
 protected:
     void do_pull(std::span<float> output, const VoiceContext* ctx = nullptr) override;
 
@@ -59,6 +63,7 @@ private:
     SmoothedParam mod_rate_{0.0f};
     SmoothedParam mod_intensity_{0.0f};
     double lfo_phase_;
+    float time_cv_in_ = 0.0f;  ///< Additive delay-time offset (seconds) injected each block.
 
     // Tempo-sync (Phase 27D) — off by default, fully backward-compatible.
     bool sync_     = false;

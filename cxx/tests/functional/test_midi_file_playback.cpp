@@ -305,85 +305,44 @@ TEST_F(MidiFilePlaybackTest, Format1MultiTrackParsesOk) {
 }
 
 // ---------------------------------------------------------------------------
-// Test 7: BWV 578 — Little Fugue in G minor, full 4-voice exposition (AUDIBLE)
-//         Encoded as SMF Format 1, 160 BPM, pipe organ patch.
-//         Entry order: Soprano (G4), Alto/Answer (D5), Tenor (G3), Bass/Answer (D4)
+// Test 7: BWV 578 — Little Fugue in G minor, soprano entry only (AUDIBLE, ~6s)
+//         4 bars at 160 BPM = 6s. Full exposition is in the midi_player demo.
 // ---------------------------------------------------------------------------
 
 TEST_F(MidiFilePlaybackTest, BWV578SubjectAudible) {
     PRINT_TEST_HEADER(
-        "SMF Playback — BWV 578 Fugue Exposition (audible)",
-        "Load BWV 578 4-voice exposition encoded as SMF and play on pipe organ.",
+        "SMF Playback — BWV 578 Soprano Entry (audible, ~6s)",
+        "Load BWV 578 soprano subject encoded as SMF and play on pipe organ.",
         "SmfParser (Format 1, 160 BPM) -> MidiFilePlayer -> DrawbarOrgan -> Output",
-        "Audible G-minor fugal exposition: soprano, alto, tenor, bass (~30s).",
+        "Audible G-minor fugue subject, soprano voice, 4 bars.",
         sample_rate
     );
 
-    // 160 BPM, PPQ=480: µs/beat=375000
-    // quarter=480t=375ms, half~=960t=750ms (912t sounding + 48t gap)
-    // on_ticks = sounding ticks; gap_ticks = silence after note_off before next note_on
+    // 160 BPM, PPQ=480: µs/beat=375000. quarter=480t=375ms.
+    // Each note: 912t sounding + 48t gap = 960t (one half-note = 2 beats).
     struct Note { uint8_t pitch; uint32_t on_ticks; uint32_t gap_ticks; };
 
-    // Subject (tonic, G): intervals 0,+7,+3,+2,0,+3,+2,0,-1,+2,-7 from root
-    auto make_subject = [](uint8_t root) -> std::vector<Note> {
-        const int8_t  iv[] = { 0, 7, 3, 2, 0, 3, 2,  0, -1,  2, -7};
-        const uint32_t on[] = {912,912,912,432,432,432,432,432,432,432,1392};
-        const uint32_t gp[] = { 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,  96};
-        std::vector<Note> v; v.reserve(11);
-        for (int i = 0; i < 11; ++i)
-            v.push_back({uint8_t(root + iv[i]), on[i], gp[i]});
-        return v;
-    };
-
-    // Tonal answer (dominant, D): same shape but last interval -5 (stays in tonic key)
-    auto make_answer = [](uint8_t root) -> std::vector<Note> {
-        const int8_t  iv[] = { 0, 7, 3, 2, 0, 3, 2,  0, -1,  2, -5};
-        const uint32_t on[] = {912,912,912,432,432,432,432,432,432,432,1392};
-        const uint32_t gp[] = { 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,  96};
-        std::vector<Note> v; v.reserve(11);
-        for (int i = 0; i < 11; ++i)
-            v.push_back({uint8_t(root + iv[i]), on[i], gp[i]});
-        return v;
-    };
-
-    // Four entries: Soprano (G4=67), Alto answer (D5=74), Tenor (G3=55), Bass answer (D4=62)
-    const std::vector<std::vector<Note>> entries = {
-        make_subject(67),  // Entry 1 — Soprano: G4
-        make_answer (74),  // Entry 2 — Alto:    D5
-        make_subject(55),  // Entry 3 — Tenor:   G3
-        make_answer (62),  // Entry 4 — Bass:    D4
-    };
-    const uint8_t velocities[] = {90, 88, 85, 82};
-
-    // Append one entry to the SMF byte buffer.
-    // pre_delta = ticks to wait after the preceding note_off.
-    auto append_entry = [&](std::vector<uint8_t>& buf,
-                            const std::vector<Note>& entry,
-                            uint32_t pre_delta, uint8_t vel) {
-        for (size_t i = 0; i < entry.size(); ++i) {
-            uint32_t onset = (i == 0) ? pre_delta : entry[i-1].gap_ticks;
-            smf::note_on (buf, onset,            entry[i].pitch, vel);
-            smf::note_off(buf, entry[i].on_ticks, entry[i].pitch);
-        }
-    };
-
-    constexpr uint32_t REST = 1920; // 1 bar (4 quarter notes) between entries
+    // Subject (soprano, G4): intervals 0,+7,+3,+2,0,+3,+2,0,-1,+2,-7
+    const int8_t   iv[] = { 0, 7, 3, 2, 0, 3, 2,  0, -1,  2, -7};
+    const uint32_t on[] = {912,912,912,432,432,432,432,432,432,432,1392};
+    const uint32_t gp[] = { 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,  96};
 
     std::vector<uint8_t> notes;
-    append_entry(notes, entries[0],    0, velocities[0]);
-    append_entry(notes, entries[1], REST, velocities[1]);
-    append_entry(notes, entries[2], REST, velocities[2]);
-    append_entry(notes, entries[3], REST, velocities[3]);
+    for (int i = 0; i < 11; ++i) {
+        uint8_t pitch = uint8_t(67 + iv[i]);
+        uint32_t delta = (i == 0) ? 0 : gp[i-1];
+        smf::note_on (notes, delta,   pitch, 90);
+        smf::note_off(notes, on[i],   pitch);
+    }
 
-    // Total: ~36 000 ticks @ 1280 t/s = ~28s; allow 32s for safety
-    auto path = smf::save("bwv578.mid", smf::format1(480, 375000, notes));
+    auto path = smf::save("bwv578_soprano.mid", smf::format1(480, 375000, notes));
     load_organ_chain();
 
     ASSERT_EQ(engine_load_midi(engine(), path.c_str()), 0);
     engine_midi_play(engine());
 
-    std::cout << "[MidiPlayback] Playing BWV 578 4-voice fugal exposition on pipe organ (~30s)…" << std::endl;
-    test::wait_while_running(32);
+    std::cout << "[MidiPlayback] Playing BWV 578 soprano entry on pipe organ (~6s)…" << std::endl;
+    test::wait_while_running(8); // 4 bars + release tail
 
     engine_midi_stop(engine());
     std::remove(path.c_str());
@@ -425,18 +384,17 @@ TEST_F(MidiFilePlaybackTest, PolyphonicChordAudible) {
 }
 
 // ---------------------------------------------------------------------------
-// Test 9: BWV 772 — Invention No. 1 in C major (AUDIBLE)
-//         Real-world polyphonic SMF downloaded from Mutopia Project (CC0).
-//         Format 1, 3 tracks (tempo + 2 voices), PPQ=384, 80 BPM.
-//         Voices on channels 1 and 2 — Phase 22A merges both.
+// Test 9: BWV 772 — Invention No. 1 in C major (AUDIBLE, first 4 bars ~12s)
+//         Real-world polyphonic SMF — exercises multi-track Format 1 parsing
+//         with two independent voices. Full piece is in the midi_player demo.
 // ---------------------------------------------------------------------------
 
 TEST_F(MidiFilePlaybackTest, BWV772InventionAudible) {
     PRINT_TEST_HEADER(
-        "SMF Playback — BWV 772 Invention No.1 in C major (audible, real SMF)",
+        "SMF Playback — BWV 772 Invention No.1 in C major (audible, first 4 bars)",
         "Load a real Mutopia CC0 MIDI file with 2 independent polyphonic voices.",
         "SmfParser (Format 1, 80 BPM, 2 tracks) -> MidiFilePlayer -> DrawbarOrgan",
-        "Audible two-voice invention in C major for ~30s. Both voices should be distinct.",
+        "Audible two-voice invention in C major, first 4 bars (~12s).",
         sample_rate
     );
 
@@ -451,10 +409,10 @@ TEST_F(MidiFilePlaybackTest, BWV772InventionAudible) {
     ASSERT_EQ(engine_load_midi(engine(), midi_path), 0);
     engine_midi_play(engine());
 
-    // Full piece is ~66s at 80 BPM.
-    std::cout << "[MidiPlayback] Playing BWV 772 Invention No.1 in C major (~66s)…" << std::endl;
+    // 4 bars at 80 BPM = 4 * (4 * 60/80)s = 12s. Stop after that.
+    std::cout << "[MidiPlayback] Playing BWV 772 Invention No.1, first 4 bars (~12s)…" << std::endl;
     std::cout << "[MidiPlayback] Source: Mutopia Project, CC0 (public domain)" << std::endl;
-    test::wait_while_running(70);
+    test::wait_while_running(13);
 
     engine_midi_stop(engine());
 }

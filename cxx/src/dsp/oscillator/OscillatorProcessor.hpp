@@ -121,6 +121,11 @@ public:
     virtual void reset_oscillator_state() = 0;
 
     /**
+     * @brief Reset phase only (used for hard sync — preserves frequency).
+     */
+    void reset_phase() { reset_oscillator_state(); }
+
+    /**
      * @brief Update rotation steps (for sine oscillators).
      * 
      * Default implementation does nothing. Override in sine oscillator.

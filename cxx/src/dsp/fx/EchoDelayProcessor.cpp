@@ -25,6 +25,9 @@ EchoDelayProcessor::EchoDelayProcessor(int sample_rate)
 
     declare_port({"audio_in",  PORT_AUDIO, PortDirection::IN});
     declare_port({"audio_out", PORT_AUDIO, PortDirection::OUT});
+    declare_port({"time_cv",     PORT_CONTROL, PortDirection::IN, true,
+                  "Additive delay-time offset in seconds. Shifts the tap point each block "
+                  "(BBD clock CV analogue). Clears to 0 after each block."});
 
     declare_parameter({"time",          "Delay Time",      0.0f,  5.0f, 0.25f, true});
     declare_parameter({"feedback",      "Feedback",        0.0f,  0.95f, 0.3f});
@@ -92,7 +95,8 @@ void EchoDelayProcessor::do_pull(std::span<float> output, const VoiceContext* ct
     if (feedback_.is_ramping()) delay_.set_feedback(feedback_.get());
     if (mix_.is_ramping())      delay_.set_mix(mix_.get());
 
-    const float dt_val  = delay_time_.get();
+    const float dt_val  = std::clamp(delay_time_.get() + time_cv_in_, 0.001f, 5.0f);
+    time_cv_in_ = 0.0f;  // consume each block
     const float mr_val  = mod_rate_.get();
     const float mi_val  = mod_intensity_.get();
     const double phase_inc = (sample_rate_ > 0 && mr_val > 0.0f)
