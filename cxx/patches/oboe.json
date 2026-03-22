@@ -1,13 +1,14 @@
 {
   "version": 3,
-  "name": "English Horn",
+  "name": "Oboe",
   "groups": [
     {
       "id": 0,
-      "comment": "Roland System 100M Fig 1-9: VCO (saw) → VCF (SH_FILTER LP, cutoff~1800Hz) → VCA. No HPF — the HPF is the Oboe variant only (dashed in diagram). Keyboard CV auto-tracked into VCF cutoff (kybd_cv). ADSR drives VCA amplitude only.",
+      "comment": "Roland System 100M Fig 1-9 Oboe variant: VCO (pulse 35%) → MOOG_FILTER (cutoff 1200Hz, res=0.92) → HPF (fixed switch '1'≈250Hz) → VCA. MOOG_FILTER chosen over SH_FILTER for tanh saturation at high resonance — gives the buzzy, reedy double-reed character SH_FILTER cannot. HPF slightly suppresses fundamental per book ('less full than English Horn'). Keyboard CV auto-tracked into VCF. ADSR drives VCA amplitude only.",
       "chain": [
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
-        { "type": "SH_FILTER",           "tag": "VCF" },
+        { "type": "MOOG_FILTER",          "tag": "VCF" },
+        { "type": "HIGH_PASS_FILTER",    "tag": "HPF" },
         { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
         { "type": "VCA",                 "tag": "VCA" }
       ],
@@ -18,6 +19,10 @@
         },
         {
           "from_tag": "VCF", "from_port": "audio_out",
+          "to_tag":   "HPF", "to_port":   "audio_in"
+        },
+        {
+          "from_tag": "HPF", "from_port": "audio_out",
           "to_tag":   "VCA", "to_port":   "audio_in"
         },
         {
@@ -26,8 +31,9 @@
         }
       ],
       "parameters": {
-        "VCO": { "saw_gain": 1.0 },
-        "VCF": { "cutoff": 1800.0, "resonance": 0.5 },
+        "VCO": { "pulse_gain": 1.0, "pulse_width": 0.35 },
+        "VCF": { "cutoff": 1200.0, "resonance": 0.92 },
+        "HPF": { "cutoff": 250.0,  "resonance": 0.0 },
         "ENV": { "attack": 0.03, "decay": 0.1, "sustain": 0.85, "release": 0.15 }
       }
     }

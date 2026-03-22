@@ -158,13 +158,43 @@ def mk_acid_reverb() -> bytes:
 
 
 def mk_banjo() -> bytes:
-    """Banjo picking — G major arpeggio at 120 BPM country feel."""
+    """Banjo — 4-bar bluegrass run in G, 120 BPM, mainly 8th notes.
+    Bar 1: driving G major ascending/descending pick run (8 eighths).
+    Bar 2: two 8th pickups then a half note held on D4 (beats 2–4), 8th tag.
+    Bar 3: pentatonic descent run, syncopated (8 eighths).
+    Bar 4: closing cadence figure resolving to G3 (8 eighths).
+    Gate 55% for crisp strum separation; LFO strums each held note.
+    """
     t = tempo_event(120) + time_sig_event(4, 2)
-    # G2 B2 D3 G3 D3 B2 — eighth-note picking, two passes
-    picks = [(note('G2'), E), (note('B2'), E), (note('D3'), E), (note('G3'), E),
-             (note('D3'), E), (note('B2'), E), (note('G2'), E), (note('G2'), E)]
-    notes = seq(picks, vel=95, gate=0.60)
-    return t + notes + notes
+    GATE = 0.35
+    G  = note('G3');  B  = note('B3');  D4 = note('D4')
+    E4 = note('E4');  G4 = note('G4');  D3 = note('D3')
+    B2 = note('B2');  A3 = note('A3');  C4 = note('C4')
+
+    def pick(n, dur, vel=100):
+        on = max(1, int(dur * GATE))
+        return note_on(0, n, vel) + note_off(on, n) + var_len(dur - on)
+
+    # Bar 1: G3 B3 D4 G4 D4 B3 D3 G3  (ascending then descending, all 8ths)
+    bar1 = (pick(G,  E, 100) + pick(B,  E, 95) + pick(D4, E, 100) + pick(G4, E, 105) +
+            pick(D4, E,  95) + pick(B,  E, 95) + pick(D3, E,  90) + pick(G,  E,  95))
+
+    # Bar 2: G3 B3 | D4 (half note, held — LFO strums it) | G3 (8th tag)
+    # beats: 1-e  2-e  3-e-4-e           4+
+    bar2 = (pick(G,  E, 100) + pick(B,  E, 95) +   # beat 1 (2 eighths)
+            # D4 half note: on immediately, off after 2 beats
+            note_on(0, D4, 105) + note_off(H, D4) +
+            pick(G, E, 90))                          # 8th tag on beat 4+
+
+    # Bar 3: pentatonic descent A3 G3 E4 D4 B3 G3 D3 B2 (bluegrass pull-off feel)
+    bar3 = (pick(A3, E, 100) + pick(G,  E, 95) + pick(E4, E, 100) + pick(D4, E, 95) +
+            pick(B,  E,  95) + pick(G,  E, 90) + pick(D3, E,  90) + pick(B2, E, 85))
+
+    # Bar 4: closing — D3 G3 B3 D4 G4 D4 B3 G3 (resolve home)
+    bar4 = (pick(D3, E,  90) + pick(G,  E, 95) + pick(B,  E, 100) + pick(D4, E, 105) +
+            pick(G4, E, 100) + pick(D4, E, 95) + pick(B,  E,  95) + pick(G,  E, 100))
+
+    return t + bar1 + bar2 + bar3 + bar4
 
 
 def mk_bass_drum() -> bytes:

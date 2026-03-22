@@ -2,15 +2,16 @@
  * @file test_clarinet_patch.cpp
  * @brief Functional tests for clarinet.json — hollow pulse-wave timbre.
  *
- * Patch topology (Practical Synthesis Vol. 2, Ch. 1 clarinet):
- *   COMPOSITE_GENERATOR (pulse, 50% width) → SH_FILTER (LP, cutoff=2200 Hz, res=0.3)
- *       → VCA ← ADSR_ENVELOPE (attack=12ms, decay=0, sustain=1.0, release=60ms)
+ * Patch topology (Roland System 100M Fig 1-14, additive synthesis with hard sync):
+ *   VCO2 (saw, master) → sync_out ──→ VCO1 (pulse 50%, slave) → AUDIO_MIXER
+ *   VCO2 (saw)                      ────────────────────────→ AUDIO_MIXER
+ *   AUDIO_MIXER → SH_FILTER (LP, 2200 Hz, res=0.3) → VCA
+ *   ADSR → CV_SPLITTER → VCA gain_cv + VCF cutoff_cv
  *
- * The clarinet character comes from the pulse (square) wave: at 50% duty cycle
- * even harmonics cancel, leaving only odd partials (1st, 3rd, 5th...) — the
- * hollow, woody timbre that distinguishes clarinet from oboe (saw-based).
- * The LP filter at 2200 Hz with keyboard tracking softens the high odd harmonics
- * while preserving the characteristic nasal quality.
+ * VCO2 (sawtooth) hard-syncs VCO1 (pulse): VCO1 phase resets each time VCO2
+ * completes a cycle. Both oscillators mix (pulse 60%, saw 40%) before the VCF.
+ * Hard sync adds upper harmonic richness to the hollow pulse waveform —
+ * matching the "Additive synthesis" label in Fig 1-14.
  *
  * Key assertions:
  *   1. Smoke       — note_on produces non-silent audio after attack (>12ms).

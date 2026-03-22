@@ -2,26 +2,22 @@
  * @file test_dog_whistle_patch.cpp
  * @brief Functional tests for dog_whistle.json (Phase 17 multi-ADSR dispatch fix).
  *
- * Patch topology:
- *   VCO (sine) → VCA ← ENV_AMP  (attack=10ms, sustain=1.0, release=120ms)
- *                ↑ pitch_cv
- *           ENV_PITCH            (attack=180ms, decay=0, sustain=0.0, release=40ms)
+ * Patch topology (Roland System 100M Fig 2-6):
+ *   VCO (sine) → VCA
+ *                 ↑ gain_cv
+ *   ENV → CV_SPLITTER → cv_out_1 → VCO pitch_cv
+ *                     → cv_out_2 → VCA gain_cv
  *
- * Before Phase 17, gate_on/gate_off used find_by_tag("ENV") which matched
- * neither "ENV_PITCH" nor "ENV_AMP", so both envelopes stayed idle and the
- * patch produced silence. After the fix, on_note_on/on_note_off dispatch to all
- * mod_sources, so both ADSRs trigger correctly.
+ * Single ADSR fans to both VCO pitch and VCA amplitude simultaneously.
+ * Attack (0.18s IIR, reaches peak at ~566ms) governs both the pitch glide and
+ * the amplitude rise. S=0 means pitch and amplitude decay together — no
+ * residual sustained tone after the whistle.
  *
- * The "dog whistle" effect: at note-on, ENV_PITCH attacks over 180ms (pitch
- * rises by up to +1 octave), then immediately drops to sustain=0 (decay=0).
- * VCO pitch_cv = envelope_out, so the VCO sweeps one octave up then snaps back
- * to the base frequency — the characteristic upward-glide whistle shape.
- *
- * Tests (options 1, 2):
+ * Tests:
  *   1. Smoke            — patch loads, note-on produces non-silent audio.
- *   2. Pitch env fires  — DCT pitch detection on early (~150ms) vs late (~250ms)
+ *   2. Pitch env fires  — DCT pitch detection on early (~150ms) vs late (~700ms)
  *                         windows confirms pitch_early > pitch_late, verifying
- *                         ENV_PITCH is modulating the VCO.
+ *                         ENV is modulating the VCO via the splitter.
  */
 
 #include <gtest/gtest.h>
@@ -88,18 +84,17 @@ TEST_F(DogWhistlePatchTest, NoteOnProducesAudio) {
 // ---------------------------------------------------------------------------
 // Test 2: Pitch envelope fires — DCT pitch detection confirms upward glide
 //
-// The ADSR uses a one-pole IIR (coeff = exp(-log9 / (T·sr))), so attack_time is
-// a time constant, not a linear ramp. For attack=0.18s, the envelope reaches 1.0
-// at ≈566ms. Decay=0 clamps to 0.001s → drops to sustain=0 in ~3ms. Timeline:
-//   0–566ms:  pitch_cv rises 0→1  (freq sweeps up to base*2^1)
-//   ~566ms:   pitch_cv snaps to 0  (freq returns to base)
-//   566ms+:   pitch_cv = 0         (ENV_AMP sustain=1 keeps amplitude alive)
+// Single ADSR (A=0.18s IIR, D=0.5s, S=0) fans to both VCO pitch_cv and VCA
+// gain_cv via CV_SPLITTER. Timeline:
+//   0–566ms:  pitch_cv rises 0→1, amplitude rises 0→1 (both track envelope)
+//   ~566ms:   peak — freq = base×2¹ (one octave up), amplitude at max
+//   566ms+:   both decay together over D=0.5s toward 0
 //
-// "Early" window starts at ~128ms: pitch_cv ≈ 0.79, freq ≈ 1.73× base ≈ 453 Hz.
-// "Late"  window starts at ~693ms: past peak, pitch_cv = 0, freq = base ≈ 262 Hz.
+// "Early" window (~128ms): pitch_cv ≈ 0.79, freq ≈ 1.73× base ≈ 453 Hz.
+// "Late"  window (~693ms): 127ms into decay from peak, env ≈ 0.57,
+//                          freq ≈ base×2^0.57 ≈ 388 Hz, amplitude still ≈ 0.57.
 //
-// Before Phase 17 fix both windows would show the same pitch (idle envelopes).
-// After fix: pitch_early > pitch_late.
+// pitch_early > pitch_late confirms ENV is driving VCO via splitter.
 // ---------------------------------------------------------------------------
 
 TEST_F(DogWhistlePatchTest, PitchEnvelopeFiresAndReturns) {
@@ -185,7 +180,7 @@ TEST_F(DogWhistlePatchTest, AscendingPhraseAudible) {
 
     // Gate long enough that the 566ms ENV_PITCH arc is fully heard before release
     constexpr int NOTE_MS    = 900;
-    constexpr int RELEASE_MS = 250;  // 120ms release + margin
+    constexpr int RELEASE_MS = 450;  // 300ms release + margin
 
     const int notes[] = {72, 76, 79, 84};  // C5, E5, G5, C6
     std::cout << "[DogWhistle] Playing C5 → E5 → G5 → C6 (hear upward glide on each onset)…\n";

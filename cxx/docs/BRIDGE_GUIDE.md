@@ -558,7 +558,98 @@ When `sync=0` (default) behaviour is identical to pre-Phase 27D — fully backwa
 
 ---
 
-## 15. Removed / Deprecated API
+## 15. MIDI-to-CV Routing (Phase 27E — Planned)
+
+Phase 27E replaces the implicit lifecycle callbacks (`on_note_on` / `on_note_off`) with a routable `MIDI_CV` source module, giving patch authors full control over how keyboard pitch and gate signals flow through the signal chain.
+
+### 15.1  `MIDI_CV` Module
+
+`MIDI_CV` is a `SOURCE`-role module that exposes keyboard state as patchable CV and gate ports.
+
+| Port | Direction | Type | Description |
+|------|-----------|------|-------------|
+| `pitch_cv` | out | PORT_CONTROL | 1 V/oct pitch CV (C4 = 0 V) |
+| `gate_cv` | out | PORT_CONTROL | 0 V / 5 V gate (high while key held) |
+| `velocity_cv` | out | PORT_CONTROL | Note-on velocity 0–1 normalized |
+| `aftertouch_cv` | out | PORT_CONTROL | Channel aftertouch 0–1 |
+
+Typical wiring:
+
+```json
+"chain": [
+  { "type": "MIDI_CV",            "tag": "KBD" },
+  { "type": "COMPOSITE_GENERATOR","tag": "VCO" },
+  { "type": "ADSR_ENVELOPE",      "tag": "ENV" },
+  { "type": "VCA",                "tag": "VCA" }
+],
+"connections": [
+  { "from_tag": "KBD", "from_port": "pitch_cv",    "to_tag": "VCO", "to_port": "pitch_base_cv" },
+  { "from_tag": "KBD", "from_port": "gate_cv",     "to_tag": "ENV", "to_port": "gate_in"       },
+  { "from_tag": "ENV", "from_port": "envelope_out","to_tag": "VCA", "to_port": "gain_cv"       }
+]
+```
+
+### 15.2  Two-Port Pitch on `COMPOSITE_GENERATOR`
+
+Phase 27E adds a second pitch input port to `COMPOSITE_GENERATOR`:
+
+| Port | Type | Description |
+|------|------|-------------|
+| `pitch_base_cv` | PORT_CONTROL | Absolute pitch (V/oct) — typically from `MIDI_CV.pitch_cv` |
+| `pitch_cv` | PORT_CONTROL | Additive modulation offset (V/oct) — from LFO vibrato, portamento, etc. |
+
+Both inputs sum at the oscillator, mirroring the M-110 hardware where KBD CV and MOD CV arrive on separate summing junctions.
+
+### 15.3  Gate-CV Trigger Model
+
+After Phase 27E, gate triggering is entirely port-driven:
+
+- `ADSR_ENVELOPE.gate_in` replaces the lifecycle `on_note_on` / `on_note_off` callbacks.
+- `ADSR_ENVELOPE.ext_gate_in` remains available for secondary trigger sources (LFO square wave for repeating-trigger patches such as banjo).
+- `on_note_on` / `on_note_off` are removed from the public C API; `engine_note_on` / `engine_note_off` become thin wrappers that drive `MIDI_CV` state.
+
+### 15.4  New and Revised Ports (Phase 27E)
+
+The following port additions are planned alongside `MIDI_CV`:
+
+| Module | New Port / Parameter | Description |
+|--------|----------------------|-------------|
+| `LFO` | `control_out_inv` (out) | Always −1 × `control_out`; eliminates a separate `INVERTER` for counter-phase routing (M-150 OUT B precedent) |
+| `ECHO_DELAY` | `time_cv` (in, PORT_CONTROL) | Additive modulation of delay time in seconds (M-172 BBD clock CV precedent) |
+| `GATE_DELAY` | `gate_in_b` (in, PORT_CONTROL) | Secondary gate input OR'd with `gate_in` (M-172 INPUT B) |
+| `GATE_DELAY` | `gate_time` parameter | 0 = mirror input duration; >0 = fixed output pulse width (0–6 s) |
+| `GATE_DELAY` | `delay_time` range | Extended to 6.0 s (was 2.0 s) to match M-172 hardware |
+
+### 15.5  Patch Audit Status
+
+The arch-audit (branch `202603201000-arch-audit`) verified and corrected the following patches before Phase 27E implementation. Remaining patches are deferred until Phase 27E migration.
+
+**Verified and approved (arch-audit 2026-03-21):**
+
+| Patch | Topology | Notes |
+|-------|----------|-------|
+| `flute.json` | SH_FILTER + ADSR + VCA | LFO vibrato; pitch tracking confirmed |
+| `clarinet.json` | SH_FILTER + ADSR + VCA | Pulse wave; register-crossing character |
+| `brass.json` / `horn.json` | SH_FILTER + CV_SPLITTER + CV_SCALER + ADSR + VCA | Roland Fig 1-6; CV_SCALER registration bug fixed this session |
+| `trumpet.json` | As brass | Brighter cutoff |
+| `trombone.json` | As brass | Slower attack |
+| `tuba.json` | As brass | Sub-octave saw; lower cutoff |
+| `oboe.json` | SH_FILTER + ADSR + VCA | Nasal pulse mix |
+| `english_horn.json` | As oboe | Mellower variant |
+| `acid_reverb.json` | DIODE_FILTER + AD_ENV + ADSR(GATE) + VCA + DIST → post FDN | Rewritten this session to correct TB-303 two-envelope architecture |
+| `banjo.json` | VCO + SH_FILTER + ADSR + VCA, LFO→ext_gate_in | Rewritten this session to Roland Fig 3-4 repeating-trigger topology |
+
+**Infrastructure fix (arch-audit):** `CV_SCALER` was registered only via a static initializer in `CvScalerProcessor.cpp`; the linker dead-code-eliminated the TU. Fixed by adding an explicit `register_module` call in `ProcessorRegistrations.cpp`. All brass-family patches were silently failing to load before this fix.
+
+**Deferred — pending Phase 27E migration:**
+
+`bass_drum`, `bell`, `bongo_drums`, `bowed_bass`, `cow_bell`, `cymbal`, `delay_lead`, `dog_whistle`, `glockenspiel`, `gong`, `gong_full`, `group_strings`, `harpsichord`, `juno_pad`, `juno_strings`, `organ_drawbar`, `percussion_noise`, `pizzicato_violin`, `rain`, `reverb`, `sh_bass`, `snare_drum`, `tb_bass`, `thunder`, `tom_tom`, `violin_vibrato`, `whistling`, `wind_surf`, `wood_blocks`.
+
+Each deferred patch will be reviewed against the Roland service notes and smoke-tested as part of the Phase 27E migration pass.
+
+---
+
+## 16. Removed / Deprecated API
 
 | Function | Status | Replacement |
 |----------|--------|-------------|

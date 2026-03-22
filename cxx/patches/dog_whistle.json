@@ -1,23 +1,37 @@
 {
-  "version": 2,
+  "version": 3,
   "name": "Dog Whistle",
   "groups": [
     {
       "id": 0,
+      "comment": "Roland System 100M Fig 2-6: single ADSR fans (via CV_SPLITTER) to both VCO pitch_cv and VCA gain_cv. Attack governs both the pitch glide and amplitude rise simultaneously. S=0 means pitch and amplitude decay together — no residual sustained tone.",
       "chain": [
-        { "type": "COMPOSITE_GENERATOR", "tag": "VCO"       },
-        { "type": "ADSR_ENVELOPE",       "tag": "ENV_PITCH" },
-        { "type": "ADSR_ENVELOPE",       "tag": "ENV_AMP"   },
-        { "type": "VCA",                 "tag": "VCA"       }
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
+        { "type": "CV_SPLITTER",         "tag": "SPL" },
+        { "type": "VCA",                 "tag": "VCA" }
       ],
       "connections": [
-        { "from_tag": "ENV_PITCH", "from_port": "envelope_out", "to_tag": "VCO", "to_port": "pitch_cv" },
-        { "from_tag": "ENV_AMP",   "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"  }
+        {
+          "from_tag": "VCO", "from_port": "audio_out",
+          "to_tag":   "VCA", "to_port":   "audio_in"
+        },
+        {
+          "from_tag": "ENV", "from_port": "envelope_out",
+          "to_tag":   "SPL", "to_port":   "cv_in"
+        },
+        {
+          "from_tag": "SPL", "from_port": "cv_out_1",
+          "to_tag":   "VCO", "to_port":   "pitch_cv"
+        },
+        {
+          "from_tag": "SPL", "from_port": "cv_out_2",
+          "to_tag":   "VCA", "to_port":   "gain_cv"
+        }
       ],
       "parameters": {
-        "VCO":       { "sine_gain": 1.0 },
-        "ENV_PITCH": { "attack": 0.18, "decay": 0.0, "sustain": 0.0, "release": 0.04 },
-        "ENV_AMP":   { "attack": 0.01, "decay": 0.0, "sustain": 1.0, "release": 0.12 }
+        "VCO": { "sine_gain": 1.0 },
+        "ENV": { "attack": 0.18, "decay": 0.5, "sustain": 0.0, "release": 0.3 }
       }
     }
   ]

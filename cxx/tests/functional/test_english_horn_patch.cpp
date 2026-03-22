@@ -2,17 +2,15 @@
  * @file test_english_horn_patch.cpp
  * @brief Functional tests for english_horn.json — nasal double-reed timbre.
  *
- * Patch topology (Practical Synthesis Vol.1 §1-3, Fig 1-9 two-filter chain):
- *   COMPOSITE_GENERATOR (saw) → SH_FILTER (cutoff=1800 Hz, res=0.5)
- *       → HIGH_PASS_FILTER (cutoff=200 Hz)
- *       → ADSR_ENVELOPE (attack=30ms, decay=100ms, sustain=0.85, release=150ms)
- *       → VCA
+ * Patch topology (Roland System 100M Fig 1-9):
+ *   COMPOSITE_GENERATOR (saw) → SH_FILTER (cutoff=1800 Hz, res=0.5) → VCA ← ENV
  *
- * The series VCF→HPF combination creates a nasal bandpass-like formant
- * characteristic of double-reed instruments.  The SH_FILTER (CEM/IR3109 LP)
- * at moderate resonance gives a resonant peak around 1800 Hz, while the HPF
- * at 200 Hz removes the thick low-end that would make it sound like a cello.
- * The result is the hollow, slightly reedy quality of English Horn or Oboe.
+ * English Horn has NO HPF — the HPF block in Fig 1-9 is dashed and labelled
+ * "(OBOE)", meaning it applies only to the Oboe variant (see oboe.json).
+ * Keyboard CV is auto-injected into VCF by the engine (kybd_cv port).
+ * ADSR drives VCA amplitude only — no filter modulation.
+ * The SH_FILTER LP at resonance 0.5 gives the characteristic hollow,
+ * slightly reedy quality of English Horn.
  *
  * Key assertions:
  *   1. Smoke        — note_on + 5 blocks produces audio (30ms attack completes
@@ -91,20 +89,21 @@ TEST_F(EnglishHornPatchTest, NoteOnProducesAudio) {
 }
 
 // ---------------------------------------------------------------------------
-// Test 2: NasalFormant — centroid in the 600–2000 Hz band
+// Test 2: ResonantFormant — centroid above fundamental
 //
-// The series LP (1800 Hz) + HP (200 Hz) creates a band that passes roughly
-// 200–1800 Hz with a resonant emphasis around 1800 Hz.  The spectral centroid
-// of the sustained tone should therefore sit in the 600–2000 Hz nasal range
-// for A4 (440 Hz fundamental).
+// SH_FILTER LP at 1800 Hz, resonance=0.5 adds a resonant peak near cutoff.
+// For A4 (440 Hz), the fundamental is at 440 Hz; the LP resonance emphasises
+// harmonics around 1800 Hz, lifting the centroid well above the fundamental.
+// Without an HPF, the centroid includes the low-end energy from the saw, so
+// the lower bound is 440 Hz (fundamental) rather than 600 Hz.
 // ---------------------------------------------------------------------------
 
 TEST_F(EnglishHornPatchTest, NasalFormant) {
     PRINT_TEST_HEADER(
-        "English Horn — Nasal Formant (automated)",
-        "VCF (LP 1800Hz) + HPF (HP 200Hz) in series: centroid in 600–2000 Hz nasal band.",
+        "English Horn — Resonant Formant (automated)",
+        "SH_FILTER LP 1800Hz res=0.5: centroid above A4 fundamental (440 Hz).",
         "engine_load_patch → note_on(A4) → skip 10 blocks → capture 2048-sample window → centroid",
-        "600 < centroid < 2000 Hz",
+        "440 < centroid < 2000 Hz",
         sample_rate
     );
 
@@ -135,8 +134,8 @@ TEST_F(EnglishHornPatchTest, NasalFormant) {
     std::cout << "[EnglishHorn] A4 fundamental:    440 Hz\n";
     std::cout << "[EnglishHorn] Spectral centroid: " << centroid << " Hz\n";
 
-    EXPECT_GT(centroid, 600.0f)
-        << "Expected HPF (200 Hz) to remove bass, pushing centroid above 600 Hz";
+    EXPECT_GT(centroid, 440.0f)
+        << "Expected LP resonance to lift centroid above A4 fundamental (440 Hz)";
     EXPECT_LT(centroid, 2000.0f)
         << "Expected LP (1800 Hz) to cap top end, keeping centroid below 2000 Hz";
 }

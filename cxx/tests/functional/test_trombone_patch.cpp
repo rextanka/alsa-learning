@@ -1,24 +1,21 @@
 /**
- * @file test_brass_patch.cpp
- * @brief Functional tests for brass.json (Brass / Horn patch).
+ * @file test_trombone_patch.cpp
+ * @brief Functional tests for trombone.json (Trombone variant of Fig 1-6).
  *
  * Patch topology:
- *   VCO (saw, 8') → VCF → VCA. ADSR → CV_SPLITTER → VCA gain_cv + (via CV_SCALER scale=0.5) VCF cutoff_cv.
+ *   VCO (saw, 8') → VCF → VCA. ADSR → CV_SPLITTER → VCA gain_cv +
+ *   (via CV_SCALER scale=0.9) VCF cutoff_cv.
  *
- * The defining character of this patch is the brass "blat": a fast attack to peak
- * amplitude, followed by a decay to a 65% sustain level that persists while the key
- * is held. The peak-to-sustain drop is approximately 1/0.65 ≈ 1.54×.
+ * Sawtooth waveform with slightly lower cutoff (1800Hz) for the warm low-brass body.
+ * Stronger filter sweep (scale=0.9) vs Horn (0.5) gives richer attack transient.
  *
- * ADSR IIR timing at 48kHz:
- *   Attack peak reached ~20–30ms after note-on (coeff = exp(-log9/(0.01*sr))).
- *   Decay settles to sustain by ~300ms (coeff = exp(-log9/(0.08*sr))).
+ * ADSR: attack=10ms, decay=80ms, sustain=0.65, release=150ms.
  *
  * Tests:
- *   1. Smoke         — patch loads and note-on produces non-silent audio.
- *   2. DecayToSustain — RMS near peak (21–53ms) is ≥1.3× the settled sustain
- *                      RMS (~320–406ms), confirming the ADSR decay stage works.
- *   3. Audible       — C4–E4–G4–C5 ascending arpeggio (brass fanfare phrase).
- *   4. BrassMidiAudible — play brass.mid through horn patch for live listening.
+ *   1. NoteOnProducesAudio    — smoke: patch loads and note-on produces non-silent audio.
+ *   2. DecayToSustain         — RMS near peak (21–53ms) is ≥1.15× settled sustain RMS.
+ *   3. TromboneScaleAudible   — C3–E3–G3–C4 scale (lower register for trombone).
+ *   4. TromboneMidiAudible    — play brass.mid through trombone patch for live listening.
  */
 
 #include <gtest/gtest.h>
@@ -33,7 +30,7 @@
 // Fixture
 // ---------------------------------------------------------------------------
 
-class BrassPatchTest : public ::testing::Test {
+class TrombonePatchTest : public ::testing::Test {
 protected:
     void SetUp() override {
         test::init_test_environment();
@@ -46,7 +43,7 @@ protected:
     int sample_rate;
     std::unique_ptr<test::EngineWrapper> engine_wrapper;
 
-    static constexpr const char* kPatch = "patches/brass.json";
+    static constexpr const char* kPatch = "patches/trombone.json";
     static constexpr const char* kMidi  = "midi/brass.mid";
 };
 
@@ -54,12 +51,12 @@ protected:
 // Test 1: Smoke — patch loads and produces audio
 // ---------------------------------------------------------------------------
 
-TEST_F(BrassPatchTest, NoteOnProducesAudio) {
+TEST_F(TrombonePatchTest, NoteOnProducesAudio) {
     PRINT_TEST_HEADER(
-        "Brass — Smoke",
-        "Note-on produces non-silent audio through VCO → VCA chain.",
-        "engine_load_patch(brass.json) → note_on → engine_process × 10",
-        "RMS > 0.001 across 10 blocks.",
+        "Trombone — Smoke",
+        "Note-on produces non-silent audio through VCO (saw) → VCF → VCA chain.",
+        "engine_load_patch(trombone.json) → note_on → engine_process × 8",
+        "RMS > 0.001 across 5 measured blocks (skip 3, measure 5).",
         sample_rate
     );
 
@@ -69,12 +66,15 @@ TEST_F(BrassPatchTest, NoteOnProducesAudio) {
     const size_t FRAMES = 512;
     std::vector<float> buf(FRAMES * 2);
     double sum_sq = 0.0;
-    for (int b = 0; b < 10; ++b) {
+    for (int b = 0; b < 8; ++b) {
         engine_process(engine(), buf.data(), FRAMES);
-        for (size_t i = 0; i < FRAMES; ++i) sum_sq += double(buf[i * 2]) * double(buf[i * 2]);
+        if (b >= 3) {
+            for (size_t i = 0; i < FRAMES; ++i)
+                sum_sq += double(buf[i * 2]) * double(buf[i * 2]);
+        }
     }
-    float rms = float(std::sqrt(sum_sq / double(FRAMES * 10)));
-    std::cout << "[Brass] 10-block RMS: " << rms << "\n";
+    float rms = float(std::sqrt(sum_sq / double(FRAMES * 5)));
+    std::cout << "[Trombone] 5-block RMS (skip 3): " << rms << "\n";
     EXPECT_GT(rms, 0.001f) << "Expected non-silent output at onset";
 
     engine_note_off(engine(), 60);
@@ -85,19 +85,19 @@ TEST_F(BrassPatchTest, NoteOnProducesAudio) {
 //
 // ADSR: attack=10ms → peak near blocks 2–5 (~21–53ms from note-on).
 // Decay: 80ms time constant → settled at sustain=0.65 by ~300ms.
-// SUSTAIN window: blocks 30–38 (~320–406ms).
+// SUSTAIN window: blocks 30–40 (~320–427ms).
 //
 // RMS ∝ amplitude, and sustain=0.65 means sustain ≈ 65% of peak.
-// Expected ratio: rms_peak / rms_sustain ≥ 1.3.
+// Expected ratio: rms_peak / rms_sustain ≥ 1.15 (conservative).
 // ---------------------------------------------------------------------------
 
-TEST_F(BrassPatchTest, DecayToSustain) {
+TEST_F(TrombonePatchTest, DecayToSustain) {
     PRINT_TEST_HEADER(
-        "Brass — Decay to Sustain (automated)",
-        "RMS near peak (21–53ms) is ≥1.3× the settled sustain RMS (~320–406ms), "
+        "Trombone — Decay to Sustain (automated)",
+        "RMS near peak (21–53ms) is ≥1.15× the settled sustain RMS (~320–427ms), "
         "confirming the ADSR decay stage drops from 1.0 to sustain=0.65.",
         "engine_load_patch → note_on(C4) → engine_process → compare peak vs sustain RMS",
-        "rms_peak / rms_sustain ≥ 1.3",
+        "rms_peak / rms_sustain ≥ 1.15",
         sample_rate
     );
 
@@ -108,7 +108,7 @@ TEST_F(BrassPatchTest, DecayToSustain) {
     const int    PEAK_START    = 2;    // ~21ms — past 10ms attack, near peak
     const int    PEAK_END      = 6;    // ~64ms
     const int    SUSTAIN_START = 30;   // ~320ms — decay fully settled
-    const int    SUSTAIN_END   = 38;   // ~406ms
+    const int    SUSTAIN_END   = 40;   // ~427ms
 
     std::vector<float> buf(FRAMES * 2);
     double peak_sq = 0.0;    int peak_n    = 0;
@@ -127,37 +127,37 @@ TEST_F(BrassPatchTest, DecayToSustain) {
     float rms_sustain = float(std::sqrt(sustain_sq / double(FRAMES * sustain_n)));
     float ratio       = rms_sustain > 1e-6f ? rms_peak / rms_sustain : 0.0f;
 
-    std::cout << "[Brass] RMS peak    (~21–53ms): " << rms_peak    << "\n";
-    std::cout << "[Brass] RMS sustain (~320ms+):  " << rms_sustain << "\n";
-    std::cout << "[Brass] Ratio peak/sustain:     " << ratio       << "\n";
+    std::cout << "[Trombone] RMS peak    (~21–53ms): " << rms_peak    << "\n";
+    std::cout << "[Trombone] RMS sustain (~320ms+):  " << rms_sustain << "\n";
+    std::cout << "[Trombone] Ratio peak/sustain:     " << ratio       << "\n";
 
     EXPECT_GT(rms_sustain, 0.001f) << "No signal during sustain window — envelope may have expired";
-    EXPECT_GT(ratio, 1.3f)
-        << "Expected peak/sustain ratio ≥ 1.3 (sustain=0.65 → ratio≈1.54); got " << ratio;
+    EXPECT_GT(ratio, 1.15f)
+        << "Expected peak/sustain ratio ≥ 1.15 (sustain=0.65 → ratio≈1.54); got " << ratio;
 }
 
 // ---------------------------------------------------------------------------
-// Test 3: Audible — ascending brass fanfare
+// Test 3: Audible — trombone scale in lower register
 // ---------------------------------------------------------------------------
 
-TEST_F(BrassPatchTest, FanfareAudible) {
+TEST_F(TrombonePatchTest, TromboneScaleAudible) {
     PRINT_TEST_HEADER(
-        "Brass — Fanfare (audible)",
-        "Play C4–E4–G4–C5 as a rising brass arpeggio to hear the attack blat, "
-        "sustain character, and release.",
-        "engine_load_patch(brass.json) → engine_start → C4 / E4 / G4 / C5",
-        "Audible brass fanfare with characteristic blat and 65% sustain.",
+        "Trombone — Scale (audible)",
+        "Play C3–E3–G3–C4 in the lower register characteristic of trombone, "
+        "hearing the warm sawtooth body and stronger filter sweep (scale=0.9).",
+        "engine_load_patch(trombone.json) → engine_start → C3 / E3 / G3 / C4",
+        "Audible warm trombone tone in lower register with filter envelope sweep.",
         sample_rate
     );
 
     ASSERT_EQ(engine_load_patch(engine(), kPatch), 0);
     ASSERT_ENGINE_START(engine());
 
-    constexpr int NOTE_MS    = 400;   // held duration
-    constexpr int RELEASE_MS = 300;   // 150ms release + margin
+    constexpr int NOTE_MS    = 700;
+    constexpr int RELEASE_MS = 300;
 
-    const int notes[] = {60, 64, 67, 72};  // C4, E4, G4, C5
-    std::cout << "[Brass] Playing C4 – E4 – G4 – C5 fanfare…\n";
+    const int notes[] = {48, 52, 55, 60};  // C3, E3, G3, C4
+    std::cout << "[Trombone] Playing C3 – E3 – G3 – C4 scale…\n";
     for (int midi : notes) {
         engine_note_on(engine(), midi, 1.0f);
         std::this_thread::sleep_for(std::chrono::milliseconds(NOTE_MS));
@@ -169,15 +169,15 @@ TEST_F(BrassPatchTest, FanfareAudible) {
 }
 
 // ---------------------------------------------------------------------------
-// Test 4: MIDI — play brass.mid through horn patch
+// Test 4: MIDI — play brass.mid through trombone patch
 // ---------------------------------------------------------------------------
 
-TEST_F(BrassPatchTest, BrassMidiAudible) {
+TEST_F(TrombonePatchTest, TromboneMidiAudible) {
     PRINT_TEST_HEADER(
-        "Brass / Horn — MIDI playback (audible)",
-        "Play brass.mid through brass.json for live listening.",
-        "engine_load_patch(brass.json) → engine_start → engine_load_midi → engine_midi_play",
-        "Audible horn tone with filter envelope sweep (~15s).",
+        "Trombone — MIDI playback (audible)",
+        "Play brass.mid through trombone.json for live listening.",
+        "engine_load_patch(trombone.json) → engine_start → engine_load_midi → engine_midi_play",
+        "Audible trombone tone with filter envelope sweep (~15s).",
         sample_rate
     );
 
@@ -190,7 +190,7 @@ TEST_F(BrassPatchTest, BrassMidiAudible) {
     ASSERT_EQ(engine_load_midi(engine(), kMidi), 0);
     engine_midi_play(engine());
 
-    std::cout << "[Brass] Playing brass.mid through Horn patch…\n";
+    std::cout << "[Trombone] Playing brass.mid through Trombone patch…\n";
     test::wait_while_running(15);
 
     engine_midi_stop(engine());

@@ -78,7 +78,7 @@ Module type names (complete registry as of Phase 26):
 `VCA`, `NOISE_GATE`, `ENVELOPE_FOLLOWER`
 
 **CV / Routing utilities:**
-`INVERTER`, `CV_MIXER`, `CV_SPLITTER`, `MATHS`, `GATE_DELAY`, `SAMPLE_HOLD`,
+`INVERTER`, `CV_MIXER`, `CV_SPLITTER`, `CV_SCALER`, `MATHS`, `GATE_DELAY`, `SAMPLE_HOLD`,
 `RING_MOD`, `AUDIO_SPLITTER`, `AUDIO_MIXER`
 
 **FX:**
@@ -149,6 +149,24 @@ The patch loader maps each entry as `voice.find_by_tag(tag)->apply_parameter(nam
   "VCO2": { "saw_gain": 1.0, "detune": -7.0 }
 }
 ```
+
+**Footage (VCO range selector)**: Roland System 100M oscillators have a range switch labelled in pipe-organ footage (2', 4', 8', 16', 32'). Use the `footage` parameter on `COMPOSITE_GENERATOR` to set the octave register. Omitting `footage` (or setting `footage: 8`) leaves the VCO at concert pitch.
+
+| `footage` value | Semitone offset | Typical instrument |
+|-----------------|-----------------|--------------------|
+| `2`             | +24             | Piccolo, high leads |
+| `4`             | +12             | Flute, high woodwinds |
+| `8`             | 0               | Concert pitch (default) |
+| `16`            | −12             | Cello, low brass |
+| `32`            | −24             | Tuba, contrabass, sub-bass |
+
+```json
+"parameters": {
+  "VCO": { "saw_gain": 1.0, "footage": 32 }
+}
+```
+
+> `footage` and `transpose` write to the same internal semitone offset. Use `footage` when matching Roland documentation; use `transpose` for arbitrary interval tuning (e.g. bell partials, FM ratios). Do not set both in the same patch.
 
 ---
 
@@ -252,32 +270,44 @@ Bowed string character: slow attack, LFO vibrato applied continuously from note 
 
 ### Brass / Horn
 
-Bright, fast-attack character. The filter is set wide-open and a short amplitude decay gives the characteristic blatt envelope. For a full brass patch with a separate filter-sweep envelope a second `ADSR_ENVELOPE` instance and per-tag parameter addressing are required.
+Roland System 100M Fig 1-6 topology: VCO (saw) → VCF → VCA. ADSR fans via `CV_SPLITTER` to both VCA amplitude and (via `CV_SCALER`) VCF cutoff. The `CV_SCALER` `scale` parameter is the Roland "VCF MOD IN" depth knob — set it lower for subtle filter movement, higher (up to 1.0) for a more aggressive filter sweep. The characteristic brass "blat" comes from the fast attack (10ms) peaking then decaying to 65% sustain. See `patches/brass.json`.
 
 ```json
 {
-  "version": 2,
-  "name": "brass",
-  "groups": [
-    {
-      "id": 0,
-      "chain": [
-        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
-        { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
-        { "type": "VCA",                 "tag": "VCA" }
-      ],
-      "connections": [
-        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv" }
-      ],
-      "parameters": {
-        "VCO": { "saw_gain": 1.0, "pulse_gain": 0.3 },
-        "ENV": { "attack": 0.01, "decay": 0.08, "sustain": 0.65, "release": 0.15 },
-        "VCF": { "cutoff": 3200.0, "res": 0.28 }
-      }
+  "version": 3,
+  "name": "Brass / Horn",
+  "groups": [{
+    "id": 0,
+    "chain": [
+      { "type": "COMPOSITE_GENERATOR", "tag": "VCO"  },
+      { "type": "ADSR_ENVELOPE",       "tag": "ENV"  },
+      { "type": "CV_SPLITTER",         "tag": "SPL"  },
+      { "type": "CV_SCALER",           "tag": "VMOD" },
+      { "type": "SH_FILTER",           "tag": "VCF"  },
+      { "type": "VCA",                 "tag": "VCA"  }
+    ],
+    "connections": [
+      { "from_tag": "VCO",  "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"  },
+      { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"  },
+      { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "SPL",  "to_port": "cv_in"     },
+      { "from_tag": "SPL",  "from_port": "cv_out_1",     "to_tag": "VCA",  "to_port": "gain_cv"   },
+      { "from_tag": "SPL",  "from_port": "cv_out_2",     "to_tag": "VMOD", "to_port": "cv_in"     },
+      { "from_tag": "VMOD", "from_port": "cv_out",       "to_tag": "VCF",  "to_port": "cutoff_cv" }
+    ],
+    "parameters": {
+      "VCO":  { "saw_gain": 1.0, "footage": 8 },
+      "VCF":  { "cutoff": 2000.0, "resonance": 0.2 },
+      "ENV":  { "attack": 0.01, "decay": 0.08, "sustain": 0.65, "release": 0.15 },
+      "VMOD": { "scale": 0.5 }
     }
+  }],
+  "post_chain": [
+    { "type": "REVERB_FREEVERB", "parameters": { "room_size": 0.55, "damping": 0.6, "wet": 0.2 } }
   ]
 }
 ```
+
+> `CV_SPLITTER` fans the single ADSR to both VCA and filter. `CV_SCALER` `scale=0.5` sets the filter modulation at 50% depth (the MOD IN knob at "5"). Trumpet uses `scale=0.9` (MOD IN "9") for a brighter, more aggressive filter sweep. Trombone also uses `scale=0.9` but with a sawtooth oscillator for warmer body. Tuba uses `footage=32` to transpose the VCO down two octaves into the sub-bass register.
 
 ### Flute
 
@@ -752,11 +782,16 @@ Metallic cymbal character: high-pass filtered white noise into a modulated short
 
 ### Acid Reverb (TB-303 with Distortion)
 
-TB-303 style acid bass: sawtooth through a Diode Ladder filter with envelope-swept cutoff and self-oscillation resonance, into a VCA, then a distortion pedal (modelled as a DISTORTION module), then a FDN reverb tail. The AD envelope drives both VCA amplitude and filter cutoff — the filter sweeps up on attack and closes on decay. Filter state is preserved across notes (no reset on note_on), so resonance builds across the riff. See `patches/acid_reverb.json`.
+TB-303 style acid bass with authentic two-envelope architecture. On the real 303 the Decay knob controls **only the filter sweep** — the VCA is gated (open while key held, close on release) and is not shaped by Decay at all. Two separate envelopes replicate this:
+
+- `AD_ENVELOPE` (ENV) — variable decay sweeps the filter cutoff only
+- `ADSR_ENVELOPE` (GATE) — sustain=1.0, release≈20ms acts as a shaped gate for the VCA
+
+Filter state is preserved across notes (no reset on note_on), so resonance builds across the riff. `DISTORTION` is post-VCA, replicating the 303 output plugged into a pedal. `REVERB_FDN` is in `post_chain` (global bus, not per-voice). See `patches/acid_reverb.json`.
 
 ```json
 {
-  "version": 2,
+  "version": 3,
   "name": "Acid Reverb",
   "groups": [
     {
@@ -765,31 +800,33 @@ TB-303 style acid bass: sawtooth through a Diode Ladder filter with envelope-swe
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO"  },
         { "type": "DIODE_FILTER",        "tag": "VCF"  },
         { "type": "AD_ENVELOPE",         "tag": "ENV"  },
+        { "type": "ADSR_ENVELOPE",       "tag": "GATE" },
         { "type": "VCA",                 "tag": "VCA"  },
-        { "type": "DISTORTION",          "tag": "DIST" },
-        { "type": "REVERB_FDN",          "tag": "REV"  }
+        { "type": "DISTORTION",          "tag": "DIST" }
       ],
       "connections": [
         { "from_tag": "VCO",  "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"  },
         { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"  },
-        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"   },
+        { "from_tag": "GATE", "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"   },
         { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCF",  "to_port": "cutoff_cv" },
-        { "from_tag": "VCA",  "from_port": "audio_out",    "to_tag": "DIST", "to_port": "audio_in"  },
-        { "from_tag": "DIST", "from_port": "audio_out",    "to_tag": "REV",  "to_port": "audio_in"  }
+        { "from_tag": "VCA",  "from_port": "audio_out",    "to_tag": "DIST", "to_port": "audio_in"  }
       ],
       "parameters": {
         "VCO":  { "saw_gain": 1.0 },
         "VCF":  { "cutoff": 800.0, "resonance": 0.92, "env_depth": 3.0 },
         "DIST": { "drive": 8.0, "character": 0.3 },
         "ENV":  { "attack": 0.003, "decay": 0.25 },
-        "REV":  { "decay": 1.2, "wet": 0.20, "room_size": 0.5, "damping": 0.4 }
+        "GATE": { "attack": 0.003, "decay": 0.0, "sustain": 1.0, "release": 0.020 }
       }
     }
+  ],
+  "post_chain": [
+    { "type": "REVERB_FDN", "parameters": { "decay": 1.2, "wet": 0.20, "room_size": 0.5, "damping": 0.4 } }
   ]
 }
 ```
 
-> `VCF` `resonance: 0.92` is on the edge of self-oscillation — exactly the 303's characteristic squelch. `env_depth: 3.0` scales the AD envelope to sweep one octave of filter cutoff. `DIST` is post-VCA, replicating the 303 output jack plugged into a pedal. `character: 0.3` gives a mild asymmetry for warm even-harmonic content without going full ring distortion. `REV` `wet: 0.20` adds subtle space without washing out the acid bite.
+> `VCF` `resonance: 0.92` is on the edge of self-oscillation — the 303's characteristic squelch. `env_depth: 3.0` scales the AD envelope to sweep one octave of filter cutoff. `GATE` ADSR with `sustain=1.0` and `release=0.020` acts as a hard gate: VCA opens on note_on and closes cleanly 20ms after note_off, independent of the filter's decay time. This matches the authentic 303 behaviour where the Decay knob has no effect on VCA amplitude. `DIST` `character: 0.3` gives mild even-harmonic asymmetry without going full ring distortion. See MODULE_DESC.md §DIODE_FILTER for the TB-303 two-envelope pattern.
 
 ---
 

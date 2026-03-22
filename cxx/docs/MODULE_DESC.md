@@ -129,7 +129,7 @@ The registry is queryable via the C API (`engine_get_module_count`, `engine_get_
   - `PORT_CONTROL` in `pwm_cv` (bipolar)
   - `PORT_AUDIO` in `fm_in` (audio-rate frequency modulation; a VCO `audio_out` patched here is multiplied by `fm_depth` and summed into the pitch CV path, enabling VCO-to-VCO FM synthesis and extreme pitch sweeps not achievable at control rate)
   - `PORT_AUDIO` out `audio_out`
-- **Parameters**: `saw_gain`, `pulse_gain`, `sine_gain`, `triangle_gain`, `sub_gain`, `wavetable_gain`, `noise_gain` (all 0.0–1.0), `pulse_width` (0.0–0.5), `wavetable_type` (int enum), `transpose` (integer semitones, −24–+24, default 0), `detune` (float cents, −100–+100, default 0.0), `fm_depth` (0.0–1.0, default 0.0 — scales the `fm_in` signal before summing with `pitch_cv`)
+- **Parameters**: `saw_gain`, `pulse_gain`, `sine_gain`, `triangle_gain`, `sub_gain`, `wavetable_gain`, `noise_gain` (all 0.0–1.0), `pulse_width` (0.0–0.5), `wavetable_type` (int enum), `transpose` (integer semitones, −24–+24, default 0), `footage` (Roland range selector: 2/4/8/16/32, default 8 — see Footage convention below), `detune` (float cents, −100–+100, default 0.0), `fm_depth` (0.0–1.0, default 0.0 — scales the `fm_in` signal before summing with `pitch_cv`)
 - **Logic**:
   - **Exponential Pitch**: Frequency response must follow an exponential curve (f = f₀ · 2^CV) corresponding to the standard 1V/octave tracking.
   - **Harmonic Spectra Rules**:
@@ -138,8 +138,19 @@ The registry is queryable via the C API (`engine_get_module_count`, `engine_get_
     - **Triangle**: Must contain only odd-numbered harmonics, with amplitudes decreasing sharply at a rate of 1/n².
   - All waveforms produced simultaneously, blended by the internal waveform mixer via per-gain parameters. Sub-oscillator phase-coupled to pulse oscillator.
   - **Pitch offset**: The final frequency is computed as `f = f_base * 2^(detune/1200) * 2^(transpose/12) * 2^CV`. `transpose` and `detune` are static offsets baked at note-on; `pitch_cv` is the per-block modulation term. This allows a second VCO instance to be tuned to a fixed interval (e.g. `transpose=-12` for sub-octave, `detune=-14` for ≈ 1/10 semitone chorus) independently of the first.
-  - **VCO Hard Sync** (planned): When a `sync_in` pulse is received, the oscillator's phase is reset to zero. This forces the slave waveform to restart at the master's period, emphasizing odd harmonics that align with the master. Used in clarinet and aggressive lead patches. The `sync_in` port is not yet declared; pending a multi-VCO chain topology where one COMPOSITE_GENERATOR drives another's sync input.
-- **Architecture Note**: Two independent `COMPOSITE_GENERATOR` instances can coexist in the same voice chain with distinct tags (e.g. `"VCO1"`, `"VCO2"`). Each is tuned independently via its `pitch_cv` input, enabling interval stacking, detuning, and (eventually) hard sync.
+  - **Footage convention** (Roland oscillator range selector): The `footage` parameter maps the traditional pipe-organ footage labels to semitone transpose. Omitting `footage` (or setting `footage: 8`) leaves pitch at concert pitch. Values outside {2, 4, 8, 16, 32} are a no-op.
+
+    | Footage | Semitones | Typical use |
+    |---------|-----------|-------------|
+    | 2'      | +24       | piccolo, very high leads |
+    | 4'      | +12       | flute, high woodwinds |
+    | 8'      | 0         | concert pitch (default) |
+    | 16'     | −12       | cello, low brass |
+    | 32'     | −24       | tuba, contrabass, sub-bass |
+
+    `footage` and `transpose` write to the same internal offset. Set one or the other per patch, not both.
+  - **VCO Hard Sync**: `sync_out` (PORT_AUDIO out) emits a 1.0 pulse on the sample where the internal sawtooth phase wraps. `sync_in` (PORT_AUDIO in) resets all oscillator phases on receipt of a positive pulse, locking the slave's period to the master. Connect `VCO_MASTER:sync_out → VCO_SLAVE:sync_in`. The master node must appear before the slave in the `chain` array so it is pulled first each block.
+- **Architecture Note**: Two independent `COMPOSITE_GENERATOR` instances can coexist in the same voice chain with distinct tags (e.g. `"VCO1"`, `"VCO2"`). Each is tuned independently via its `pitch_cv` input, enabling interval stacking, detuning, and hard sync.
 
 ### LFO (Low Frequency Oscillator)
 - **Type name**: `LFO`
@@ -148,10 +159,11 @@ The registry is queryable via the C API (`engine_get_module_count`, `engine_get_
   - `PORT_CONTROL` in `rate_cv` (unipolar)
   - `PORT_CONTROL` in `reset` (unipolar, lifecycle-style trigger)
   - `PORT_CONTROL` out `control_out` (bipolar)
+  - `PORT_CONTROL` out `control_out_inv` (bipolar — inverted copy of `control_out`; always exactly −1 × `control_out`. Hardware: Roland M-150 OUT B. Eliminates the need for a separate `INVERTER` node when two destinations require counter-phase modulation, e.g. filter opens while VCA closes.)
 - **Parameters**: `rate` (0.01–20 Hz — used when `sync=false`), `intensity` (0.0–1.0), `waveform` (enum: Sine=0, Triangle=1, Square=2, Saw=3; S&H planned), `delay` (0.0–10.0s, default 0.0 — time after note gate-on before modulation onset begins; output remains zero during the delay window then ramps to full depth), `sync` (bool, default `false` — when `true`, `rate` is ignored and LFO period is derived from engine tempo + `division`), `division` (enum index 0–10, default `2` (`"quarter"`) — beat subdivision when `sync=true`; see Transport Clock division table in ARCH_PLAN.md §Phase 27D)
-- **Modulation Logic**: Routing LFO output to `pitch_cv` produces vibrato (FM); routing to VCA `gain_cv` produces tremolo (AM); routing to VCF `cutoff_cv` produces **growl** — a wavering of tone color at the LFO rate (Roland §5-5). The `delay` parameter implements the Roland DEL knob used on flute and string patches to produce built-in delayed vibrato without requiring a separate `CV_MIXER` + second `ADSR_ENVELOPE`.
+- **Modulation Logic**: Routing LFO output to `pitch_cv` produces vibrato (FM); routing to VCA `gain_cv` produces tremolo (AM); routing to VCF `cutoff_cv` produces **growl** — a wavering of tone color at the LFO rate (Roland §5-5). The `delay` parameter implements the Roland DEL knob used on flute and string patches to produce built-in delayed vibrato without requiring a separate `CV_MIXER` + second `ADSR_ENVELOPE`. Route `control_out` → VCA `gain_cv` and `control_out_inv` → VCF `cutoff_cv` to produce counter-sweeping tremolo+filter modulation from a single LFO.
 - **Tempo sync** (Phase 27D): When `sync=true`, LFO period = `(60 / bpm) × division_multiplier` beats. A `"whole"` LFO at 120 BPM completes one cycle every 2 seconds — useful for tempo-locked filter sweeps and tremolo. Rate changes from tempo automation glide smoothly.
-- **Note**: Output is `PORT_CONTROL`. Must not be patched directly into an audio mix.
+- **Note**: Both outputs are `PORT_CONTROL`. Must not be patched directly into an audio mix.
 
 ### Noise Generator
 - **Type name**: `WHITE_NOISE`
@@ -200,6 +212,7 @@ All four filter types are **first-class chain nodes** — inserted into `signal_
 - **Parameters**: `cutoff` (20–20000 Hz, log), `resonance` (0.0–1.0), `hpf_cutoff` (0–3 stepped HPF stage), `env_depth` (0.0–6.0, default 3.0 — scales how much a connected `cutoff_cv` envelope signal sweeps the cutoff; 0 = CV has no effect, 3 = one-octave sweep at full envelope, 6 = two-octave sweep)
 - **Character**: 4-pole ladder (24 dB/oct) with `tanh` saturation in all stages and a built-in high-pass in the feedback path (~100 Hz) to keep self-oscillation from building DC. Resonance close to 1.0 produces the signature 303 squelch and self-oscillation sine.
 - **Filter state**: Filter delay lines are **not reset on note_on**. State (including resonance buildup) persists across consecutive notes, replicating the 303's behaviour where the filter continues from its previous position at each new gate — essential for the characteristic acid squelch on rapid-fire riffs.
+- **TB-303 two-envelope pattern**: On the real 303 the Decay knob controls **only the filter sweep** — the VCA follows the gate (open while key held, close on release) and is not affected by Decay at all. Replicate this with two separate envelopes: `AD_ENVELOPE` (variable decay) → `DIODE_FILTER:cutoff_cv`; `ADSR_ENVELOPE` (sustain=1.0, short release ≈20ms) → `VCA:gain_cv`. The ADSR acts as a shaped gate — fast attack, full sustain, quick release — so the VCA opens and closes cleanly with the note while the AD sweeps the filter independently.
 
 ### VCF — SH-101 CEM / IR3109
 - **Type name**: `SH_FILTER`
@@ -337,12 +350,27 @@ These modules operate entirely in the control domain.
 - **Delayed Vibrato**: Route LFO `control_out` → `CV_MIXER` `cv_in_1`. Route a second `ADSR_ENVELOPE` `envelope_out` → `CV_MIXER` `cv_in_2` (acts as VCA for the LFO signal). The slow-attack envelope ramps the LFO gain from zero, producing vibrato that only appears after the note onset — the characteristic technique for bowed-string and woodwind patches. Connect `CV_MIXER` `cv_out` → `VCO` `pitch_cv`.
 ### CV Splitter
 - **Type name**: `CV_SPLITTER`
-- **Purpose**: Fans one control signal out to up to four destinations, each with independent gain scaling. Unity-gain fan-out is the default; unused outputs are ignored.
+- **Purpose**: Fans one control signal out to up to four destinations. Unity-gain fan-out is the default; unused outputs are ignored.
 - **Ports**:
   - `PORT_CONTROL` in `cv_in` (bipolar)
   - `PORT_CONTROL` out `cv_out_1` … `cv_out_4` (bipolar)
 - **Parameters**: `gain_1` … `gain_4` (−2.0–2.0, default 1.0 each)
-- **Usage**: Patch one ADSR `envelope_out` → `CV_SPLITTER` `cv_in`, then connect `cv_out_1` → VCA `gain_cv` and `cv_out_2` → VCF `cutoff_cv` to drive both amplitude and filter shaping from a single envelope without requiring a `CV_MIXER`. Set `gain_2` to scale the filter modulation depth independently of the amplitude path.
+- **Architecture note**: The Voice executor allocates **one output buffer per mod_source tag**. All four `cv_out` ports on a `CV_SPLITTER` instance read the same underlying buffer (scaled by `gain_1`). `gain_2` … `gain_4` are declared but not applied in the current executor — per-branch depth scaling must be achieved by inserting a `CV_SCALER` on each downstream branch.
+- **Usage**: Patch one ADSR `envelope_out` → `CV_SPLITTER` `cv_in`, then connect `cv_out_1` → VCA `gain_cv` and `cv_out_2` → `CV_SCALER` `cv_in` → VCF `cutoff_cv`. Set `CV_SCALER` `scale` to control the filter modulation depth independently of the amplitude path (e.g. Roland MOD IN attenuverter knob).
+
+### CV Scaler / Attenuverter
+- **Type name**: `CV_SCALER`
+- **Purpose**: Multiplies a control signal by a fixed scale factor and adds an optional offset. Implements the Roland-style "MOD IN" depth/attenuverter knob — placing it between a fan-out source and a destination sets per-branch modulation depth without affecting the other branches.
+- **Ports**:
+  - `PORT_CONTROL` in `cv_in` (bipolar)
+  - `PORT_CONTROL` out `cv_out` (bipolar)
+- **Parameters**: `scale` (−10.0–10.0, default 1.0), `offset` (−1.0–1.0, default 0.0)
+- **Usage**:
+  - `scale=0.5` on the VCF branch of a CV_SPLITTER gives 50% envelope modulation depth to the filter while the VCA branch sees 100%.
+  - `scale=-1.0` is equivalent to `INVERTER` (sign flip).
+  - `scale=0.9` replicates the Roland System 100M "MOD IN at 9" setting used on trumpet and trombone patches.
+  - `offset` shifts the resting CV level — use to centre a bipolar sweep or add a DC bias.
+- **Brass family pattern** (Roland Fig 1-6): `ADSR → CV_SPLITTER → [cv_out_1 → VCA:gain_cv], [cv_out_2 → CV_SCALER → VCF:cutoff_cv]`. The `CV_SCALER` `scale` parameter directly corresponds to the Roland "VCF MOD IN" depth knob.
 
 ### S&H (Sample & Hold)
 - **Type name**: `SAMPLE_HOLD`
@@ -358,9 +386,12 @@ These modules operate entirely in the control domain.
 - **Purpose**: Delays a gate event by a fixed time before passing it to a downstream module. Used to create multi-stage pitch effects (e.g. wolf-whistle: a second VCO gate fires delayed, producing a pitch that glides upward after note onset) and for tape-pulse reconstruction where gate edges must be offset in time.
 - **Ports**:
   - `PORT_CONTROL` in `gate_in` (unipolar — **lifecycle port**, driven by VoiceContext)
+  - `PORT_CONTROL` in `gate_in_b` (unipolar — **non-lifecycle**, wirable via `connections_`; OR'd with `gate_in` at runtime. Hardware: Roland M-172 INPUT B. Allows a second independent gate source — e.g. an LFO square wave or another `GATE_DELAY` output — to trigger the delay chain in addition to the voice lifecycle gate.)
   - `PORT_CONTROL` out `gate_out` (unipolar)
-- **Parameters**: `delay_time` (0.0–2.0s, default 0.0)
-- **Behavioral Rule**: When `gate_in` transitions high, `gate_out` remains low until `delay_time` has elapsed, then goes high for the remainder of the gate duration. If the gate closes before `delay_time` elapses, `gate_out` never fires. On `gate_in` low, `gate_out` drops low immediately (no trailing pulse).
+- **Parameters**:
+  - `delay_time` (0.0–6.0s, default 0.0 — time from input gate rising edge to output gate rising edge; hardware M-172 range 0.3ms–6s)
+  - `gate_time` (0.0–6.0s, default 0.0 — output pulse width; when 0.0 the output mirrors the input gate duration (i.e. `gate_out` stays high as long as `gate_in` is held); when >0 the output fires a fixed-length pulse of `gate_time` seconds regardless of how long the input is held. Hardware: Roland M-172 GATE TIME control.)
+- **Behavioral Rule**: When either `gate_in` or `gate_in_b` transitions high, `gate_out` remains low until `delay_time` has elapsed. Then: if `gate_time == 0`, `gate_out` mirrors the remaining hold duration of the triggering gate; if `gate_time > 0`, `gate_out` fires a fixed pulse of `gate_time` seconds. If the gate closes before `delay_time` elapses, `gate_out` never fires. On all inputs going low, `gate_out` drops low immediately (unless a `gate_time` pulse is in progress, in which case the pulse completes).
 
 ### Inverter
 - **Type name**: `INVERTER`
@@ -605,7 +636,7 @@ The following capabilities are demonstrated in Roland's *Practical Synthesis* do
 
 | Technique | Source | Gap | Resolution |
 |-----------|--------|-----|------------|
-| Hard VCO sync | Clarinet, lead synth patches | `COMPOSITE_GENERATOR` has no `sync_in` port; sync topology between two VCO instances not specified | Add `sync_in` port to `COMPOSITE_GENERATOR`; implement phase-reset on rising edge. Scoped to the bell/ring-mod phase alongside multi-input executor |
+| Hard VCO sync | Clarinet, lead synth patches | ~~RESOLVED~~ `sync_out` (master trigger) and `sync_in` (slave phase-reset) ports added to `COMPOSITE_GENERATOR`; `Voice::pull_mono` injects sync buffer via `get_secondary_output("sync_out")`. Clarinet patch uses two-VCO topology: `VCO2:sync_out → VCO1:sync_in` | — |
 | Delayed vibrato | Violin, flute, bowed strings | ~~RESOLVED~~ `CV_MIXER` (Phase 17) + second `ADSR_ENVELOPE` + `SmoothedParam` (Phase 21) parameter addressing all implemented | — |
 | Portamento / glide | Lead and bass patches | `MATHS` (Phase 17) implemented as slew limiter; glide via existing `oscillator_set_frequency_glide`; pitch-dip patch uses `INVERTER` (Phase 17) | — |
 | Keyboard tracking of VCF cutoff | Nearly all tonal patches | ~~RESOLVED~~ `Voice::pull_mono` caches nodes declaring `kybd_cv` port (`kybd_cv_nodes_` cache, Phase 17); routes note frequency as bipolar CV each block | — |
