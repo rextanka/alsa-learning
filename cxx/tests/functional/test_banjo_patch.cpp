@@ -3,10 +3,10 @@
  * @brief Functional tests for banjo.json — Roland Fig 3-4 repeating trigger.
  *
  * Patch topology (Roland System 100M Fig 3-4):
- *   VCO (saw) → SH_FILTER → VCA ← ADSR_ENVELOPE ← LFO (square, 8 Hz ext_gate_in)
+ *   VCO (saw) → SH_FILTER → VCA ← ADSR_ENVELOPE ← LFO (square, 8 Hz gate_cv)
  *
  * The LFO square wave re-triggers the ADSR at 8 Hz (~125ms strum period) via
- * ext_gate_in while the key is held. Each re-trigger fires a new pluck envelope
+ * gate_cv while the key is held. Each re-trigger fires a new pluck envelope
  * (attack=1ms, decay=100ms, sustain=15%), producing a rapid banjo strum.
  * The ADSR lifecycle gate_in (note_on) fires the first pluck immediately.
  *
@@ -155,10 +155,68 @@ TEST_F(BanjoPatchTest, OpenGTuningAudible) {
 }
 
 // ---------------------------------------------------------------------------
-// Test 4: MIDI — 4-bar bluegrass run
+// Test 4: Gate-bias strum demo — contrasts short plucks vs held strums
+//
+// Bluegrass G run: short notes (100ms) give a single pluck; long held notes
+// (1400ms) strum 3–4 times via the gate-bias LFO mechanism. Silence between
+// held notes proves the LFO does NOT fire without a key held.
 // ---------------------------------------------------------------------------
 
-TEST_F(BanjoPatchTest, BanjoMidiAudible) {
+TEST_F(BanjoPatchTest, GateBiasStrumAudible) {
+    PRINT_TEST_HEADER(
+        "Banjo — Gate-Bias Strum Demo (audible)",
+        "Short plucks (100ms) = single hit. Held notes (1400ms) = 3–4 LFO strums. "
+        "Silence between held notes proves gate-bias suppresses LFO when key released.",
+        "G major bluegrass run: quick picks → held G4 → quick picks → held D4 → held G3",
+        "Audible contrast between single pluck and repeating strum.",
+        sample_rate
+    );
+
+    ASSERT_EQ(engine_load_patch(engine(), kPatch), 0);
+    ASSERT_ENGINE_START(engine());
+
+    // Helper: pluck a note briefly (single hit, no LFO re-trigger)
+    auto pluck = [&](int midi) {
+        engine_note_on(engine(), midi, 1.0f);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        engine_note_off(engine(), midi);
+        std::this_thread::sleep_for(std::chrono::milliseconds(120));
+    };
+    // Helper: hold a note long enough for 3-4 LFO strums (LFO 2.5Hz → 400ms period)
+    auto hold = [&](int midi) {
+        engine_note_on(engine(), midi, 1.0f);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1400));
+        engine_note_off(engine(), midi);
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    };
+
+    std::cout << "[Banjo] Quick picks (G3 B3 D4) — should be single plucks…\n";
+    pluck(55);  // G3
+    pluck(59);  // B3
+    pluck(62);  // D4
+
+    std::cout << "[Banjo] Holding G4 (1.4s) — should strum 3–4 times…\n";
+    hold(67);   // G4 held
+
+    std::cout << "[Banjo] Quick picks (D4 B3 G3) — back to single plucks…\n";
+    pluck(62);  // D4
+    pluck(59);  // B3
+    pluck(55);  // G3
+
+    std::cout << "[Banjo] Holding D4 (1.4s) — strum again…\n";
+    hold(62);   // D4 held
+
+    std::cout << "[Banjo] Holding G3 (1.4s) — final strum…\n";
+    hold(55);   // G3 held
+
+    engine_stop(engine());
+}
+
+// ---------------------------------------------------------------------------
+// Test 5: MIDI — 4-bar bluegrass run
+// ---------------------------------------------------------------------------
+
+TEST_F(BanjoPatchTest, BanjoMidiAudible) {  // Test 5
     PRINT_TEST_HEADER(
         "Banjo — Bluegrass MIDI (audible)",
         "4-bar G major bluegrass run: 8th-note picking with held D4 in bar 2.",

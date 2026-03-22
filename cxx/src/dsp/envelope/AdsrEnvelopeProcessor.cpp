@@ -14,10 +14,11 @@ AdsrEnvelopeProcessor::AdsrEnvelopeProcessor(int sample_rate)
 {
     update_rates();
 
-    declare_port({"gate_in",      PORT_CONTROL, PortDirection::IN,  true});
-    declare_port({"trigger_in",   PORT_CONTROL, PortDirection::IN,  true});
+    declare_port({"gate_in",      PORT_CONTROL, PortDirection::IN,  true});  // lifecycle (Voice callback)
+    declare_port({"trigger_in",   PORT_CONTROL, PortDirection::IN,  true});  // lifecycle (Voice callback)
     declare_port({"envelope_out", PORT_CONTROL, PortDirection::OUT, true});
-    declare_port({"ext_gate_in",  PORT_CONTROL, PortDirection::IN,  true});
+    declare_port({"gate_cv",      PORT_CONTROL, PortDirection::IN,  true});  // wirable: rising=attack, falling=release
+    declare_port({"trig_cv",      PORT_CONTROL, PortDirection::IN,  true});  // wirable: rising=attack only (retrigger)
 
     declare_parameter({"attack",  "Attack Time",   0.0f, 10.0f, 0.01f, true});
     declare_parameter({"decay",   "Decay Time",    0.0f, 10.0f, 0.1f,  true});
@@ -39,12 +40,23 @@ void AdsrEnvelopeProcessor::gate_off() {
 }
 
 void AdsrEnvelopeProcessor::inject_cv(std::string_view port_name, std::span<const float> cv) {
-    if (port_name != "ext_gate_in" || cv.empty()) return;
-    for (float s : cv) {
-        const bool high = (s > 0.5f);
-        if (high && !ext_gate_high_) gate_on();
-        else if (!high && ext_gate_high_) gate_off();
-        ext_gate_high_ = high;
+    if (cv.empty()) return;
+    if (port_name == "gate_cv") {
+        // Sustained gate: rising edge → attack, falling edge → release.
+        for (float s : cv) {
+            const bool high = (s > 0.5f);
+            if (high && !gate_cv_high_) gate_on();
+            else if (!high && gate_cv_high_) gate_off();
+            gate_cv_high_ = high;
+        }
+    } else if (port_name == "trig_cv") {
+        // Trigger: rising edge → attack only (no release on falling edge).
+        // Enables retrigger without releasing a held gate (Roland "GATE+TRIG" pattern).
+        for (float s : cv) {
+            const bool high = (s > 0.5f);
+            if (high && !trig_cv_high_) gate_on();
+            trig_cv_high_ = high;
+        }
     }
 }
 

@@ -1,21 +1,43 @@
 {
-  "version": 2,
+  "version": 3,
   "name": "Bass Drum",
   "groups": [
     {
       "id": 0,
+      "comment": "Roland System 100M Fig 3-11. Single pink noise source (NZ) fans out to both filters: NZ → VCF1 (SH_FILTER, R=0.97 self-oscillating body tone, ~65 Hz at C2 via KBD pitch_cv kybd tracking from base 261.6 Hz) and NZ → VCF2 (SH_FILTER, R=0.25, ~225 Hz at C2 noise transient shaping). Both mixed in AUDIO_MIXER (gain_1=3.0, gain_2=1.8; ratio preserves book level 10:6). ADSR (A=1ms, D=350ms, S=0, R=50ms) drives VCA2 (EXP, 100%) directly and both VCF1+VCF2 cutoffs at 40% depth via CV_SPLITTER (M-121 MOD1 shared between both filter halves per service schematic). DYNAMICS: KBD velocity_cv drives VCA1 (LIN). GATE→ADSR handled by Voice lifecycle (note_on); no explicit gate routing needed.",
       "chain": [
-        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
-        { "type": "AD_ENVELOPE",         "tag": "ENV" },
-        { "type": "VCA",                 "tag": "VCA" }
+        { "type": "MIDI_CV",       "tag": "KBD"  },
+        { "type": "WHITE_NOISE",   "tag": "NZ"   },
+        { "type": "SH_FILTER",     "tag": "VCF1" },
+        { "type": "SH_FILTER",     "tag": "VCF2" },
+        { "type": "AUDIO_MIXER",   "tag": "MIX"  },
+        { "type": "ADSR_ENVELOPE", "tag": "ENV"  },
+        { "type": "CV_SPLITTER",   "tag": "SPLIT"},
+        { "type": "VCA",           "tag": "VCA1" },
+        { "type": "VCA",           "tag": "VCA2" }
       ],
       "connections": [
-        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in" },
-        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"  }
+        { "from_tag": "NZ",    "from_port": "audio_out",    "to_tag": "VCF1",  "to_port": "audio_in"   },
+        { "from_tag": "NZ",    "from_port": "audio_out",    "to_tag": "VCF2",  "to_port": "audio_in"   },
+        { "from_tag": "VCF1",  "from_port": "audio_out",    "to_tag": "MIX",   "to_port": "audio_in_1" },
+        { "from_tag": "VCF2",  "from_port": "audio_out",    "to_tag": "MIX",   "to_port": "audio_in_2" },
+        { "from_tag": "MIX",   "from_port": "audio_out",    "to_tag": "VCA1",  "to_port": "audio_in"   },
+        { "from_tag": "ENV",   "from_port": "envelope_out", "to_tag": "VCA2",  "to_port": "gain_cv"    },
+        { "from_tag": "ENV",   "from_port": "envelope_out", "to_tag": "SPLIT", "to_port": "cv_in"      },
+        { "from_tag": "SPLIT", "from_port": "cv_out_1",     "to_tag": "VCF1",  "to_port": "cutoff_cv"  },
+        { "from_tag": "SPLIT", "from_port": "cv_out_1",     "to_tag": "VCF2",  "to_port": "cutoff_cv"  },
+        { "from_tag": "KBD",   "from_port": "velocity_cv",  "to_tag": "VCA1",  "to_port": "gain_cv"    },
+        { "from_tag": "KBD",   "from_port": "pitch_cv",     "to_tag": "VCF1",  "to_port": "kybd_cv"    }
       ],
       "parameters": {
-        "VCO": { "sine_gain": 1.0, "triangle_gain": 1.0 },
-        "ENV": { "attack": 0.002, "decay": 0.35 }
+        "NZ":    { "color": 1 },
+        "VCF1":  { "cutoff": 261.6, "resonance": 0.97 },
+        "VCF2":  { "cutoff": 900.0, "resonance": 0.25 },
+        "MIX":   { "gain_1": 3.0, "gain_2": 1.8 },
+        "ENV":   { "attack": 0.001, "decay": 0.35, "sustain": 0.0, "release": 0.05 },
+        "SPLIT": { "gain_1": 0.4 },
+        "VCA1":  { "response_curve": 0.0 },
+        "VCA2":  { "response_curve": 1.0 }
       }
     }
   ]

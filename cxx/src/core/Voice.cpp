@@ -36,8 +36,8 @@ bool Voice::set_named_parameter(const std::string& name, float value) {
     // Voice-level parameters (not stored on any processor node)
     if (name == "osc_frequency") {
         base_frequency_ = static_cast<double>(value);
-        if (!signal_chain_.empty())
-            signal_chain_.front().node->set_frequency(base_frequency_);
+        for (auto& entry : signal_chain_)
+            entry.node->set_frequency(base_frequency_);
         return true;
     }
     if (name == "amp_base") {
@@ -85,10 +85,11 @@ void Voice::note_on(double frequency, float velocity) {
     for (auto& entry : signal_chain_)
         if (entry.node->reset_on_note_on()) entry.node->reset();
     for (auto& entry : mod_sources_) entry.node->reset();
-    // signal_chain_[0] is guaranteed by bake() to be the audio generator.
-    if (!signal_chain_.empty()) {
-        signal_chain_.front().node->set_frequency(frequency);
-    }
+    // Broadcast to all signal_chain_ nodes — non-generators ignore via base no-op.
+    // This ensures multiple oscillators (e.g. glockenspiel VCO-1 + VCO-2) all
+    // receive the keyboard pitch so transpose/detune offsets apply correctly.
+    for (auto& entry : signal_chain_)
+        entry.node->set_frequency(frequency);
     // Broadcast velocity before on_note_on so CV sources (MIDI_CV) can latch it
     // into their pending state — velocity_cv will reflect it on the first block pull.
     for (auto& entry : mod_sources_) entry.node->on_note_velocity(velocity);
@@ -233,7 +234,9 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
     // Auto-inject keyboard tracking CV to cached kybd_cv nodes (populated at bake time).
     // Computed as 1V/oct relative to C4 (261.63 Hz). Combines additively with cutoff_cv
     // in the filter's apply_parameter("kybd_cv") handler.
-    if (!kybd_cv_nodes_.empty()) {
+    // Skipped when MIDI_CV is present — those patches use explicit pitch_cv connections
+    // and do not want implicit filter tracking imposed on every filter in the chain.
+    if (!has_midi_cv_ && !kybd_cv_nodes_.empty()) {
         static constexpr float kC4Hz = 261.63f;
         const float kybd_cv = static_cast<float>(
             std::log2(base_frequency_ / static_cast<double>(kC4Hz)));
@@ -525,6 +528,17 @@ void Voice::bake() {
     for (auto& entry : signal_chain_) {
         if (entry.node->find_port("kybd_cv"))
             kybd_cv_nodes_.push_back(entry.node.get());
+    }
+
+    // Detect MIDI_CV presence — any mod_source with a "pitch_cv" output port.
+    // When present, patches use explicit connections for CV/gate routing instead
+    // of the auto-injection loop, so kybd_cv broadcasting is suppressed in pull_mono.
+    has_midi_cv_ = false;
+    for (auto& entry : mod_sources_) {
+        if (entry.node->find_port("pitch_cv")) {
+            has_midi_cv_ = true;
+            break;
+        }
     }
 
     baked_ = true;

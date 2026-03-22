@@ -691,8 +691,20 @@ The 4-arg `register_module` overload and the per-processor `kRegistered` statics
 
 ### VCA Enhancements
 
-- **`response_curve` (exponential blend)**: `VCA.response_curve` [0, 1] blends between linear (0) and exponential gain law (1). `effective_gain = lerp(g, g², response_curve)`. Perceptually uniform for fades and percussive decays.
-- **`initial_gain_cv` port wiring**: When the `initial_gain_cv` PORT_CONTROL input is connected, its current-block value overrides the `initial_gain` parameter as the static gain floor, enabling live CV control of the VCA resting level.
+- **`response_curve` (exponential blend)**: `VCA.response_curve` [0, 1] blends between linear (0) and exponential gain law (1). Current implementation follows the Roland M-130 spec (10dB/oct, 60dB dynamic range): `g_exp = exp((g - 1) * 6.908)`, normalised so `g=1 → 1.0` (unity). Blend: `effective_gain = lerp(g, g_exp, response_curve)`. Perceptually uniform for fades and percussive decays.
+- **`initial_gain_cv` port wiring**: When the `initial_gain_cv` PORT_CONTROL input is connected, its current-block value overrides the `initial_gain` parameter as a multiplicative scale on `base_amplitude_` (`scale = initial_gain * base_amplitude_`), enabling live CV control of the VCA level (e.g. velocity sensitivity).
+
+#### Previous VCA exponential implementation (pre M-130 update)
+
+The original `response_curve=1` used a quadratic blend rather than a true exponential:
+
+```cpp
+// Old implementation in VcaProcessor::apply() — quadratic, NOT 10dB/oct
+const float g_exp = g * g;
+audio[i] *= (g + response_curve * (g_exp - g)) * scale;
+```
+
+`g²` is a shallower curve than M-130 hardware. At `g=0.5` it gives `0.25` vs `≈0.032` for true 10dB/oct. The tail rolloff is slower, leaving more low-level signal audible during decay. To restore this behaviour, replace the `exp()` line in `VcaProcessor::apply()` (`src/dsp/VcaProcessor.hpp`) with `const float g_exp = g * g;` and remove `kLogRange`.
 
 ### Patch Library Expansion
 

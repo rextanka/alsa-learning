@@ -8,7 +8,7 @@
  *  - MathsProcessor: slew limiter rise/fall, instant when time=0
  *  - GateDelayProcessor: immediate gate when delay=0, delayed gate when delay>0
  *  - SampleHoldProcessor: rising-edge sample, hold between edges
- *  - AdsrEnvelopeProcessor: ext_gate_in rising-edge triggers attack
+ *  - AdsrEnvelopeProcessor: gate_cv rising-edge triggers attack
  *  - InverterProcessor: inject_cv negates input
  *  - Filter kybd_cv: applies 1V/oct tracking combined with cutoff_cv
  *  - MidiCvProcessor: pitch/gate/velocity/aftertouch CV outputs, V/oct convention
@@ -296,7 +296,7 @@ TEST(InverterTest, NoInputProducesZero) {
 }
 
 // ---------------------------------------------------------------------------
-// AdsrEnvelopeProcessor: ext_gate_in rising-edge triggers attack
+// AdsrEnvelopeProcessor: gate_cv rising-edge triggers attack
 // ---------------------------------------------------------------------------
 
 TEST(AdsrExtGateTest, RisingEdgeTriggers) {
@@ -309,7 +309,7 @@ TEST(AdsrExtGateTest, RisingEdgeTriggers) {
     // The gate_on() fires when the rising edge is seen (at index 4 within the span),
     // but state is already Attack when do_pull() executes — so all 8 samples attack.
     std::vector<float> clk = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f};
-    adsr.inject_cv("ext_gate_in", clk);
+    adsr.inject_cv("gate_cv", clk);
     auto out = pull_n(adsr, 8);
     // All samples should be in Attack (> 0), and increasing
     EXPECT_GT(out[0], 0.0f) << "Attack should have started (gate_on fired during inject_cv)";
@@ -331,7 +331,7 @@ TEST(AdsrExtGateTest, FallingEdgeTriggers_Release) {
     std::vector<float> clk(64, 1.0f);
     clk[32] = 0.0f; // falling at 32
     for (size_t i = 33; i < 64; ++i) clk[i] = 0.0f;
-    adsr.inject_cv("ext_gate_in", clk);
+    adsr.inject_cv("gate_cv", clk);
     auto out = pull_n(adsr, 64);
     // Should start releasing after index 32
     EXPECT_GT(out[31], 0.9f) << "Should be sustaining before falling edge";

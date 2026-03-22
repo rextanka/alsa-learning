@@ -121,7 +121,7 @@ namespace {
 [[maybe_unused]] const bool kRegistered = ModuleRegistry::instance().register_module(
     "GATE_DELAY",
     "Gate pulse shaper — delays and optionally reshapes a gate signal",
-    "Connect gate_out → ADSR:ext_gate_in for a delayed secondary envelope. "
+    "Connect gate_out → ADSR:gate_cv for a delayed secondary envelope. "
     "delay_time=0.3 lets the initial attack complete before firing. "
     "gate_time>0 fires a fixed-length pulse regardless of how long the note is held. "
     "gate_in_b accepts a second wirable gate source OR'd with the lifecycle gate "

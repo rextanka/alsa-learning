@@ -22,7 +22,7 @@
  *
  * Intended wiring (canonical Phase 27E patch):
  *   KBD.pitch_cv  → VCO.pitch_base_cv    (absolute pitch)
- *   KBD.gate_cv   → ENV.gate_in          (envelope trigger)
+ *   KBD.gate_cv   → ENV.gate_cv          (envelope trigger)
  *   KBD.velocity_cv → VCA.initial_gain_cv (velocity sensitivity, optional)
  */
 

@@ -2,25 +2,21 @@
  * @file test_bell_patch.cpp
  * @brief Functional tests for bell.json — ring modulator (RING_MOD).
  *
- * Patch topology:
- *   VCO1 (sine) → RING_MOD.audio_in_a
- *   VCO2 (sine, transpose=+19 semitones + detune=+63 cents ≈ 2.756×) → RING_MOD.audio_in_b
- *   RING_MOD → VCA ← ENV (attack=1ms, decay=1.2s, sustain=0, release=0.8s)
+ * Patch topology (Roland System 100M Fig. 2-17):
+ *   VCO1 (triangle, 4') → RING_MOD.audio_in_a, also → AUDIO_MIXER.audio_in_2
+ *   VCO2 (triangle, 4', minor-3rd above VCO1) → RING_MOD.audio_in_b, also → AUDIO_MIXER.audio_in_3
+ *   RING_MOD → AUDIO_MIXER.audio_in_1 (gain=1.0)
+ *   AUDIO_MIXER (VCO1×0.6 + VCO2×0.6 + RM×1.0) → VCF (cutoff=7kHz) → VCA
+ *   ADSR (attack=1ms, decay=1.2s, sustain=0, release=0.8s) → VCA
  *
- * Ring modulation output = A × B, producing only sum (A+B) and difference (A−B)
- * sidebands — neither matches VCO1 or VCO2 frequency alone. The result is an
- * inharmonic bell-like timbre.
+ * VCO1 and VCO2 direct outputs are mixed with the ring-mod to produce a richer
+ * bell timbre — fundamental pitch is present alongside the inharmonic RM sidebands.
+ * See bell_sine.json (Fig. 2-18) for the pure RM version using VCF sine approximation.
  *
  * Key assertions:
- *   1. Smoke        — patch loads and note-on produces non-silent audio.
- *   2. SidebandOnly — the spectral centroid deviates significantly from VCO1's
- *                     frequency, confirming sideband content rather than a pure
- *                     fundamental. For A4 (440 Hz) and VCO2 at ≈1212 Hz, the
- *                     sidebands are at 1652 Hz (sum) and 772 Hz (diff), giving a
- *                     centroid well above the 440 Hz fundamental.
- *   3. PercussiveDecay — RMS drops to near-silence after 1.2s decay
- *                        (sustain=0 percussive bell decay).
- *   4. Audible      — bell pattern C4 / E4 / G4 / C5 played live.
+ *   1. Smoke         — patch loads and note-on produces non-silent audio.
+ *   2. PercussiveDecay — RMS drops significantly after 1.2s decay (sustain=0).
+ *   3. Audible       — bell pattern C4 / E4 / G4 / C5 played live.
  *
  * ADSR IIR at 48kHz:
  *   decay=1.2s: after 1.2s, envelope ≈ 1/9 ≈ 0.111 of peak.
@@ -83,62 +79,6 @@ TEST_F(BellPatchTest, NoteOnProducesAudio) {
     EXPECT_GT(rms, 0.001f) << "Expected non-silent ring-mod output";
 
     engine_note_off(engine(), 69);
-}
-
-// ---------------------------------------------------------------------------
-// Test 2: SidebandOnly — spectral centroid deviates from the VCO1 fundamental
-//
-// For A4 (440 Hz):
-//   VCO2 transpose=+19 semitones + detune=+63 cents ≈ +1963 cents ≈ 2.756× A4
-//   VCO2 ≈ 1213 Hz
-//   Ring-mod sidebands: sum = 440 + 1213 = 1653 Hz, diff = 1213 − 440 = 773 Hz
-//   Spectral centroid of (1653, 773) ≈ ~1213 Hz (sum and diff weighted by amplitude)
-//
-// A pure A4 sine would give centroid = 440 Hz.
-// Expected: centroid > 440 × 1.3 = 572 Hz (conservative threshold).
-// ---------------------------------------------------------------------------
-
-TEST_F(BellPatchTest, SidebandOnly) {
-    PRINT_TEST_HEADER(
-        "Bell — Sideband Content (automated)",
-        "Ring-mod output DCT centroid is > 1.3× VCO1 fundamental (440 Hz), "
-        "confirming inharmonic sideband content rather than a pure fundamental.",
-        "engine_load_patch → note_on(A4) → skip 2 blocks → capture 2048 samples → centroid",
-        "centroid > 440 × 1.3 = 572 Hz",
-        sample_rate
-    );
-
-    ASSERT_EQ(engine_load_patch(engine(), kPatch), 0);
-    engine_note_on(engine(), 69, 1.0f);  // A4 = 440 Hz
-
-    const size_t BLOCK  = 512;
-    const size_t WINDOW = 2048;
-    std::vector<float> buf(BLOCK * 2);
-    std::vector<float> mono;
-    mono.reserve(WINDOW);
-
-    // Skip 2 blocks (envelope rising), capture WINDOW samples
-    for (int b = 0; b < 8; ++b) {
-        engine_process(engine(), buf.data(), BLOCK);
-        if (b >= 2 && mono.size() < WINDOW) {
-            for (size_t i = 0; i < BLOCK && mono.size() < WINDOW; ++i)
-                mono.push_back(buf[i * 2]);
-        }
-    }
-    engine_note_off(engine(), 69);
-
-    ASSERT_EQ(mono.size(), WINDOW);
-
-    constexpr float kA4Hz = 440.0f;
-    const float centroid = spectral_centroid(mono, sample_rate);
-
-    std::cout << "[Bell] A4 fundamental:    " << kA4Hz    << " Hz\n";
-    std::cout << "[Bell] Spectral centroid: " << centroid << " Hz\n";
-    std::cout << "[Bell] Centroid / fund.:  " << centroid / kA4Hz << "×\n";
-
-    EXPECT_GT(centroid, kA4Hz * 1.3f)
-        << "Expected centroid > " << kA4Hz * 1.3f << " Hz (ring-mod sidebands); "
-        << "got " << centroid << " Hz";
 }
 
 // ---------------------------------------------------------------------------

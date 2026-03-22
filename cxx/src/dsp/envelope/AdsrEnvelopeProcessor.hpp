@@ -76,7 +76,8 @@ private:
     float decay_coeff_   = 0.0f;
     float release_coeff_ = 0.0f;
 
-    bool ext_gate_high_ = false;
+    bool gate_cv_high_ = false;  ///< edge-detection state for gate_cv port
+    bool trig_cv_high_ = false;  ///< edge-detection state for trig_cv port
 };
 
 } // namespace audio

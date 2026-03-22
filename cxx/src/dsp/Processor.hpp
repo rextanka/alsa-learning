@@ -225,7 +225,7 @@ public:
      * not store the span pointer across blocks.
      *
      * Default: no-op. Override in processors that consume CV inputs
-     * (CV_MIXER, CV_SPLITTER, MATHS, SAMPLE_HOLD, INVERTER, ADSR ext_gate_in).
+     * (CV_MIXER, CV_SPLITTER, MATHS, SAMPLE_HOLD, INVERTER, ADSR gate_cv/trig_cv).
      */
     virtual void inject_cv(std::string_view /*port_name*/, std::span<const float> /*cv*/) {}
 

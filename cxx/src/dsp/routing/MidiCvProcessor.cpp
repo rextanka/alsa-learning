@@ -12,7 +12,7 @@ namespace {
     "MIDI_CV",
     "MIDI-to-CV source — exposes keyboard pitch, gate, velocity, and aftertouch as patchable CV",
     "Default tag KBD. Wire KBD:pitch_cv → VCO:pitch_base_cv for absolute keyboard tracking. "
-    "Wire KBD:gate_cv → ENV:gate_in to trigger envelopes from key presses. "
+    "Wire KBD:gate_cv → ENV:gate_cv to trigger envelopes from key presses. "
     "Wire KBD:velocity_cv → VCA:initial_gain_cv for velocity sensitivity (optional). "
     "pitch_cv convention: C4 (MIDI 60) = 0 V, +1 V per octave. "
     "gate_cv: 1.0 while key held, 0.0 released. "
