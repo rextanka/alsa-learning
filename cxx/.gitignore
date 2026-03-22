@@ -12,3 +12,6 @@ Testing/
 .vscode/
 .idea/
 *.swp
+
+# Raw audio capture artifacts
+*.raw
