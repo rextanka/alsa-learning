@@ -558,9 +558,9 @@ When `sync=0` (default) behaviour is identical to pre-Phase 27D — fully backwa
 
 ---
 
-## 15. MIDI-to-CV Routing (Phase 27E — Planned)
+## 15. MIDI-to-CV Routing (Phase 27E — Complete)
 
-Phase 27E replaces the implicit lifecycle callbacks (`on_note_on` / `on_note_off`) with a routable `MIDI_CV` source module, giving patch authors full control over how keyboard pitch and gate signals flow through the signal chain.
+Phase 27E replaced the implicit lifecycle callbacks (`on_note_on` / `on_note_off`) with a routable `MIDI_CV` source module, giving patch authors full control over how keyboard pitch and gate signals flow through the signal chain. All patches have been migrated; the `Voice` legacy auto-injection code has been removed.
 
 ### 15.1  `MIDI_CV` Module
 
@@ -610,7 +610,7 @@ After Phase 27E, gate triggering is entirely port-driven:
 
 ### 15.4  New and Revised Ports (Phase 27E)
 
-The following port additions are planned alongside `MIDI_CV`:
+The following port additions were implemented alongside `MIDI_CV`:
 
 | Module | New Port / Parameter | Description |
 |--------|----------------------|-------------|
@@ -668,9 +668,9 @@ This meant the LFO only triggered the ADSR while a key was held. Our arch-audit 
 
 ### 15.6  Patch Audit Status
 
-The arch-audit (branch `202603201000-arch-audit`) verified and corrected the following patches before Phase 27E implementation. Remaining patches are deferred until Phase 27E migration.
+The arch-audit (branch `202603201000-arch-audit`) migrated all patches to Phase 27E explicit MIDI_CV routing. All 29 patches below were verified and corrected.
 
-**Verified and approved (arch-audit 2026-03-21):**
+**Migrated (arch-audit 2026-03-21):**
 
 | Patch | Topology | Notes |
 |-------|----------|-------|
@@ -687,11 +687,11 @@ The arch-audit (branch `202603201000-arch-audit`) verified and corrected the fol
 
 **Infrastructure fix (arch-audit):** `CV_SCALER` was registered only via a static initializer in `CvScalerProcessor.cpp`; the linker dead-code-eliminated the TU. Fixed by adding an explicit `register_module` call in `ProcessorRegistrations.cpp`. All brass-family patches were silently failing to load before this fix.
 
-**Deferred — pending Phase 27E migration:**
+**Also migrated (Phase 27E pass, 2026-03-21):**
 
 `bass_drum`, `bell`, `bongo_drums`, `bowed_bass`, `cow_bell`, `cymbal`, `delay_lead`, `dog_whistle`, `glockenspiel`, `gong`, `gong_full`, `group_strings`, `harpsichord`, `juno_pad`, `juno_strings`, `organ_drawbar`, `percussion_noise`, `pizzicato_violin`, `rain`, `reverb`, `sh_bass`, `snare_drum`, `tb_bass`, `thunder`, `tom_tom`, `violin_vibrato`, `whistling`, `wind_surf`, `wood_blocks`.
 
-Each deferred patch will be reviewed against the Roland service notes and smoke-tested as part of the Phase 27E migration pass.
+Each patch was reviewed against the Roland service notes and updated to explicit MIDI_CV routing. The `bowed_bass` patch additionally received a new `pw_env_cv` feature on `COMPOSITE_GENERATOR` to model Roland Fig 2-10 bow-contact pulse-width modulation.
 
 ---
 

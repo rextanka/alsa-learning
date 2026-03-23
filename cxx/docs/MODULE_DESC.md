@@ -126,10 +126,11 @@ The registry is queryable via the C API (`engine_get_module_count`, `engine_get_
 - **Purpose**: Primary periodic harmonic generation. Owns all waveform oscillators and an internal waveform mixer (gain-blended, not wirable — use `AUDIO_MIXER` for cross-VCO mixing).
 - **Ports**:
   - `PORT_CONTROL` in `pitch_cv` (bipolar, 1V/oct)
-  - `PORT_CONTROL` in `pwm_cv` (bipolar)
+  - `PORT_CONTROL` in `pwm_cv` (bipolar — LFO-style pulse-width modulation; formula: `pw = clamp(0.5 + cv × 0.5, 0.01, 0.49)`)
+  - `PORT_CONTROL` in `pw_env_cv` (unipolar 0–1 — envelope-driven pulse-width narrowing; formula: `eff_pw = clamp(pulse_width − cv × pw_env_depth, 0.01, 0.49)`. Pulse narrows as the envelope rises. Use for bow-contact PWM character (Roland Fig 2-10); cleared each block after use.)
   - `PORT_AUDIO` in `fm_in` (audio-rate frequency modulation; a VCO `audio_out` patched here is multiplied by `fm_depth` and summed into the pitch CV path, enabling VCO-to-VCO FM synthesis and extreme pitch sweeps not achievable at control rate)
   - `PORT_AUDIO` out `audio_out`
-- **Parameters**: `saw_gain`, `pulse_gain`, `sine_gain`, `triangle_gain`, `sub_gain`, `wavetable_gain`, `noise_gain` (all 0.0–1.0), `pulse_width` (0.0–0.5), `wavetable_type` (int enum), `transpose` (integer semitones, −24–+24, default 0), `footage` (Roland range selector: 2/4/8/16/32, default 8 — see Footage convention below), `detune` (float cents, −100–+100, default 0.0), `fm_depth` (0.0–1.0, default 0.0 — scales the `fm_in` signal before summing with `pitch_cv`)
+- **Parameters**: `saw_gain`, `pulse_gain`, `sine_gain`, `triangle_gain`, `sub_gain`, `wavetable_gain`, `noise_gain` (all 0.0–1.0), `pulse_width` (0.0–0.5), `pw_env_depth` (0.0–0.49, default 0.0 — scales how much `pw_env_cv` narrows the pulse width; 0 = no effect, 0.49 = full range), `wavetable_type` (int enum), `footage` (Roland range selector: 2/4/8/16/32, default 8 — see Footage convention below), `detune` (float cents, −100–+100, default 0.0), `fm_depth` (0.0–1.0, default 0.0 — scales the `fm_in` signal before summing with `pitch_cv`)
 - **Logic**:
   - **Exponential Pitch**: Frequency response must follow an exponential curve (f = f₀ · 2^CV) corresponding to the standard 1V/octave tracking.
   - **Harmonic Spectra Rules**:
@@ -224,7 +225,8 @@ All four filter types are **first-class chain nodes** — inserted into `signal_
 ### VCF — Korg MS-20
 - **Type name**: `MS20_FILTER`
 - **Purpose**: Korg MS-20 character — aggressive, screaming, gritty. Two 2-pole (12 dB/oct) sections.
-- **Parameters**: `cutoff` (20–20000 Hz, log — LP section), `cutoff_hp` (20–2000 Hz, log — HP section, default 80 Hz), `resonance` (0.0–1.0)
+- **Additional ports**: `PORT_AUDIO` in `fm_in` (audio-rate cutoff FM)
+- **Parameters**: `cutoff` (20–20000 Hz, log — LP section), `cutoff_hp` (20–2000 Hz, log — HP section, default 80 Hz), `resonance` (0.0–1.0), `fm_depth` (0.0–1.0, default 0.0)
 - **Character**: Chamberlin SVF HP section (cutoff_hp) followed by SVF LP section (cutoff). Each section is 12 dB/oct (2-pole). The shallow slope means more harmonics bleed through than a 4-pole filter — contributing to the characteristic dirtiness. LP self-oscillates at `resonance ≈ 0.9`. `cutoff_hp` removes low-end mud and reinforces the perceived aggression.
 - **Topology**: `input → HP (2-pole, cutoff_hp) → LP (2-pole, cutoff) → output`
 
@@ -233,11 +235,12 @@ All four filter types are **first-class chain nodes** — inserted into `signal_
 - **Purpose**: Passes a band of frequencies between a low cutoff and a high cutoff, attenuating frequencies outside that band. Implemented internally as a 2-pole biquad (Audio EQ Cookbook). Useful for formant sculpting, telephone/radio effects, and mid-range emphasis.
 - **Ports**:
   - `PORT_AUDIO` in `audio_in`
+  - `PORT_AUDIO` in `fm_in` (audio-rate cutoff FM)
   - `PORT_AUDIO` out `audio_out`
   - `PORT_CONTROL` in `cutoff_cv` (bipolar, 1V/oct)
   - `PORT_CONTROL` in `res_cv` (unipolar)
   - `PORT_CONTROL` in `kybd_cv` (bipolar, 1V/oct)
-- **Parameters**: `cutoff` (20–20000 Hz, log), `resonance` (0.0–1.0)
+- **Parameters**: `cutoff` (20–20000 Hz, log), `resonance` (0.0–1.0), `fm_depth` (0.0–1.0, default 0.0)
 
 ### Band Reject Filter
 - **Type name**: `BAND_REJECT_FILTER`
@@ -259,11 +262,12 @@ All four filter types are **first-class chain nodes** — inserted into `signal_
 - **Purpose**: Blocks low frequencies to brighten synthesized sounds. Implemented as a 2-pole biquad (Audio EQ Cookbook).
 - **Ports**:
   - `PORT_AUDIO` in `audio_in`
+  - `PORT_AUDIO` in `fm_in` (audio-rate cutoff FM)
   - `PORT_AUDIO` out `audio_out`
   - `PORT_CONTROL` in `cutoff_cv` (bipolar, 1V/oct)
   - `PORT_CONTROL` in `res_cv` (unipolar)
   - `PORT_CONTROL` in `kybd_cv` (bipolar, 1V/oct)
-- **Parameters**: `cutoff` (20–20000 Hz, log), `resonance` (0.0–1.0)
+- **Parameters**: `cutoff` (20–20000 Hz, log), `resonance` (0.0–1.0), `fm_depth` (0.0–1.0, default 0.0)
 - **Psychoacoustic Rule**: Even with heavy attenuation of the fundamental frequency, the engine should rely on the human ear's ability to "mentally" furnish the missing fundamental pitch as long as natural harmonic series overtones are present.
 
 ---
@@ -656,12 +660,12 @@ The following capabilities are demonstrated in Roland's *Practical Synthesis* do
 | Hard VCO sync | Clarinet, lead synth patches | ~~RESOLVED~~ `sync_out` (master trigger) and `sync_in` (slave phase-reset) ports added to `COMPOSITE_GENERATOR`; `Voice::pull_mono` injects sync buffer via `get_secondary_output("sync_out")`. Clarinet patch uses two-VCO topology: `VCO2:sync_out → VCO1:sync_in` | — |
 | Delayed vibrato | Violin, flute, bowed strings | ~~RESOLVED~~ `CV_MIXER` (Phase 17) + second `ADSR_ENVELOPE` + `SmoothedParam` (Phase 21) parameter addressing all implemented | — |
 | Portamento / glide | Lead and bass patches | `MATHS` (Phase 17) implemented as slew limiter; glide via existing `oscillator_set_frequency_glide`; pitch-dip patch uses `INVERTER` (Phase 17) | — |
-| Keyboard tracking of VCF cutoff | Nearly all tonal patches | ~~RESOLVED~~ `Voice::pull_mono` caches nodes declaring `kybd_cv` port (`kybd_cv_nodes_` cache, Phase 17); routes note frequency as bipolar CV each block | — |
+| Keyboard tracking of VCF cutoff | Nearly all tonal patches | ~~RESOLVED~~ `MIDI_CV.pitch_cv → VCF.kybd_cv` explicit connection (Phase 27E); the `kybd_cv_nodes_` auto-injection cache was removed from `Voice` | — |
 | Pink noise | Wind, surf, rain patches | ~~RESOLVED~~ `WHITE_NOISE` `color=1` implemented via Paul Kellett 7-pole IIR in Phase 18 | — |
 | Gate delay (wolf-whistle) | Specialty pitch effects | ~~RESOLVED~~ `GATE_DELAY` implemented Phase 17 | — |
 | Ring modulator | Bell, metallic, choral patches | ~~RESOLVED~~ `RING_MOD` implemented Phase 18; multi-input execution via `inject_audio()` in `Voice::pull_mono` | — |
 | Filter as chain node | Pizzicato strings, two-VCF percussion, VCF self-oscillation, separate filter type per patch | ~~RESOLVED~~ All four filter types (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`) are now first-class chain nodes; `cutoff_cv` CV is routed via `apply_parameter` in `pull_mono`; `Voice::filter_` removed | — |
-| Audio-rate filter FM | Tom Tom, Cow Bell, Bongo Drums patches | ~~RESOLVED~~ `fm_in` PORT_AUDIO input added to `MOOG_FILTER` and `DIODE_FILTER` (Phase 18); summed into cutoff at audio rate with `fm_depth` | — |
+| Audio-rate filter FM | Tom Tom, Cow Bell, Bongo Drums patches | ~~RESOLVED~~ `fm_in` PORT_AUDIO input + `fm_depth` parameter added to all six filter types (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`, `HIGH_PASS_FILTER`, `BAND_PASS_FILTER`); summed into cutoff at audio rate | — |
 | LFO as envelope gate source | Percussion Trill (Vol 2, Fig 3-13) | ~~RESOLVED~~ `ext_gate_in` non-lifecycle `PORT_CONTROL` input added to `ADSR_ENVELOPE` (Phase 17); OR'd with lifecycle `gate_in` | — |
 | Two VCAs in series | Percussion amplitude shaping (linear dynamics + exponential decay) | No architecture gap — chain model supports sequential `VCA` nodes with different `response_curve` values | No new module needed |
 | Band Reject Filter topology | Notch/comb effects (Roland §5-7, Fig 5-7c) | Requires LPF and HPF in **parallel** with outputs summed; current `Voice` has a single serial `signal_chain_` — parallel branches not yet supported | Extend `Voice` architecture to support forked/parallel signal paths; `BAND_REJECT_FILTER` specified above; deferred |
