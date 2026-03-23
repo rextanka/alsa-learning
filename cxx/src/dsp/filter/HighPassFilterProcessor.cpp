@@ -10,6 +10,8 @@ namespace audio {
 
 void HighPassFilterProcessor::do_pull(std::span<float> output, const VoiceContext* /*ctx*/) {
     const int n = static_cast<int>(output.size());
+    fm_depth_.advance(n);
+    const float fm_depth_val = fm_depth_.get();
     if (base_cutoff_.is_ramping() || q_.is_ramping()) {
         base_cutoff_.advance(n);
         q_.advance(n);
@@ -18,18 +20,36 @@ void HighPassFilterProcessor::do_pull(std::span<float> output, const VoiceContex
         base_cutoff_.advance(n);
         q_.advance(n);
     }
-    for (auto& s : output) {
-        const float out = b0_ * s + b1_ * x1_ + b2_ * x2_
-                        - a1_ * y1_ - a2_ * y2_;
-        x2_ = x1_; x1_ = s;
-        y2_ = y1_; y1_ = out;
-        s = out;
+    if (!fm_in_.empty() && fm_depth_val != 0.0f) {
+        for (size_t i = 0; i < output.size(); ++i) {
+            const float eff_cv = cutoff_cv_ + kybd_cv_ + fm_depth_val * fm_in_[i];
+            const float fc = std::max(20.0f, base_cutoff_.get() * std::pow(2.0f, eff_cv));
+            update_coefficients_at(fc);
+            const float out = b0_ * output[i] + b1_ * x1_ + b2_ * x2_
+                            - a1_ * y1_ - a2_ * y2_;
+            x2_ = x1_; x1_ = output[i];
+            y2_ = y1_; y1_ = out;
+            output[i] = out;
+        }
+        update_coefficients();
+        fm_in_ = {};
+    } else {
+        for (auto& s : output) {
+            const float out = b0_ * s + b1_ * x1_ + b2_ * x2_
+                            - a1_ * y1_ - a2_ * y2_;
+            x2_ = x1_; x1_ = s;
+            y2_ = y1_; y1_ = out;
+            s = out;
+        }
     }
 }
 
 void HighPassFilterProcessor::update_coefficients() {
-    const float fc     = std::max(20.0f, base_cutoff_.get()
-                           * std::pow(2.0f, cutoff_cv_ + kybd_cv_));
+    const float fc = std::max(20.0f, base_cutoff_.get() * std::pow(2.0f, cutoff_cv_ + kybd_cv_));
+    update_coefficients_at(fc);
+}
+
+void HighPassFilterProcessor::update_coefficients_at(float fc) {
     const float w0     = 2.0f * static_cast<float>(M_PI) * fc / static_cast<float>(sample_rate_);
     const float cos_w  = std::cos(w0);
     const float sin_w  = std::sin(w0);

@@ -1,0 +1,37 @@
+{
+  "version": 3,
+  "name": "Violin",
+  "groups": [
+    {
+      "id": 0,
+      "comment": "Roland System 100M Fig. 2-2. Violin with delayed vibrato: VCO (saw, 8') → VCF (LP+HP) → VCA ← ADSR. LFO vibrato with delay onset — Gate resets LFO delay so vibrato fades in after note attack. KBD pitch_cv → VCO. Variants: Viola (HPF off, resonance=1), Cello (16'), String Bass (32').",
+      "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD" },
+        { "type": "LFO",                 "tag": "LFO" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
+        { "type": "SH_FILTER",           "tag": "VCF" },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
+        { "type": "VCA",                 "tag": "VCA" }
+      ],
+      "connections": [
+        { "from_tag": "KBD", "from_port": "pitch_cv",     "to_tag": "VCO", "to_port": "pitch_base_cv"   },
+        { "from_tag": "KBD", "from_port": "gate_cv",      "to_tag": "ENV", "to_port": "gate_cv"         },
+        { "from_tag": "KBD", "from_port": "gate_cv",      "to_tag": "LFO", "to_port": "reset"           },
+        { "from_tag": "KBD", "from_port": "velocity_cv",  "to_tag": "VCA", "to_port": "initial_gain_cv" },
+        { "from_tag": "LFO", "from_port": "control_out",  "to_tag": "VCO", "to_port": "pitch_cv"        },
+        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"        },
+        { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"        },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"         }
+      ],
+      "parameters": {
+        "VCO": { "saw_gain": 1.0 },
+        "VCF": { "cutoff": 3500.0, "resonance": 0.3 },
+        "ENV": { "attack": 0.08, "decay": 0.1, "sustain": 0.9, "release": 0.25 },
+        "LFO": { "rate": 5.5, "intensity": 0.003, "waveform": 0, "delay": 0.5 }
+      }
+    }
+  ],
+  "post_chain": [
+    { "type": "REVERB_FREEVERB", "parameters": { "room_size": 0.5, "damping": 0.6, "wet": 0.2 } }
+  ]
+}

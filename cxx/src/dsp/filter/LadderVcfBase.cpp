@@ -13,6 +13,11 @@ void LadderVcfBase::do_pull(std::span<float> output, const VoiceContext* ctx) {
     if (fm_in_.empty() || fm_depth_val == 0.0f) {
         VcfBase::do_pull(output, ctx);
     } else {
+        // Advance base_cutoff_ ramp even when VcfBase::do_pull() is bypassed.
+        const int n = static_cast<int>(output.size());
+        if (base_cutoff_.is_ramping()) base_cutoff_.advance(n);
+        if (base_res_.is_ramping())    base_res_.advance(n);
+
         for (size_t i = 0; i < output.size(); ++i) {
             const float eff_cv = cutoff_cv_ + kybd_cv_ + fm_depth_val * fm_in_[i];
             const float fc = std::max(20.0f, base_cutoff_.get() * std::pow(2.0f, eff_cv));

@@ -1,0 +1,33 @@
+{
+  "version": 3,
+  "name": "FM",
+  "groups": [
+    {
+      "id": 0,
+      "comment": "Roland System 100M Fig. 2-5. VCO FM synthesis: VCO-2 (modulator, sine) audio_out → VCO-1 (carrier, sine) fm_in → VCA ← ADSR. Both VCOs track pitch via CV_SPLITTER. VCO-2 ratio determines timbre — at 1:1 gives rich harmonic spectrum.",
+      "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD"  },
+        { "type": "CV_SPLITTER",         "tag": "SPL"  },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO1" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV"  },
+        { "type": "VCA",                 "tag": "VCA"  }
+      ],
+      "connections": [
+        { "from_tag": "KBD",  "from_port": "pitch_cv",     "to_tag": "SPL",  "to_port": "cv_in"         },
+        { "from_tag": "SPL",  "from_port": "cv_out_1",     "to_tag": "VCO1", "to_port": "pitch_base_cv" },
+        { "from_tag": "SPL",  "from_port": "cv_out_2",     "to_tag": "VCO2", "to_port": "pitch_base_cv" },
+        { "from_tag": "VCO2", "from_port": "audio_out",    "to_tag": "VCO1", "to_port": "fm_in"         },
+        { "from_tag": "VCO1", "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"      },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"       },
+        { "from_tag": "KBD",  "from_port": "gate_cv",      "to_tag": "ENV",  "to_port": "gate_cv"       },
+        { "from_tag": "KBD",  "from_port": "velocity_cv",  "to_tag": "VCA",  "to_port": "initial_gain_cv" }
+      ],
+      "parameters": {
+        "VCO1": { "sine_gain": 1.0, "fm_depth": 0.5 },
+        "VCO2": { "sine_gain": 1.0 },
+        "ENV":  { "attack": 0.01, "decay": 0.3, "sustain": 0.4, "release": 0.3 }
+      }
+    }
+  ]
+}

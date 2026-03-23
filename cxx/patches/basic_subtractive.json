@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "name": "Basic Subtractive",
+  "groups": [
+    {
+      "id": 0,
+      "comment": "Roland System 100M Fig. 1-1. The canonical subtractive synthesis patch: VCO saw → VCF (fixed cutoff, no envelope) → VCA ← ADSR. Keyboard pitch CV auto-tracks VCO and VCF. No filter modulation — cutoff is static. ADSR drives amplitude only.",
+      "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
+        { "type": "SH_FILTER",           "tag": "VCF" },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
+        { "type": "VCA",                 "tag": "VCA" }
+      ],
+      "connections": [
+        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"        },
+        { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"        },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"         },
+        { "from_tag": "KBD", "from_port": "pitch_cv",     "to_tag": "VCO", "to_port": "pitch_base_cv"   },
+        { "from_tag": "KBD", "from_port": "gate_cv",      "to_tag": "ENV", "to_port": "gate_cv"         },
+        { "from_tag": "KBD", "from_port": "velocity_cv",  "to_tag": "VCA", "to_port": "initial_gain_cv" }
+      ],
+      "parameters": {
+        "VCO": { "saw_gain": 1.0 },
+        "VCF": { "cutoff": 2000.0, "resonance": 0.3 },
+        "ENV": { "attack": 0.01, "decay": 0.2, "sustain": 0.7, "release": 0.3 }
+      }
+    }
+  ]
+}

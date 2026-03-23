@@ -1,0 +1,48 @@
+{
+  "version": 3,
+  "name": "Chime",
+  "groups": [
+    {
+      "id": 0,
+      "comment": "Roland System 100M Fig. 1-12. Additive synthesis chime: 4 VCOs (sine) — VCO1 root 4' (t=+12), VCO2 octave (t=+24), VCO3 P4 above octave (t=+29), VCO4 m6 above root (t=+20) → AUDIO_MIXER → VCA (exp) ← ADSR. Pitch CV fanned via CV_SPLITTER.",
+      "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD" },
+        { "type": "CV_SPLITTER",         "tag": "SPL" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO1" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO3" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO4" },
+        { "type": "AUDIO_MIXER",         "tag": "MIX" },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
+        { "type": "VCA",                 "tag": "VCA" }
+      ],
+      "connections": [
+        { "from_tag": "KBD",  "from_port": "pitch_cv",    "to_tag": "SPL",  "to_port": "cv_in"        },
+        { "from_tag": "SPL",  "from_port": "cv_out_1",    "to_tag": "VCO1", "to_port": "pitch_base_cv" },
+        { "from_tag": "SPL",  "from_port": "cv_out_2",    "to_tag": "VCO2", "to_port": "pitch_base_cv" },
+        { "from_tag": "SPL",  "from_port": "cv_out_3",    "to_tag": "VCO3", "to_port": "pitch_base_cv" },
+        { "from_tag": "SPL",  "from_port": "cv_out_4",    "to_tag": "VCO4", "to_port": "pitch_base_cv" },
+        { "from_tag": "VCO1", "from_port": "audio_out",   "to_tag": "MIX",  "to_port": "audio_in_1"   },
+        { "from_tag": "VCO2", "from_port": "audio_out",   "to_tag": "MIX",  "to_port": "audio_in_2"   },
+        { "from_tag": "VCO3", "from_port": "audio_out",   "to_tag": "MIX",  "to_port": "audio_in_3"   },
+        { "from_tag": "VCO4", "from_port": "audio_out",   "to_tag": "MIX",  "to_port": "audio_in_4"   },
+        { "from_tag": "MIX",  "from_port": "audio_out",   "to_tag": "VCA",  "to_port": "audio_in"     },
+        { "from_tag": "ENV",  "from_port": "envelope_out","to_tag": "VCA",  "to_port": "gain_cv"      },
+        { "from_tag": "KBD",  "from_port": "gate_cv",     "to_tag": "ENV",  "to_port": "gate_cv"      },
+        { "from_tag": "KBD",  "from_port": "velocity_cv", "to_tag": "VCA",  "to_port": "initial_gain_cv" }
+      ],
+      "parameters": {
+        "VCO1": { "sine_gain": 1.0, "footage": 4 },
+        "VCO2": { "sine_gain": 1.0, "footage": 2 },
+        "VCO3": { "sine_gain": 1.0, "footage": 2, "coarse_tune": 2  },
+        "VCO4": { "sine_gain": 1.0, "footage": 4, "coarse_tune": -5 },
+        "MIX":  { "gain_1": 0.5, "gain_2": 0.5, "gain_3": 0.5, "gain_4": 0.5 },
+        "ENV":  { "attack": 0.001, "decay": 10.0, "sustain": 0.0, "release": 10.0 },
+        "VCA":  { "response_curve": 1.0 }
+      }
+    }
+  ],
+  "post_chain": [
+    { "type": "REVERB_FREEVERB", "parameters": { "room_size": 0.8, "damping": 0.5, "wet": 0.35 } }
+  ]
+}

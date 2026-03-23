@@ -5,6 +5,7 @@
     {
       "id": 0,
       "chain": [
+        { "type": "MIDI_CV",         "tag": "KBD"   },
         { "type": "WHITE_NOISE",     "tag": "NOISE" },
         { "type": "MOOG_FILTER",     "tag": "VCF"   },
         { "type": "HIGH_PASS_FILTER","tag": "HPF"   },
@@ -12,6 +13,7 @@
         { "type": "VCA",             "tag": "VCA"   }
       ],
       "connections": [
+        { "from_tag": "KBD",   "from_port": "gate_cv",     "to_tag": "ENV", "to_port": "gate_cv"  },
         { "from_tag": "NOISE", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in" },
         { "from_tag": "VCF",   "from_port": "audio_out",    "to_tag": "HPF", "to_port": "audio_in" },
         { "from_tag": "HPF",   "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in" },

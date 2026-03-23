@@ -5,6 +5,7 @@
     {
       "id": 0,
       "chain": [
+        { "type": "MIDI_CV",       "tag": "KBD"   },
         { "type": "WHITE_NOISE",   "tag": "NOISE" },
         { "type": "MOOG_FILTER",   "tag": "VCF1"  },
         { "type": "MOOG_FILTER",   "tag": "VCF2"  },
@@ -14,6 +15,7 @@
         { "type": "VCA",           "tag": "VCA"   }
       ],
       "connections": [
+        { "from_tag": "KBD",   "from_port": "gate_cv",     "to_tag": "ENV",   "to_port": "gate_cv"   },
         { "from_tag": "NOISE",  "from_port": "audio_out",    "to_tag": "VCF1",  "to_port": "audio_in"  },
         { "from_tag": "VCF1",   "from_port": "audio_out",    "to_tag": "VCF2",  "to_port": "audio_in"  },
         { "from_tag": "VCF2",   "from_port": "audio_out",    "to_tag": "DLY",   "to_port": "audio_in"  },

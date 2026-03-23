@@ -5,12 +5,14 @@
     {
       "id": 0,
       "chain": [
-        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
-        { "type": "SH_FILTER",           "tag": "VCF" },
-        { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
-        { "type": "VCA",                 "tag": "VCA" }
+        { "type": "MIDI_CV",             "tag": "KBD"  },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO"  },
+        { "type": "SH_FILTER",           "tag": "VCF"  },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV"  },
+        { "type": "VCA",                 "tag": "VCA"  }
       ],
       "connections": [
+        { "from_tag": "KBD", "from_port": "gate_cv",     "to_tag": "ENV", "to_port": "gate_cv"  },
         { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"  },
         { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"  },
         { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"   },

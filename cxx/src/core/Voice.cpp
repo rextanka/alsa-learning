@@ -231,19 +231,6 @@ void Voice::pull_mono(std::span<float> output, const VoiceContext* context) {
         ++num_ctrl;
     }
 
-    // Auto-inject keyboard tracking CV to cached kybd_cv nodes (populated at bake time).
-    // Computed as 1V/oct relative to C4 (261.63 Hz). Combines additively with cutoff_cv
-    // in the filter's apply_parameter("kybd_cv") handler.
-    // Skipped when MIDI_CV is present — those patches use explicit pitch_cv connections
-    // and do not want implicit filter tracking imposed on every filter in the chain.
-    if (!has_midi_cv_ && !kybd_cv_nodes_.empty()) {
-        static constexpr float kC4Hz = 261.63f;
-        const float kybd_cv = static_cast<float>(
-            std::log2(base_frequency_ / static_cast<double>(kC4Hz)));
-        for (auto* node : kybd_cv_nodes_)
-            node->apply_parameter("kybd_cv", kybd_cv);
-    }
-
     // --- Audio bus: pre-pull audio nodes that supply secondary audio inputs.
     //
     // An audio_source is any signal_chain_ node whose audio_out is explicitly
@@ -522,22 +509,56 @@ void Voice::bake() {
             + conn.to_tag   + "::" + conn.to_port   + "'");
     }
 
-    // Cache signal_chain_ nodes that declare a "kybd_cv" port so the hot path
-    // can iterate directly without calling find_port() on every block.
-    kybd_cv_nodes_.clear();
-    for (auto& entry : signal_chain_) {
-        if (entry.node->find_port("kybd_cv"))
-            kybd_cv_nodes_.push_back(entry.node.get());
-    }
+    // Topological sort of mod_sources_ so that Pass 1 always pulls CV sources
+    // before the consumers that depend on them (e.g. KBD before CV_SPLITTER,
+    // LFO before CV_MIXER). Uses Kahn's algorithm; throws on cycle.
+    {
+        const size_t n = mod_sources_.size();
+        if (n > 1) {
+            auto mod_idx = [&](const std::string& tag) -> size_t {
+                for (size_t i = 0; i < n; ++i)
+                    if (mod_sources_[i].tag == tag) return i;
+                return n;
+            };
 
-    // Detect MIDI_CV presence — any mod_source with a "pitch_cv" output port.
-    // When present, patches use explicit connections for CV/gate routing instead
-    // of the auto-injection loop, so kybd_cv broadcasting is suppressed in pull_mono.
-    has_midi_cv_ = false;
-    for (auto& entry : mod_sources_) {
-        if (entry.node->find_port("pitch_cv")) {
-            has_midi_cv_ = true;
-            break;
+            std::vector<int> in_degree(n, 0);
+            std::vector<std::vector<size_t>> adj(n);
+
+            for (const auto& conn : connections_) {
+                size_t fi = mod_idx(conn.from_tag);
+                size_t ti = mod_idx(conn.to_tag);
+                if (fi == n || ti == n || fi == ti) continue;
+                bool dup = false;
+                for (size_t dep : adj[fi]) { if (dep == ti) { dup = true; break; } }
+                if (dup) continue;
+                adj[fi].push_back(ti);
+                ++in_degree[ti];
+            }
+
+            std::vector<size_t> queue;
+            queue.reserve(n);
+            for (size_t i = 0; i < n; ++i)
+                if (in_degree[i] == 0) queue.push_back(i);
+
+            std::vector<size_t> topo;
+            topo.reserve(n);
+            for (size_t qi = 0; qi < queue.size(); ++qi) {
+                size_t idx = queue[qi];
+                topo.push_back(idx);
+                for (size_t dep : adj[idx])
+                    if (--in_degree[dep] == 0) queue.push_back(dep);
+            }
+
+            if (topo.size() != n)
+                throw std::logic_error(
+                    "Voice::bake(): cycle detected in mod_sources_ — CV feedback "
+                    "loops within the modulation graph are not supported");
+
+            std::vector<ChainEntry> sorted;
+            sorted.reserve(n);
+            for (size_t idx : topo)
+                sorted.push_back(std::move(mod_sources_[idx]));
+            mod_sources_ = std::move(sorted);
         }
     }
 

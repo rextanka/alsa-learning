@@ -5,6 +5,7 @@
     "id": 0,
     "comment": "Roland System 100M Fig 1-6 Trombone variant: VCO (saw, 8') → VCF → VCA. VCF MOD IN at 90% (scale=0.9) gives stronger filter sweep than Horn. Sawtooth waveform, slightly lower cutoff (1800Hz) for the warm low-brass body.",
     "chain": [
+      {"type": "MIDI_CV",              "tag": "KBD"},
       {"type": "COMPOSITE_GENERATOR", "tag": "VCO"},
       {"type": "ADSR_ENVELOPE",        "tag": "ENV"},
       {"type": "CV_SPLITTER",          "tag": "SPL"},
@@ -18,7 +19,10 @@
       {"from_tag":"ENV", "from_port":"envelope_out", "to_tag":"SPL",  "to_port":"cv_in"},
       {"from_tag":"SPL", "from_port":"cv_out_1",     "to_tag":"VCA",  "to_port":"gain_cv"},
       {"from_tag":"SPL", "from_port":"cv_out_2",     "to_tag":"VMOD", "to_port":"cv_in"},
-      {"from_tag":"VMOD","from_port":"cv_out",       "to_tag":"VCF",  "to_port":"cutoff_cv"}
+      {"from_tag":"VMOD","from_port":"cv_out",       "to_tag":"VCF",  "to_port":"cutoff_cv"},
+      {"from_tag":"KBD", "from_port":"pitch_cv",     "to_tag":"VCO",  "to_port":"pitch_base_cv"},
+      {"from_tag":"KBD", "from_port":"gate_cv",      "to_tag":"ENV",  "to_port":"gate_cv"},
+      {"from_tag":"KBD", "from_port":"velocity_cv",  "to_tag":"VCA",  "to_port":"initial_gain_cv"}
     ],
     "parameters": {
       "VCO":  {"saw_gain": 1.0, "footage": 8},

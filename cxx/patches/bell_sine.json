@@ -1,10 +1,12 @@
 {
-  "version": 2,
+  "version": 3,
   "name": "Bell Sine",
   "groups": [
     {
       "id": 0,
       "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD"  },
+        { "type": "CV_SPLITTER",         "tag": "PSPL" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO1" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
         { "type": "MOOG_FILTER",         "tag": "VCF1" },
@@ -14,16 +16,21 @@
         { "type": "VCA",                 "tag": "VCA"  }
       ],
       "connections": [
-        { "from_tag": "VCO1", "from_port": "audio_out",    "to_tag": "VCF1", "to_port": "audio_in"   },
-        { "from_tag": "VCO2", "from_port": "audio_out",    "to_tag": "VCF2", "to_port": "audio_in"   },
-        { "from_tag": "VCF1", "from_port": "audio_out",    "to_tag": "RM",   "to_port": "audio_in_a" },
-        { "from_tag": "VCF2", "from_port": "audio_out",    "to_tag": "RM",   "to_port": "audio_in_b" },
-        { "from_tag": "RM",   "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"   },
-        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"    }
+        { "from_tag": "KBD",  "from_port": "pitch_cv",     "to_tag": "PSPL", "to_port": "cv_in"         },
+        { "from_tag": "PSPL", "from_port": "cv_out_1",     "to_tag": "VCO1", "to_port": "pitch_base_cv" },
+        { "from_tag": "PSPL", "from_port": "cv_out_2",     "to_tag": "VCO2", "to_port": "pitch_base_cv" },
+        { "from_tag": "KBD",  "from_port": "gate_cv",      "to_tag": "ENV",  "to_port": "gate_cv"       },
+        { "from_tag": "KBD",  "from_port": "velocity_cv",  "to_tag": "VCA",  "to_port": "initial_gain_cv" },
+        { "from_tag": "VCO1", "from_port": "audio_out",    "to_tag": "VCF1", "to_port": "audio_in"      },
+        { "from_tag": "VCO2", "from_port": "audio_out",    "to_tag": "VCF2", "to_port": "audio_in"      },
+        { "from_tag": "VCF1", "from_port": "audio_out",    "to_tag": "RM",   "to_port": "audio_in_a"    },
+        { "from_tag": "VCF2", "from_port": "audio_out",    "to_tag": "RM",   "to_port": "audio_in_b"    },
+        { "from_tag": "RM",   "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"      },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"       }
       ],
       "parameters": {
         "VCO1": { "triangle_gain": 1.0, "footage": 4 },
-        "VCO2": { "triangle_gain": 1.0, "footage": 4, "transpose": 3 },
+        "VCO2": { "triangle_gain": 1.0, "footage": 4, "coarse_tune": 3 },
         "VCF1": { "cutoff": 3000.0, "resonance": 0.0 },
         "VCF2": { "cutoff": 3000.0, "resonance": 0.0 },
         "ENV":  { "attack": 0.001, "decay": 1.2, "sustain": 0.0, "release": 0.8 },

@@ -4,8 +4,9 @@
   "groups": [
     {
       "id": 0,
-      "comment": "Roland System 100M Fig 2-7: VCO (sine/tri/noise) → VCF → VCA. LFO modulates VCF cutoff for tone-color tremolo (not VCO pitch). ADSR fans via CV_SPLITTER to VCA amplitude and (via CV_MIXER with LFO) to VCF cutoff. Keyboard CV auto-tracked into VCF.",
+      "comment": "Roland System 100M Fig 2-7: VCO (sine/tri/noise) → VCF → VCA ← ADSR. LFO modulates VCF cutoff (tone-color tremolo) and VCO pitch (vibrato) with delay onset. Gate resets LFO delay. Piccolo variant: footage=2.",
       "chain": [
+        { "type": "MIDI_CV",              "tag": "KBD"  },
         { "type": "LFO",                  "tag": "LFO1" },
         { "type": "ADSR_ENVELOPE",        "tag": "ENV"  },
         { "type": "CV_SPLITTER",          "tag": "SPL"  },
@@ -15,59 +16,25 @@
         { "type": "VCA",                  "tag": "VCA"  }
       ],
       "connections": [
-        {
-          "from_tag": "VCO",  "from_port": "audio_out",
-          "to_tag":   "VCF",  "to_port":   "audio_in"
-        },
-        {
-          "from_tag": "VCF",  "from_port": "audio_out",
-          "to_tag":   "VCA",  "to_port":   "audio_in"
-        },
-        {
-          "from_tag": "ENV",  "from_port": "envelope_out",
-          "to_tag":   "SPL",  "to_port":   "cv_in"
-        },
-        {
-          "from_tag": "SPL",  "from_port": "cv_out_1",
-          "to_tag":   "VCA",  "to_port":   "gain_cv"
-        },
-        {
-          "from_tag": "SPL",  "from_port": "cv_out_2",
-          "to_tag":   "MIX",  "to_port":   "cv_in_2"
-        },
-        {
-          "from_tag": "LFO1", "from_port": "control_out",
-          "to_tag":   "MIX",  "to_port":   "cv_in_1"
-        },
-        {
-          "from_tag": "MIX",  "from_port": "cv_out",
-          "to_tag":   "VCF",  "to_port":   "cutoff_cv"
-        }
+        { "from_tag": "KBD",  "from_port": "pitch_cv",     "to_tag": "VCO",  "to_port": "pitch_base_cv" },
+        { "from_tag": "KBD",  "from_port": "gate_cv",      "to_tag": "ENV",  "to_port": "gate_cv"       },
+        { "from_tag": "KBD",  "from_port": "gate_cv",      "to_tag": "LFO1", "to_port": "reset"         },
+        { "from_tag": "KBD",  "from_port": "velocity_cv",  "to_tag": "VCA",  "to_port": "initial_gain_cv" },
+        { "from_tag": "VCO",  "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"      },
+        { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"      },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "SPL",  "to_port": "cv_in"         },
+        { "from_tag": "SPL",  "from_port": "cv_out_1",     "to_tag": "VCA",  "to_port": "gain_cv"       },
+        { "from_tag": "SPL",  "from_port": "cv_out_2",     "to_tag": "MIX",  "to_port": "cv_in_2"       },
+        { "from_tag": "LFO1", "from_port": "control_out",  "to_tag": "MIX",  "to_port": "cv_in_1"       },
+        { "from_tag": "LFO1", "from_port": "control_out",  "to_tag": "VCO",  "to_port": "pitch_cv"      },
+        { "from_tag": "MIX",  "from_port": "cv_out",       "to_tag": "VCF",  "to_port": "cutoff_cv"     }
       ],
       "parameters": {
-        "VCO": {
-          "sine_gain":     1.0,
-          "triangle_gain": 0.15,
-          "noise_gain":    0.09
-        },
-        "VCF": {
-          "cutoff":    3000.0,
-          "resonance": 0.1
-        },
-        "ENV": {
-          "attack":  0.1,
-          "decay":   0.05,
-          "sustain": 0.85,
-          "release": 0.25
-        },
-        "LFO1": {
-          "rate":      5.0,
-          "intensity": 0.15
-        },
-        "MIX": {
-          "gain_1": 1.0,
-          "gain_2": 0.5
-        }
+        "VCO":  { "sine_gain": 1.0, "triangle_gain": 0.15, "noise_gain": 0.09 },
+        "VCF":  { "cutoff": 3000.0, "resonance": 0.1 },
+        "ENV":  { "attack": 0.1, "decay": 0.05, "sustain": 0.85, "release": 0.25 },
+        "LFO1": { "rate": 5.0, "intensity": 0.003, "delay": 0.4 },
+        "MIX":  { "gain_1": 1.0, "gain_2": 0.5 }
       }
     }
   ],

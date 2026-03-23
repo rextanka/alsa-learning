@@ -6,6 +6,7 @@
       "id": 0,
       "comment": "Tonal body (VCO1, triangle+sine) + FM modulator (VCO2, sine, P5 above) via fm_in for pitched transient click.",
       "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD"  },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO1" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
         { "type": "SH_FILTER",           "tag": "VCF"  },
@@ -21,7 +22,7 @@
       ],
       "parameters": {
         "VCO1": { "triangle_gain": 1.0, "sine_gain": 0.5 },
-        "VCO2": { "sine_gain": 0.4, "transpose": 7 },
+        "VCO2": { "sine_gain": 0.4, "coarse_tune": 7 },
         "VCF":  { "cutoff": 280.0, "resonance": 0.72 },
         "ENV":  { "attack": 0.001, "decay": 0.35 }
       }

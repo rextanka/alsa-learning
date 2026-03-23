@@ -5,6 +5,7 @@
     {
       "id": 0,
       "chain": [
+        { "type": "MIDI_CV",         "tag": "KBD"   },
         { "type": "WHITE_NOISE",     "tag": "NOISE" },
         { "type": "SH_FILTER",      "tag": "VCF"   },
         { "type": "HIGH_PASS_FILTER","tag": "HPF"   },

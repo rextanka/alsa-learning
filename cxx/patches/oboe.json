@@ -6,6 +6,7 @@
       "id": 0,
       "comment": "Roland System 100M Fig 1-9 Oboe variant: VCO (pulse 35%) → MOOG_FILTER (cutoff 1200Hz, res=0.92) → HPF (fixed switch '1'≈250Hz) → VCA. MOOG_FILTER chosen over SH_FILTER for tanh saturation at high resonance — gives the buzzy, reedy double-reed character SH_FILTER cannot. HPF slightly suppresses fundamental per book ('less full than English Horn'). Keyboard CV auto-tracked into VCF. ADSR drives VCA amplitude only.",
       "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
         { "type": "MOOG_FILTER",          "tag": "VCF" },
         { "type": "HIGH_PASS_FILTER",    "tag": "HPF" },
@@ -13,6 +14,9 @@
         { "type": "VCA",                 "tag": "VCA" }
       ],
       "connections": [
+        { "from_tag": "KBD", "from_port": "pitch_cv",    "to_tag": "VCO", "to_port": "pitch_base_cv"   },
+        { "from_tag": "KBD", "from_port": "gate_cv",     "to_tag": "ENV", "to_port": "gate_cv"         },
+        { "from_tag": "KBD", "from_port": "velocity_cv", "to_tag": "VCA", "to_port": "initial_gain_cv" },
         {
           "from_tag": "VCO", "from_port": "audio_out",
           "to_tag":   "VCF", "to_port":   "audio_in"

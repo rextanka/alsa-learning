@@ -6,6 +6,7 @@
       "id": 0,
       "comment": "TR-808 style: two detuned square waves, HPF strips low thump, short metallic decay.",
       "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD"  },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO1" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
         { "type": "AUDIO_MIXER",         "tag": "MIX"  },
@@ -22,7 +23,7 @@
       ],
       "parameters": {
         "VCO1": { "pulse_gain": 1.0 },
-        "VCO2": { "pulse_gain": 1.0, "transpose": 7 },
+        "VCO2": { "pulse_gain": 1.0, "coarse_tune": 7 },
         "MIX":  { "gain_1": 1.0, "gain_2": 0.8 },
         "HPF":  { "cutoff": 200.0, "resonance": 0.1 },
         "ENV":  { "attack": 0.001, "decay": 0.22 }

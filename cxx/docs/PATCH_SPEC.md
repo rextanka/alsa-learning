@@ -46,9 +46,34 @@ All patches use `"version": 2` as the baseline. The v1 format (integer-enum
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | int | Voice group index (0-based) |
-| `chain` | array | Ordered list of modules — **generator must be first** |
+| `chain` | array | Ordered list of modules — **`MIDI_CV` must be first** (see §Required Wiring below) |
 | `connections` | array | Named port connections wired after `chain` construction |
 | `parameters` | object | Initial parameter values by string label |
+
+### Required Wiring — Every Patch Must Include MIDI_CV
+
+> **Rule:** All patches must include a `MIDI_CV` module (conventional tag `KBD`) and explicitly
+> wire gate and pitch CV. **Never rely on the Voice auto-injection side effects.**
+>
+> The engine's implicit `kybd_cv` broadcast and lifecycle gate callbacks exist only as a
+> compatibility fallback for patches that predate Phase 27E. New patches and migrated patches
+> must declare all CV/gate routing explicitly.
+
+Minimum required connections for any patch with a keyboard-driven envelope:
+
+```json
+{ "from_tag": "KBD", "from_port": "gate_cv",    "to_tag": "ENV", "to_port": "gate_cv"    },
+{ "from_tag": "KBD", "from_port": "pitch_cv",   "to_tag": "VCF", "to_port": "kybd_cv"   }
+```
+
+Add velocity routing where the instrument responds to key force:
+
+```json
+{ "from_tag": "KBD", "from_port": "velocity_cv", "to_tag": "VCA", "to_port": "initial_gain_cv" }
+```
+
+Patches with **no VCF** (e.g. recorder, percussion) still require `KBD:gate_cv → ENV:gate_cv`.
+Patches with **no envelope** (e.g. noise SFX) must still include `MIDI_CV` in the chain.
 
 ---
 
@@ -138,16 +163,15 @@ ports instead (see §MIDI_CV below).
 **Canonical wiring (Phase 27E patch):**
 
 ```json
-{ "from_tag": "KBD", "from_port": "gate_cv",     "to_tag": "ENV", "to_port": "gate_cv"     },
-{ "from_tag": "KBD", "from_port": "velocity_cv",  "to_tag": "VCA", "to_port": "initial_gain_cv" },
-{ "from_tag": "KBD", "from_port": "pitch_cv",     "to_tag": "VCF", "to_port": "kybd_cv"     }
+{ "from_tag": "KBD", "from_port": "pitch_cv",    "to_tag": "VCO", "to_port": "pitch_base_cv"   },
+{ "from_tag": "KBD", "from_port": "gate_cv",     "to_tag": "ENV", "to_port": "gate_cv"          },
+{ "from_tag": "KBD", "from_port": "velocity_cv", "to_tag": "VCA", "to_port": "initial_gain_cv"  }
 ```
 
-**Behaviour when MIDI_CV is present**: the Voice's automatic `kybd_cv` injection
-(which previously broadcast keyboard pitch to every filter in the chain) is
-**suppressed**. Patches that need filter keyboard tracking must wire
+**Filter keyboard tracking** (optional): the Voice's legacy automatic `kybd_cv`
+injection has been removed. Patches that need filter keyboard tracking must wire
 `KBD:pitch_cv → VCF:kybd_cv` explicitly. Patches that do not want filter tracking
-(e.g. bongo drums) simply omit the connection.
+(e.g. bongo drums, most pads) simply omit the connection.
 
 **ADSR gate ports:**
 
@@ -278,6 +302,38 @@ Loading a v3 patch clears the existing post-chain before applying the file's `po
 ## Translating Roland System 100M Module Patches
 
 When implementing patches from the Roland *Practical Synthesis* books, the module hardware has internal routings that are not visible in the patch diagrams. These must be replicated explicitly in JSON connections.
+
+### Parameter Mapping: Roland Knob Positions → Engine Values
+
+The Roland System 100M operates on ±5 V signals throughout (10 Vpp). Its ADSR outputs
+0–8 V, giving **8 octaves** of VCF sweep at 1 V/oct. This engine normalises all CV to
+0–1.0, so 1.0 maps to **1 octave**. Translating a Roland patch diagram literally —
+"knob at minimum, ADSR attenuated to 40%" — will produce a nearly-silent result because
+the sweep range is 8× smaller than the hardware.
+
+**Practical rule:** use the *topology* from the Roland diagram faithfully (which modules
+connect to which, and via which port), but **set parameter values by ear** to achieve the
+described sonic character. The table below gives rough starting points:
+
+| Roland concept | Hardware range | Engine starting point |
+|---|---|---|
+| VCF cutoff "minimal" | ~20 Hz | 200–600 Hz (depends on source pitch) |
+| VCF cutoff "mid" | ~1 kHz | 800–2000 Hz |
+| ADSR sweep depth (attenuated) | 2–4 V (2–4 oct) | `gain` 0.6–1.0 in `CV_MIXER` |
+| ADSR sweep depth (full) | 8 V (8 oct) | Use two chained `CV_MIXER` gains or set cutoff base higher |
+| LFO intensity "subtle" | ~0.3 V | `intensity` 0.05–0.15 |
+| Pulse width "minimum" | ~5 % duty | `pulse_width` 0.05–0.15 (very thin; may need wider cutoff) |
+| Pulse width "mid" | ~25–33 % | `pulse_width` 0.25–0.33 |
+
+**Connections marked "(for tuning only)" in diagrams** are calibration patches used in
+production/repair to align VCF tracking with keyboard CV. Do not implement them — they
+add no musical content.
+
+**Audio-rate CV** (e.g. a VCO audio output patched to a VCF CV input via an attenuator)
+is replicated using the `fm_in` port on any filter combined with the `fm_depth` parameter.
+Start with `fm_depth` 0.05–0.15 for subtle audio-rate modulation.
+
+---
 
 ### M-121 Dual VCF — Shared MOD1 Input
 

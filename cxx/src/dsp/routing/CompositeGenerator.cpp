@@ -33,6 +33,9 @@ CompositeGenerator::CompositeGenerator(int sample_rate)
                   "Modulation pitch offset in V/oct (LFO vibrato, portamento, bend). "
                   "Adds to pitch_base_cv (or to base_frequency_ when MIDI_CV is absent)."});
     declare_port({"pwm_cv",    PORT_CONTROL, PortDirection::IN,  false});
+    declare_port({"pw_env_cv", PORT_CONTROL, PortDirection::IN,  false,
+                  "Unipolar (0–1) envelope input: narrows pulse width as envelope rises. "
+                  "Use pw_env_depth to set the maximum narrowing amount."});
     declare_port({"fm_in",     PORT_AUDIO,   PortDirection::IN});
     declare_port({"sync_in",   PORT_AUDIO,   PortDirection::IN});
 
@@ -44,9 +47,11 @@ CompositeGenerator::CompositeGenerator(int sample_rate)
     declare_parameter({"wavetable_gain", "Wavetable Level", 0.0f, 1.0f, 0.0f});
     declare_parameter({"noise_gain",     "Noise Level",     0.0f, 1.0f, 0.0f});
     declare_parameter({"pulse_width",    "Pulse Width",      0.0f,  0.5f,   0.5f});
+    declare_parameter({"pw_env_depth",   "PW Env Depth",     0.0f,  0.49f,  0.0f});
     declare_parameter({"wavetable_type", "Wavetable Type",   0.0f,  8.0f,   0.0f});
-    declare_parameter({"transpose",      "Transpose",      -24.0f, 24.0f,   0.0f});
-    declare_parameter({"footage",        "Footage (2/4/8/16/32)", 2.0f, 32.0f, 8.0f});
+    declare_parameter({"transpose",      "Transpose",            -24.0f, 24.0f,  0.0f});
+    declare_parameter({"footage",        "Footage (2/4/8/16/32)", 2.0f,  32.0f,  8.0f});
+    declare_parameter({"coarse_tune",    "Coarse Tune (semitones, additive)", -24.0f, 24.0f, 0.0f});
     declare_parameter({"detune",         "Detune (cents)", -100.f, 100.0f,  0.0f});
     declare_parameter({"fm_depth",       "FM Depth",        0.0f,  1.0f,   0.0f});
 }
@@ -54,7 +59,7 @@ CompositeGenerator::CompositeGenerator(int sample_rate)
 void CompositeGenerator::set_frequency(double freq) {
     base_freq_ = freq;
     double adjusted = freq
-        * std::pow(2.0, transpose_ / 12.0)
+        * std::pow(2.0, (transpose_ + coarse_tune_) / 12.0)
         * std::pow(2.0, static_cast<double>(detune_.get()) / 1200.0);
     pulse_osc_->set_frequency(adjusted);
     saw_osc_->set_frequency(adjusted);
@@ -74,12 +79,23 @@ bool CompositeGenerator::apply_parameter(const std::string& name, float value) {
     if (name == "pulse_width" || name == "osc_pw") {
         pulse_width_.set_target(value, ramp_samples_); return true;
     }
+    if (name == "pw_env_depth") {
+        pw_env_depth_.set_target(std::clamp(value, 0.0f, 0.49f), ramp_samples_); return true;
+    }
+    if (name == "pw_env_cv") {
+        pw_env_cv_ = std::clamp(value, 0.0f, 1.0f); return true;
+    }
     if (name == "wavetable_type") {
         wavetable_osc_->setWaveType(static_cast<WaveType>(static_cast<int>(value)));
         return true;
     }
     if (name == "transpose") {
         transpose_ = static_cast<double>(std::round(value));
+        set_frequency(base_freq_);
+        return true;
+    }
+    if (name == "coarse_tune") {
+        coarse_tune_ = static_cast<double>(std::round(value));
         set_frequency(base_freq_);
         return true;
     }
@@ -145,6 +161,7 @@ void CompositeGenerator::do_pull(std::span<float> output, const VoiceContext* co
     wavetable_gain_.advance(n);
     noise_gain_.advance(n);
     pulse_width_.advance(n);
+    pw_env_depth_.advance(n);
     detune_.advance(n);
     fm_depth_.advance(n);
 
@@ -155,7 +172,14 @@ void CompositeGenerator::do_pull(std::span<float> output, const VoiceContext* co
     if (gain_set_[4]) mixer_->set_gain(4, tri_gain_.get());
     if (gain_set_[5]) mixer_->set_gain(5, wavetable_gain_.get());
     if (gain_set_[6]) mixer_->set_gain(6, noise_gain_.get());
-    pulse_osc_->set_pulse_width(pulse_width_.get());
+    {
+        float eff_pw = pulse_width_.get();
+        const float depth = pw_env_depth_.get();
+        if (depth > 0.0f)
+            eff_pw = std::clamp(eff_pw - pw_env_cv_ * depth, 0.01f, 0.49f);
+        pulse_osc_->set_pulse_width(eff_pw);
+        pw_env_cv_ = 0.0f;
+    }
 
     auto* pulse = pulse_osc_.get();
     auto* sub   = sub_osc_.get();
@@ -181,7 +205,7 @@ void CompositeGenerator::do_pull(std::span<float> output, const VoiceContext* co
         if (has_fm) {
             const double fm_oct = static_cast<double>(fm_depth_val * fm_in_[i]);
             const double f_mod  = base_freq_
-                * std::pow(2.0, transpose_ / 12.0)
+                * std::pow(2.0, (transpose_ + coarse_tune_) / 12.0)
                 * std::pow(2.0, static_cast<double>(detune_.get()) / 1200.0)
                 * std::pow(2.0, fm_oct);
             pulse_osc_->set_frequency(f_mod);

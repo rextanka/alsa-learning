@@ -5,16 +5,19 @@
     {
       "id": 0,
       "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD"  },
         { "type": "LFO",                 "tag": "LFO1" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO"  },
         { "type": "ADSR_ENVELOPE",       "tag": "ENV"  },
         { "type": "VCA",                 "tag": "VCA"  }
       ],
       "connections": [
-        { "from_tag": "LFO1", "from_port": "control_out",
-          "to_tag":   "VCO",  "to_port":   "pitch_cv" },
-        { "from_tag": "ENV",  "from_port": "envelope_out",
-          "to_tag":   "VCA",  "to_port":   "gain_cv" }
+        { "from_tag": "KBD",  "from_port": "pitch_cv",     "to_tag": "VCO",  "to_port": "pitch_base_cv"   },
+        { "from_tag": "KBD",  "from_port": "gate_cv",      "to_tag": "ENV",  "to_port": "gate_cv"         },
+        { "from_tag": "KBD",  "from_port": "velocity_cv",  "to_tag": "VCA",  "to_port": "initial_gain_cv" },
+        { "from_tag": "LFO1", "from_port": "control_out",  "to_tag": "VCO",  "to_port": "pitch_cv"        },
+        { "from_tag": "VCO",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"        },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"         }
       ],
       "parameters": {
         "VCO":  { "saw_gain": 1.0, "sine_gain": 0.3 },
@@ -24,9 +27,6 @@
     }
   ],
   "post_chain": [
-    {
-      "type": "JUNO_CHORUS",
-      "parameters": {}
-    }
+    { "type": "JUNO_CHORUS", "parameters": {} }
   ]
 }

@@ -110,8 +110,9 @@ private:
     [[maybe_unused]] int sample_rate_;
     int ramp_samples_;
 
-    double base_freq_ = 440.0;
-    double transpose_ = 0.0;   // semitones, snap
+    double base_freq_    = 440.0;
+    double transpose_    = 0.0;   // semitones from footage or transpose param (snap)
+    double coarse_tune_  = 0.0;   // semitones added on top of transpose_ (snap)
 
     SmoothedParam saw_gain_{0.0f};
     SmoothedParam pulse_gain_{0.0f};
@@ -121,6 +122,8 @@ private:
     SmoothedParam wavetable_gain_{0.0f};
     SmoothedParam noise_gain_{0.0f};
     SmoothedParam pulse_width_{0.5f};
+    SmoothedParam pw_env_depth_{0.0f};
+    float         pw_env_cv_{0.0f};  // unipolar 0–1 from ADSR; reset each block
     SmoothedParam detune_{0.0f};
     SmoothedParam fm_depth_{0.0f};
 

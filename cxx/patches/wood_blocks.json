@@ -5,10 +5,11 @@
     {
       "id": 0,
       "chain": [
-        { "type": "WHITE_NOISE",   "tag": "NOISE" },
-        { "type": "SH_FILTER",     "tag": "VCF"   },
-        { "type": "AD_ENVELOPE",   "tag": "ENV"   },
-        { "type": "VCA",           "tag": "VCA"   }
+        { "type": "MIDI_CV",     "tag": "KBD"   },
+        { "type": "WHITE_NOISE", "tag": "NOISE" },
+        { "type": "SH_FILTER",   "tag": "VCF"   },
+        { "type": "AD_ENVELOPE", "tag": "ENV"   },
+        { "type": "VCA",         "tag": "VCA"   }
       ],
       "connections": [
         { "from_tag": "NOISE", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in" },

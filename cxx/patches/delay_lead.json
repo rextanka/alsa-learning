@@ -5,15 +5,20 @@
     {
       "id": 0,
       "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
         { "type": "SH_FILTER",           "tag": "VCF" },
         { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
         { "type": "VCA",                 "tag": "VCA" }
       ],
       "connections": [
+        { "from_tag": "KBD", "from_port": "pitch_cv",    "to_tag": "VCO", "to_port": "pitch_base_cv"  },
+        { "from_tag": "KBD", "from_port": "gate_cv",     "to_tag": "ENV", "to_port": "gate_cv"        },
+        { "from_tag": "KBD", "from_port": "velocity_cv", "to_tag": "VCA", "to_port": "initial_gain_cv" },
         { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in" },
         { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in" },
-        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"  }
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"  },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCF", "to_port": "cutoff_cv" }
       ],
       "parameters": {
         "VCO": { "saw_gain": 0.7, "pulse_gain": 0.5, "pulse_width": 0.5 },

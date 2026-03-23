@@ -176,15 +176,6 @@ private:
     std::vector<ChainEntry> mod_sources_;
     std::vector<PortConnection> connections_;
     bool baked_ = false;
-
-    // Cached at bake() time: signal_chain_ nodes that declare a "kybd_cv" port.
-    // Avoids a find_port() scan over all signal_chain_ nodes every block.
-    std::vector<Processor*> kybd_cv_nodes_;
-
-    // True when mod_sources_ contains a MIDI_CV node (detected via "pitch_cv" port).
-    // When true, the kybd_cv auto-injection loop in pull_mono is skipped — explicit
-    // MIDI_CV → VCF connections take over keyboard tracking for those patches.
-    bool has_midi_cv_ = false;
 };
 
 } // namespace audio

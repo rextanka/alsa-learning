@@ -7,6 +7,10 @@
       "comment": "Roland System 100M style harpsichord (M-110/M-120/M-130): pulse VCO, ENV drives VCA amplitude and (via INV) modulates PWM for timbral pluck, HPF removes bass muddiness. VCF is static.",
       "chain": [
         {
+          "type": "MIDI_CV",
+          "tag": "KBD"
+        },
+        {
           "type": "COMPOSITE_GENERATOR",
           "tag": "VCO"
         },
@@ -32,6 +36,24 @@
         }
       ],
       "connections": [
+        {
+          "from_tag": "KBD",
+          "from_port": "pitch_cv",
+          "to_tag": "VCO",
+          "to_port": "pitch_base_cv"
+        },
+        {
+          "from_tag": "KBD",
+          "from_port": "gate_cv",
+          "to_tag": "ENV",
+          "to_port": "gate_cv"
+        },
+        {
+          "from_tag": "KBD",
+          "from_port": "velocity_cv",
+          "to_tag": "VCA",
+          "to_port": "initial_gain_cv"
+        },
         {
           "from_tag": "VCO",
           "from_port": "audio_out",

@@ -4,33 +4,25 @@
   "groups": [
     {
       "id": 0,
-      "comment": "Roland System 100M Fig 2-6: single ADSR fans (via CV_SPLITTER) to both VCO pitch_cv and VCA gain_cv. Attack governs both the pitch glide and amplitude rise simultaneously. S=0 means pitch and amplitude decay together — no residual sustained tone.",
+      "comment": "Roland System 100M Fig 2-6: ADSR fans (via CV_SPLITTER) to both VCO pitch_cv and VCA gain_cv — pitch sweeps up on attack while amplitude rises simultaneously. S=0: no sustained tone. VCO at 2' for ultrasonic whistle register.",
       "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
         { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
         { "type": "CV_SPLITTER",         "tag": "SPL" },
         { "type": "VCA",                 "tag": "VCA" }
       ],
       "connections": [
-        {
-          "from_tag": "VCO", "from_port": "audio_out",
-          "to_tag":   "VCA", "to_port":   "audio_in"
-        },
-        {
-          "from_tag": "ENV", "from_port": "envelope_out",
-          "to_tag":   "SPL", "to_port":   "cv_in"
-        },
-        {
-          "from_tag": "SPL", "from_port": "cv_out_1",
-          "to_tag":   "VCO", "to_port":   "pitch_cv"
-        },
-        {
-          "from_tag": "SPL", "from_port": "cv_out_2",
-          "to_tag":   "VCA", "to_port":   "gain_cv"
-        }
+        { "from_tag": "KBD", "from_port": "pitch_cv",     "to_tag": "VCO", "to_port": "pitch_base_cv"   },
+        { "from_tag": "KBD", "from_port": "gate_cv",      "to_tag": "ENV", "to_port": "gate_cv"         },
+        { "from_tag": "KBD", "from_port": "velocity_cv",  "to_tag": "VCA", "to_port": "initial_gain_cv" },
+        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"        },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "SPL", "to_port": "cv_in"           },
+        { "from_tag": "SPL", "from_port": "cv_out_1",     "to_tag": "VCO", "to_port": "pitch_cv"        },
+        { "from_tag": "SPL", "from_port": "cv_out_2",     "to_tag": "VCA", "to_port": "gain_cv"         }
       ],
       "parameters": {
-        "VCO": { "sine_gain": 1.0 },
+        "VCO": { "sine_gain": 1.0, "footage": 2 },
         "ENV": { "attack": 0.18, "decay": 0.5, "sustain": 0.0, "release": 0.3 }
       }
     }

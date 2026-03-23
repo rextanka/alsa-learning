@@ -4,56 +4,30 @@
   "groups": [
     {
       "id": 0,
+      "comment": "Roland System 100M Fig. 2-10. VCO (pulse, 8') → VCA. ADSR (attack=250ms) drives both VCA gain and VCO pw_env_cv: as envelope rises the pulse narrows, simulating bow-hair catching the string. pw_env_depth=0.35 gives moderate narrowing; at depth=0.49 the note nearly ceases (EXT P.W. MOD=10 in the book).",
       "chain": [
-        {
-          "type": "COMPOSITE_GENERATOR",
-          "tag": "VCO"
-        },
-        {
-          "type": "ADSR_ENVELOPE",
-          "tag": "ENV"
-        },
-        {
-          "type": "VCA",
-          "tag": "VCA"
-        }
+        { "type": "MIDI_CV",             "tag": "KBD" },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
+        { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
+        { "type": "CV_SPLITTER",         "tag": "SPL" },
+        { "type": "VCA",                 "tag": "VCA" }
       ],
       "connections": [
-        {
-          "from_tag": "ENV",
-          "from_port": "envelope_out",
-          "to_tag": "VCA",
-          "to_port": "gain_cv"
-        }
+        { "from_tag": "KBD", "from_port": "pitch_cv",     "to_tag": "VCO", "to_port": "pitch_base_cv"   },
+        { "from_tag": "KBD", "from_port": "gate_cv",      "to_tag": "ENV", "to_port": "gate_cv"         },
+        { "from_tag": "KBD", "from_port": "velocity_cv",  "to_tag": "VCA", "to_port": "initial_gain_cv" },
+        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"        },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "SPL", "to_port": "cv_in"           },
+        { "from_tag": "SPL", "from_port": "cv_out_1",     "to_tag": "VCA", "to_port": "gain_cv"         },
+        { "from_tag": "SPL", "from_port": "cv_out_2",     "to_tag": "VCO", "to_port": "pw_env_cv"       }
       ],
       "parameters": {
-        "VCO": {
-          "saw_gain": 0.6,
-          "triangle_gain": 0.8,
-          "sub_gain": 0.3
-        },
-        "ENV": {
-          "attack": 0.25,
-          "decay": 0.0,
-          "sustain": 1.0,
-          "release": 0.5
-        },
-        "VCF": {
-          "cutoff": 420.0,
-          "res": 0.38,
-          "filter_type": 1
-        }
+        "VCO": { "pulse_gain": 1.0, "pulse_width": 0.5, "pw_env_depth": 0.35 },
+        "ENV": { "attack": 0.25, "decay": 0.0, "sustain": 1.0, "release": 0.5 }
       }
     }
   ],
   "post_chain": [
-    {
-      "type": "REVERB_FREEVERB",
-      "parameters": {
-        "room_size": 0.55,
-        "damping": 0.6,
-        "wet": 0.2
-      }
-    }
+    { "type": "REVERB_FREEVERB", "parameters": { "room_size": 0.55, "damping": 0.6, "wet": 0.2 } }
   ]
 }

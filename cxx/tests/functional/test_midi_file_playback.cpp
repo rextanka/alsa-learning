@@ -398,7 +398,7 @@ TEST_F(MidiFilePlaybackTest, BWV772InventionAudible) {
         sample_rate
     );
 
-    // File lives in assets/midi/bach/ and is copied to midi/bach/ in the build output.
+    // File lives in assets/midi/bach/ (copied to build/bin/midi/bach/ at configure time).
     const char* midi_path = "midi/bach/bwv772_invention1.mid";
     if (std::ifstream test_open(midi_path); !test_open.good()) {
         GTEST_SKIP() << "midi/bach/bwv772_invention1.mid not found — skipping audible test";
