@@ -46,18 +46,16 @@ All patches use `"version": 2` as the baseline. The v1 format (integer-enum
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | int | Voice group index (0-based) |
-| `chain` | array | Ordered list of modules — **`MIDI_CV` must be first** (see §Required Wiring below) |
+| `chain` | array | Ordered list of modules — `MIDI_CV` should be first by convention; `Voice::bake()` topologically sorts `mod_sources_` so the actual evaluation order is always correct regardless of JSON order |
 | `connections` | array | Named port connections wired after `chain` construction |
 | `parameters` | object | Initial parameter values by string label |
 
 ### Required Wiring — Every Patch Must Include MIDI_CV
 
 > **Rule:** All patches must include a `MIDI_CV` module (conventional tag `KBD`) and explicitly
-> wire gate and pitch CV. **Never rely on the Voice auto-injection side effects.**
->
-> The engine's implicit `kybd_cv` broadcast and lifecycle gate callbacks exist only as a
-> compatibility fallback for patches that predate Phase 27E. New patches and migrated patches
-> must declare all CV/gate routing explicitly.
+> wire gate and pitch CV. The `Voice` legacy auto-injection (`kybd_cv` broadcast, lifecycle gate
+> callbacks) has been removed as of Phase 27E. All 29 patches have been migrated; there is no
+> compatibility fallback.
 
 Minimum required connections for any patch with a keyboard-driven envelope:
 

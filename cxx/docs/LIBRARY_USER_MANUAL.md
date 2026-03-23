@@ -122,15 +122,19 @@ Pink noise (−3 dB/octave rolloff) is approximated by routing white noise throu
 ### 3.2  VCF keyboard tracking
 
 All VCF modules (`MOOG_FILTER`, `DIODE_FILTER`, `SH_FILTER`, `MS20_FILTER`) declare a `kybd_cv`
-port that is **automatically injected by `Voice`** on every `note_on`.  The injection scales
-the base cutoff logarithmically with pitch (1V/oct):
+port that scales the base cutoff logarithmically with pitch (1V/oct):
 
 ```
 effective_cutoff = base_cutoff × 2^(kybd_cv)
 ```
 
-No JSON connection is required.  Keyboard tracking is on by default whenever a VCF is present in
-the signal chain.
+Wire the `MIDI_CV` pitch output explicitly to enable tracking:
+
+```json
+{ "from_tag": "KBD", "from_port": "pitch_cv", "to_tag": "VCF", "to_port": "kybd_cv" }
+```
+
+No connection is required for patches where the filter cutoff should not track the keyboard.
 
 ### 3.3  LFO vibrato
 
@@ -1189,15 +1193,15 @@ engine_bake(engine);
 | Selective module stripping      | Not yet — CMake presets exist but all 30 modules compile in every preset; future phase              |
 | USB MIDI HAL                    | Planned — Phase 25 (`midi_open_input`, `midi_connect_to_engine` C API)                              |
 | Multi-timbral SMF playback      | Planned — Phase 23 (MIDI channel → VoiceGroup routing table)                                        |
-| `MIDI_CV` source module         | **Planned — Phase 27E**; routable `pitch_cv`, `gate_cv`, `velocity_cv`, `aftertouch_cv` output ports; replaces implicit lifecycle callbacks |
-| Two-port pitch on `COMPOSITE_GENERATOR` | **Planned — Phase 27E**; `pitch_base_cv` (absolute, from `MIDI_CV`) + `pitch_cv` (mod offset, from LFO/portamento) sum at oscillator |
-| Gate-only trigger model         | **Planned — Phase 27E**; `engine_note_on/off` drive `MIDI_CV` state; `on_note_on/off` callbacks removed from public API |
+| `MIDI_CV` source module         | **Implemented — Phase 27E**; routable `pitch_cv`, `gate_cv`, `velocity_cv`, `aftertouch_cv` output ports; replaces implicit lifecycle callbacks |
+| Two-port pitch on `COMPOSITE_GENERATOR` | **Implemented — Phase 27E**; `pitch_base_cv` (absolute, from `MIDI_CV`) + `pitch_cv` (mod offset, from LFO/portamento) sum at oscillator |
+| Gate-only trigger model         | **Implemented — Phase 27E**; `engine_note_on/off` drive `MIDI_CV` state; legacy auto-injection removed from `Voice` |
 | `LFO.control_out_inv` port      | **Implemented — Phase 27E**; inverted output port (−1 × `control_out`); eliminates `INVERTER` for counter-phase routing |
 | `CV_MIXER.cv_out_inv` port      | **Implemented — Phase 27E**; inverted sum output (−1 × `cv_out`); M-132 INV OUT precedent; counter-phase routing without a downstream `INVERTER` |
-| Roland M-132 gate-bias pattern  | **Planned — Phase 27E**; `MIDI_CV.gate_cv` → `CV_MIXER` + `offset` bias replicates M-132 gated LFO trigger (banjo Fig 3-4 canonical wiring); see BRIDGE_GUIDE.md §15.5 |
+| Roland M-132 gate-bias pattern  | **Implemented — Phase 27E**; `MIDI_CV.gate_cv` → `CV_MIXER` + `offset` bias replicates M-132 gated LFO trigger (banjo Fig 3-4 canonical wiring); see BRIDGE_GUIDE.md §15.5 |
 | `ECHO_DELAY.time_cv` port       | **Implemented — Phase 27E**; additive delay-time CV modulation (seconds); M-172 BBD clock CV precedent |
 | `GATE_DELAY` enhancements       | **Implemented — Phase 27E**; `gate_in_b` OR input, `gate_time` fixed-pulse parameter, `delay_time` extended to 6 s |
-| Patch audit — Phase 27E migration | **Deferred**; 29 patches reviewed against Roland service notes after Phase 27E implementation; 10 patches verified in arch-audit (2026-03-21) |
+| Patch audit — Phase 27E migration | **Complete**; all 29 patches migrated to explicit MIDI_CV routing in arch-audit (2026-03-21); `bowed_bass` additionally received `pw_env_cv` port on `COMPOSITE_GENERATOR` |
 | Module introspection API        | **Implemented** — Phase 27A (`module_get_descriptor_json`, `module_registry_get_all_json`)           |
 | Patch serialization             | **Implemented** — Phase 27B (`engine_load_patch_json`, `engine_get_patch_json`, `engine_save_patch`); patch format v3 adds top-level `post_chain` array for global effects |
 | Role classification             | **Implemented** — Phase 27C; `"role"` field in every module's JSON descriptor (`SOURCE`, `SINK`, `PROCESSOR`); pure CV modules (`LFO`, `ADSR_ENVELOPE`, etc.) and `COMPOSITE_GENERATOR` are `PROCESSOR` |
