@@ -6,6 +6,8 @@
       "id": 0,
       "comment": "Dual-VCO string ensemble: VCO1 + VCO2 (7-cent detune) summed via AUDIO_MIXER, LFO vibrato on both.",
       "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD"  },
+        { "type": "CV_SPLITTER",         "tag": "SPL"  },
         { "type": "LFO",                 "tag": "LFO1" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO1" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
@@ -15,17 +17,22 @@
         { "type": "VCA",                 "tag": "VCA"  }
       ],
       "connections": [
-        { "from_tag": "LFO1", "from_port": "control_out",  "to_tag": "VCO1", "to_port": "pitch_cv"   },
-        { "from_tag": "LFO1", "from_port": "control_out",  "to_tag": "VCO2", "to_port": "pitch_cv"   },
-        { "from_tag": "VCO1", "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_1" },
-        { "from_tag": "VCO2", "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_2" },
-        { "from_tag": "MIX",  "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"   },
-        { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"   },
-        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"    }
+        { "from_tag": "KBD",  "from_port": "pitch_cv",     "to_tag": "SPL",  "to_port": "cv_in"         },
+        { "from_tag": "SPL",  "from_port": "cv_out_1",     "to_tag": "VCO1", "to_port": "pitch_base_cv" },
+        { "from_tag": "SPL",  "from_port": "cv_out_2",     "to_tag": "VCO2", "to_port": "pitch_base_cv" },
+        { "from_tag": "LFO1", "from_port": "control_out",  "to_tag": "VCO1", "to_port": "pitch_cv"      },
+        { "from_tag": "LFO1", "from_port": "control_out",  "to_tag": "VCO2", "to_port": "pitch_cv"      },
+        { "from_tag": "VCO1", "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_1"    },
+        { "from_tag": "VCO2", "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_2"    },
+        { "from_tag": "MIX",  "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"      },
+        { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"      },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCA",  "to_port": "gain_cv"       },
+        { "from_tag": "KBD",  "from_port": "gate_cv",      "to_tag": "ENV",  "to_port": "gate_cv"       },
+        { "from_tag": "KBD",  "from_port": "velocity_cv",  "to_tag": "VCA",  "to_port": "initial_gain_cv" }
       ],
       "parameters": {
         "VCO1": { "saw_gain": 1.0, "sub_gain": 0.15 },
-        "VCO2": { "saw_gain": 1.0, "sub_gain": 0.15, "transpose": 7 },
+        "VCO2": { "saw_gain": 1.0, "sub_gain": 0.15, "coarse_tune": 7 },
         "MIX":  { "gain_1": 0.65, "gain_2": 0.65 },
         "VCF":  { "cutoff": 2400.0, "resonance": 0.06 },
         "ENV":  { "attack": 0.35, "decay": 0.1, "sustain": 0.85, "release": 0.5 },

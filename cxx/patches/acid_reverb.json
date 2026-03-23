@@ -6,6 +6,7 @@
       "id": 0,
       "comment": "TB-303 faithful: saw → diode filter → VCA → distortion → FDN reverb. AD envelope sweeps filter cutoff only. GATE ADSR (A=0, S=1, R=5ms) gives VCA a micro-release to prevent hard-cut click at note-off, matching the 303 RC gate circuit.",
       "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD"  },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO"  },
         { "type": "DIODE_FILTER",        "tag": "VCF"  },
         { "type": "AD_ENVELOPE",         "tag": "ENV"  },
@@ -14,6 +15,9 @@
         { "type": "DISTORTION",          "tag": "DIST" }
       ],
       "connections": [
+        { "from_tag": "KBD",  "from_port": "pitch_cv",    "to_tag": "VCO",  "to_port": "pitch_base_cv" },
+        { "from_tag": "KBD",  "from_port": "gate_cv",     "to_tag": "GATE", "to_port": "gate_cv"       },
+        { "from_tag": "KBD",  "from_port": "velocity_cv", "to_tag": "VCA",  "to_port": "initial_gain_cv" },
         { "from_tag": "VCO",  "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"  },
         { "from_tag": "VCF",  "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"  },
         { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "VCF",  "to_port": "cutoff_cv" },

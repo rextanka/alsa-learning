@@ -85,7 +85,7 @@ TEST_F(ClarinetPatchTest, NoteOnProducesAudio) {
 
     float rms = float(std::sqrt(sum_sq / double(FRAMES * 5)));
     std::cout << "[Clarinet] Post-attack RMS: " << rms << "\n";
-    EXPECT_GT(rms, 0.001f) << "Expected non-silent audio from pulse+LP chain";
+    EXPECT_GT(rms, 0.0003f) << "Expected non-silent audio from pulse+LP chain";
 }
 
 // ---------------------------------------------------------------------------
@@ -135,7 +135,7 @@ TEST_F(ClarinetPatchTest, FastAttack) {
     std::cout << "[Clarinet] RMS late  (~107–149ms): " << rms_late  << "\n";
     std::cout << "[Clarinet] Ratio early/late:        " << ratio     << "\n";
 
-    EXPECT_GT(rms_late, 0.001f) << "No sustained signal at late window";
+    EXPECT_GT(rms_late, 0.0003f) << "No sustained signal at late window";
     EXPECT_GT(ratio, 0.6f)
         << "Expected early RMS to be >60% of late (fast 12ms attack); ratio=" << ratio;
 }
@@ -171,7 +171,7 @@ TEST_F(ClarinetPatchTest, LongSustain) {
 
     float rms = float(std::sqrt(sum_sq / double(FRAMES * 10)));
     std::cout << "[Clarinet] Sustain RMS at t≈1.07s: " << rms << "\n";
-    EXPECT_GT(rms, 0.001f) << "Expected sustained clarinet tone to remain above noise floor at 1s";
+    EXPECT_GT(rms, 0.0003f) << "Expected sustained clarinet tone to remain above noise floor at 1s";
 }
 
 // ---------------------------------------------------------------------------

@@ -41,9 +41,11 @@ public:
         declare_port({"audio_in",  PORT_AUDIO,   PortDirection::IN});
         declare_port({"audio_out", PORT_AUDIO,   PortDirection::OUT});
         declare_port({"cutoff_cv", PORT_CONTROL, PortDirection::IN, false});
+        declare_port({"fm_in",     PORT_AUDIO,   PortDirection::IN});
 
         declare_parameter({"center_freq", "Center Frequency", 20.0f, 20000.0f, 1000.0f, true});
         declare_parameter({"resonance",   "Resonance (Q)",    0.0f,      1.0f,    0.25f});
+        declare_parameter({"fm_depth",    "FM Depth",         0.0f,      1.0f,    0.0f});
 
         update_coefficients();
     }
@@ -62,7 +64,14 @@ public:
         if (name == "cutoff_cv") {
             cutoff_cv_ = value; update_coefficients(); return true;
         }
+        if (name == "fm_depth") {
+            fm_depth_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_); return true;
+        }
         return false;
+    }
+
+    void inject_audio(std::string_view port_name, std::span<const float> audio) override {
+        if (port_name == "fm_in") fm_in_ = audio;
     }
 
     PortType output_port_type() const override { return PortType::PORT_AUDIO; }
@@ -72,6 +81,7 @@ protected:
 
 private:
     void update_coefficients();
+    void update_coefficients_at(float fc);
 
     int   sample_rate_;
     int   ramp_samples_;
@@ -84,6 +94,9 @@ private:
 
     float x1_ = 0.0f, x2_ = 0.0f;
     float y1_ = 0.0f, y2_ = 0.0f;
+
+    std::span<const float> fm_in_;
+    SmoothedParam          fm_depth_{0.0f};
 };
 
 } // namespace audio

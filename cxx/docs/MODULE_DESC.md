@@ -406,6 +406,20 @@ These modules operate entirely in the control domain.
 - **Harpsichord usage**: Route `ADSR_ENVELOPE` `envelope_out` → `INVERTER` `cv_in`. Route `INVERTER` `cv_out` → VCF `cutoff_cv`. Route `ADSR_ENVELOPE` `envelope_out` directly → VCA `gain_cv`. The amplitude envelope and the inverted filter sweep are driven by the same ADSR simultaneously: as the note attacks and sustains the VCA opens while the filter closes, then as the note releases the VCA closes and the filter opens — the classic harpsichord brightness-on-decay.
 - **Gong / metallic usage**: Route ring-mod envelope output through an `INVERTER` into a second resonant filter's cutoff to produce pitch-descending metallic decay.
 
+### MIDI / Keyboard CV Source
+- **Type name**: `MIDI_CV`
+- **Purpose**: Converts MIDI note-on/off events into patchable CV signals. Always the first module in the chain (tag `KBD` by convention). Replaces the legacy auto-injection of pitch and gate — all routing is now explicit.
+- **Ports**:
+  - `PORT_CONTROL` out `pitch_cv` — 1 V/oct; C4 (MIDI 60) = 0 V, +1 V per octave up. Connect to `COMPOSITE_GENERATOR:pitch_base_cv`.
+  - `PORT_CONTROL` out `gate_cv` — 1.0 while key held, 0.0 released. Connect to `ADSR_ENVELOPE:gate_cv`.
+  - `PORT_CONTROL` out `velocity_cv` — note-on velocity normalised to [0, 1]. Connect to `VCA:initial_gain_cv`.
+  - `PORT_CONTROL` out `aftertouch_cv` — channel aftertouch normalised to [0, 1]. Optional; connect to filter cutoff or VCA for expressive control.
+- **Parameters**: none.
+- **Ordering rule**: `bake()` topologically sorts `mod_sources_` so `MIDI_CV` is always pulled before any CV consumer (e.g. `CV_SPLITTER`, `CV_MIXER`) that depends on it. Patch authors do not need to manually order entries.
+- **Multi-VCO pitch fan**: Use a `CV_SPLITTER` between `KBD:pitch_cv` and each oscillator's `pitch_base_cv`. The splitter passes the absolute 1 V/oct value unchanged to all outputs.
+- **Filter keyboard tracking**: Not automatic. Wire `KBD:pitch_cv → VCF:kybd_cv` explicitly on patches that require it.
+- **Percussion patches**: Include `MIDI_CV` for gate control even when pitch is irrelevant (noise sources have no `pitch_base_cv`). Omit the pitch connection; keep `gate_cv → ENV:gate_cv`.
+
 ---
 
 ## 5. Effects & Spatial

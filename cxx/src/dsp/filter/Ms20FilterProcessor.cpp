@@ -14,6 +14,8 @@ Ms20FilterProcessor::Ms20FilterProcessor(int sample_rate)
     hp_lp_ = hp_bp_ = lp_lp_ = lp_bp_ = 0.0f;
 
     declare_parameter({"cutoff_hp", "HP Cutoff (Hz)", 20.0f, 2000.0f, 80.0f, true});
+    declare_port({"fm_in", PORT_AUDIO, PortDirection::IN});
+    declare_parameter({"fm_depth", "FM Depth", 0.0f, 1.0f, 0.0f});
 
     update_cutoff_coefficient(base_cutoff_.get());
     update_hp(cutoff_hp_.get());
@@ -26,7 +28,36 @@ bool Ms20FilterProcessor::apply_parameter(const std::string& name, float value) 
         update_hp(cutoff_hp_.get());
         return true;
     }
+    if (name == "fm_depth") {
+        fm_depth_.set_target(std::clamp(value, 0.0f, 1.0f), ramp_samples_);
+        return true;
+    }
     return VcfBase::apply_parameter(name, value);
+}
+
+void Ms20FilterProcessor::inject_audio(std::string_view port_name, std::span<const float> audio) {
+    if (port_name == "fm_in") fm_in_ = audio;
+}
+
+void Ms20FilterProcessor::do_pull(std::span<float> output, const VoiceContext* ctx) {
+    fm_depth_.advance(static_cast<int>(output.size()));
+    const float fm_depth_val = fm_depth_.get();
+    if (fm_in_.empty() || fm_depth_val == 0.0f) {
+        VcfBase::do_pull(output, ctx);
+    } else {
+        const int n = static_cast<int>(output.size());
+        if (base_cutoff_.is_ramping()) base_cutoff_.advance(n);
+        if (base_res_.is_ramping())    base_res_.advance(n);
+
+        for (size_t i = 0; i < output.size(); ++i) {
+            const float eff_cv = cutoff_cv_ + kybd_cv_ + fm_depth_val * fm_in_[i];
+            const float fc = std::max(20.0f, base_cutoff_.get() * std::pow(2.0f, eff_cv));
+            update_cutoff_coefficient(fc);
+            process_sample(output[i]);
+        }
+        update_effective_cutoff();
+        fm_in_ = {};
+    }
 }
 
 float Ms20FilterProcessor::svf_f(float cutoff) const {

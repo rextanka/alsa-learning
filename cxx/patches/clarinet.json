@@ -4,63 +4,50 @@
   "groups": [
     {
       "id": 0,
-      "comment": "Roland System 100M Fig 1-14: two-VCO additive synthesis with hard sync. VCO2 (saw, master) syncs VCO1 (pulse, slave) — slave phase resets each master cycle, adding harmonic brightness dependent on pitch ratio. Both mix via AUDIO_MIXER before VCF. ADSR fans via CV_SPLITTER to VCA amplitude and VCF cutoff. Keyboard CV auto-tracked into VCF.",
+      "comment": "Roland System 100M Fig. 2-8. VCO-1 (pulse) → VCF-1 → VCF-2 → VCA. VCO-2 (saw, +31st, synced) audio-rate modulates VCF-1 cutoff via fm_in (attenuated). LFO + ADSR (attenuated via CV_MIXER) also modulate VCF-1 cutoff. VCF-1 at minimal cutoff/resonance — modulation opens filter dynamically. Pitch CV to VCO-1 and VCO-2. Gate only to ADSR.",
       "chain": [
-        { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
+        { "type": "MIDI_CV",             "tag": "KBD"  },
+        { "type": "CV_SPLITTER",         "tag": "PSPL" },
+        { "type": "LFO",                 "tag": "LFO"  },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO1" },
-        { "type": "AUDIO_MIXER",         "tag": "MIX"  },
+        { "type": "COMPOSITE_GENERATOR", "tag": "VCO2" },
         { "type": "ADSR_ENVELOPE",       "tag": "ENV"  },
         { "type": "CV_SPLITTER",         "tag": "SPL"  },
-        { "type": "SH_FILTER",           "tag": "VCF"  },
+        { "type": "CV_MIXER",            "tag": "CMOD" },
+        { "type": "SH_FILTER",           "tag": "VCF1" },
+        { "type": "SH_FILTER",           "tag": "VCF2" },
         { "type": "VCA",                 "tag": "VCA"  }
       ],
       "connections": [
-        {
-          "from_tag": "VCO2", "from_port": "sync_out",
-          "to_tag":   "VCO1", "to_port":   "sync_in"
-        },
-        {
-          "from_tag": "VCO1", "from_port": "audio_out",
-          "to_tag":   "MIX",  "to_port":   "audio_in_1"
-        },
-        {
-          "from_tag": "VCO2", "from_port": "audio_out",
-          "to_tag":   "MIX",  "to_port":   "audio_in_2"
-        },
-        {
-          "from_tag": "MIX",  "from_port": "audio_out",
-          "to_tag":   "VCF",  "to_port":   "audio_in"
-        },
-        {
-          "from_tag": "VCF",  "from_port": "audio_out",
-          "to_tag":   "VCA",  "to_port":   "audio_in"
-        },
-        {
-          "from_tag": "ENV",  "from_port": "envelope_out",
-          "to_tag":   "SPL",  "to_port":   "cv_in"
-        },
-        {
-          "from_tag": "SPL",  "from_port": "cv_out_1",
-          "to_tag":   "VCA",  "to_port":   "gain_cv"
-        },
-        {
-          "from_tag": "SPL",  "from_port": "cv_out_2",
-          "to_tag":   "VCF",  "to_port":   "cutoff_cv"
-        }
+        { "from_tag": "KBD",  "from_port": "pitch_cv",     "to_tag": "PSPL", "to_port": "cv_in"         },
+        { "from_tag": "PSPL", "from_port": "cv_out_1",     "to_tag": "VCO1", "to_port": "pitch_base_cv" },
+        { "from_tag": "PSPL", "from_port": "cv_out_2",     "to_tag": "VCO2", "to_port": "pitch_base_cv" },
+        { "from_tag": "KBD",  "from_port": "gate_cv",      "to_tag": "ENV",  "to_port": "gate_cv"       },
+        { "from_tag": "KBD",  "from_port": "velocity_cv",  "to_tag": "VCA",  "to_port": "initial_gain_cv" },
+        { "from_tag": "LFO",  "from_port": "control_out",  "to_tag": "CMOD", "to_port": "cv_in_1"       },
+        { "from_tag": "VCO2", "from_port": "audio_out",    "to_tag": "VCF1", "to_port": "fm_in"         },
+        { "from_tag": "VCO1", "from_port": "sync_out",     "to_tag": "VCO2", "to_port": "sync_in"       },
+        { "from_tag": "VCO1", "from_port": "audio_out",    "to_tag": "VCF1", "to_port": "audio_in"      },
+        { "from_tag": "ENV",  "from_port": "envelope_out", "to_tag": "SPL",  "to_port": "cv_in"         },
+        { "from_tag": "SPL",  "from_port": "cv_out_1",     "to_tag": "VCA",  "to_port": "gain_cv"       },
+        { "from_tag": "SPL",  "from_port": "cv_out_2",     "to_tag": "CMOD", "to_port": "cv_in_2"       },
+        { "from_tag": "SPL",  "from_port": "cv_out_3",     "to_tag": "VCF2", "to_port": "cutoff_cv"     },
+        { "from_tag": "CMOD", "from_port": "cv_out",       "to_tag": "VCF1", "to_port": "cutoff_cv"     },
+        { "from_tag": "VCF1", "from_port": "audio_out",    "to_tag": "VCF2", "to_port": "audio_in"      },
+        { "from_tag": "VCF2", "from_port": "audio_out",    "to_tag": "VCA",  "to_port": "audio_in"      }
       ],
       "parameters": {
-        "VCO1": { "pulse_gain": 1.0, "pulse_width": 0.5 },
-        "VCO2": { "saw_gain":   1.0 },
-        "MIX":  { "gain_1": 0.6, "gain_2": 0.4 },
-        "VCF":  { "cutoff": 2200.0, "resonance": 0.3 },
-        "ENV":  { "attack": 0.012, "decay": 0.0, "sustain": 1.0, "release": 0.06 }
+        "VCO1": { "pulse_gain": 1.0, "pulse_width": 0.25 },
+        "VCO2": { "saw_gain": 1.0, "footage": 2 },
+        "VCF1": { "cutoff": 600.0, "resonance": 0.25, "fm_depth": 0.08 },
+        "VCF2": { "cutoff": 3500.0, "resonance": 0.05 },
+        "ENV":  { "attack": 0.008, "decay": 0.0, "sustain": 1.0, "release": 0.05 },
+        "LFO":  { "rate": 5.0, "intensity": 0.1 },
+        "CMOD": { "gain_1": 0.25, "gain_2": 0.9 }
       }
     }
   ],
   "post_chain": [
-    {
-      "type": "REVERB_FREEVERB",
-      "parameters": { "room_size": 0.55, "damping": 0.6, "wet": 0.2 }
-    }
+    { "type": "REVERB_FREEVERB", "parameters": { "room_size": 0.45, "damping": 0.6, "wet": 0.15 } }
   ]
 }

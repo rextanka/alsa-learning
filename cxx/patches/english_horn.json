@@ -4,26 +4,21 @@
   "groups": [
     {
       "id": 0,
-      "comment": "Roland System 100M Fig 1-9: VCO (saw) → VCF (SH_FILTER LP, cutoff~1800Hz) → VCA. No HPF — the HPF is the Oboe variant only (dashed in diagram). Keyboard CV auto-tracked into VCF cutoff (kybd_cv). ADSR drives VCA amplitude only.",
+      "comment": "Roland System 100M Fig 1-9: VCO (saw) → VCF (SH_FILTER LP, cutoff~1800Hz) → VCA. HPF shown dashed — Oboe variant only. ADSR drives VCA amplitude only; filter cutoff is fixed. KBD pitch_cv → VCO, gate_cv → ENV.",
       "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD" },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO" },
         { "type": "SH_FILTER",           "tag": "VCF" },
         { "type": "ADSR_ENVELOPE",       "tag": "ENV" },
         { "type": "VCA",                 "tag": "VCA" }
       ],
       "connections": [
-        {
-          "from_tag": "VCO", "from_port": "audio_out",
-          "to_tag":   "VCF", "to_port":   "audio_in"
-        },
-        {
-          "from_tag": "VCF", "from_port": "audio_out",
-          "to_tag":   "VCA", "to_port":   "audio_in"
-        },
-        {
-          "from_tag": "ENV", "from_port": "envelope_out",
-          "to_tag":   "VCA", "to_port":   "gain_cv"
-        }
+        { "from_tag": "VCO", "from_port": "audio_out",    "to_tag": "VCF", "to_port": "audio_in"        },
+        { "from_tag": "VCF", "from_port": "audio_out",    "to_tag": "VCA", "to_port": "audio_in"        },
+        { "from_tag": "ENV", "from_port": "envelope_out", "to_tag": "VCA", "to_port": "gain_cv"         },
+        { "from_tag": "KBD", "from_port": "pitch_cv",     "to_tag": "VCO", "to_port": "pitch_base_cv"   },
+        { "from_tag": "KBD", "from_port": "gate_cv",      "to_tag": "ENV", "to_port": "gate_cv"         },
+        { "from_tag": "KBD", "from_port": "velocity_cv",  "to_tag": "VCA", "to_port": "initial_gain_cv" }
       ],
       "parameters": {
         "VCO": { "saw_gain": 1.0 },

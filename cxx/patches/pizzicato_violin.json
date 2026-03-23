@@ -6,6 +6,10 @@
       "id": 0,
       "chain": [
         {
+          "type": "MIDI_CV",
+          "tag": "KBD"
+        },
+        {
           "type": "COMPOSITE_GENERATOR",
           "tag": "VCO"
         },
@@ -23,6 +27,18 @@
         }
       ],
       "connections": [
+        {
+          "from_tag": "KBD",
+          "from_port": "pitch_cv",
+          "to_tag": "VCO",
+          "to_port": "pitch_base_cv"
+        },
+        {
+          "from_tag": "KBD",
+          "from_port": "velocity_cv",
+          "to_tag": "VCA",
+          "to_port": "initial_gain_cv"
+        },
         {
           "from_tag": "VCO",
           "from_port": "audio_out",

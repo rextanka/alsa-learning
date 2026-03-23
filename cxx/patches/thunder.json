@@ -6,6 +6,7 @@
       "id": 0,
       "comment": "Two parallel noise paths mixed — deep rumble + mid growl.",
       "chain": [
+        { "type": "MIDI_CV",         "tag": "KBD"    },
         { "type": "WHITE_NOISE",     "tag": "NOISE1" },
         { "type": "MOOG_FILTER",     "tag": "VCF1"   },
         { "type": "WHITE_NOISE",     "tag": "NOISE2" },
@@ -15,6 +16,7 @@
         { "type": "VCA",             "tag": "VCA"    }
       ],
       "connections": [
+        { "from_tag": "KBD",    "from_port": "gate_cv",     "to_tag": "ENV",  "to_port": "gate_cv"    },
         { "from_tag": "NOISE1", "from_port": "audio_out",    "to_tag": "VCF1", "to_port": "audio_in"   },
         { "from_tag": "NOISE2", "from_port": "audio_out",    "to_tag": "VCF2", "to_port": "audio_in"   },
         { "from_tag": "VCF1",  "from_port": "audio_out",    "to_tag": "MIX",  "to_port": "audio_in_1" },

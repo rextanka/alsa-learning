@@ -29,12 +29,14 @@ public:
     explicit Ms20FilterProcessor(int sample_rate);
 
     bool apply_parameter(const std::string& name, float value) override;
+    void inject_audio(std::string_view port_name, std::span<const float> audio) override;
 
 protected:
     void on_resonance_changed() override { update_q(); }
     void update_cutoff_coefficient(float cutoff) override { f_lp_ = svf_f(cutoff); }
     void reset_state() override { hp_lp_ = hp_bp_ = lp_lp_ = lp_bp_ = 0.0f; }
     void process_sample(float& sample) override;
+    void do_pull(std::span<float> output, const VoiceContext* ctx = nullptr) override;
 
 private:
     float svf_f(float cutoff) const;
@@ -48,6 +50,9 @@ private:
 
     float hp_lp_ = 0.0f, hp_bp_ = 0.0f;
     float lp_lp_ = 0.0f, lp_bp_ = 0.0f;
+
+    std::span<const float> fm_in_;       ///< audio-rate cutoff FM (per-block)
+    SmoothedParam          fm_depth_{0.0f}; ///< 0–1 scale factor on fm_in
 };
 
 } // namespace audio

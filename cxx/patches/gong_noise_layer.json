@@ -6,6 +6,8 @@
       "id": 0,
       "comment": "Tonal gong body (VCO1+VCO2 ring-mod → MOOG_FILTER) + transient noise layer (WHITE_NOISE → SH_FILTER) summed via AUDIO_MIXER.",
       "chain": [
+        { "type": "MIDI_CV",             "tag": "KBD"   },
+        { "type": "CV_SPLITTER",         "tag": "PSPL"  },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO1"  },
         { "type": "COMPOSITE_GENERATOR", "tag": "VCO2"  },
         { "type": "RING_MOD",            "tag": "RM"    },
@@ -17,6 +19,10 @@
         { "type": "VCA",                 "tag": "VCA"   }
       ],
       "connections": [
+        { "from_tag": "KBD",   "from_port": "pitch_cv",    "to_tag": "PSPL", "to_port": "cv_in"           },
+        { "from_tag": "KBD",   "from_port": "velocity_cv", "to_tag": "VCA",  "to_port": "initial_gain_cv" },
+        { "from_tag": "PSPL",  "from_port": "cv_out_1",    "to_tag": "VCO1", "to_port": "pitch_base_cv"   },
+        { "from_tag": "PSPL",  "from_port": "cv_out_2",    "to_tag": "VCO2", "to_port": "pitch_base_cv"   },
         { "from_tag": "VCO1",  "from_port": "audio_out",    "to_tag": "RM",   "to_port": "audio_in_a" },
         { "from_tag": "VCO2",  "from_port": "audio_out",    "to_tag": "RM",   "to_port": "audio_in_b" },
         { "from_tag": "RM",    "from_port": "audio_out",    "to_tag": "VCF",  "to_port": "audio_in"   },
@@ -28,7 +34,7 @@
       ],
       "parameters": {
         "VCO1":  { "sine_gain": 1.0 },
-        "VCO2":  { "sine_gain": 1.0, "transpose": 7, "detune": 40 },
+        "VCO2":  { "sine_gain": 1.0, "coarse_tune": 7, "detune": 40 },
         "VCF":   { "cutoff": 800.0, "resonance": 0.15 },
         "VCF2":  { "cutoff": 3000.0, "resonance": 0.30 },
         "MIX":   { "gain_1": 0.85, "gain_2": 0.30 },
